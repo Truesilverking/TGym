@@ -15,27 +15,29 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
+      - uses: pnpm/action-setup@v4
+        with: { version: 10 }
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: '21', cache: gradle }
-      - run: npm ci
+      - run: pnpm install --frozen-lockfile
         working-directory: frontend
       - run: node scripts/check-version.mjs
         working-directory: frontend
-      - run: npm test
+      - run: pnpm test
         working-directory: frontend
-      - run: npm run build
+      - run: pnpm run build
         working-directory: frontend
       - name: Configure Firebase application
         if: ${{ env.HAS_GOOGLE_SERVICES == 'true' }}
         env:
           GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
         run: printf '%s' "$GOOGLE_SERVICES_JSON_BASE64" | base64 --decode > frontend/android/app/google-services.json
-      - run: VITE_GITHUB_OWNER=${{ github.repository_owner }} VITE_GITHUB_REPO=${{ github.event.repository.name }} VITE_APP_DISTRIBUTION=github npm run build:mobile
+      - run: VITE_GITHUB_OWNER=${{ github.repository_owner }} VITE_GITHUB_REPO=${{ github.event.repository.name }} VITE_APP_DISTRIBUTION=github pnpm run build:mobile
         working-directory: frontend
       - name: Configure Android signing
         env:
@@ -67,7 +69,7 @@ jobs:
             frontend/release/TGym-Android-v*.aab
             frontend/release/checksums.txt
       - name: Build GitHub Pages PWA
-        run: VITE_GITHUB_OWNER=${{ github.repository_owner }} VITE_GITHUB_REPO=${{ github.event.repository.name }} VITE_APP_DISTRIBUTION=pwa npm run build:pwa && cp -r updates dist/updates
+        run: VITE_GITHUB_OWNER=${{ github.repository_owner }} VITE_GITHUB_REPO=${{ github.event.repository.name }} VITE_APP_DISTRIBUTION=pwa pnpm run build:pwa && cp -r updates dist/updates
         working-directory: frontend
       - uses: actions/upload-pages-artifact@v3
         with: { path: frontend/dist }
