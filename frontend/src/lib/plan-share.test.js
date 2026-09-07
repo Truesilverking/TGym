@@ -23,6 +23,10 @@ describe('what survives a shared plan', () => {
   it('carries planned warm-ups', () => {
     expect(roundTrip({ warmupSets: 3 }).warmupSets).toBe(3)
   })
+  it('carries advanced exercise rest settings', () => {
+    expect(roundTrip({ restSec: 75, afterRestSec: 150, warmupRestSec: 30, setRestSec: [45, 60, 90] }))
+      .toMatchObject({ restSec: 75, afterRestSec: 150, warmupRestSec: 30, setRestSec: [45, 60, 90] })
+  })
 
   it('drops an intensifier it does not recognise rather than passing it on', () => {
     expect(roundTrip({ intensifier: { type: 'nonsense', count: 3 } }).intensifier).toBeUndefined()

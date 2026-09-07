@@ -16,9 +16,10 @@
 //   · fewer sets than prescribed                       → miss
 // So a session that fell apart can never advance the load as though it had succeeded.
 
-import { modeOf, repStep, rerampWarmups } from './history.js'
+import { modeOf, isPerSide, repStep, rerampWarmups } from './history.js'
 import { EXIDX } from './exercises.js'
 import { isWarmupRow } from './workout-model.js'
+import { repBounds, rirAdvice, targetRirFor } from './training-plan.js'
 
 export const POLICIES = ['off', 'linear', 'greyskull', 'double', 'time']
 
@@ -44,9 +45,9 @@ export const POLICY_DESC = {
   time: 'Hold every set for the full duration and the target goes up.'
 }
 
-// Sessions of repeated misses before a deload. Greyskull resets on the first failure by
-// design; the general linear policy gives you two more cracks at it first.
-export const DELOAD_AFTER = { linear: 3, greyskull: 1, double: 3, time: 3 }
+// Sessions of repeated misses before a load reduction. Greyskull resets on the first
+// failure by design; the other policies repeat the target once before reducing it.
+export const DELOAD_AFTER = { linear: 2, greyskull: 1, double: 2, time: 2 }
 const DELOAD_FACTOR = 0.9
 
 // Body parts where a 5 kg jump is normal rather than brutal.
@@ -110,7 +111,12 @@ export function readSession(entry, fallback) {
 
   if (mode === 'time') {
     const goal = target.sec || 0
-    const held = sets.map(s => (s.done ? (s.sec || 0) : 0))
+    const side = isPerSide(target)
+    const held = sets.map(s => {
+      if (!s.done) return 0
+      if (!side) return s.sec || 0
+      return Math.min(s.leftSec ?? s.sec ?? 0, s.rightSec ?? s.sec ?? 0)
+    })
     return {
       mode, goal, held,
       weight: Math.max(0, ...sets.filter(s => s.done).map(s => s.w || 0)),
@@ -120,13 +126,17 @@ export function readSession(entry, fallback) {
   }
   const goal = target.reps || 0
   const reps = sets.map(s => (s.done ? (s.r || 0) : 0))
+  const hasRirTarget = targetRirFor(target, null) != null || targetRirFor(target, 'top') != null || targetRirFor(target, 'backoff') != null
+  const rir = hasRirTarget ? rirAdvice(sets, target) : null
+  const repsOk = goal > 0 && enough && reps.length > 0 && sets.every(s => !s.done ? false : (s.r || 0) >= (target.setScheme === 'topback' ? repBounds(target, s.role).min : goal))
   return {
     mode, goal, reps,
     weight: Math.max(0, ...sets.filter(s => s.done).map(s => s.w || 0)),
     count: reps.length,                                   // the dimension bodyweight work grows (#33)
     low: reps.length ? Math.min(...reps) : 0,
     amrap: reps.length ? reps[reps.length - 1] : 0,       // Greyskull's final set
-    ok: goal > 0 && enough && reps.length > 0 && reps.every(r => r >= goal)
+    rirKind: rir?.kind || null,
+    ok: repsOk && (!rir || rir.kind !== 'reduce')
   }
 }
 
@@ -134,6 +144,9 @@ export function readSession(entry, fallback) {
 export function sessionsFor(S, exId, fallback) {
   const out = []
   ;(S.workouts || []).forEach(w => {
+    // A planned deload is recovery work, not a failed attempt at the normal prescription.
+    // Excluding it prevents the reduced load/volume from triggering a stall or another deload.
+    if (w.deload) return
     const entry = w.entries.find(e => e.id === exId)
     if (entry && entry.sets.some(s => s.done && !isWarmupRow(s))) out.push({ d: w.d, ...readSession(entry, fallback) })
   })
@@ -144,7 +157,7 @@ export function sessionsFor(S, exId, fallback) {
 export function stallCount(sessions) {
   let n = 0
   for (let i = sessions.length - 1; i >= 0; i--) {
-    if (sessions[i].ok) break
+    if (sessions[i].ok || sessions[i].rirKind === 'missing') break
     n++
   }
   return n
@@ -168,6 +181,7 @@ export function nextPrescription(S, cfg, routine) {
   const sessions = sessionsFor(S, cfg.id, cfg).filter(s => s.mode === mode)
   const last = sessions[sessions.length - 1]
   if (!last) return { policy, kind: 'first', why: ['Nothing logged yet — this session sets the baseline.'] }
+  if (last.rirKind === 'missing') return { policy, kind: 'hold', weight: last.weight || undefined, reps: last.goal || undefined, why: ['Log RIR to compare this exercise with its target before changing the load.'] }
 
   const stalls = stallCount(sessions)
   const deloadAt = DELOAD_AFTER[policy] || 3

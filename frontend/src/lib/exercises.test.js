@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { matchExercise, normalizeStr } from './exercises.js'
+import { EXIDX, matchExercise, normalizeStr, exerciseSearchScore } from './exercises.js'
 import { _setLangState } from './i18n-core.js'
 
 describe('normalizeStr', () => {
@@ -50,6 +50,17 @@ describe('matchExercise', () => {
     expect(matchExercise(benchPress, 'barbell')).toBe(true)
     expect(matchExercise(benchPress, 'press')).toBe(true)
     expect(matchExercise(benchPress, 'squat')).toBe(false)
+  })
+
+  it('tolerates small typos without accepting unrelated short words', () => {
+    expect(matchExercise(benchPress, 'barbel bench')).toBe(true)
+    expect(matchExercise(benchPress, 'barbell benhc')).toBe(true)
+    expect(matchExercise(benchPress, 'xyz')).toBe(false)
+  })
+
+  it('finds and prioritizes a personal alias', () => {
+    expect(matchExercise(benchPress, 'press plano', 'Press plano')).toBe(true)
+    expect(exerciseSearchScore(benchPress, 'press plano', 'Press plano')).toBeLessThan(exerciseSearchScore(benchPress, 'bench press'))
   })
 
   it('matches multiple tokens in ANY order (not just sequential)', () => {
@@ -117,5 +128,13 @@ describe('matchExercise', () => {
     _setLangState('en', null, null, null)
     expect(matchExercise(benchPress, 'supino')).toBe(false)
     expect(matchExercise(benchPress, 'bench')).toBe(true)
+  })
+})
+
+describe('current catalogue names', () => {
+  it('uses names verified against the current source and retains previous search terms', () => {
+    expect(EXIDX['2138'].n).toBe('stationary bike run')
+    expect(matchExercise(EXIDX['2138'], 'stationary bike run v. 3')).toBe(true)
+    expect(EXIDX['1766'].n).toBe('self assisted inverse leg curl (on floor)')
   })
 })

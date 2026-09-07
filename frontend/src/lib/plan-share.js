@@ -36,16 +36,23 @@ function cleanEx(e) {
   // How the exercise is logged travels too (issues #31/#32) — the bodyweight flag only when
   // it disagrees with the catalogue, since agreeing is what the other end already assumes.
   if (e.bodyweight != null && e.bodyweight !== isBodyweightEq(e.id)) o.bodyweight = e.bodyweight
-  // Only on reps work — `side` counts reps, and a timed hold has none to split.
-  if (e.side && mode !== 'time' && mode !== 'cardio') o.side = true
+  // In reps this means total reps are split; in time it means the duration applies per side.
+  if (e.side && mode !== 'cardio') o.side = true
   // Progression settings travel with the plan — a shared Greyskull routine that arrives
   // without its rule is just a list of weights.
   if (e.prog) o.prog = e.prog
   if (e.inc > 0) o.inc = e.inc
   if (e.repsMin != null) o.repsMin = e.repsMin
   if (e.repsMax != null) o.repsMax = e.repsMax
+  ;['repRange', 'strictReps', 'setScheme', 'topSets', 'topRepsMin', 'topRepsMax', 'topRir', 'topRirMin', 'topRirMax', 'backoffSets', 'backoffPct', 'autoBackoffReps', 'backoffRepOffset', 'backoffRepsMin', 'backoffRepsMax', 'backoffRir', 'backoffRirMin', 'backoffRirMax', 'targetRir', 'targetRirMin', 'targetRirMax'].forEach(k => {
+    if (e[k] != null) o[k] = e[k]
+  })
   if (e.sg) o.sg = e.sg
   if (e.note) o.note = e.note
+  ;['restSec', 'afterRestSec', 'warmupRestSec', 'supersetMoveRestSec', 'supersetRoundRestSec'].forEach(k => {
+    if (e[k] != null) o[k] = Math.max(0, Math.round(Number(e[k])) || 0)
+  })
+  if (Array.isArray(e.setRestSec)) o.setRestSec = e.setRestSec.slice(0, Math.max(1, Number(e.sets) || 1)).map(v => v == null ? null : Math.max(0, Math.round(Number(v)) || 0))
   const warm = cleanWarmupSets(e.warmupSets)
   if (warm) o.warmupSets = warm
   // Drop-sets and rest-pause are part of how the exercise is prescribed, not a logging detail.
@@ -79,15 +86,18 @@ function cleanIntensifier(x) {
 /** Build the shareable bundle: every routine, the week schedule, referenced customs. */
 export function buildPlanBundle(S, name) {
   const routines = (S.routines || []).map(r => ({
-    id: r.id, name: r.name, emoji: r.emoji, ...(r.prog ? { prog: r.prog } : {}), ex: (r.ex || []).map(cleanEx)
+    id: r.id, name: r.name, emoji: r.emoji, ...(r.prog ? { prog: r.prog } : {}),
+    ...Object.fromEntries(['restSec', 'betweenRestSec', 'warmupRestSec', 'supersetMoveRestSec', 'supersetRoundRestSec'].filter(k => r[k] != null).map(k => [k, Math.max(0, Math.round(Number(r[k])) || 0)])),
+    ...(Array.isArray(r.guideSlots) && r.guideSlots.length ? { guideSlots: r.guideSlots } : {}),
+    ex: (r.ex || []).map(cleanEx)
   }))
   const usedIds = new Set(routines.flatMap(r => r.ex.map(e => e.id)))
   const customEx = (S.customEx || [])
     .filter(c => usedIds.has(c.id))
-    .map(c => ({ id: c.id, n: c.n, bp: c.bp, ...(c.desc ? { desc: c.desc } : {}) }))
+    .map(c => Object.fromEntries(Object.entries(c).filter(([k]) => k !== 'alias')))
   const week = {}
   WEEK_ORDER.forEach(d => { if (S.week?.[d]) week[d] = S.week[d] })
-  return { opengym_plan: PLAN_FMT, exported: todayISO(), name: name || '', week, routines, customEx }
+  return { framegym_plan: PLAN_FMT, opengym_plan: PLAN_FMT, exported: todayISO(), name: name || '', week, routines, customEx }
 }
 
 /**
@@ -101,7 +111,7 @@ export function buildPlanBundle(S, name) {
  */
 export function parsePlan(raw) {
   const data = typeof raw === 'string' ? JSON.parse(raw) : raw
-  if (!data || !data.opengym_plan || !Array.isArray(data.routines)) {
+  if (!data || !(data.framegym_plan || data.opengym_plan) || !Array.isArray(data.routines)) {
     throw new Error(t('this isn’t an openGym plan file'))
   }
   const customEx = (Array.isArray(data.customEx) ? data.customEx : []).filter(c => c && c.id)
@@ -149,7 +159,8 @@ export function mergePlan(s, bundle, { schedule } = {}) {
     if (same) { exIdMap[c.id] = same.id; return }
     const nid = uid()
     exIdMap[c.id] = nid
-    s.customEx.push({ id: nid, n: c.n, bp: c.bp, ...(c.desc ? { desc: c.desc } : {}) })
+    const { id, alias, ...fields } = c
+    s.customEx.push({ ...fields, id: nid, custom: true })
   })
   const ridMap = {}
   bundle.routines.forEach(r => {
@@ -160,14 +171,18 @@ export function mergePlan(s, bundle, { schedule } = {}) {
       name: r.name || t('Shared routine'),
       emoji: r.emoji,
       ...(r.prog ? { prog: r.prog } : {}),
+      ...Object.fromEntries(['restSec', 'betweenRestSec', 'warmupRestSec', 'supersetMoveRestSec', 'supersetRoundRestSec'].filter(k => r[k] != null).map(k => [k, Math.max(0, Math.round(Number(r[k])) || 0)])),
+      ...(Array.isArray(r.guideSlots) && r.guideSlots.length ? { guideSlots: r.guideSlots } : {}),
       ex: (r.ex || []).map(e => ({ ...e, id: exIdMap[e.id] || e.id }))
     })
   })
+  if (bundle.routines.some(r => (r.ex || []).some(e => e.targetRir != null || e.topRir != null || e.backoffRir != null)) && (!s.effort || s.effort === 'none')) s.effort = 'rir'
   if (schedule) {
     WEEK_ORDER.forEach(d => { delete s.week[d] })
     Object.entries(bundle.week || {}).forEach(([d, oldId]) => {
       if (ridMap[oldId]) s.week[d] = ridMap[oldId]
     })
+    s.scheduleStarted = todayISO()
   }
   return { routines: bundle.routines.length }
 }
@@ -289,7 +304,7 @@ export function planPrintHTML(S, owner) {
 </style></head>
 <body><div class="doc">
   <header>
-    <div class="kicker">openGym</div>
+    <div class="kicker">TGym</div>
     <h1>${esc(t('Weekly Training Plan'))}</h1>
     ${sub ? `<div class="sub">${sub}</div>` : ''}
   </header>
@@ -297,7 +312,7 @@ export function planPrintHTML(S, owner) {
   ${weekHTML(S)}
   <h3 class="block">${esc(t('Routines'))}</h3>
   ${body}
-  <footer>${esc(t('Made with openGym'))} · opengym.duarte-santos.ch</footer>
+  <footer>TGym · ${esc(t('Based on openGym'))}</footer>
 </div></body></html>`
 }
 

@@ -1,6 +1,9 @@
 // The persisted boundary for a finished session. Keep this pure so compatibility tests can
 // exercise the exact shape the UI writes without mounting React or mutating store state.
+import { finishWorkoutClock } from './workout-time.js'
+
 export function buildCompletedWorkout(active, { end = Date.now(), prs = [], snapshotFor } = {}) {
+  const timing = finishWorkoutClock(active, end)
   const entries = (active?.entries || []).map(entry => {
     const completed = {
       id: entry.id,
@@ -29,10 +32,14 @@ export function buildCompletedWorkout(active, { end = Date.now(), prs = [], snap
     id: active.id,
     d: active.d,
     start: active.start,
-    end,
+    end: timing.end,
+    ...(timing.pausedDurationMs ? { pausedDurationMs: timing.pausedDurationMs } : {}),
     routineId: active.routineId,
     name: active.name,
     bw: active.bw,
+    ...(active.unit ? { unit: active.unit } : {}),
+    ...(active.bwUnit ? { bwUnit: active.bwUnit } : {}),
+    ...(active.deload ? { deload: true } : {}),
     entries,
     prs,
     ...(sessionNote ? { note: sessionNote } : {}),

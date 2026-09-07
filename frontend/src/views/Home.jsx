@@ -1,20 +1,23 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
-import { effectiveRoutine, effectiveRoutineId, streakWeeks, lastBW, setsDoneActive } from '../lib/history.js'
+import { effectiveRoutine, effectiveRoutineId, lastBW, setsDoneActive } from '../lib/history.js'
 import { fmtNum, fmtDate, todayISO, isoOf, weekKey, DAYS } from '../lib/format.js'
 import { t, dateLocale } from '../lib/i18n.js'
-import { bwSheet, goalSheet, dayOverrideSheet, calendarSheet, startFlow, loadStarterPlan, bwDeltaColor } from '../sheets.jsx'
+import { bwSheet, goalSheet, dayOverrideSheet, startFlow, guidedPlansSheet, bwDeltaColor, streakDetailSheet, sessionTimingSheet } from '../sheets.jsx'
 import LineChart from '../components/LineChart.jsx'
 import Icon from '../components/Icon.jsx'
 import { Button } from '../components/ui.jsx'
 import { glyphOf } from '../lib/glyphs.js'
+import { bmiBand, bmiFor } from '../lib/stats-insights.js'
+import { routineConsistency } from '../lib/stats-insights.js'
+import { deloadStatus, streakTier, trainingStreak } from '../lib/training-plan.js'
+import StreakFlame from '../components/StreakFlame.jsx'
 
 // Home = what to do now + a quick glance. Deep charts & history live in Stats.
 export default function Home() {
   const nav = useNavigate()
   const S = useStore(s => s.S)
-  const user = useStore(s => s.user)
   const [weekOffset, setWeekOffset] = useState(0)
 
   const today = new Date()
@@ -23,6 +26,10 @@ export default function Home() {
   const bw = lastBW(S)
   const prevBW = S.bodyweight.length > 1 ? S.bodyweight[S.bodyweight.length - 2] : null
   const delta = bw && prevBW ? bw.w - prevBW.w : null
+  const bmi = bmiFor(bw?.w, S.unit, S.heightCm, S.measurementUnit)
+  const streak = trainingStreak(S)
+  const consistency = routineConsistency(S)
+  const deload = deloadStatus(S)
 
   const monday = new Date(today); monday.setDate(today.getDate() - ((today.getDay() + 6) % 7) + weekOffset * 7)
   const doneDays = new Set(S.workouts.map(w => w.d))
@@ -41,18 +48,19 @@ export default function Home() {
   const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6)
   const wkLabel = weekOffset === 0 ? t('This week') : `${monday.getDate()} ${monday.toLocaleDateString(dateLocale(), { month: 'short' })} – ${sunday.getDate()} ${sunday.toLocaleDateString(dateLocale(), { month: 'short' })}`
 
-  const wThisWeek = S.workouts.filter(w => weekKey(w.d) === weekKey(todayISO())).length
-  const plannedPerWeek = Object.keys(S.week).filter(k => S.week[k]).length
   const bwPoints = S.bodyweight.slice(-30).map(b => ({ t: b.t || new Date(b.d).getTime(), y: b.w, d: b.d }))
 
   // today's session shown right under the week strip
   const onToday = () => { if (S.active) nav('/workout'); else if (routine) startFlow(routine.id); else dayOverrideSheet(todayISO()) }
 
   return <div className="narrow">
-    <div className="hdr">
-      <div><h1>{user ? t('Hi {0}', user.name) : 'openGym'}</h1><div className="sub">{today.toLocaleDateString(dateLocale(), { weekday: 'long', day: 'numeric', month: 'long' })}</div></div>
+    <div className="hdr hdr-centered">
+      <button className={'header-streak streak-' + streakTier(streak.current)} onClick={streakDetailSheet} aria-label={t('Training streak')}><StreakFlame value={streak.current} /><b>{streak.current}</b></button>
+      <div className="hdr-center"><h1>{t('Training')}</h1><div className="sub">{today.toLocaleDateString(dateLocale(), { weekday: 'long', day: 'numeric', month: 'long' })}</div></div>
       <button className="iconbtn" onClick={() => nav('/settings')} aria-label={t('Settings')}><Icon name="gear" /></button>
     </div>
+
+    {S.deload?.on && (deload.active || (deload.daysUntil != null && deload.daysUntil <= 3)) && <div className="card" style={{ border: '1px solid color-mix(in srgb,var(--orange) 55%,transparent)' }}><div className="row" style={{ gap: 9 }}><Icon name="arrowDown" style={{ color: 'var(--orange)' }} /><div><b>{deload.active ? t('Deload week') : t('Deload week starts soon')}</b><div className="small dim">{deload.active ? t('Weights and working sets are reduced for this week.') : t('Starts in {0} days.', deload.daysUntil)}</div></div></div></div>}
 
     <div className="card">
       <div className="row between" style={{ marginBottom: 8 }}>
@@ -86,6 +94,11 @@ export default function Home() {
       </div>
     </div>
 
+    <div className="card"><div className="row between" style={{ marginBottom: 10 }}><h2 style={{ margin: 0 }}>{t('Routine consistency')} <span className="dim">· {t('last 8 weeks')}</span></h2><Button size="sm" icon="timer" onClick={sessionTimingSheet}>{t('Times')}</Button></div>
+      <div className="tiles"><div className="tile"><div className="l">{t('Completed')}</div><div className="v">{consistency.completed}</div><div className="small dim">{t('{0} planned', consistency.planned)}</div></div><div className="tile"><div className="l">{t('Completion')}</div><div className="v" style={{ color: consistency.rate == null ? 'inherit' : `color-mix(in srgb,var(--red) ${Math.round(consistency.rate * 100)}%,var(--label))` }}>{consistency.rate == null ? '—' : Math.round(consistency.rate * 100) + '%'}</div><div className="small dim">{t('{0} missed · {1} extra', consistency.missed, consistency.extra)}</div></div></div>
+      <div className="muted small" style={{ marginTop: 8 }}>{t('A scheduled routine counts as completed when that routine is recorded on its planned day.')}</div>
+    </div>
+
     {!S.routines.length && !S.active && (
       <div className="card">
         <div className="row" style={{ gap: 10, marginBottom: 6 }}>
@@ -93,7 +106,7 @@ export default function Home() {
           <div className="big" style={{ fontSize: 22 }}>{t('Welcome!')}</div>
         </div>
         <div className="muted small" style={{ marginBottom: 12 }}>{t('Set up your weekly routine to get going — or load a ready-made Push / Pull / Legs plan.')}</div>
-        <Button variant="primary" icon="sparkles" onClick={loadStarterPlan}>{t('Load starter plan (PPL)')}</Button>
+        <Button variant="primary" icon="sparkles" onClick={guidedPlansSheet}>{t('Choose a guided plan')}</Button>
         <div style={{ height: 8 }} /><Button onClick={() => nav('/plan')}>{t('Build my own plan')}</Button>
       </div>
     )}
@@ -124,21 +137,10 @@ export default function Home() {
             <span>{t('Goal')} {fmtNum(S.targetW)} {S.unit} · {Math.abs(S.targetW - bw.w) < 0.05 ? t('reached!') : t(S.targetW > bw.w ? '{0} to gain' : '{0} to lose', fmtNum(Math.abs(S.targetW - bw.w)) + ' ' + S.unit)}</span>
           </div>
         )}
+        {bmi && <div className="small row" style={{ marginTop: 6, gap: 5 }}><Icon name="scale" style={{ color: 'var(--orange)', fontSize: 13 }} /><span>{t('Current BMI')}: <b>{fmtNum(bmi)}</b> · {t(bmiBand(bmi))}</span></div>}
         <div className="chart" style={{ marginTop: 8 }}><LineChart points={bwPoints} h={130} unit={S.unit} goal={S.targetW} /></div>
       </> : <div className="muted small">{t("No entries yet — log your weight to start the curve. It's also asked before every workout.")}</div>}
     </div>
 
-    <div className="card tappable" style={{ cursor: 'pointer' }} onClick={() => calendarSheet()}>
-      <div className="row between">
-        <div>
-          <div className="row" style={{ gap: 7, fontSize: 22, fontWeight: 600, letterSpacing: '-.021em' }}>
-            <Icon name="flame" style={{ color: 'var(--orange)' }} />
-            {t('{0} week streak', streakWeeks(S))}
-          </div>
-          <div className="muted small" style={{ marginTop: 2 }}>{wThisWeek}{plannedPerWeek ? ' / ' + plannedPerWeek : ''} {t('this week')} · {t(S.workouts.length === 1 ? '{0} workout total' : '{0} workouts total', S.workouts.length)}</div>
-        </div>
-        <Icon name="calendar" className="chev" style={{ fontSize: 20 }} />
-      </div>
-    </div>
   </div>
 }

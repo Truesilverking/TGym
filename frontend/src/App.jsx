@@ -26,6 +26,9 @@ import History from './views/History.jsx'
 import Library from './views/Library.jsx'
 import Settings from './views/Settings.jsx'
 import Admin from './views/Admin.jsx'
+import AppLock from './components/AppLock.jsx'
+import AppUpdate from './components/AppUpdate.jsx'
+import { backupToGoogleDrive, cloudBackupDue } from './lib/cloud-sync.js'
 
 bindUI(useUI)   // lets the shared controls open sheets without importing the store at module scope
 
@@ -34,10 +37,11 @@ const resolveTheme = theme => theme === 'light' || theme === 'dark'
   ? theme
   : (window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
 
-function applyPrefs(theme, accent) {
+function applyPrefs(theme, accent, reduceMotion = false) {
   const de = document.documentElement
   de.dataset.theme = resolveTheme(theme)
   de.dataset.accent = ACCENTS[accent] ? accent : 'lime'
+  de.dataset.reduceMotion = reduceMotion ? 'true' : 'false'
   const meta = document.querySelector('meta[name="theme-color"]')
   if (meta) meta.content = de.dataset.theme === 'light' ? '#f2f2f7' : '#000000'
 }
@@ -50,23 +54,48 @@ function Shell() {
   const needsMobileOnboarding = useStore(s => s.needsMobileOnboarding)
   const langV = useLang()   // re-renders the whole shell when the language (pack) changes
   useEffect(() => { setNav(navigate) }, [navigate])
-  useEffect(() => { applyPrefs(S.theme, S.accent) }, [S.theme, S.accent])
+  useEffect(() => { applyPrefs(S.theme, S.accent, S.reduceMotion) }, [S.theme, S.accent, S.reduceMotion])
   // 'system' needs to react live if the OS theme flips while the app is open, not just on
   // the next mount — a fixed 'dark'/'light' choice never re-fires this since matchMedia
   // isn't consulted for those.
   useEffect(() => {
     if (S.theme !== 'system' || !window.matchMedia) return
     const mql = window.matchMedia('(prefers-color-scheme: dark)')
-    const onChange = () => applyPrefs(S.theme, S.accent)
+    const onChange = () => applyPrefs(S.theme, S.accent, S.reduceMotion)
     mql.addEventListener('change', onChange)
     return () => mql.removeEventListener('change', onChange)
-  }, [S.theme, S.accent])
+  }, [S.theme, S.accent, S.reduceMotion])
   useEffect(() => { setLang(S.lang || 'en') }, [S.lang])
   useEffect(() => { document.documentElement.lang = S.lang || 'en' }, [langV, S.lang])
   // every tab/route change starts at the top of the page
   useEffect(() => { window.scrollTo(0, 0) }, [loc.pathname])
   // bound to the workout, not to the route — checking Stats mid-session keeps the screen on
   useWakeLock(!!S.active && S.keepAwake !== false)
+
+  // A PWA cannot wake itself while it is fully closed. Run the weekly check on launch and
+  // foreground instead. Google normally renews prior consent silently; if the browser cannot,
+  // Settings shows one explicit reconnect action rather than repeatedly opening a prompt.
+  useEffect(() => {
+    if (!ready) return
+    let running = false, gone = false
+    const syncIfDue = async () => {
+      const current = useStore.getState().S
+      if (running || !cloudBackupDue(current)) return
+      running = true
+      useStore.getState().update(s => { s.cloudSync = { ...(s.cloudSync || {}), lastAttemptAt: Date.now() } }, false)
+      try {
+        const result = await backupToGoogleDrive(current, { interactive: false })
+        if (!gone) useStore.getState().update(s => { s.cloudSync = { ...(s.cloudSync || {}), authorizedOnce: true, lastBackupAt: result.at, lastFileId: result.fileId, needsAuth: false, lastError: null } }, false)
+      } catch (error) {
+        const authCodes = new Set(['auth_required', 'configuration_required', 'access_denied', 'popup_failed_to_open', 'popup_closed'])
+        if (!gone) useStore.getState().update(s => { s.cloudSync = { ...(s.cloudSync || {}), needsAuth: authCodes.has(error?.code), lastError: error?.message || 'Google Drive error' } }, false)
+      } finally { running = false }
+    }
+    syncIfDue()
+    const visible = () => { if (document.visibilityState === 'visible') syncIfDue() }
+    document.addEventListener('visibilitychange', visible)
+    return () => { gone = true; document.removeEventListener('visibilitychange', visible) }
+  }, [ready])
 
   const authed = user || isGuest
   if (!ready && !authed) return (
@@ -101,6 +130,7 @@ function Shell() {
       </div>
       <TabBar onStart={startFlow} />
       <RestTimer />
+      <AppUpdate />
       <Modals />
       <Toast />
     </>
@@ -116,5 +146,5 @@ export default function App() {
     initBackButton().then(fn => { if (gone) fn(); else stop = fn })
     return () => { gone = true; stop?.() }
   }, [])
-  return <HashRouter><Shell /></HashRouter>
+  return <HashRouter><AppLock><Shell /></AppLock></HashRouter>
 }

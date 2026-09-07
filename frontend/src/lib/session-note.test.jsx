@@ -54,20 +54,27 @@ describe('session note', () => {
     expect(buildCompletedWorkout(A, { end: 2 }).note).toBe('slept badly, still hit it')
   })
 
-  it('is kept when the history sheet is dismissed without blurring the field', () => {
+  const editAndConfirm = (host, value) => {
+    act(() => { [...host.querySelectorAll('button')].find(b => /edit workout/i.test(b.textContent)).click() })
+    act(() => { type(host.querySelector('textarea'), value) })
+    act(() => { [...host.querySelectorAll('button')].find(b => /save changes/i.test(b.textContent)).click() })
+    const confirm = useUI.getState().sheets.at(-1), box = document.createElement('div'), root = createRoot(box)
+    mounted.push(root); document.body.appendChild(box)
+    act(() => root.render(confirm.render(() => useUI.getState().closeSheet(confirm.id))))
+    act(() => { [...box.querySelectorAll('button')].find(b => /save changes/i.test(b.textContent)).click() })
+  }
+
+  it('saves a history note through explicit edit and confirmation', () => {
     useStore.setState(s => ({ S: { ...s.S, workouts: [workout()] } }))
     const host = render(() => workoutDetailSheet(useStore.getState().S.workouts[0]))
-    act(() => { type(host.querySelector('textarea'), 'good session') })
-    // Escape / Android back / swipe all unmount without a blur.
-    unmountAll()
+    editAndConfirm(host, 'good session')
     expect(useStore.getState().S.workouts[0].note).toBe('good session')
   })
 
   it('clearing it removes the note rather than storing an empty string', () => {
     useStore.setState(s => ({ S: { ...s.S, workouts: [{ ...workout(), note: 'old' }] } }))
     const host = render(() => workoutDetailSheet(useStore.getState().S.workouts[0]))
-    act(() => { type(host.querySelector('textarea'), '   ') })
-    unmountAll()
+    editAndConfirm(host, '   ')
     expect(useStore.getState().S.workouts[0].note).toBeUndefined()
   })
 })

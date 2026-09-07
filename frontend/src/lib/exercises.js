@@ -4,13 +4,23 @@ import { t, getVersion, exerciseNameSearchText } from './i18n-core.js'
 
 export { EXDB }
 
+// Names verified against the current ExerciseDB V1 catalogue by the immutable media ID.
+// Keep the previous title searchable: old routines still reference the stable TGym ID, but a
+// person may reasonably continue typing the name that the app showed before the refresh.
+const CURRENT_NAME_OVERRIDES = {
+  '1766': { n: 'self assisted inverse leg curl (on floor)', legacyNames: ['self assisted inverse leg curl'] },
+  '0696': { n: 'self assisted inverse leg curl', legacyNames: ['self assisted inverse leg curl (on floor)'] },
+  '2138': { n: 'stationary bike run', legacyNames: ['stationary bike run v. 3'] },
+}
+
 // The generated dataset remains the compatibility/raw export. The runtime catalogue applies
 // owner-approved muscle metadata as a narrow overlay, so imports and historical tests that rely
 // on the upstream shape keep working while EXIDX and pickers see the corrected model.
 const catalogueExercise = ex => {
   const metadata = exerciseMuscleMetadataFor(ex?.id)
-  if (!Object.keys(metadata).length) return ex
-  const out = { ...ex, ...metadata }
+  const nameUpdate = CURRENT_NAME_OVERRIDES[ex?.id] || {}
+  if (!Object.keys(metadata).length && !Object.keys(nameUpdate).length) return ex
+  const out = { ...ex, ...metadata, ...nameUpdate }
   const user = USER_EXERCISE_MUSCLE_OVERRIDES[ex?.id] || {}
   // A future dataset row may carry explicit arrays of its own; preserve those over generated
   // defaults unless the owner has deliberately supplied a correction for the same field.
@@ -132,8 +142,8 @@ export function matchesExerciseSearch(exercise, query) {
 const ENV = import.meta.env || {}
 const IMG_BASE = ENV.VITE_IMG_BASE || 'img/'
 const GIF_BASE = ENV.VITE_GIF_BASE || 'gif/'
-export const imgSrc = ex => IMG_BASE + ex.img
-export const gifSrc = ex => GIF_BASE + ex.gif
+export const imgSrc = ex => String(ex?.img || '').startsWith('data:') ? ex.img : IMG_BASE + ex.img
+export const gifSrc = ex => String(ex?.gif || '').startsWith('data:') ? ex.gif : GIF_BASE + ex.gif
 
 // Cardio exercises log time + speed instead of weight × reps.
 export const isCardio = idOrEx => (typeof idOrEx === 'string' ? EXIDX[idOrEx] : idOrEx)?.bp === 'cardio'
@@ -177,6 +187,7 @@ function corpusOf(e) {
   const sm = Array.isArray(e?.sm) ? e.sm : []
   const s = normalizeStr([
     exerciseNameSearchText(e),
+    ...(e?.legacyNames || []),
     e?.tg || '', t(e?.tg || ''),
     e?.eq || '', t(e?.eq || ''),
     e?.bp || '', t(e?.bp || ''),
@@ -187,11 +198,52 @@ function corpusOf(e) {
   return s
 }
 
-export function matchExercise(e, query) {
-  if (!query) return true
+function editDistance(a, b, limit) {
+  if (a.length === b.length) {
+    const diffs = []
+    for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) diffs.push(i)
+    if (diffs.length === 2 && diffs[1] === diffs[0] + 1 && a[diffs[0]] === b[diffs[1]] && a[diffs[1]] === b[diffs[0]]) return 1
+  }
+  if (Math.abs(a.length - b.length) > limit) return limit + 1
+  let prev = Array.from({ length: b.length + 1 }, (_, i) => i)
+  for (let i = 1; i <= a.length; i++) {
+    const next = [i]
+    let rowMin = i
+    for (let j = 1; j <= b.length; j++) {
+      next[j] = Math.min(next[j - 1] + 1, prev[j] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1))
+      rowMin = Math.min(rowMin, next[j])
+    }
+    if (rowMin > limit) return limit + 1
+    prev = next
+  }
+  return prev[b.length]
+}
+
+// Lower scores are better. Every query word must have a credible match: substring/prefix,
+// or a small typo for words long enough that one wrong letter is still unambiguous.
+export function exerciseSearchScore(e, query, alias = '') {
+  if (!query || !normalizeStr(query).trim()) return 0
   const tokens = normalizeStr(query).split(/\s+/).filter(Boolean)
-  if (!tokens.length) return true
-  if (!e || typeof e !== 'object') return false
-  const corpus = corpusOf(e)
-  return tokens.every(tok => corpus.includes(tok))
+  if (!e || typeof e !== 'object') return Infinity
+  const aliasNorm = normalizeStr(alias).trim()
+  const corpus = `${aliasNorm} ${corpusOf(e)}`.trim()
+  const words = corpus.split(/[^a-z0-9]+/).filter(Boolean)
+  let score = aliasNorm && aliasNorm === normalizeStr(query).trim() ? -100 : 0
+  for (const tok of tokens) {
+    if (aliasNorm && aliasNorm.split(/\s+/).some(w => w === tok)) { score -= 12; continue }
+    if (words.includes(tok)) { score += 0; continue }
+    if (words.some(w => w.startsWith(tok))) { score += 2; continue }
+    if (corpus.includes(tok)) { score += 4; continue }
+    const limit = tok.length >= 8 ? 2 : tok.length >= 4 ? 1 : 0
+    if (limit) {
+      const best = words.reduce((n, w) => Math.min(n, editDistance(tok, w, limit)), limit + 1)
+      if (best <= limit) { score += 8 + best; continue }
+    }
+    return Infinity
+  }
+  return score
+}
+
+export function matchExercise(e, query, alias = '') {
+  return Number.isFinite(exerciseSearchScore(e, query, alias))
 }

@@ -2,12 +2,11 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { EXIDX } from '../lib/exercises.js'
-import { lastBW, streakWeeks, setLabel, modeOf, effortOf, metricModeForEntry, metricRowsForEntry, bestWeightForEntry } from '../lib/history.js'
+import { lastBW, setLabel, modeOf, effortOf, metricModeForEntry, metricRowsForEntry, bestWeightForEntry } from '../lib/history.js'
 import { fmtNum, fmtDate, fmtVol, todayISO, weekKey } from '../lib/format.js'
 import { t, exerciseNameFor, getLang } from '../lib/i18n.js'
-import { bwSheet, goalSheet, calendarSheet, workoutDetailSheet, WorkoutRow, bwDeltaColor } from '../sheets.jsx'
+import { bwSheet, goalSheet, workoutDetailSheet, WorkoutRow, bwDeltaColor, measurementsSheet, heightSheet, sessionTimingSheet, confirmSheet, inBodySheet } from '../sheets.jsx'
 import LineChart from '../components/LineChart.jsx'
-import Heatmap from '../components/Heatmap.jsx'
 import Icon from '../components/Icon.jsx'
 import BodyMap, { BodyMapLegend } from '../components/BodyMap.jsx'
 import { loadOfWorkouts, rankOf, MUSCLE_NAME, musclesOf } from '../lib/muscles.js'
@@ -21,6 +20,27 @@ import {
 } from '../lib/effort.js'
 import { Button, Segmented, SelectRow } from '../components/ui.jsx'
 import { isWarmupRow } from '../lib/workout-model.js'
+import { MOBILE, shareExport } from '../lib/mobile.js'
+import { bmiBand, bmiFor, MEASURE_FIELDS, measurementValue, routineConsistency } from '../lib/stats-insights.js'
+import { trainingStreak } from '../lib/training-plan.js'
+import { workoutElapsedMs } from '../lib/workout-time.js'
+
+async function exportStatsReport(S) {
+  const esc = x => String(x).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c])
+  const td = x => `<td>${esc(x ?? '—')}</td>`
+  const last = lastBW(S), consistency = routineConsistency(S), streak = trainingStreak(S)
+  const bmi = bmiFor(last?.w, S.unit, S.heightCm, S.measurementUnit)
+  const measureHead = MEASURE_FIELDS.map(([, label]) => `<th>${esc(t(label))}</th>`).join('')
+  const measureRows = [...(S.measurements || [])].reverse().map(m => `<tr>${td(fmtDate(m.d, true))}${MEASURE_FIELDS.map(([key]) => td(measurementValue(m, key) || '—')).join('')}</tr>`).join('')
+  const weightRows = [...(S.bodyweight || [])].reverse().map(b => `<tr>${td(fmtDate(b.d, true))}${td(`${fmtNum(b.w)} ${S.unit}`)}${td(bmiFor(b.w, S.unit, S.heightCm, S.measurementUnit) || '—')}</tr>`).join('')
+  const workoutRows = [...(S.workouts || [])].reverse().map(w => `<tr>${td(fmtDate(w.d, true))}${td(w.name)}${td(Math.max(0, Math.round(workoutElapsedMs(w) / 60000)) + ' min')}${td(fmtVol(w.vol || 0, S.unit))}${td((w.entries || []).map(e => `${EXIDX[e.id] ? exerciseNameFor(EXIDX[e.id]) : (e.n || e.id)}: ${(e.sets || []).filter(s => s.done).map(s => setLabel(e.id, s, e.target)).join(', ')}`).join(' | '))}</tr>`).join('')
+  const inbodyFields = [['weight','Weight'],['skeletalMuscle','Skeletal muscle mass'],['bodyFatMass','Body fat mass'],['bodyFatPct','Body fat percentage'],['bmi','BMI'],['visceralFat','Visceral fat level'],['bodyWater','Total body water'],['protein','Protein'],['minerals','Minerals'],['bmr','Basal metabolic rate'],['score','InBody score']]
+  const inbodyRows = [...(S.inbody || [])].reverse().map(r => `<tr>${td(fmtDate(r.d, true))}${inbodyFields.map(([key]) => td(r[key] ?? '—')).join('')}</tr>`).join('')
+  const html = `<!doctype html><html lang="${esc(getLang())}"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>TGym Stats ${todayISO()}</title><style>body{font:15px system-ui;margin:32px;color:#171717}h1{color:#d82727}h2{margin-top:32px}section{break-inside:avoid}.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.box{padding:14px;border:1px solid #ddd;border-radius:10px}.box b{display:block;font-size:24px;margin-top:5px}table{border-collapse:collapse;width:100%;font-size:13px}th,td{border:1px solid #ddd;padding:7px;text-align:left;vertical-align:top}th{background:#f3f3f3}small{color:#666}.scroll{overflow-x:auto}@media print{body{margin:12mm}.scroll{overflow:visible}}</style><body><h1>TGym · ${esc(t('Stats'))}</h1><small>${esc(fmtDate(todayISO(), true))}</small><section class="summary"><div class="box">${esc(t('Workouts'))}<b>${S.workouts.length}</b></div><div class="box">${esc(t('Training streak'))}<b>${streak.current}</b></div><div class="box">${esc(t('Completion'))}<b>${consistency.rate == null ? '—' : Math.round(consistency.rate * 100) + '%'}</b><small>${consistency.completed} / ${consistency.planned}</small></div><div class="box">${esc(t('Body weight'))}<b>${last ? esc(fmtNum(last.w) + ' ' + S.unit) : '—'}</b></div><div class="box">${esc(t('BMI'))}<b>${bmi || '—'}</b></div></section><h2>${esc(t('Body weight'))}</h2><div class="scroll"><table><thead><tr><th>${esc(t('Date'))}</th><th>${esc(t('Weight'))}</th><th>${esc(t('BMI'))}</th></tr></thead><tbody>${weightRows || `<tr>${td(t('No data yet'))}</tr>`}</tbody></table></div><h2>${esc(t('Body measurements'))}</h2><small>${esc(S.measurementUnit || 'cm')}</small><div class="scroll"><table><thead><tr><th>${esc(t('Date'))}</th>${measureHead}</tr></thead><tbody>${measureRows || `<tr>${td(t('No data yet'))}</tr>`}</tbody></table></div><h2>${esc(t('InBody history'))}</h2><div class="scroll"><table><thead><tr><th>${esc(t('Date'))}</th>${inbodyFields.map(([,label]) => `<th>${esc(t(label))}</th>`).join('')}</tr></thead><tbody>${inbodyRows || `<tr>${td(t('No data yet'))}</tr>`}</tbody></table></div><h2>${esc(t('Workout history'))}</h2><div class="scroll"><table><thead><tr><th>${esc(t('Date'))}</th><th>${esc(t('Routine'))}</th><th>${esc(t('Duration'))}</th><th>${esc(t('Volume'))}</th><th>${esc(t('Exercises'))}</th></tr></thead><tbody>${workoutRows || `<tr>${td(t('No workouts yet'))}</tr>`}</tbody></table></div></body></html>`
+  const filename = `tgym-stats-${todayISO()}.html`
+  if (MOBILE) { await shareExport(html, filename); return }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([html], { type: 'text/html;charset=utf-8' })); a.download = filename; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000)
+}
 
 // Which muscles the training in a window actually hit — and, the point of the card,
 // which ones it keeps missing. Shading is relative within the window (lib/muscles.js).
@@ -277,9 +297,11 @@ function EffortCard({ S }) {
 export default function Stats() {
   const nav = useNavigate()
   const S = useStore(s => s.S)
+  const update = useStore(s => s.update)
   const [range, setRange] = useState(90)
   const [exId, setExId] = useState(null)
   const [exMetric, setExMetric] = useState('top')
+  const [measureKey, setMeasureKey] = useState('waist')
   const now = Date.now()
   const kind = displayScale(S)
   const hd = scaleName(kind)
@@ -290,6 +312,15 @@ export default function Stats() {
   const bwDelta30 = bw30.length > 1 ? bw30[bw30.length - 1].w - bw30[0].w : null
   const workouts = S.workouts
   const monthW = workouts.filter(w => String(w.d || '').slice(0, 7) === todayISO().slice(0, 7)).length
+  const consistency = routineConsistency(S)
+  const streak = trainingStreak(S)
+  const measures = [...(S.measurements || [])].sort((a, b) => a.d.localeCompare(b.d))
+  const selectedMeasureKey = measures.some(m => measurementValue(m, measureKey) > 0) ? measureKey : (MEASURE_FIELDS.find(([key]) => measures.some(m => measurementValue(m, key) > 0))?.[0] || measureKey)
+  const measurePoints = measures.filter(m => measurementValue(m, selectedMeasureKey) > 0).map(m => ({ t: new Date(m.d + 'T12:00:00').getTime(), d: m.d, y: measurementValue(m, selectedMeasureKey) }))
+  const currentMeasure = measurePoints.at(-1), previousMeasure = measurePoints.at(-2), firstMeasure = measurePoints[0]
+  const latestWeight = lastBW(S)
+  const bmi = bmiFor(latestWeight?.w, S.unit, S.heightCm, S.measurementUnit)
+  const bmiPoints = S.heightCm ? S.bodyweight.map(b => ({ t: b.t || new Date(b.d + 'T12:00:00').getTime(), d: b.d, y: bmiFor(b.w, S.unit, S.heightCm, S.measurementUnit) })).filter(p => p.y) : []
 
   const nameOf = id => EXIDX[id] ? exerciseNameFor(EXIDX[id]) : (workouts.flatMap(w => w.entries).find(e => e.id === id)?.n || id)
   const currentOf = id => {
@@ -391,19 +422,19 @@ export default function Stats() {
 
   return <>
     <div className="hdr"><div><h1>{t('Stats')}</h1><div className="sub">{t('Progress & history')}</div></div>
-      <button className="iconbtn" onClick={() => nav('/history')} aria-label={t('History')}><Icon name="history" /></button></div>
+      <div className="row" style={{ gap: 3 }}><button className="iconbtn" onClick={() => exportStatsReport(S)} aria-label={t('Export Stats report')} title={t('Export Stats report')}><Icon name="download" /></button>{!MOBILE && <button className="iconbtn" onClick={() => window.print()} aria-label={t('Print / Save as PDF')} title={t('Print / Save as PDF')}><Icon name="clipboard" /></button>}<button className="iconbtn" onClick={() => nav('/history')} aria-label={t('History')}><Icon name="history" /></button><button className="iconbtn" onClick={inBodySheet} aria-label={t('InBody history')} title={t('InBody history')}><Icon name="person" /></button></div></div>
 
     <div className="tiles">
       <div className="tile"><div className="l"><Icon name="dumbbell" />{t('Workouts')}</div><div className="v">{workouts.length}</div></div>
       <div className="tile"><div className="l"><Icon name="calendar" />{t('This month')}</div><div className="v">{monthW}</div></div>
-      <div className="tile"><div className="l"><Icon name="flame" />{t('Week streak')}</div><div className="v">{streakWeeks(S)}</div></div>
+      <div className="tile"><div className="l"><Icon name="flame" />{t('Training streak')}</div><div className="v">{streak.current}</div></div>
       <div className="tile"><div className="l"><Icon name="scale" />{t('Weight 30d')}</div><div className="v" style={{ fontSize: 22, color: bwDelta30 === null ? 'inherit' : bwDeltaColor(bwDelta30, (lastBW(S) || {}).w || 0) }}>{bwDelta30 === null ? '—' : (bwDelta30 > 0 ? '+' : '') + fmtNum(bwDelta30) + ' ' + S.unit}</div></div>
 
     </div>
 
-    <div className="card">
-      <h2>{t('Activity — last 12 months')} <span className="dim" style={{ textTransform: 'none', letterSpacing: 0 }}>· {t('by time trained')}</span></h2>
-      <Heatmap S={S} onDay={iso => { const ws = workouts.filter(w => w.d === iso); if (ws.length === 1) workoutDetailSheet(ws[0]); else if (ws.length) calendarSheet(iso) }} />
+    <div className="card"><div className="row between" style={{ marginBottom: 10 }}><h2 style={{ margin: 0 }}>{t('Routine consistency')} <span className="dim">· {t('last 8 weeks')}</span></h2><Button size="sm" icon="timer" onClick={sessionTimingSheet}>{t('Times')}</Button></div>
+      <div className="tiles"><div className="tile"><div className="l">{t('Completed')}</div><div className="v">{consistency.completed}</div><div className="small dim">{t('{0} planned', consistency.planned)}</div></div><div className="tile"><div className="l">{t('Completion')}</div><div className="v">{consistency.rate == null ? '—' : Math.round(consistency.rate * 100) + '%'}</div><div className="small dim">{t('{0} missed · {1} extra', consistency.missed, consistency.extra)}</div></div></div>
+      <div className="muted small" style={{ marginTop: 8 }}>{t('A scheduled routine counts as completed when that routine is recorded on its planned day.')}</div>
     </div>
 
     {workouts.length > 0 && <MuscleBalance S={S} />}
@@ -421,6 +452,28 @@ export default function Stats() {
         <Segmented className="seg-range" value={range} onChange={setRange}
           options={[{ value: 30, label: '1M' }, { value: 90, label: '3M' }, { value: 365, label: '1Y' }, { value: 0, label: t('All') }]} />
         <div className="chart"><LineChart points={bwPts} h={160} unit={S.unit} goal={S.targetW} /></div>
+      </div>
+
+      <div className="card">
+        <div className="row between" style={{ marginBottom: 10 }}><h2 style={{ margin: 0 }}>{t('Body measurements')}</h2><Button size="sm" icon="plus" onClick={measurementsSheet}>{t('Log')}</Button></div>
+        {measures.length ? <>
+          <SelectRow title={t('Measurement')} sheetTitle={t('Body measurements')} value={selectedMeasureKey} onChange={setMeasureKey}
+            options={MEASURE_FIELDS.map(([value, label]) => ({ value, label: t(label) }))} />
+          <div className="row" style={{ alignItems: 'baseline', gap: 8, marginTop: 10 }}><div className="big" style={{ fontSize: 28 }}>{currentMeasure ? fmtNum(currentMeasure.y) + ' ' + (S.measurementUnit || 'cm') : '—'}</div></div>
+          {currentMeasure && measurePoints.length > 1 && <div className="small dim">{previousMeasure ? t('Since previous: {0}', (currentMeasure.y > previousMeasure.y ? '+' : '') + fmtNum(currentMeasure.y - previousMeasure.y) + ' ' + (S.measurementUnit || 'cm')) : ''}{measurePoints.length > 2 ? ' · ' + t('Since first: {0}', (currentMeasure.y > firstMeasure.y ? '+' : '') + fmtNum(currentMeasure.y - firstMeasure.y) + ' ' + (S.measurementUnit || 'cm')) : ''}</div>}
+          <div className="chart"><LineChart points={measurePoints} h={150} unit={S.measurementUnit || 'cm'} color="var(--teal)" /></div>
+          <h4 className="sec">{t('Measurement history')}</h4>
+          {[...measures].reverse().slice(0, 6).map(m => <div className="row between" key={m.d} style={{ padding: '7px 0', borderBottom: 'var(--hair) solid var(--sep)' }}><div><div className="small">{fmtDate(m.d, true)}</div><div className="dim small">{MEASURE_FIELDS.filter(([k]) => measurementValue(m, k) > 0).map(([k, label]) => t(label) + ' ' + fmtNum(measurementValue(m, k))).join(' · ')}</div></div><div className="row" style={{ gap: 4 }}><button className="iconbtn" style={{ width: 30, height: 30, fontSize: 14 }} onClick={() => measurementsSheet(m)} aria-label={t('Edit')}><Icon name="pencil" /></button><button className="iconbtn" style={{ width: 30, height: 30, fontSize: 14, color: 'var(--red)' }} onClick={() => confirmSheet({ title: t('Delete measurement?'), message: t('This measurement will be removed from its graphs.'), confirmText: t('Delete'), danger: true, onConfirm: () => update(s => { s.measurements = (s.measurements || []).filter(x => x.d !== m.d) }) })} aria-label={t('Delete')}><Icon name="trash" /></button></div></div>)}
+        </> : <div className="muted small">{t('No measurements logged yet.')}</div>}
+      </div>
+
+      <div className="card">
+        <div className="row between" style={{ marginBottom: 10 }}><h2 style={{ margin: 0 }}>{t('BMI — Body Mass Index')}</h2><Button size="sm" icon="scale" onClick={heightSheet}>{S.heightCm ? fmtNum(S.heightCm) + ' ' + (S.measurementUnit || 'cm') : t('Add height')}</Button></div>
+        {bmi ? <><div className="row" style={{ alignItems: 'baseline', gap: 10 }}><div className="big">{fmtNum(bmi)}</div><span className="tag acc">{t(bmiBand(bmi))}</span></div>
+          <div className="small muted" style={{ marginTop: 6 }}>{t('Calculated from {0} and {1} {2}.', fmtNum(latestWeight.w) + ' ' + S.unit, fmtNum(S.heightCm), S.measurementUnit || 'cm')}</div>
+          <div className="chart" style={{ marginTop: 8 }}><LineChart points={bmiPoints} h={140} unit="IMC" color="var(--orange)" /></div>
+          <div className="small dim" style={{ marginTop: 8 }}>{t('BMI is an orientation only. It can read high in muscular people and does not measure body-fat percentage.')}</div></>
+          : <div className="muted small">{!S.heightCm ? t('Add your height to calculate BMI from your latest body weight.') : t('Log your body weight to calculate BMI.')}</div>}
       </div>
 
       <div className="card">

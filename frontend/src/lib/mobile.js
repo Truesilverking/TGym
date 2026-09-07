@@ -14,7 +14,7 @@ import { todayISO } from './format.js'
 
 export const MOBILE = import.meta.env.VITE_MOBILE === '1'
 
-const FILE = 'opengym-state.json'
+const FILE = 'framegym-state.json'
 
 export async function nativeLoad() {
   try {
@@ -35,7 +35,7 @@ export async function nativeSave(state) {
 // device chose, kept in its own file — never inside opengym-state.json, since that file's content
 // is exactly what pushState() PUTs to a server, and a device's own connection secret must never
 // travel as if it were training data.
-const REMOTE_FILE = 'opengym-remote.json'
+const REMOTE_FILE = 'framegym-remote.json'
 
 export async function loadRemoteFile() {
   try {
@@ -65,16 +65,18 @@ export async function syncReminder(S, interactive = false) {
     let perm = await LocalNotifications.checkPermissions()
     if (perm.display !== 'granted' && interactive) perm = await LocalNotifications.requestPermissions()
     if (perm.display !== 'granted') return false
-    const [hour, minute] = (r.time || '08:00').split(':').map(Number)
     const notifications = Object.entries(S.week || {})
       .filter(([, rid]) => rid && (S.routines || []).some(x => x.id === rid))
-      .map(([day, rid]) => ({
+      .map(([day, rid]) => {
+        const [hour, minute] = (r.dayTimes?.[day] || r.time || '08:00').split(':').map(Number)
+        return ({
         id: 100 + Number(day),
         title: t('Workout day'),
         body: t('{0} is on the plan today — let’s go!', S.routines.find(x => x.id === rid).name),
         // Capacitor weekdays are 1 (Sunday) … 7 (Saturday); S.week uses getDay() 0…6.
         schedule: { on: { weekday: Number(day) + 1, hour, minute }, allowWhileIdle: true },
-      }))
+        })
+      })
     if (notifications.length) await LocalNotifications.schedule({ notifications })
     return true
   } catch (e) { return false }
@@ -89,6 +91,15 @@ export async function shareExport(json, filename) {
   await Share.share({ title: filename, url: w.uri })
 }
 
+// Binary exports (the Stats card is a PNG) must be written as base64. Writing those bytes as
+// UTF-8 produces a shareable file whose preview is blank or corrupt on Android/iOS.
+export async function shareBase64(base64, filename) {
+  const { Filesystem, Directory } = await import('@capacitor/filesystem')
+  const { Share } = await import('@capacitor/share')
+  const w = await Filesystem.writeFile({ path: filename, directory: Directory.Cache, data: base64 })
+  await Share.share({ title: filename, url: w.uri })
+}
+
 // "Auto-backup on changes" (Settings): a dated snapshot dropped into the Documents folder —
 // visible in Files (iOS) / a file manager (Android), unlike the private mirror nativeSave keeps
 // — so whatever the user points at that folder (a sync app, a manual copy) always has something
@@ -97,9 +108,9 @@ export async function writeAutoBackup(state) {
   try {
     const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem')
     await Filesystem.writeFile({
-      path: `opengym-backup-${todayISO()}.json`,
+      path: `framegym-backup-${todayISO()}.json`,
       directory: Directory.Documents,
-      data: JSON.stringify(state),
+      data: JSON.stringify({ framegym_backup: 1, ...state }),
       encoding: Encoding.UTF8,
       recursive: true,
     })

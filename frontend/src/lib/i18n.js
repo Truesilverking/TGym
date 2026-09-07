@@ -23,8 +23,12 @@ const exerciseNamePacks = import.meta.glob('../exercise-names/*.js')
 // React subscription bookkeeping — kept here, not in core, so core has zero React coupling.
 const subs = new Set()
 const notify = () => { subs.forEach(f => f()) }
+let langRequest = 0
 
 export async function setLang(l) {
+  // Locale packs load asynchronously. A slow request for the previous language must never
+  // overwrite a newer choice made during onboarding or in Settings.
+  const request = ++langRequest
   if (!LANGS[l]) l = 'en'
   if (l === getLang() && getVersion() > 0) return
   let dict = {}, instr = null, exerciseNames = null
@@ -35,6 +39,7 @@ export async function setLang(l) {
       ? null
       : (await exerciseNamePacks['../exercise-names/' + l + '.js']()).default
   } catch (e) { exerciseNames = null }
+  if (request !== langRequest) return
   _setLangState(l, dict, instr, exerciseNames)
   notify()
 }

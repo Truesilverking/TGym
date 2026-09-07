@@ -1,22 +1,21 @@
 import { useEffect, useRef } from 'react'
-import { fmtVol, isoOf, todayISO, MONTHS } from '../lib/format.js'
+import { isoOf, todayISO, MONTHS } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
+import { effectiveRoutineId } from '../lib/history.js'
+import { deloadStatus } from '../lib/training-plan.js'
 
-// GitHub-style activity heatmap, shaded by time trained per day.
+// GitHub-style consistency heatmap. Colour answers the useful question for a scheduled
+// routine: was the planned routine actually completed? Extra training still appears, but it
+// does not masquerade as adherence to a different routine.
 export default function Heatmap({ S, onDay }) {
   const wrapRef = useRef(null)
   useEffect(() => { if (wrapRef.current) wrapRef.current.scrollLeft = wrapRef.current.scrollWidth }, [])
 
   const agg = {}
   S.workouts.forEach(w => {
-    const a = agg[w.d] = agg[w.d] || { n: 0, vol: 0, min: 0 }
-    a.n++; a.vol += w.vol || 0
-    a.min += Math.max(0, Math.round(((w.end || w.start) - w.start) / 60000))
+    const a = agg[w.d] = agg[w.d] || { rows: [] }
+    a.rows.push(w)
   })
-  const mins = Object.values(agg).map(a => a.min).filter(v => v > 0).sort((a, b) => a - b)
-  const q = p => (mins.length ? mins[Math.min(mins.length - 1, Math.floor(p * mins.length))] : 0)
-  const t1 = q(0.25), t2 = q(0.5), t3 = q(0.75)
-  const level = a => !a ? 0 : !a.min ? 1 : a.min >= t3 ? 4 : a.min >= t2 ? 3 : a.min >= t1 ? 2 : 1
 
   const today = new Date(); today.setHours(12, 0, 0, 0)
   const end = new Date(today); end.setDate(today.getDate() - ((today.getDay() + 6) % 7))
@@ -35,9 +34,14 @@ export default function Heatmap({ S, onDay }) {
       const day = new Date(colStart); day.setDate(colStart.getDate() + d)
       const key = isoOf(day)
       const a = agg[key]
-      const cls = 'hm-c l' + level(a) + (key === todayISO() ? ' today' : '') + (day > today ? ' future' : '')
+      const planned = effectiveRoutineId(S, key)
+      const routine = planned && (S.routines || []).find(r => r.id === planned)
+      const complete = !!planned && !!a?.rows.some(w => w.routineId === planned || (!w.routineId && routine && w.name === routine.name))
+      const status = complete ? ' complete' : a?.rows.length ? ' extra' : planned && day < today ? ' missed' : ''
+      const de = deloadStatus(S, key).active
+      const cls = 'hm-c' + status + (de ? ' deload' : '') + (key === todayISO() ? ' today' : '') + (day > today ? ' future' : '')
       cells.push(<div key={d} className={cls}
-        title={key + (a ? ` · ${t(a.n === 1 ? '{0} workout' : '{0} workouts', a.n)} · ${a.min} min · ${fmtVol(a.vol, S.unit)}` : '')}
+        title={key + (de ? ' · ' + t('Deload week') : '') + (complete ? ' · ' + t('Planned routine completed') : a?.rows.length ? ' · ' + t('Extra or different workout') : planned && day < today ? ' · ' + t('Planned routine not completed') : '')}
         onClick={a ? () => onDay(key) : undefined} />)
     }
     cols.push(<div key={wk} className="hm-col">{cells}</div>)
@@ -51,6 +55,6 @@ export default function Heatmap({ S, onDay }) {
         <div className="hm-grid">{cols}</div>
       </div>
     </div>
-    <div className="hm-legend">{t('Less time')} <div className="hm-c l0" /><div className="hm-c l1" /><div className="hm-c l2" /><div className="hm-c l3" /><div className="hm-c l4" /> {t('More time')}</div>
+    <div className="hm-legend"><div className="hm-c missed" />{t('Not completed')}<div className="hm-c extra" />{t('Extra')}<div className="hm-c complete" />{t('Completed')}</div>
   </>
 }

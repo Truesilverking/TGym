@@ -35,20 +35,17 @@ describe('warm-ups and volume', () => {
 // to the work weight; the early-return branch did not, so a hand-edited warm-up above the
 // work weight propagated into every warm-up added after it.
 describe('a warm-up never outweighs the work set', () => {
-  // The 120 is something the user typed, and it stays: silently rewriting their own edit
-  // would be worse than leaving it. What must not happen is the NEW row inheriting it, which
-  // is how one bad number used to spread through the whole warm-up block.
-  it('does not copy a hand-edited warm-up that sits above the work weight', () => {
+  it('replaces a pending manual value rather than copying it above the work weight', () => {
     const rows = [{ warmup: true, phase: 'warmup', w: 120, r: 5 }, { w: 100, r: 5 }]
     const out = insertWarmupRow(rows, 'reps', { reps: 5 }, 2.5)
-    expect(out.map(r => r.w)).toEqual([120, 100, 100])
+    expect(out.map(r => r.w)).toEqual([40, 70, 100])
     expect(out[1].phase).toBe('warmup')
   })
 
   it('still ramps normally when the previous warm-up is below the work weight', () => {
     const rows = [{ warmup: true, phase: 'warmup', w: 50, r: 5 }, { w: 100, r: 5 }]
     const out = insertWarmupRow(rows, 'reps', { reps: 5 }, 2.5)
-    expect(out.filter(r => r.phase === 'warmup').map(r => r.w)).toEqual([50, 75])
+    expect(out.filter(r => r.phase === 'warmup').map(r => r.w)).toEqual([40, 70])
   })
 })
 
@@ -65,12 +62,12 @@ describe('the ramp follows the prescribed weight', () => {
     const work = rows.filter(r => r.phase !== 'warmup').map(r => r.w)
     expect(work).toEqual([50, 50, 50])
     for (const x of warm) expect(x).toBeLessThanOrEqual(50)
-    expect(warm).toEqual([25, 37.5])
+    expect(warm).toEqual([20, 35])
   })
 
   it('re-ramps after a bump', () => {
     const rows = applyPrescription(buildSets(S, cfg, { step: 2.5 }), { kind: 'up', weight: 150 })
     expect(rows.filter(r => r.phase !== 'warmup').map(r => r.w)).toEqual([150, 150, 150])
-    expect(rows.filter(r => r.phase === 'warmup').map(r => r.w)).toEqual([75, 112.5])
+    expect(rows.filter(r => r.phase === 'warmup').map(r => r.w)).toEqual([60, 105])
   })
 })

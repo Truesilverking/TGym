@@ -10,7 +10,7 @@ export const LANGS = {
   ko: '한국어', hi: 'हिन्दी'
 }
 export const INSTR_LANGS = ['en', 'es', 'fr', 'it', 'tr', 'ru', 'zh', 'hi', 'pl', 'ko', 'pt-BR']
-export const EXERCISE_NAME_LANGS = ['pt-BR']
+export const EXERCISE_NAME_LANGS = ['es', 'pt-BR']
 export const DATE_LOCALES = {
   en: 'en-GB', de: 'de-DE', es: 'es-ES', fr: 'fr-FR', it: 'it-IT', pt: 'pt-PT', 'pt-BR': 'pt-BR',
   pl: 'pl-PL', tr: 'tr-TR', ru: 'ru-RU', zh: 'zh-CN', ko: 'ko-KR', hi: 'hi-IN'
@@ -36,16 +36,13 @@ export function t(s, ...args) {
 // Instructions for an exercise in the current language (English steps as fallback).
 export const instrFor = ex => (instr && instr[ex.id]) || ex.st || []
 
-// Built-in catalogue names are bilingual when a complete translated name pack is active.
-// User-created exercises have no entry in the pack and keep their exact chosen name.
+// Built-in catalogue names use the active localized title. The canonical English title is
+// still included by exerciseNameSearchText, so localization never makes an exercise harder
+// to find. User-created exercises have no entry and keep their exact chosen name.
 export const exerciseNameFor = ex => {
   const translated = exerciseNames && ex && exerciseNames[ex.id]
   if (!translated) return ex?.n || ''
-  // Some names (Burpee, Pilates, brand/model terms) are the established pt-BR term too.
-  // Repeating an identical loanword in parentheses adds noise rather than context.
-  return translated.toLocaleLowerCase('pt-BR') === ex.n.toLocaleLowerCase('en')
-    ? translated
-    : `${translated} (${ex.n})`
+  return translated
 }
 
 // Search both the localized and canonical English title without changing persisted data.

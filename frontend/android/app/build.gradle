@@ -1,14 +1,20 @@
 apply plugin: 'com.android.application'
 
+def frameGymKeystore = new Properties()
+def frameGymKeystoreFile = rootProject.file('keystore.properties')
+if (frameGymKeystoreFile.exists()) {
+    frameGymKeystore.load(new FileInputStream(frameGymKeystoreFile))
+}
+
 android {
-    namespace "ch.duartesantos.opengym"
+    namespace "app.framegym.mobile"
     compileSdk rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "ch.duartesantos.opengym"
+        applicationId "app.framegym.mobile"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 12
-        versionName "1.2.11"
+        versionCode 35
+        versionName "1.15.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,10 +22,21 @@ android {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        if (frameGymKeystoreFile.exists()) {
+            release {
+                storeFile file(frameGymKeystore['storeFile'])
+                storePassword frameGymKeystore['storePassword']
+                keyAlias frameGymKeystore['keyAlias']
+                keyPassword frameGymKeystore['keyPassword']
+            }
+        }
+    }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            if (frameGymKeystoreFile.exists()) signingConfig signingConfigs.release
         }
     }
 }
@@ -40,6 +57,10 @@ dependencies {
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
     implementation project(':capacitor-cordova-android-plugins')
+    // Native Google authorization is required because Google blocks OAuth consent inside
+    // embedded Android WebViews. Only the Drive app-data scope is requested by our plugin.
+    implementation 'com.google.android.gms:play-services-auth:21.6.0'
+    implementation 'com.google.firebase:firebase-messaging:24.1.0'
 }
 
 apply from: 'capacitor.build.gradle'

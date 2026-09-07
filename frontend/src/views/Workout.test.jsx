@@ -92,8 +92,9 @@ function installDom() {
   root = createRoot(container)
 }
 
-async function mount(entries, cur = 0) {
+async function mount(entries, cur = 0, configure = null) {
   mocks.S = workout(entries, cur)
+  configure?.(mocks.S)
   installDom()
   await act(async () => { root.render(React.createElement(Workout)) })
 }
@@ -152,6 +153,27 @@ describe('Workout set completion flow', () => {
     expect(mocks.topWeightSheet).toHaveBeenCalledWith(1)
     expect(mocks.S.active.cur).toBe(1)
     expect(mocks.startRest).toHaveBeenCalledWith(90)
+  })
+})
+
+describe('Top and back-off targets', () => {
+  it('aligns each rep range and RIR value below its matching column heading', async () => {
+    const target = { mode: 'reps', sets: 3, repsMin: 4, reps: 6, backoffRepsMin: 6, backoffRepsMax: 8,
+      weight: 100, setScheme: 'topback', topRir: 1, backoffRir: 3 }
+    await mount([{ id: 'topback-squat', target, sets: [
+      { role: 'top', w: 100, r: 6, rir: null, done: false },
+      { role: 'backoff', w: 90, r: 8, rir: null, done: false },
+      { role: 'backoff', w: 90, r: 8, rir: null, done: false },
+    ] }], 0, S => { S.effort = 'rir' })
+
+    const headings = [...container.querySelectorAll('.sethead > span')].map(x => x.textContent.trim())
+    expect(headings).toEqual(['', 'Weight (kg)', 'Reps', 'RIR', ''])
+    const targets = [...container.querySelectorAll('.settargets')]
+    expect(targets.map(row => row.querySelector('.phase-label').textContent.trim())).toEqual(['Top set', 'Back-off sets'])
+    expect(targets.map(row => [
+      row.querySelector('.w-sp').textContent.trim(), row.querySelector('.r-sp').textContent.trim(),
+      row.querySelector('.eff-sp').textContent.trim(),
+    ])).toEqual([['', '4-6', '1'], ['', '6-8', '3']])
   })
 })
 

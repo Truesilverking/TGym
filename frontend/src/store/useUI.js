@@ -27,8 +27,17 @@ const requestRestNotificationPermission = async () => {
   }
   return requestRestNotificationPermissionP
 }
+const quietNow = () => {
+  const r = useStore.getState().S.reminder || {}
+  if (!r.quietOn) return false
+  const now = new Date(), cur = now.getHours() * 60 + now.getMinutes()
+  const mins = x => { const [h, m] = String(x || '').split(':').map(Number); return h * 60 + m }
+  const start = mins(r.quietStart || '22:00'), end = mins(r.quietEnd || '07:00')
+  return start <= end ? cur >= start && cur < end : cur >= start || cur < end
+}
 
 const maybeRestNotification = async () => {
+  if (quietNow()) return
   if (!notificationsSupported()) return
   if (!document.hidden && document.visibilityState !== 'hidden') return
   if (Notification.permission !== 'granted' && !(await requestRestNotificationPermission())) return
@@ -88,10 +97,10 @@ export const useUI = create((set, get) => ({
       if (!tm) return
       const left = Math.max(0, Math.round((tm.endsAt - Date.now()) / 1000))
       if (left === tm.left) return
-      const snd = useStore.getState().S.sound
+      const prefs = useStore.getState().S, snd = prefs.sound && !quietNow()
       if (left <= 0) {
         beep(snd, 880, 0.15); beep(snd, 880, 0.15, 0.25); beep(snd, 1320, 0.4, 0.5)
-        vibrate([200, 100, 200]); maybeRestNotification(); get().toast(t('Rest over — next set!')); get().stopRest(); return
+        if (prefs.vibration !== false && !quietNow()) vibrate([200, 100, 200]); maybeRestNotification(); get().toast(t('Rest over — next set!')); get().stopRest(); return
       }
       if (left <= 3) beep(snd, 660, 0.1)
       set({ timer: { ...tm, left } })
@@ -136,10 +145,10 @@ export const useUI = create((set, get) => ({
       if (!wk) return
       const left = Math.max(0, Math.round((wk.endsAt - Date.now()) / 1000))
       if (left === wk.left) return
-      const snd = useStore.getState().S.sound
+      const prefs = useStore.getState().S, snd = prefs.sound && !quietNow()
       if (left <= 0) {
         beep(snd, 880, 0.15); beep(snd, 880, 0.15, 0.25); beep(snd, 1320, 0.4, 0.5)
-        vibrate([200, 100, 200])
+        if (prefs.vibration !== false && !quietNow()) vibrate([200, 100, 200])
         const done = workDone
         get().stopWork()
         if (done) done(wk.total)

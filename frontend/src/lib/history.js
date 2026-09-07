@@ -2,6 +2,7 @@
 import { todayISO, isoOf, weekKey, fmtNum } from './format.js'
 import { isCardio, isBodyweightEq } from './exercises.js'
 import { phaseForSet, modeForSet, modeForEntry, isWarmupRow, normalizeMode, extraVolumeOf, nextDropWeight, splitBurstReps } from './workout-model.js'
+import { warmupPrescription, recalculatePendingWarmups } from './warmup.js'
 const objectOf = value => value && typeof value === 'object' && !Array.isArray(value) ? value : {}
 // Completed-state-independent work rows whose authoritative mode matches the requested mode.
 const workRowsForMode = (entry = {}, mode = 'reps') => {
@@ -109,7 +110,11 @@ export function setLabel(id, s, cfg) {
   const c = cfg || { id }
   const mode = modeOf(c)
   if (mode === 'cardio') return `${s.min || 0} min @ ${fmtNum(s.speed || 0)} km/h`
-  if (mode === 'time') return fmtSec(s.sec) + (s.w > 0 ? ` · ${fmtNum(s.w)}` : '')
+  if (mode === 'time') {
+    const side = isPerSide(c) || s.side
+    const actual = side && (s.leftSec != null || s.rightSec != null) ? ` · L ${fmtSec(s.leftSec ?? s.sec)} · R ${fmtSec(s.rightSec ?? s.sec)}` : ''
+    return fmtSec(s.sec) + (side ? ` ${t('/ side')}` : '') + actual + (s.w > 0 ? ` · ${fmtNum(s.w)}` : '')
+  }
   // Bodyweight reads as what you did — "12", or "+10 × 12" once there is a belt involved —
   // rather than "0×12", which says a set was performed with no weight and means nothing.
   // A per-side set needs no mark here: the number logged is the total, the same as every
@@ -139,10 +144,12 @@ export function exLine(cfg, unit) {
   // Added weight reads as added: "+10 kg" on a dip belt, "60 kg" on a barbell.
   const load = cfg.weight ? ' · ' + (isBw(cfg) ? '+' : '') + fmtNum(cfg.weight) + ' ' + unit : ''
   if (mode === 'cardio') return `${n} × ${cfg.min || 20} min @ ${fmtNum(cfg.speed || 8)} km/h`
-  if (mode === 'time') return `${n} × ${fmtSec(cfg.sec || 45)}${load}`
+  if (mode === 'time') return `${n} × ${fmtSec(cfg.sec || 45)}${isPerSide(cfg) ? ` ${t('/ side')}` : ''}${load}`
   // This is the line with room for it, so the split is spelled out: "3 × 16 · 8/side".
   const split = isPerSide(cfg) ? ' · ' + t('{0}/side', fmtNum(sideReps(cfg.reps))) : ''
-  return `${n} × ${cfg.reps}${load}${split}`
+  const range = cfg.repRange !== false && cfg.repsMin > 0 && cfg.repsMin < cfg.reps ? `${cfg.repsMin}–${cfg.reps}` : cfg.reps
+  if (cfg.setScheme === 'topback') return `${cfg.topSets || 1} Top + ${cfg.backoffSets || 2} Back-off · ${range} reps${load}`
+  return `${n} × ${range}${load}${split}`
 }
 
 // Drop superset ids that no longer have an adjacent partner (after unlink/reorder/remove).
@@ -299,9 +306,9 @@ export function buildSets(S, cfg, options = {}) {
   const warm = Math.max(0, Math.min(MAX_PLANNED_WARMUPS, Math.round(cfg.warmupSets) || 0))
   if (!warm) return rows
   const mode = modeOf(cfg)
-  let out = rows
-  for (let i = 0; i < warm; i++) out = insertWarmupRow(out, mode, cfg, options.step)
-  return out
+  if (mode === 'cardio') return rows
+  const work = rows[0] || {}
+  return [...warmupPrescription({ workWeight: work.w || 0, workReps: work.r || 1, workSec: work.sec || 0, count: warm, step: options.step, mode, side: isPerSide(cfg) }), ...rows]
 }
 
 /** Beyond this a "warm-up" is its own workout; the config stepper stops here too. */
@@ -329,7 +336,7 @@ function buildWorkSets(S, cfg, options = {}) {
       // exercise from reps to time must not seed the duration from a rep count.
       const prev = prevAt(i)
       const carried = prev && prev.sec > 0 ? prev : null
-      sets.push({ sec: carried ? carried.sec : (cfg.sec || 45), w: carried ? (carried.w || 0) : (cfg.weight || 0), done: false })
+      sets.push({ sec: carried ? carried.sec : (cfg.sec || 45), w: carried ? (carried.w || 0) : (cfg.weight || 0), ...(isPerSide(cfg) ? { side: true } : {}), done: false })
     }
     return sets
   }
@@ -443,13 +450,59 @@ export function streakWeeks(S) {
  */
 export function cascadeWeight(rows, from, value) {
   const warm = isWarmupRow(rows[from])
-  const next = rows.slice()
+  const next = rows.map(row => ({ ...row }))
   for (let j = from + 1; j < next.length; j++) {
     if (isWarmupRow(next[j]) === warm && !next[j].done) {
       if (value == null) delete next[j].w
       else next[j].w = value
     }
   }
+  return next
+}
+
+/** Keep a Top/Back-off session proportional without ever rewriting performed work. */
+export function cascadeTopBackWeight(rows, from, value, cfg, step = 2.5) {
+  if (cfg?.setScheme !== 'topback') return cascadeWeight(rows, from, value)
+  const next = rows.map(row => ({ ...row }))
+  const edited = next[from]
+  if (!edited || isWarmupRow(edited)) return cascadeWeight(rows, from, value)
+  if (value == null) delete edited.w
+  else edited.w = value
+  if (edited.role === 'top') {
+    const pct = Math.min(50, Math.max(1, Number(cfg.backoffPct) || 10))
+    const raw = Number(value) * (1 - pct / 100)
+    const increment = Number(step) > 0 ? Number(step) : 2.5
+    const backoff = Number.isFinite(raw) ? Math.round(raw / increment) * increment : null
+    next.forEach((row, index) => {
+      if (index === from || row.done || isWarmupRow(row)) return
+      if (row.role === 'top') {
+        if (value == null) delete row.w; else row.w = value
+      } else if (row.role === 'backoff') {
+        if (backoff == null) delete row.w; else row.w = Math.round(backoff * 1000) / 1000
+      }
+    })
+  } else if (edited.role === 'backoff') {
+    for (let j = from + 1; j < next.length; j++) {
+      const row = next[j]
+      if (row.role !== 'backoff' || row.done || isWarmupRow(row)) continue
+      if (value == null) delete row.w; else row.w = value
+    }
+  }
+  return next
+}
+
+/** Keep pending Back-off reps tied to the most recently edited Top set. */
+export function cascadeTopBackReps(rows, from, value, cfg) {
+  const next = rows.map(row => ({ ...row }))
+  const edited = next[from]
+  if (!edited || isWarmupRow(edited)) return next
+  edited.r = Math.max(0, Math.round(Number(value) || 0))
+  if (cfg?.setScheme !== 'topback' || cfg.autoBackoffReps === false) return next
+  const derived = Number(cfg.backoffRepOffset) - 0
+  const legacy = Number(cfg.backoffRepsMax) - Number(cfg.topRepsMax)
+  const offset = Number.isFinite(derived) && cfg.backoffRepOffset != null ? Math.max(0, Math.min(5, Math.round(derived))) : Number.isFinite(legacy) && legacy >= 0 && legacy <= 5 ? Math.round(legacy) : 2
+  if (edited.role === 'top') next.forEach((row, index) => { if (index !== from && row.role === 'backoff' && !row.done) row.r = edited.r + offset })
+  else if (edited.role === 'backoff') for (let i = from + 1; i < next.length; i++) if (next[i].role === 'backoff' && !next[i].done) next[i].r = edited.r
   return next
 }
 
@@ -480,60 +533,19 @@ export function cascadeWeight(rows, from, value) {
  * — cardio, bodyweight, an unloaded hold — are returned untouched.
  */
 export function rerampWarmups(rows, step = 2.5) {
-  const firstWork = rows.findIndex(x => !isWarmupRow(x))
-  if (firstWork <= 0) return rows
-  const target = rows[firstWork].w || 0
-  if (!(target > 0)) return rows
-  const out = rows.slice()
-  let from = 0
-  for (let i = 0; i < firstWork; i++) {
-    if (out[i].done) { from = out[i].w || 0; continue }
-    const w = target > from
-      ? Math.max(0, Math.min(target, Math.floor((from + (target - from) / 2) / step) * step))
-      : target
-    out[i] = { ...out[i], w }
-    from = w
-  }
-  return out
+  const firstWork = rows.find(x => !isWarmupRow(x))
+  return recalculatePendingWarmups(rows, { step, mode: firstWork?.sec != null ? 'time' : 'reps', side: !!firstWork?.side })
 }
 
 export function insertWarmupRow(rows, mode, target, step = 2.5) {
   const firstWork = rows.findIndex(x => !isWarmupRow(x))
   const at = firstWork === -1 ? rows.length : firstWork
-  const prev = at > 0 ? rows[at - 1] : null            // the warm-up this one ramps from
   const work = firstWork === -1 ? null : rows[firstWork]
-  const rampTo = to => {
-    const from = prev ? (prev.w || 0) : 0
-    // Nothing to ramp toward: bodyweight, cardio, a timed hold with no load.
-    if (!(to > 0)) return 0
-    // Already at or past the work weight — which happens when a warm-up was edited by hand
-    // above it. Returning `from` here handed the next warm-up that same too-heavy number and
-    // let it propagate down the block. A warm-up is never heavier than the set it warms up for.
-    if (to <= from) return to
-    // Rounded DOWN to the step: a warm-up that lands a notch light costs nothing, one that
-    // lands a notch heavy is a set you have to strip plates off before you can use it.
-    return Math.max(0, Math.min(to, Math.floor((from + (to - from) / 2) / step) * step))
-  }
-  const warm = mode === 'cardio'
-    ? {
-      min: prev ? prev.min : (work ? work.min : (target.min || 20)),
-      speed: prev ? prev.speed : (work ? work.speed : (target.speed || 8)),
-      done: false, phase: 'warmup', warmup: true,
-    }
-    : mode === 'time'
-      ? {
-        sec: prev ? prev.sec : (work ? work.sec : (target.sec || 45)),
-        w: rampTo(work ? (work.w || 0) : (target.weight || 0)),
-        done: false, phase: 'warmup', warmup: true,
-      }
-      : {
-        w: rampTo(work ? (work.w || 0) : (target.weight || 0)),
-        r: work ? work.r : (prev ? prev.r : target.reps),
-        done: false, phase: 'warmup', warmup: true,
-      }
+  if (mode === 'cardio') return rows.slice()
+  const warm = warmupPrescription({ workWeight: work?.w ?? target.weight ?? 0, workReps: work?.r ?? target.reps ?? 1, workSec: work?.sec ?? target.sec ?? 0, count: at + 1, step, mode, side: isPerSide(target) }).at(-1)
   const next = rows.slice()
   next.splice(at, 0, warm)
-  return next
+  return recalculatePendingWarmups(next, { step, mode, side: isPerSide(target) })
 }
 
 /** Remove the row at `i`, never emptying the entry below one row. */

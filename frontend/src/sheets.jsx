@@ -1,18 +1,19 @@
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
-import { EXDB, EXIDX, BODYPARTS, isCardio, isBodyweightEq, allExercises, equipmentOf, smOf, matchExercise, exOr } from './lib/exercises.js'
+import { EXDB, EXIDX, BODYPARTS, isCardio, isBodyweightEq, allExercises, equipmentOf, smOf, exerciseSearchScore, exOr } from './lib/exercises.js'
 import { activeProfile, exAvailable, ALL_EQUIPMENT, newProfile } from './lib/equipment.js'
-import { fmtDate, fmtNum, fmtVol, fmtDur, durPart, todayISO, uid, exCount, DAYN, MONTHS_LONG, ACCENTS } from './lib/format.js'
+import { fmtDate, fmtNum, fmtVol, fmtDur, durPart, todayISO, isoOf, uid, exCount, DAYN, MONTHS_LONG, ACCENTS } from './lib/format.js'
 import { lastEntryFor, bestWeightFor, buildSets, effectiveRoutineId, workoutVolume, setsDone, setsDoneActive, lastBW, supersetUnits, unitOf, setLabel, defaultConfig, cleanupSg, modeOf, effortOf, isBw, isPerSide, sideReps, workSetsDone, applyIntensifierPlan, MAX_PLANNED_WARMUPS, NOTE_MAX } from './lib/history.js'
 import { beep, vibrate } from './lib/sound.js'
-import { t, instrFor, exerciseNameFor, getLang, INSTR_LANGS } from './lib/i18n.js'
+import { t, instrFor, exerciseNameFor, getLang, INSTR_LANGS, dateLocale } from './lib/i18n.js'
 import { nav } from './lib/nav.js'
 import { starterRoutines } from './lib/starter.js'
 import Media, { Thumb } from './components/Media.jsx'
 import Stepper from './components/Stepper.jsx'
 import Icon from './components/Icon.jsx'
-import { Button, Slider, Switch, Segmented, SelectRow, Row, TextField, MultiSelectRow } from './components/ui.jsx'
+import StreakFlame from './components/StreakFlame.jsx'
+import { Button, Slider, Switch, Segmented, SelectRow, Row, TextField, MultiSelectRow, NumberField } from './components/ui.jsx'
 import { glyphOf, GLYPH_GROUPS, DEFAULT_GLYPH } from './lib/glyphs.js'
 import BodyMap from './components/BodyMap.jsx'
 import { exerciseMuscleSnapshot, loadOfWorkouts, MUSCLES, MUSCLE_NAME, normalizeMuscleGroups, hasExplicitMuscleMetadata } from './lib/muscles.js'
@@ -23,19 +24,32 @@ import { nextPrescription, applyPrescription, policyFor, defaultIncrement, POLIC
 import { MOBILE, shareExport } from './lib/mobile.js'
 import { buildCompletedWorkout } from './lib/finish-workout.js'
 import { isWarmupRow } from './lib/workout-model.js'
+import { GUIDED_PLANS, createGuidedPlan } from './lib/guided-plans.js'
+import { saveImportUndo } from './lib/import-undo.js'
+import { MEASURE_FIELDS, measurementValue } from './lib/stats-insights.js'
+import { sessionTimingSummary } from './lib/stats-insights.js'
+import { applyTrainingPlan, deloadStatus, deloadTargetFor, repRangeEnabled, streakTier, trainingStreak, targetRirRangeFor } from './lib/training-plan.js'
+import { weightStepFor } from './lib/unit-conversion.js'
+import Heatmap from './components/Heatmap.jsx'
+import LineChart from './components/LineChart.jsx'
+import { pauseWorkoutClock, resumeWorkoutClock, workoutElapsedMs } from './lib/workout-time.js'
 
 const S = () => useStore.getState().S
 const update = (...a) => useStore.getState().update(...a)
 const ui = () => useUI.getState()
 const toast = m => ui().toast(m)
 const snd = () => S().sound
+const pauseActiveWorkoutClock = () => update(s => { if (s.active) s.active = pauseWorkoutClock(s.active) }, true)
+const resumeActiveWorkoutClock = () => update(s => { if (s.active) s.active = resumeWorkoutClock(s.active) }, true)
 
 /* ============================ custom confirm dialog ============================ */
-function ConfirmDialog({ title, message, confirmText, cancelText, danger, onConfirm, close }) {
+function ConfirmDialog({ title, message, confirmText, cancelText, danger, onConfirm, onCancel, close }) {
+  const decided = useRef(false)
+  useEffect(() => () => { if (!decided.current) onCancel?.() }, [])
   return <div style={{ textAlign: 'center', padding: '4px 0' }}>
     {title && <h3 style={{ marginBottom: 8 }}>{title}</h3>}
     <div className="muted" style={{ marginBottom: 18, lineHeight: 1.5 }}>{message}</div>
-    <button className={'btn ' + (danger ? 'danger' : 'primary')} onClick={() => { close(); onConfirm && onConfirm() }}>{confirmText || t('Confirm')}</button>
+    <button className={'btn ' + (danger ? 'danger' : 'primary')} onClick={() => { decided.current = true; close(); onConfirm && onConfirm() }}>{confirmText || t('Confirm')}</button>
     <div style={{ height: 8 }} />
     <Button variant="ghost" className="dim" onClick={close}>{cancelText || t('Cancel')}</Button>
   </div>
@@ -54,6 +68,33 @@ export function loadStarterPlan() {
   })
   toast(t('Starter plan loaded — Mon Push · Wed Pull · Fri Legs'))
 }
+
+function GuidedPlans({ close }) {
+  const st = useStore(s => s.S)
+  const install = id => {
+    const plan = createGuidedPlan(id, t)
+    if (!plan) return
+    const save = () => {
+      update(state => { state.routines.push(...plan.routines); Object.assign(state.week, plan.week); state.scheduleStarted = todayISO() })
+      close(); toast(t('Guided plan added. Choose an exercise for each space.'))
+    }
+    if (Object.keys(plan.week).some(day => st.week[day])) {
+      close()
+      confirmSheet({ title: t('Replace scheduled days?'), message: t('The new plan will replace routines assigned to the same weekdays. Your existing routines will not be deleted.'), confirmText: t('Continue'), onConfirm: save })
+    } else save()
+  }
+  return <>
+    <h3>{t('Choose a guided plan')}</h3>
+    <div className="muted small" style={{ marginBottom: 14 }}>{t('TGym creates the structure. You choose the exercises that suit you and your equipment.')}</div>
+    <div className="list">{GUIDED_PLANS.map(p => <div key={p.id} className="item" onClick={() => install(p.id)}>
+      <span className="lrow-i"><Icon name="clipboard" /></span>
+      <div className="grow"><div className="tt">{t(p.title)}</div><div className="ss">{t(p.description)}</div></div>
+      <Icon name="chevronRight" className="chev" />
+    </div>)}</div>
+    <div className="small dim" style={{ marginTop: 12 }}>{t('The recommendations are a starting point. Change them whenever you need.')}</div>
+  </>
+}
+export const guidedPlansSheet = () => ui().openSheet(close => <GuidedPlans close={close} />)
 
 /* ============================ weight picker (shared: body weight + goal) ============================ */
 // Fixed range, not a moving window — a window that resizes itself mid-drag (the previous
@@ -98,7 +139,11 @@ function BwSheet({ required, onDone, close }) {
     update(s => {
       const iso = todayISO()
       const ex = s.bodyweight.find(b => b.d === iso)
-      if (ex) { ex.w = n; ex.t = Date.now() } else s.bodyweight.push({ d: iso, w: n, t: Date.now() })
+      if (ex) {
+        const samples = Array.isArray(ex.samples) ? ex.samples : [{ w: ex.w, t: ex.t || Date.now() }]
+        samples.push({ w: n, t: Date.now() }); ex.samples = samples
+        ex.w = Math.round((samples.reduce((sum, x) => sum + x.w, 0) / samples.length) * 10) / 10; ex.t = Date.now()
+      } else s.bodyweight.push({ d: iso, w: n, t: Date.now(), samples: [{ w: n, t: Date.now() }] })
       s.bodyweight.sort((a, b) => (a.d < b.d ? -1 : 1))
     })
     close()
@@ -129,9 +174,53 @@ function BwSheet({ required, onDone, close }) {
   </>
 }
 export function bwSheet(opts = {}) {
-  const h = ui().openSheet(close => <BwSheet {...opts} close={close} />, { locked: !!opts.required })
+  // Weighing in is optional, even when it appears before a workout. Keep the sheet
+  // dismissible by backdrop, Android back and a downward swipe.
+  const h = ui().openSheet(close => <BwSheet {...opts} close={close} />)
   return h
 }
+
+function MeasurementsSheet({ existing, close }) {
+  const st = useStore(s => s.S)
+  const latest = [...(st.measurements || [])].sort((a, b) => b.d.localeCompare(a.d))[0] || {}
+  const initial = existing || latest
+  const [date, setDate] = useState(existing?.d || todayISO())
+  const [values, setValues] = useState(() => Object.fromEntries(MEASURE_FIELDS.map(([k]) => [k, measurementValue(initial, k)])))
+  const unit = st.measurementUnit || 'cm'
+  const save = () => {
+    if (!MEASURE_FIELDS.some(([k]) => values[k] > 0)) { toast(t('Enter at least one measurement')); return }
+    update(s => {
+      s.measurements = s.measurements || []
+      const row = { d: date, ...Object.fromEntries(MEASURE_FIELDS.filter(([k]) => values[k] > 0).map(([k]) => [k, Math.round(values[k] * 10) / 10])) }
+      if (existing?.d && existing.d !== date) s.measurements = s.measurements.filter(x => x.d !== existing.d)
+      const i = s.measurements.findIndex(x => x.d === row.d)
+      if (i >= 0) s.measurements[i] = row; else s.measurements.push(row)
+    })
+    close(); toast(t('Measurements saved'))
+  }
+  return <><h3>{t('Body measurements')}</h3><div className="muted small" style={{ marginBottom: 14 }}>{t('Use the same measuring position each time for a useful trend.')}</div>
+    <div className="exnote" style={{ marginBottom: 12 }}>{t('Measure relaxed, at the same time of day, without pulling the tape tight. Measure shoulders and chest around their widest point, waist at the navel, limbs at their widest point.')}</div>
+    <label className="field-label">{t('Date')}</label><input className="input" type="date" value={date} max={todayISO()} onChange={e => setDate(e.target.value)} />
+    <div className="measurement-grid">{MEASURE_FIELDS.map(([k, label]) => <Stepper key={k} label={t('{0} ({1})', t(label), unit)} value={values[k]} step={0.5} onChange={v => setValues(x => ({ ...x, [k]: v }))} />)}</div>
+    <div style={{ height: 14 }} /><Button variant="primary" onClick={save}>{t('Save')}</Button></>
+}
+export const measurementsSheet = existing => ui().openSheet(close => <MeasurementsSheet existing={existing} close={close} />)
+
+function HeightSheet({ close }) {
+  const st = useStore(s => s.S)
+  const unit = st.measurementUnit || 'cm'
+  const [height, setHeight] = useState(st.heightCm || (unit === 'in' ? 67 : 170))
+  const save = () => {
+    const min = unit === 'in' ? 39 : 100, max = unit === 'in' ? 99 : 250
+    if (!(height >= min && height <= max)) { toast(t('Enter a height between {0} and {1} {2}', min, max, unit)); return }
+    update(s => { s.heightCm = Math.round(height * 10) / 10 })
+    close(); toast(t('Height saved'))
+  }
+  return <><h3>{t('Height')}</h3><div className="muted small" style={{ marginBottom: 14 }}>{t('Your height is used with your latest body weight to calculate BMI.')}</div>
+    <Stepper label={t('Height ({0})', unit)} unit={unit} value={height} step={0.5} onChange={setHeight} />
+    <div style={{ height: 14 }} /><Button variant="primary" onClick={save}>{t('Save')}</Button></>
+}
+export const heightSheet = () => ui().openSheet(close => <HeightSheet close={close} />)
 
 /* ============================ import from another app ============================ */
 // Shows what a parsed export would actually do before anything is written. An import is
@@ -148,6 +237,7 @@ function ImportSummary({ parsed, close }) {
 
   const doImport = () => {
     let res
+    saveImportUndo(S())
     update(s => { res = mergeImport(s, parsed) })
     close()
     toast(isBW
@@ -270,7 +360,7 @@ function OneRM({ ex }) {
       <span className="dim"> · {t('{0} × {1} on {2}', fmtNum(best.w) + ' ' + st.unit, best.r, fmtDate(best.d, true))}</span>
     </div>}
     <div className="row cfgrow" style={{ marginBottom: 10 }}>
-      <Stepper label={t('Weight ({0})', st.unit)} value={w} step={2.5} onChange={setW} />
+      <Stepper label={t('Weight ({0})', st.unit)} value={w} step={weightStepFor(st.unit)} onChange={setW} />
       <Stepper label={t('Reps')} value={r} step={1} decimal={false} onChange={setR} />
     </div>
     <div className="row between" style={{ marginBottom: 4 }}>
@@ -285,10 +375,22 @@ function OneRM({ ex }) {
 
 function ExerciseDetail({ ex, close }) {
   const st = useStore(s => s.S)
+  const updateStore = useStore(s => s.update)
+  const [alias, setAlias] = useState(st.exerciseAliases?.[ex.id] || '')
+  const [goalW, setGoalW] = useState(st.exerciseGoals?.[ex.id]?.weight || 0)
+  const [goalR, setGoalR] = useState(st.exerciseGoals?.[ex.id]?.reps || 0)
   const last = lastEntryFor(st, ex.id)
   const best = bestWeightFor(st, ex.id)
   return <>
     <h3 className="capitalize">{exerciseNameFor(ex)}</h3>
+    <div className="row" style={{ gap: 8, marginBottom: 10 }}>
+      <input className="input" style={{ flex: 1 }} maxLength={60} placeholder={t('Personal alias (optional)')} value={alias} onChange={e => setAlias(e.target.value)} />
+      <Button size="sm" icon="pencil" onClick={() => {
+        const value = alias.trim()
+        updateStore(s => { s.exerciseAliases = s.exerciseAliases || {}; if (value) s.exerciseAliases[ex.id] = value; else delete s.exerciseAliases[ex.id] })
+        setAlias(value); toast(value ? t('Alias saved') : t('Alias removed'))
+      }}>{t('Save')}</Button>
+    </div>
     <Media ex={ex} />
     <div className="row" style={{ gap: 6, flexWrap: 'wrap', margin: '10px 0' }}>
       <span className="tag acc">{t(ex.bp)}</span>
@@ -298,7 +400,9 @@ function ExerciseDetail({ ex, close }) {
     </div>
     {ex.desc && <div className="exnote">{ex.desc}</div>}
     {best > 0 && <div className="small row" style={{ marginBottom: 6, gap: 5 }}><Icon name="trophy" style={{ fontSize: 14, color: 'var(--yellow)' }} />{t('Best:')} <b className="accent">{fmtNum(best)} {st.unit}</b>{last ? ` · ${t('last')} ${fmtDate(last.d)}: ${last.sets.map(s => setLabel(ex.id, s, last.target)).join(', ')}` : ''}</div>}
+    {!isCardio(ex) && <div className="card" style={{ margin: '10px 0' }}><h2>{t('Exercise goal')}</h2><div className="row cfgrow"><Stepper label={t('Weight ({0})', st.unit)} value={goalW} step={weightStepFor(st.unit)} onChange={setGoalW} /><Stepper label={t('Reps')} value={goalR} step={1} decimal={false} onChange={setGoalR} /></div><div style={{ height: 8 }} /><Button size="sm" onClick={() => { updateStore(s => { s.exerciseGoals = s.exerciseGoals || {}; if (goalW > 0 || goalR > 0) s.exerciseGoals[ex.id] = { weight: goalW, reps: goalR }; else delete s.exerciseGoals[ex.id] }); toast(goalW > 0 || goalR > 0 ? t('Goal saved') : t('Goal removed')) }}>{t('Save goal')}</Button></div>}
     <Button variant="primary" icon="plus" style={{ margin: '10px 0 4px' }} onClick={() => addToRoutineSheet(ex)}>{t('Add to my plan')}</Button>
+    <Button variant="ghost" icon={st.avoidedExercises?.[ex.id] ? 'reset' : 'warning'} style={{ marginTop: 6 }} onClick={() => { updateStore(s => { s.avoidedExercises = s.avoidedExercises || {}; if (s.avoidedExercises[ex.id]) delete s.avoidedExercises[ex.id]; else s.avoidedExercises[ex.id] = true }); toast(st.avoidedExercises?.[ex.id] ? t('Exercise available again') : t('Exercise temporarily avoided')) }}>{st.avoidedExercises?.[ex.id] ? t('Make available again') : t('Temporarily avoid exercise')}</Button>
     {ex.custom && <div className="row" style={{ gap: 8, marginTop: 8 }}>
       <Button icon="pencil" style={{ flex: 1 }} onClick={() => { close(); customExSheet(ex) }}>{t('Edit')}</Button>
       <Button variant="danger" icon="trash" style={{ flex: 1 }} onClick={() => deleteCustomEx(ex, close)}>{t('Delete')}</Button>
@@ -349,6 +453,8 @@ function CustomExForm({ existing, prefill, onDone, close }) {
   const [n, setN] = useState(existing ? existing.n : (prefill || ''))
   const [bp, setBp] = useState(existing ? existing.bp : '')
   const [desc, setDesc] = useState(existing ? (existing.desc || '') : '')
+  const [eq, setEq] = useState(existing ? (existing.eq || 'custom') : 'custom')
+  const [img, setImg] = useState(existing ? (existing.img || '') : '')
   const [primaries, setPrimaries] = useState(() => {
     if (existing && Array.isArray(existing.primaries) && existing.primaries.length) return [...existing.primaries]
     const norm = hasExplicitMuscleMetadata(existing || {}) ? normalizeMuscleGroups(existing || {}) : []
@@ -361,23 +467,37 @@ function CustomExForm({ existing, prefill, onDone, close }) {
   })
   const togglePrimary = value => setPrimaries(current => current.includes(value) ? current.filter(m => m !== value) : [...current, value])
   const toggleSecondary = value => setSecondaries(current => current.includes(value) ? current.filter(m => m !== value) : [...current, value])
-  const save = () => {
+  const similarName = (a, b) => {
+    const norm = x => x.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '')
+    const x = norm(a), y = norm(b)
+    if (!x || !y) return 0
+    const row = Array.from({ length: y.length + 1 }, (_, i) => i)
+    for (let i = 1; i <= x.length; i++) {
+      let prev = row[0]; row[0] = i
+      for (let j = 1; j <= y.length; j++) { const old = row[j]; row[j] = Math.min(row[j] + 1, row[j - 1] + 1, prev + (x[i - 1] === y[j - 1] ? 0 : 1)); prev = old }
+    }
+    return 1 - row[y.length] / Math.max(x.length, y.length)
+  }
+  const save = (allowDuplicate = false) => {
     const name = n.trim()
     if (!name) { toast(t('Give it a name')); return }
     if (!bp) { toast(t('Pick a body part')); return }
-    const dup = allExercises(S()).find(e => e.n.toLowerCase() === name.toLowerCase() && e.id !== (existing || {}).id)
-    if (dup) { toast(t('“{0}” already exists', dup.n)); return }
+    const dup = allExercises(S()).map(e => ({ e, score: similarName(e.n, name) })).filter(x => x.e.id !== (existing || {}).id && x.score >= .95).sort((a, b) => b.score - a.score)[0]?.e
+    if (dup && !allowDuplicate) {
+      confirmSheet({ title: t('Possible duplicate'), message: t('“{0}” is very similar to an existing exercise: “{1}”. You can still add it if they are different.', name, dup.n), confirmText: t('Add anyway'), onConfirm: () => save(true) })
+      return
+    }
     const d = desc.trim().slice(0, 1000)
     const prim = [...primaries]
     const sm = secondaries.filter(m => !prim.includes(m))
     const groups = [...prim, ...sm]
     let id = existing && existing.id
     if (existing) update(s => { const c = (s.customEx || []).find(x => x.id === id); if (c) {
-      c.n = name; c.bp = bp; c.desc = d; c.tg = prim[0] || ''; c.sm = sm; c.muscleGroups = groups; c.primaries = prim; c.secondaries = sm
+      c.n = name; c.bp = bp; c.desc = d; c.eq = eq; c.img = img; c.tg = prim[0] || ''; c.sm = sm; c.muscleGroups = groups; c.primaries = prim; c.secondaries = sm
     } })
     else {
       id = 'c' + uid()
-      update(s => { (s.customEx = s.customEx || []).push({ id, n: name, bp, desc: d, tg: prim[0] || '', sm, muscleGroups: groups, primaries: prim, secondaries: sm, eq: 'custom', custom: true }) })
+      update(s => { (s.customEx = s.customEx || []).push({ id, n: name, bp, desc: d, tg: prim[0] || '', sm, muscleGroups: groups, primaries: prim, secondaries: sm, eq, img, custom: true }) })
     }
     close()
     toast(existing ? t('Saved') : t('“{0}” created', name))
@@ -385,8 +505,9 @@ function CustomExForm({ existing, prefill, onDone, close }) {
   }
   return <>
     <h3>{existing ? t('Edit custom exercise') : t('Create your own exercise')}</h3>
-    <div className="muted small" style={{ marginBottom: 12 }}>{t('Name it and pick a body part — it behaves like any other exercise, just without an animation.')}</div>
+    <div className="muted small" style={{ marginBottom: 12 }}>{t('Name it, choose a body part, and optionally add an image or animated GIF.')}</div>
     <input className="input" placeholder={t('Exercise name')} value={n} onChange={e => setN(e.target.value)} />
+    <div className="sect-b" style={{ marginTop: 12 }}><SelectRow title={t('Equipment')} value={eq} onChange={setEq} options={[{ value: 'custom', label: t('Other') }, ...ALL_EQUIPMENT.map(x => ({ value: x, label: t(x) }))]} /></div>
     <div className="chips" style={{ margin: '12px 0' }}>
       {BODYPARTS.map(b => <button key={b} className={'chip' + (bp === b ? ' on' : '')} onClick={() => setBp(b)}>{t(b)}</button>)}
     </div>
@@ -403,8 +524,10 @@ function CustomExForm({ existing, prefill, onDone, close }) {
     {bp === 'cardio' && <div className="small dim row" style={{ marginBottom: 10, gap: 5 }}><Icon name="figureRun" style={{ fontSize: 13 }} />{t('Cardio exercises log time + speed instead of weight × reps.')}</div>}
     <textarea className="input" rows={4} maxLength={1000} placeholder={t('Description (optional) — setup, cues, anything you want to remember')}
       value={desc} onChange={e => setDesc(e.target.value)} />
+    <div className="row" style={{ gap: 8, marginTop: 10 }}><Button icon="photo" onClick={() => document.getElementById('custom-ex-image')?.click()}>{img ? t('Change image or GIF') : t('Add image or GIF')}</Button>{img && <Button variant="ghost" onClick={() => setImg('')}>{t('Remove')}</Button>}</div>
+    <input id="custom-ex-image" type="file" accept="image/*,.gif" hidden onChange={e => { const f = e.target.files?.[0]; if (!f) return; if (f.size > 5_000_000) { toast(t('Image or GIF must be smaller than 5 MB')); return }; const rd = new FileReader(); rd.onload = () => setImg(String(rd.result)); rd.readAsDataURL(f) }} />
     <div style={{ height: 14 }} />
-    <Button variant="primary" onClick={save}>{existing ? t('Save') : t('Create exercise')}</Button>
+    <Button variant="primary" onClick={() => save()}>{existing ? t('Save') : t('Create exercise')}</Button>
     {existing && <><div style={{ height: 8 }} /><Button variant="danger" icon="trash" onClick={() => { close(); deleteCustomEx(existing) }}>{t('Delete exercise')}</Button></>}
   </>
 }
@@ -428,6 +551,9 @@ export function deleteCustomEx(ex, afterDelete) {
         s.customEx = (s.customEx || []).filter(x => x.id !== ex.id)
         s.routines.forEach(r => { r.ex = r.ex.filter(e => e.id !== ex.id); cleanupSg(r.ex) })
         delete s.exWeights[ex.id]
+        if (s.exerciseAliases) delete s.exerciseAliases[ex.id]
+        if (s.exerciseGoals) delete s.exerciseGoals[ex.id]
+        if (s.avoidedExercises) delete s.avoidedExercises[ex.id]
       })
       toast(t('Exercise deleted'))
       afterDelete && afterDelete()
@@ -443,7 +569,7 @@ function usageMap(st) {
   st.workouts.forEach(w => w.entries.forEach(e => { u[e.id] = (u[e.id] || 0) + 1 }))
   return u
 }
-function ExercisePicker({ onPick, close }) {
+function ExercisePicker({ onPick, close, options = {} }) {
   const st = useStore(s => s.S)
   const usage = usageMap(st)
   const [q, setQ] = useState('')
@@ -451,12 +577,14 @@ function ExercisePicker({ onPick, close }) {
   const [eq, setEq] = useState('')          // '' = any equipment
   const [showAll, setShowAll] = useState(false)
   const [shown, setShown] = useState(50)
-  const all = allExercises(st)
+  const complete = allExercises(st).filter(e => !st.avoidedExercises?.[e.id])
+  const all = options.filter ? complete.filter(options.filter) : complete
   const profile = activeProfile(st)
-  let base = all.filter(e =>
-    (bp === '★' ? usage[e.id] : (!bp || e.bp === bp)) &&
-    matchExercise(e, q))
-  if (bp === '★') base = [...base].sort((a, b) => (usage[b.id] - usage[a.id]) || exerciseNameFor(a).localeCompare(exerciseNameFor(b)))
+  let base = all.filter(e => bp === '★' ? usage[e.id] : (!bp || e.bp === bp))
+    .map(e => ({ e, score: exerciseSearchScore(e, q, st.exerciseAliases?.[e.id]) }))
+    .filter(x => Number.isFinite(x.score))
+    .sort((a, b) => q ? a.score - b.score : (bp === '★' ? (usage[b.e.id] - usage[a.e.id]) : 0))
+    .map(x => x.e)
   const eqFiltered = (profile && !showAll) ? base.filter(e => exAvailable(st, e)) : base
   const eqOpts = equipmentOf(eqFiltered)
   // Drop the equipment filter if the search narrowed it away, so you never hit a dead end.
@@ -464,7 +592,8 @@ function ExercisePicker({ onPick, close }) {
   const f = eqOn ? eqFiltered.filter(e => e.eq === eqOn) : eqFiltered
   const chosenCount = Object.keys(usage).length
   return <>
-    <h3>{t('Add exercise')}</h3>
+    <h3>{options.title ? t(options.title) : t('Add exercise')}</h3>
+    {options.subtitle && <div className="muted small" style={{ marginBottom: 10 }}>{t(options.subtitle)}</div>}
     <div className="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg>
       <input className="input" placeholder={t('Search {0} exercises…', all.length)} value={q} onChange={e => { setQ(e.target.value); setShown(50) }} /></div>
     {profile && <div className="small dim row" style={{ margin: '8px 0 2px', gap: 6, alignItems: 'center' }}>
@@ -489,7 +618,7 @@ function ExercisePicker({ onPick, close }) {
         <div className="grow"><div className="tt">{t('Create your own exercise')}</div><div className="ss">{t('name + body part, no animation')}</div></div><Icon name="plus" className="chev" />
       </div>}
       {f.slice(0, shown).map(e => <div key={e.id} className="item" onClick={() => onPick(e)}>
-        <Thumb ex={e} /><div className="grow"><div className="tt capitalize">{exerciseNameFor(e)}</div><div className="ss capitalize">{t(e.tg || e.bp)} · {t(e.eq)}</div></div>
+        <Thumb ex={e} /><div className="grow"><div className="tt capitalize">{exerciseNameFor(e)}</div>{st.exerciseAliases?.[e.id] && <div className="ss">{t('Alias')}: {st.exerciseAliases[e.id]}</div>}<div className="ss capitalize">{t(e.tg || e.bp)} · {t(e.eq)}</div></div>
         {usage[e.id] && <span className="tag acc"><Icon name="starFill" /></span>}<Icon name="plus" className="chev" />
       </div>)}
       {f.length === 0 && bp === '★' && <div className="empty">{t('Nothing chosen yet — add exercises and they’ll show up here.')}</div>}
@@ -497,7 +626,7 @@ function ExercisePicker({ onPick, close }) {
     {f.length > shown && <><div style={{ height: 8 }} /><Button onClick={() => setShown(s => s + 50)}>{t('Show more')}</Button></>}
   </>
 }
-export const exercisePicker = onPick => ui().openSheet(close => <ExercisePicker onPick={onPick} close={close} />)
+export const exercisePicker = (onPick, options) => ui().openSheet(close => <ExercisePicker onPick={onPick} close={close} options={options} />)
 
 /* ============================ equipment profiles ============================ */
 // Create or edit one profile ("Home", "Gym", ...): a name plus a checklist of what you have.
@@ -564,10 +693,24 @@ function ProgressionFields({ ex, mode, c, setC, routine, unit }) {
     {active !== 'off' && <div className="row cfgrow" style={{ marginBottom: 18 }}>
       <Stepper label={mode === 'time' ? t('Step (seconds)') : t('Step ({0})', unit)} value={inc}
         step={mode === 'time' ? 5 : 1.25} decimal={mode !== 'time'} onChange={v => setC(x => ({ ...x, inc: v }))} />
-      {active === 'double' && <Stepper label={t('Reps from')} value={c.repsMin || Math.max(1, (c.reps || 10) - 2)}
-        step={1} decimal={false} onChange={v => setC(x => ({ ...x, repsMin: v }))} />}
     </div>}
   </>
+}
+
+function RirRangeFields({ c, setC, role = null, label }) {
+  const range = targetRirRangeFor(c, role) || { min: role === 'backoff' ? 2 : 1, max: role === 'backoff' ? 3 : 2 }
+  const prefix = role === 'top' ? 'top' : role === 'backoff' ? 'backoff' : 'target'
+  const minKey = `${prefix}RirMin`, maxKey = `${prefix}RirMax`
+  return <div className="row cfgrow rir-range-fields" style={{ marginBottom: 8 }}>
+    <Stepper label={t(label || 'Minimum RIR')} value={range.min} step={0.5} onChange={v => setC(x => {
+      const min = Math.max(0, Math.min(10, Math.round(v * 2) / 2)); const old = targetRirRangeFor(x, role) || range
+      return { ...x, [minKey]: min, [maxKey]: Math.max(min, old.max) }
+    })} />
+    <Stepper label={t('Maximum RIR')} value={range.max} step={0.5} onChange={v => setC(x => {
+      const max = Math.max(0, Math.min(10, Math.round(v * 2) / 2)); const old = targetRirRangeFor(x, role) || range
+      return { ...x, [minKey]: Math.min(old.min, max), [maxKey]: max }
+    })} />
+  </div>
 }
 
 function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial }) {
@@ -592,9 +735,8 @@ function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial }) {
     if (c.inc > 0) prog.inc = c.inc
     // Written only when it differs from what the dataset already says, so a barbell config
     // stays exactly the shape it was before these flags existed.
-    // `bodyweight` is true of a hold as much as of a set of reps; `side` is not — it counts
-    // reps, and a timed hold has none. Switching an exercise to Time therefore drops it
-    // rather than carrying a flag nothing downstream can read.
+    // Bodyweight and unilateral execution are mode-independent flags. For timed work `sec`
+    // means seconds per side, while reps keeps its legacy total-reps convention.
     const flags = {}
     if (bw !== isBodyweightEq(ex.id)) flags.bodyweight = bw
     // Free text, e.g. a pyramid's per-set loading ("bar only, +1 plate/side each set") — the
@@ -606,15 +748,39 @@ function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial }) {
     // shape it had — and reads back as 0 either way (buildSets).
     const warmupSets = Math.max(0, Math.min(MAX_PLANNED_WARMUPS, Math.round(c.warmupSets) || 0))
     const withWarmups = warmupSets ? { warmupSets } : {}
-    if (cardio) onSave({ sets, min: Math.max(1, Math.round(c.min) || 20), speed: Math.max(0, c.speed || 8), ...withNote })
-    else if (mode === 'time') onSave({ sets, mode: 'time', sec: Math.max(1, Math.round(c.sec) || 45), weight: Math.max(0, c.weight || 0), ...flags, ...prog, ...withNote, ...withWarmups })
+    // Per exercise, one override is enough: rest between work sets. Legacy per-set,
+    // warm-up and after-exercise overrides disappear when this exercise is saved.
+    const restCfg = c.restSec === undefined ? {} : { restSec: Math.max(0, Math.round(c.restSec) || 0) }
+    if (cardio) onSave({ sets, min: Math.max(1, Math.round(c.min) || 20), speed: Math.max(0, c.speed || 8), ...withNote, ...restCfg })
+    else if (mode === 'time') onSave({ sets, mode: 'time', sec: Math.max(1, Math.round(c.sec) || 45), weight: Math.max(0, c.weight || 0), ...flags, ...(perSide ? { side: true } : {}), ...prog, ...withNote, ...withWarmups, ...restCfg })
     else {
       // A unilateral target is stored even: the split has to divide, and a typed 15 would
       // otherwise plan seven reps on one side and eight on the other, every session.
       const typed = Math.max(1, Math.round(c.reps) || 10)
       const reps = perSide ? Math.ceil(typed / 2) * 2 : typed
-      const out = { sets, mode: 'reps', reps, weight: Math.max(0, c.weight || 0), ...flags, ...(perSide ? { side: true } : {}), ...prog, ...withNote, ...withWarmups }
-      if (policyFor({ ...c, id: ex.id }, routine, 'reps') === 'double') out.repsMin = Math.min(reps, Math.max(1, Math.round(c.repsMin) || Math.max(1, reps - 2)))
+      const out = { sets, mode: 'reps', reps, weight: Math.max(0, c.weight || 0), ...flags, ...(perSide ? { side: true } : {}), ...prog, ...withNote, ...withWarmups, ...restCfg }
+      out.repRange = repRangeEnabled(c)
+      out.repsMin = out.repRange ? Math.min(reps, Math.max(1, Math.round(c.repsMin) || reps)) : reps
+      if (out.repRange && (c.strictReps === true || c.strictReps === false)) out.strictReps = c.strictReps
+      const sharedRir = targetRirRangeFor(c, null)
+      if (sharedRir) { out.targetRirMin = sharedRir.min; out.targetRirMax = sharedRir.max }
+      if (c.setScheme === 'topback') {
+        out.setScheme = 'topback'
+        out.topSets = Math.max(1, Math.round(c.topSets) || 1)
+        out.backoffSets = Math.max(1, Math.round(c.backoffSets) || 2)
+        out.sets = out.topSets + out.backoffSets
+        out.topRepsMin = Math.min(reps, Math.max(1, Math.round(c.topRepsMin) || out.repsMin))
+        out.topRepsMax = reps
+        out.backoffRepsMin = Math.max(1, Math.round(c.backoffRepsMin) || out.repsMin)
+        out.backoffRepsMax = Math.max(out.backoffRepsMin, Math.round(c.backoffRepsMax) || reps)
+        out.backoffPct = Math.max(1, Math.min(50, Number(c.backoffPct) || 10))
+        out.autoBackoffReps = c.autoBackoffReps !== false
+        out.backoffRepOffset = Math.max(0, Math.min(5, Math.round(c.backoffRepOffset ?? ((c.backoffRepsMax || reps) - (c.topRepsMax || reps)) ?? 2)))
+        const topRir = targetRirRangeFor(c, 'top'), backRir = targetRirRangeFor(c, 'backoff')
+        if (topRir) { out.topRirMin = topRir.min; out.topRirMax = topRir.max }
+        if (backRir) { out.backoffRirMin = backRir.min; out.backoffRirMax = backRir.max }
+      }
+      if (targetRirRangeFor(out, null) || targetRirRangeFor(out, 'top') || targetRirRangeFor(out, 'backoff')) update(s => { s.effort = 'rir'; delete s.showRir })
       // A ceiling below the working reps would tell you to add a set on day one.
       if (bw && !(out.weight > 0) && c.repsMax > 0) out.repsMax = Math.max(reps, Math.round(c.repsMax))
       // Every set in this exercise becomes a drop-set/rest-pause (buildSets stamps the rows) —
@@ -648,16 +814,16 @@ function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial }) {
       </> : mode === 'time' ? <>
         <Stepper label={t('Sets')} value={c.sets} step={1} decimal={false} onChange={v => setC(x => ({ ...x, sets: v }))} />
         <Stepper label={t('Seconds')} value={c.sec} step={5} decimal={false} onChange={v => setC(x => ({ ...x, sec: v }))} />
-        <Stepper label={t('Weight ({0})', st.unit)} value={c.weight} step={2.5} onChange={v => setC(x => ({ ...x, weight: v }))} />
+        <Stepper label={t('Weight ({0})', st.unit)} value={c.weight} step={defaultIncrement(ex.id, st.unit)} onChange={v => setC(x => ({ ...x, weight: v }))} />
       </> : <>
         {/* Rest-pause always trains as exactly two rows — a warm-up at this rep count, then one
             rest-pause work set — so "Sets" has nothing left to mean and only invites a mismatch. */}
-        {c.intensifier?.type !== 'restpause' &&
+        {c.intensifier?.type !== 'restpause' && c.setScheme !== 'topback' &&
           <Stepper label={t('Sets')} value={c.sets} step={1} decimal={false} onChange={v => setC(x => ({ ...x, sets: v }))} />}
         <Stepper label={t('Reps')} value={c.reps} step={perSide ? 2 : 1} decimal={false} onChange={v => setC(x => ({ ...x, reps: v }))} />
         {/* On bodyweight work the weight stepper is the click #32 is about, so it is not here
             until there is a belt to describe — see the added-weight row below. */}
-        {!bw && <Stepper label={t('Weight ({0})', st.unit)} value={c.weight} step={2.5} onChange={v => setC(x => ({ ...x, weight: v }))} />}
+        {!bw && <Stepper label={t('Weight ({0})', st.unit)} value={c.weight} step={defaultIncrement(ex.id, st.unit)} onChange={v => setC(x => ({ ...x, weight: v }))} />}
       </>}
     </div>
     {c.intensifier?.type === 'restpause' && <div className="small dim" style={{ marginTop: -10, marginBottom: 18 }}>
@@ -686,11 +852,11 @@ function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial }) {
         subtitle={bw ? t('No weight to enter — just log the reps.') : t('Ask for a weight on every set.')}>
         <Switch checked={bw} onChange={v => setC(x => ({ ...x, bodyweight: v, weight: v ? 0 : x.weight }))} />
       </Row>
-      {mode === 'reps' && <Row icon="shuffle" iconTint="var(--blue)" title={t('Reps per side')}
-        subtitle={perSide ? t('You still log the total: {0} is {1} per side.', c.reps || 0, fmtNum(sideReps(c.reps))) : t('For lunges, single-arm rows and the like.')}>
+      {(mode === 'reps' || mode === 'time') && <Row icon="shuffle" iconTint="var(--blue)" title={t(mode === 'time' ? 'Time per side' : 'Reps per side')}
+        subtitle={mode === 'time' ? t('{0} seconds on the left, then {0} seconds on the right.', c.sec || 0) : perSide ? t('You still log the total: {0} is {1} per side.', c.reps || 0, fmtNum(sideReps(c.reps))) : t('For lunges, single-arm rows and the like.')}>
         {/* Turning it on rounds the target up to an even number, since half of an odd
             total is a rep one side does not get. */}
-        <Switch checked={perSide} onChange={v => setC(x => ({ ...x, side: v || undefined, reps: v ? Math.ceil((x.reps || 0) / 2) * 2 : x.reps }))} />
+        <Switch checked={perSide} onChange={v => setC(x => ({ ...x, side: v || undefined, reps: mode === 'reps' && v ? Math.ceil((x.reps || 0) / 2) * 2 : x.reps }))} />
       </Row>}
     </div>}
     {/* A stepper is too wide to sit in a list row next to a label — it squeezes the text to
@@ -698,7 +864,7 @@ function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial }) {
         reps, with its explanation underneath. */}
     {bw && <>
       <div className="row cfgrow" style={{ marginBottom: 8 }}>
-        <Stepper label={t('Added ({0})', st.unit)} value={c.weight || 0} step={2.5}
+        <Stepper label={t('Added ({0})', st.unit)} value={c.weight || 0} step={weightStepFor(st.unit)}
           onChange={v => setC(x => ({ ...x, weight: v }))} />
       </div>
       <div className="small dim" style={{ marginBottom: 18 }}>
@@ -715,7 +881,7 @@ function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial }) {
         ? t('Reps climb to {0}, then a set is added and the reps start over. At {1} sets it asks you to add weight instead.', c.repsMax, MAX_BW_SETS)
         : t('Reps climb by one whenever every set was clean. Set a ceiling to add sets instead of reps forever.')}
     </div>}
-    {mode === 'reps' && <>
+    {mode === 'reps' && c.setScheme !== 'topback' && <>
       <h4 className="sec">{t('Drop-set / rest-pause')}</h4>
       <div className="sect-b" style={{ marginBottom: 8 }}>
         <SelectRow title={t('Intensifier')} sheetTitle={t('Intensifier')} value={c.intensifier?.type || ''}
@@ -751,6 +917,91 @@ function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial }) {
           ? t('Every set becomes a drop-set: after the main set, {0} drop(s) with no rest, each about {1}% lighter.', c.intensifier.count, c.intensifier.pct)
           : t('Every set becomes rest-pause: {0} reps to start, then {1} more split into short bursts, {2}s rest before each, roughly halving each time.', c.reps || 0, c.intensifier.totalReps, c.intensifier.restSec)}
       </div>}
+    </>}
+    <h4 className="sec">{t('Rest')}</h4>
+    <div className="sect-b" style={{ marginBottom: 8 }}>
+      <Row icon="timer" iconTint="var(--orange)" title={t('Custom rest')}
+        subtitle={c.restSec === undefined ? t('Uses the routine or general rest time.') : t('Use a different rest time for this exercise.')}>
+        <Switch checked={c.restSec !== undefined} onChange={enabled => setC(x => {
+          if (!enabled) { const { restSec, afterRestSec, warmupRestSec, setRestSec, ...rest } = x; return rest }
+          return { ...x, restSec: x.restSec ?? routine?.restSec ?? st.restSec }
+        })} />
+      </Row>
+    </div>
+    {c.restSec !== undefined && <div className="row cfgrow" style={{ marginBottom: 18 }}>
+      <Stepper label={t('Between sets (s)')} value={c.restSec} step={15} decimal={false}
+        onChange={v => setC(x => ({ ...x, restSec: Math.max(0, v) }))} />
+    </div>}
+    {mode === 'reps' && <>
+      <h4 className="sec">{t('Rep range')}</h4>
+      <div className="sect-b" style={{ marginBottom: repRangeEnabled(c) ? 8 : 18 }}>
+        <Row icon="target" iconTint="var(--blue)" title={t('Use rep range')} subtitle={t('Show a minimum and maximum instead of one exact target.')}>
+          <Switch checked={repRangeEnabled(c)} onChange={enabled => setC(x => enabled
+            ? { ...x, repRange: true, repsMin: Math.min(x.reps || 10, x.repsMin || Math.max(1, (x.reps || 10) - (perSide ? 4 : 2))) }
+            : { ...x, repRange: false, repsMin: x.reps, strictReps: undefined })} />
+        </Row>
+      </div>
+      {repRangeEnabled(c) && <>
+        <div className="row cfgrow" style={{ marginBottom: 8 }}>
+          <Stepper label={t('Minimum reps')} value={c.repsMin || c.reps || 1} step={perSide ? 2 : 1} decimal={false}
+            onChange={v => setC(x => ({ ...x, repRange: true, repsMin: Math.min(x.reps || v, Math.max(1, v)) }))} />
+          <Stepper label={t('Maximum reps')} value={c.reps || 10} step={perSide ? 2 : 1} decimal={false}
+            onChange={v => setC(x => ({ ...x, repRange: true, reps: Math.max(x.repsMin || 1, v) }))} />
+        </div>
+        <div className="sect-b" style={{ marginBottom: 18 }}>
+        <SelectRow title={t('Strict reps')} sheetTitle={t('Strict reps')} value={c.strictReps == null ? '' : String(c.strictReps)}
+          onChange={v => setC(x => ({ ...x, strictReps: v === '' ? undefined : v === 'true' }))}
+          options={[{ value: '', label: t('Follow app setting') }, { value: 'true', label: t('Keep reps inside the range') }, { value: 'false', label: t('Allow reps outside the range') }]} />
+        </div>
+      </>}
+      <h4 className="sec">{t('Set structure')}</h4>
+      <div className="sect-b" style={{ marginBottom: c.setScheme === 'topback' ? 8 : 18 }}>
+        <Row icon="list" iconTint="var(--orange)" title={t('Top + Back-off')} subtitle={t('Configure both set groups here before training.')}>
+          <Switch checked={c.setScheme === 'topback'} onChange={enabled => setC(x => {
+            if (enabled) {
+              const next = { ...x, setScheme: 'topback', intensifier: undefined }
+              const rr = targetRirRangeFor(x, null)
+              if (rr) { next.topRirMin = rr.min; next.topRirMax = rr.max; next.backoffRirMin = rr.min; next.backoffRirMax = rr.max }
+              delete next.targetRir; delete next.targetRirMin; delete next.targetRirMax
+              return next
+            }
+            const next = { ...x, setScheme: undefined }
+            const rr = targetRirRangeFor(x, 'top') || targetRirRangeFor(x, 'backoff')
+            if (rr) { next.targetRirMin = rr.min; next.targetRirMax = rr.max }
+            delete next.topRir; delete next.topRirMin; delete next.topRirMax; delete next.backoffRir; delete next.backoffRirMin; delete next.backoffRirMax
+            return next
+          })} />
+        </Row>
+      </div>
+      {c.setScheme === 'topback' && <>
+        <div className="row cfgrow" style={{ marginBottom: 8 }}>
+          <Stepper label={t('Top sets')} value={c.topSets || 1} step={1} decimal={false} onChange={v => setC(x => ({ ...x, topSets: Math.max(1, v) }))} />
+        </div>
+        <div className="row cfgrow" style={{ marginBottom: 8 }}>
+          <Stepper label={t('Back-off sets')} value={c.backoffSets || 2} step={1} decimal={false} onChange={v => setC(x => ({ ...x, backoffSets: Math.max(1, v) }))} />
+          <Stepper label={t('Load reduction (%)')} value={c.backoffPct || 10} step={5} decimal={false} onChange={v => setC(x => ({ ...x, backoffPct: Math.max(1, Math.min(50, v)) }))} />
+        </div>
+        <div className="sect-b" style={{ marginBottom: 8 }}><Row icon="repeat" iconTint="var(--blue)" title={t('Automatic back-off reps')} subtitle={t('Back-off reps follow the latest Top Set.')}>
+          <Switch checked={c.autoBackoffReps !== false} onChange={v => setC(x => ({ ...x, autoBackoffReps: v }))} />
+        </Row></div>
+        {c.autoBackoffReps !== false ? <div className="row cfgrow" style={{ marginBottom: 8 }}>
+          <Stepper label={t('Back-off rep offset')} value={c.backoffRepOffset ?? (Math.max(0, Math.min(5, (c.backoffRepsMax || c.reps || 10) - (c.topRepsMax || c.reps || 10))) || 2)} step={1} decimal={false} onChange={v => setC(x => ({ ...x, backoffRepOffset: Math.max(0, Math.min(5, Math.round(v))) }))} />
+        </div> : <div className="row cfgrow" style={{ marginBottom: 8 }}>
+          <Stepper label={t('Back-off min reps')} value={c.backoffRepsMin || c.repsMin || c.reps || 1} step={1} decimal={false} onChange={v => setC(x => ({ ...x, backoffRepsMin: Math.max(1, v) }))} />
+          <Stepper label={t('Back-off max reps')} value={c.backoffRepsMax || c.reps || 10} step={1} decimal={false} onChange={v => setC(x => ({ ...x, backoffRepsMax: Math.max(x.backoffRepsMin || 1, v) }))} />
+        </div>}
+      </>}
+      <div className="sect-b" style={{ marginTop: 12, marginBottom: 18 }}>
+        <Row icon="target" iconTint="var(--purple)" title={t('RIR target')} subtitle={t('Optional. TGym compares your logged RIR with this target.') }>
+          <Switch checked={c.setScheme === 'topback' ? !!(targetRirRangeFor(c, 'top') || targetRirRangeFor(c, 'backoff')) : !!targetRirRangeFor(c, null)} onChange={v => setC(x => {
+            if (x.setScheme === 'topback') return { ...x, topRir: undefined, backoffRir: undefined, topRirMin: v ? 1 : undefined, topRirMax: v ? 2 : undefined, backoffRirMin: v ? 2 : undefined, backoffRirMax: v ? 3 : undefined }
+            return { ...x, targetRir: undefined, targetRirMin: v ? 1 : undefined, targetRirMax: v ? 2 : undefined }
+          })} />
+        </Row>
+        {c.setScheme !== 'topback' && targetRirRangeFor(c, null) && <div style={{ padding: '0 12px 12px' }}><RirRangeFields c={c} setC={setC} /></div>}
+        {c.setScheme === 'topback' && targetRirRangeFor(c, 'top') && <div style={{ padding: '0 12px' }}><RirRangeFields c={c} setC={setC} role="top" label="Top Set RIR" /></div>}
+        {c.setScheme === 'topback' && targetRirRangeFor(c, 'backoff') && <div style={{ padding: '0 12px 12px' }}><RirRangeFields c={c} setC={setC} role="backoff" label="Back-off RIR" /></div>}
+      </div>
     </>}
     <ProgressionFields ex={ex} mode={mode} c={c} setC={setC} routine={routine} unit={st.unit} />
     <textarea className="input" rows={3} maxLength={500} style={{ marginBottom: 18 }}
@@ -799,7 +1050,7 @@ function PlanTools({ close }) {
   const exportFile = async () => {
     const bundle = buildPlanBundle(st, user?.name ? t('{0}’s plan', user.name) : '')
     const json = JSON.stringify(bundle, null, 2)
-    const name = 'opengym-plan-' + todayISO() + '.json'
+    const name = 'framegym-plan-' + todayISO() + '.json'
     if (MOBILE) { try { await shareExport(json, name) } catch (e) { /* dismissed */ } close(); return }
     const blob = new Blob([json], { type: 'application/json' })
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); URL.revokeObjectURL(a.href)
@@ -819,7 +1070,7 @@ function PlanTools({ close }) {
     <h3>{t('Share your plan')}</h3>
     <div className="muted small" style={{ marginBottom: 16 }}>{t('Send your routines to a friend, or put your week on paper.')}</div>
     <Button variant="primary" icon="upload" onClick={exportFile} disabled={!hasRoutines}>{t('Export plan file')}</Button>
-    <div className="dim small" style={{ margin: '7px 2px 0', lineHeight: 1.4 }}>{t('A small file a friend imports into their own openGym — routines only, none of your workouts or weigh-ins.')}</div>
+    <div className="dim small" style={{ margin: '7px 2px 0', lineHeight: 1.4 }}>{t('A small file another TGym user can import — routines only, none of your workouts or weigh-ins.')}</div>
     {!MOBILE && <>
       <div style={{ height: 12 }} />
       <Button variant="tinted" icon="download" onClick={() => { close(); printPlan(st, user?.name || '') }} disabled={!hasRoutines}>{t('Print / Save as PDF')}</Button>
@@ -896,7 +1147,7 @@ export const dayOverrideSheet = iso => ui().openSheet(close => <DayOverride iso=
 
 function DayAssign({ day, close }) {
   const st = useStore(s => s.S)
-  const set = v => { update(s => { if (v) s.week[day] = v; else delete s.week[day] }); close() }
+  const set = v => { update(s => { if (v) { s.week[day] = v; s.scheduleStarted = s.scheduleStarted || todayISO() } else delete s.week[day] }); close() }
   return <>
     <h3>{t(DAYN[day])}</h3>
     <div className="list">
@@ -910,6 +1161,115 @@ function DayAssign({ day, close }) {
 }
 export const dayAssignSheet = day => ui().openSheet(close => <DayAssign day={day} close={close} />)
 
+function StreakDetail() {
+  const st = useStore(s => s.S)
+  const streak = trainingStreak(st)
+  let next = null
+  for (let i = 0; i < 31 && !next; i++) {
+    const d = new Date(); d.setDate(d.getDate() + i)
+    const iso = isoOf(d)
+    if (effectiveRoutineId(st, iso)) next = iso
+  }
+  const recent = streak.rows.filter(r => r.planned).slice(-20).reverse()
+  return <>
+    <div className={'streak-hero compact streak-main streak-' + streakTier(streak.current)}>
+      <StreakFlame value={streak.current} />
+      <div className="streak-number">{streak.current}</div>
+      <div className="streak-main-label">{t('Training Days in a Row')}</div>
+    </div>
+    <div className="tiles" style={{ margin: '14px 0' }}>
+      <div className="tile"><div className="l">{t('Best streak')}</div><div className="v">{streak.best}</div></div>
+      <div className="tile"><div className="l">{t('Next milestone')}</div><div className="v">{streak.nextMilestone}</div></div>
+    </div>
+    {next && <div className="card"><div className="small dim">{t('Next scheduled workout')}</div><div style={{ fontWeight: 600, marginTop: 4 }}>{new Date(next + 'T12:00:00').toLocaleDateString(dateLocale(), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</div></div>}
+    <h4 className="sec">{t('Consistency calendar')}</h4>
+    <ZoomCalendar S={st} onDay={iso => { const rows = st.workouts.filter(w => w.d === iso); if (rows.length) workoutDetailSheet(rows[rows.length - 1]) }} />
+    <h4 className="sec">{t('Recent scheduled days')}</h4>
+    <div className="list">{recent.map(r => { const workout = st.workouts.filter(w => w.d === r.iso).at(-1); const routine = st.routines.find(x => x.id === effectiveRoutineId(st, r.iso)); return <div className="item" key={r.iso}><span className="lrow-i" style={{ color: r.status === 'completed' ? 'var(--green)' : r.status === 'missed' ? 'var(--red)' : 'var(--label-2)' }}><Icon name={r.status === 'completed' ? 'checkCircle' : r.status === 'missed' ? 'xmark' : 'clock'} /></span><div className="grow recent-streak-row"><div className="tt">{fmtDate(r.iso, true)}<span>{workout?.name || routine?.name || ''}</span></div><div className="ss">{t(r.status === 'completed' ? 'Completed' : r.status === 'missed' ? 'Not completed' : 'Pending')}</div></div></div>})}</div>
+  </>
+}
+export const streakDetailSheet = () => ui().openSheet(() => <StreakDetail />)
+
+/* ============================ InBody history ============================ */
+const INBODY_FIELDS = [
+  ['weight', 'Weight', 'kg'], ['skeletalMuscle', 'Skeletal muscle mass', 'kg'], ['bodyFatMass', 'Body fat mass', 'kg'],
+  ['bodyFatPct', 'Body fat percentage', '%'], ['bmi', 'BMI', ''], ['visceralFat', 'Visceral fat level', ''],
+  ['bodyWater', 'Total body water', 'L'], ['protein', 'Protein', 'kg'], ['minerals', 'Minerals', 'kg'],
+  ['bmr', 'Basal metabolic rate', 'kcal'], ['score', 'InBody score', ''],
+]
+
+const parseInBodyText = text => {
+  const clean = String(text || '').replace(/,/g, '.')
+  const patterns = {
+    weight: /(?:weight|peso)\D{0,18}(\d{2,3}(?:\.\d+)?)/i,
+    skeletalMuscle: /(?:skeletal muscle mass|masa muscular esquel[eé]tica|smm)\D{0,18}(\d{1,3}(?:\.\d+)?)/i,
+    bodyFatMass: /(?:body fat mass|masa de grasa corporal)\D{0,18}(\d{1,3}(?:\.\d+)?)/i,
+    bodyFatPct: /(?:percent body fat|body fat percentage|porcentaje de grasa|pbf)\D{0,18}(\d{1,2}(?:\.\d+)?)/i,
+    bmi: /(?:bmi|imc)\D{0,12}(\d{1,2}(?:\.\d+)?)/i,
+    visceralFat: /(?:visceral fat level|nivel de grasa visceral)\D{0,18}(\d{1,2}(?:\.\d+)?)/i,
+    bodyWater: /(?:total body water|agua corporal total|tbw)\D{0,18}(\d{1,3}(?:\.\d+)?)/i,
+    protein: /(?:protein|prote[ií]na)\D{0,12}(\d{1,2}(?:\.\d+)?)/i,
+    minerals: /(?:minerals|mineral(?:es)?)\D{0,12}(\d{1,2}(?:\.\d+)?)/i,
+    bmr: /(?:basal metabolic rate|metabolismo basal|bmr)\D{0,18}(\d{3,4})/i,
+    score: /(?:inbody score|puntuaci[oó]n inbody)\D{0,12}(\d{1,3})/i,
+  }
+  return Object.fromEntries(Object.entries(patterns).map(([key, re]) => [key, Number(clean.match(re)?.[1]) || null]).filter(([, value]) => value != null))
+}
+
+function InBodyHistory() {
+  const st = useStore(s => s.S), change = useStore(s => s.update)
+  const rows = [...(st.inbody || [])].sort((a, b) => a.d.localeCompare(b.d))
+  const [range, setRange] = useState(90)
+  const [adding, setAdding] = useState(false)
+  const [date, setDate] = useState(todayISO())
+  const [values, setValues] = useState({})
+  const [image, setImage] = useState('')
+  const [scanning, setScanning] = useState(false)
+  const cutoff = range ? Date.now() - range * 86400000 : 0
+  const shown = rows.filter(r => !cutoff || new Date(r.d + 'T12:00:00').getTime() >= cutoff)
+  const first = shown[0], last = shown.at(-1)
+  const trendClass = (key, before, after) => {
+    if (before === after || ['weight', 'bodyWater', 'protein', 'minerals', 'bmr'].includes(key)) return ''
+    if (key === 'bmi') return Math.abs(after - 22) < Math.abs(before - 22) ? 'better' : 'worse'
+    const lowerIsBetter = ['bodyFatMass', 'bodyFatPct', 'visceralFat'].includes(key)
+    return (lowerIsBetter ? after < before : after > before) ? 'better' : 'worse'
+  }
+  const scan = async file => {
+    if (!file) return
+    if (file.size > 8_000_000) { toast(t('Image must be smaller than 8 MB')); return }
+    setScanning(true)
+    try {
+      const bitmap = await createImageBitmap(file)
+      const canvas = document.createElement('canvas'), max = 1500, scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height))
+      canvas.width = Math.round(bitmap.width * scale); canvas.height = Math.round(bitmap.height * scale)
+      canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height)
+      setImage(canvas.toDataURL('image/jpeg', .76))
+      if ('TextDetector' in window) {
+        const blocks = await new window.TextDetector().detect(bitmap)
+        const parsed = parseInBodyText(blocks.map(b => b.rawValue).join('\n'))
+        setValues(v => ({ ...v, ...parsed })); toast(Object.keys(parsed).length ? t('{0} InBody values detected. Review them before saving.', Object.keys(parsed).length) : t('No values were detected. Enter them manually while viewing the attached image.'))
+      } else toast(t('Automatic text recognition is not available on this phone. The image was attached for manual entry.'))
+      bitmap.close?.()
+    } catch { toast(t('The image could not be read. Try another photo.')) }
+    finally { setScanning(false) }
+  }
+  const save = () => {
+    if (!date || !Object.values(values).some(v => Number(v) > 0)) { toast(t('Enter at least one InBody value')); return }
+    change(s => { s.inbody = [...(s.inbody || []).filter(r => r.d !== date), { id: uid(), d: date, ...values, ...(image ? { image } : {}) }].sort((a, b) => a.d.localeCompare(b.d)) })
+    setAdding(false); setValues({}); setImage(''); toast(t('InBody result saved'))
+  }
+  if (adding) return <><div className="row between"><h3>{t('Add InBody result')}</h3><Button size="sm" onClick={() => setAdding(false)}>{t('Cancel')}</Button></div><input className="input" type="date" value={date} onChange={e => setDate(e.target.value)} />
+    <div className="row" style={{ margin: '10px 0' }}><Button icon="photo" disabled={scanning} onClick={() => document.getElementById('inbody-image')?.click()}>{scanning ? t('Reading image…') : t('Attach or scan result')}</Button></div><input id="inbody-image" type="file" accept="image/*" capture="environment" hidden onChange={e => scan(e.target.files?.[0])} />
+    {image && <img className="inbody-preview" src={image} alt="InBody" />}
+    <div className="inbody-form">{INBODY_FIELDS.map(([key, label, unit]) => <label key={key}><span>{t(label)}{unit ? ` (${unit})` : ''}</span><NumberField value={values[key] ?? ''} nullable onChange={v => setValues(x => ({ ...x, [key]: v }))} /></label>)}</div><div style={{ height: 12 }} /><Button variant="primary" onClick={save}>{t('Save InBody result')}</Button></>
+  return <><div className="row between"><h3>{t('InBody history')}</h3><Button size="sm" icon="plus" onClick={() => setAdding(true)}>{t('Add')}</Button></div>
+    <Segmented value={range} onChange={setRange} options={[{ value: 30, label: '30d' }, { value: 90, label: '90d' }, { value: 180, label: '6m' }, { value: 0, label: t('All') }]} />
+    {first && last && first !== last && <div className="card inbody-compare"><div className="small dim">{fmtDate(first.d, true)} → {fmtDate(last.d, true)}</div>{INBODY_FIELDS.filter(([key]) => first[key] != null && last[key] != null).map(([key, label, unit]) => { const delta = Math.round((last[key] - first[key]) * 10) / 10, trend = trendClass(key, first[key], last[key]); return <div className="row between" key={key}><span>{t(label)}</span><b className={trend}>{delta > 0 ? '+' : ''}{fmtNum(delta)} {unit}{trend && <small> · {t(trend === 'better' ? 'Improved' : 'Moved away from target')}</small>}</b></div> })}</div>}
+    {shown.length ? <div className="list inbody-list">{[...shown].reverse().map(r => <div className="item" key={r.id || r.d} onClick={() => { setDate(r.d); setValues(Object.fromEntries(INBODY_FIELDS.map(([k]) => [k, r[k]]))); setImage(r.image || ''); setAdding(true) }}><span className="lrow-i"><Icon name="person" /></span><div className="grow"><div className="tt">{fmtDate(r.d, true)}</div><div className="ss">{[r.weight && `${r.weight} kg`, r.skeletalMuscle && `${t('Muscle')} ${r.skeletalMuscle} kg`, r.bodyFatPct && `${t('Body fat')} ${r.bodyFatPct}%`].filter(Boolean).join(' · ')}</div></div><Icon name="chevronRight" /></div>)}</div> : <div className="empty">{t('No InBody results in this period')}</div>}
+    <div className="small dim" style={{ marginTop: 10 }}>{t('Changes are descriptive. InBody conditions such as hydration and meal timing can affect each reading.')}</div></>
+}
+export const inBodySheet = () => ui().openSheet(() => <InBodyHistory />)
+
 /* ============================ workout detail ============================ */
 function WorkoutDetail({ w, close }) {
   const st = useStore(s => s.S)
@@ -917,6 +1277,8 @@ function WorkoutDetail({ w, close }) {
   // The session note is editable here rather than only at the finish sheet: what you want to
   // record about a session is often clearer once you have looked at what you actually did.
   const [note, setNote] = useState(w.note || '')
+  const [editing, setEditing] = useState(false)
+  const [draftEntries, setDraftEntries] = useState(() => JSON.parse(JSON.stringify(w.entries || [])))
   const saveNote = () => update(s => {
     const rec = s.workouts.find(x => x.id === w.id)
     if (!rec) return
@@ -927,36 +1289,34 @@ function WorkoutDetail({ w, close }) {
   // close the sheet without ever moving focus out of the textarea. Flush on unmount too. The
   // ref is what makes that work — a cleanup closes over the note from its own render, which
   // is the empty string this started with.
-  const latest = useRef(note)
-  latest.current = note
-  const initial = useRef(w.note || '')
-  useEffect(() => () => {
-    const text = latest.current.trim().slice(0, NOTE_MAX)
-    if (text === initial.current) return
-    update(s => {
-      const rec = s.workouts.find(x => x.id === w.id)
-      if (!rec) return                       // deleted from this very sheet
-      if (text) rec.note = text; else delete rec.note
-    })
-  }, [])
+  const saveEdits = () => confirmSheet({ title: t('Save history changes?'), message: t('This updates the selected workout record. The change can only be reversed by restoring a backup.'), confirmText: t('Save changes'), onConfirm: () => {
+    update(s => { const rec = s.workouts.find(x => x.id === w.id); if (!rec) return; rec.entries = JSON.parse(JSON.stringify(draftEntries)); const text = note.trim().slice(0, NOTE_MAX); if (text) rec.note = text; else delete rec.note; rec.vol = workoutVolume(rec) })
+    setEditing(false); toast(t('Workout updated'))
+  } })
   return <>
     <h3>{w.name}</h3>
-    <div className="muted small" style={{ marginBottom: 12 }}>{[fmtDate(w.d, true), ...durPart(w.end - w.start), fmtVol(w.vol, st.unit), ...(w.bw ? [fmtNum(w.bw) + ' ' + st.unit] : [])].join(' · ')}</div>
-    {w.entries.map((e, i) => {
+    <div className="muted small" style={{ marginBottom: 12 }}>{[fmtDate(w.d, true), ...(Number(w.end) > Number(w.start) ? [clockAt(w.start) + '–' + clockAt(w.end)] : []), ...durPart(workoutElapsedMs(w)), fmtVol(w.vol, st.unit), ...(w.bw ? [fmtNum(w.bw) + ' ' + st.unit] : [])].join(' · ')}</div>
+    {(editing ? draftEntries : w.entries).map((e, i) => {
       const ex = EXIDX[e.id]
       return <div key={i} className="row" style={{ marginBottom: 12, alignItems: 'flex-start' }}>
         {ex && <Thumb ex={ex} />}
         <div className="grow"><div className="tt capitalize" style={{ fontWeight: 600 }}>{ex ? exerciseNameFor(ex) : (e.n || e.id)} {w.prs && w.prs.includes(e.id) && <span className="pr"><Icon name="trophy" />PR</span>}</div>
-          <div className="ss">{e.sets.filter(s => s.done).map(s => setLabel(e.id, s, e.target)).join('  ·  ') || t('no sets')}</div>
+          {e.substitutedFor && <div className="small dim">{t('Substituted for {0}', exerciseNameFor(exOr(e.substitutedFor)))}</div>}
+          {editing ? <div className="workout-edit-sets">{e.sets.map((set, si) => <div className="workout-edit-set" key={si}>
+            <div className="edit-set-number">{t('Set')} {si + 1}</div>
+            {modeOf({ ...(e.target || {}), id: e.id }) === 'cardio' ? <><label><span>{t('Duration (min)')}</span><NumberField value={set.min} decimal={false} onChange={v => setDraftEntries(rows => rows.map((row, ri) => ri !== i ? row : { ...row, sets: row.sets.map((x, xi) => xi === si ? { ...x, min: v } : x) }))} /></label><label><span>{t('Speed (km/h)')}</span><NumberField value={set.speed} onChange={v => setDraftEntries(rows => rows.map((row, ri) => ri !== i ? row : { ...row, sets: row.sets.map((x, xi) => xi === si ? { ...x, speed: v } : x) }))} /></label></> : <><label><span>{t('Weight ({0})', st.unit)}</span><NumberField value={set.w || 0} onChange={v => setDraftEntries(rows => rows.map((row, ri) => ri !== i ? row : { ...row, sets: row.sets.map((x, xi) => xi === si ? { ...x, w: v } : x) }))} /></label><label><span>{set.sec != null ? t('Seconds') : t('Reps')}</span><NumberField value={set.r ?? set.sec ?? 0} decimal={false} onChange={v => setDraftEntries(rows => rows.map((row, ri) => ri !== i ? row : { ...row, sets: row.sets.map((x, xi) => xi === si ? { ...x, ...(x.sec != null ? { sec: v } : { r: v }) } : x) }))} /></label></>}
+          </div>)}</div> : <div className="ss">{e.sets.filter(s => s.done).map((s, si) => `${t('Set')} ${si + 1}: ${setLabel(e.id, s, e.target)}`).join('  ·  ') || t('no sets')}</div>}
           {e.note && <div className="small dim" style={{ marginTop: 3 }}>
             {e.notePin && <Icon name="flag" style={{ fontSize: 12, marginRight: 4, verticalAlign: '-1px', color: 'var(--yellow)' }} />}{e.note}
           </div>}</div>
       </div>
     })}
     <div className="small muted" style={{ margin: '4px 0 6px' }}>{t('Session note')}</div>
-    <textarea className="input" rows={2} maxLength={NOTE_MAX} value={note}
+    <textarea className="input" rows={2} maxLength={NOTE_MAX} value={note} disabled={!editing}
       placeholder={t('How the session went as a whole.')}
-      onChange={e => setNote(e.target.value)} onBlur={saveNote} />
+      onChange={e => setNote(e.target.value)} />
+    <div style={{ height: 10 }} />
+    {editing ? <div className="row" style={{ gap: 8 }}><Button variant="primary" style={{ flex: 1 }} onClick={saveEdits}>{t('Save changes')}</Button><Button style={{ flex: 1 }} onClick={() => { setDraftEntries(JSON.parse(JSON.stringify(w.entries || []))); setNote(w.note || ''); setEditing(false) }}>{t('Cancel')}</Button></div> : <Button icon="pencil" onClick={() => setEditing(true)}>{t('Edit workout')}</Button>}
     <div style={{ height: 14 }} />
     <Button variant="danger" onClick={() => confirmSheet({ title: t('Delete workout?'), message: t('This removes it from your history for good.'), confirmText: t('Delete'), danger: true, onConfirm: () => { update(s => { s.workouts = s.workouts.filter(x => x.id !== w.id) }); close(); toast(t('Workout deleted')) } })}>{t('Delete workout')}</Button>
   </>
@@ -964,6 +1324,54 @@ function WorkoutDetail({ w, close }) {
 export const workoutDetailSheet = w => ui().openSheet(close => <WorkoutDetail w={w} close={close} />)
 
 /* ============================ calendar ============================ */
+export function ZoomCalendar({ S: st, onDay }) {
+  const levels = ['week', 'month', 'months', 'years']
+  const [level, setLevel] = useState('week')
+  const [anchor, setAnchor] = useState(() => new Date())
+  const [selected, setSelected] = useState(todayISO())
+  const byDay = {}; st.workouts.forEach(w => (byDay[w.d] = byDay[w.d] || []).push(w))
+  const shift = dir => setAnchor(a => { const d = new Date(a); if (level === 'week') d.setDate(d.getDate() + dir * 7); else if (level === 'month') d.setMonth(d.getMonth() + dir); else if (level === 'months') d.setFullYear(d.getFullYear() + dir); else d.setFullYear(d.getFullYear() + dir * 12); return d })
+  const dayState = iso => {
+    const workouts = byDay[iso] || [], planned = !!effectiveRoutineId(st, iso)
+    const status = workouts.length ? 'completed' : planned ? (iso < todayISO() ? 'missed' : 'pending') : 'rest'
+    return { iso, workouts, planned, status }
+  }
+  const selectDay = iso => { setSelected(iso); if ((byDay[iso] || []).length) onDay?.(iso) }
+  const dayButton = (d, showRoutine = false) => {
+    const state = dayState(isoOf(d)), workout = state.workouts.at(-1)
+    const routine = st.routines.find(r => r.id === effectiveRoutineId(st, state.iso))
+    const name = workout?.name || routine?.name || ''
+    return <div key={state.iso} className="zoomcal-day-wrap">
+      <button className={`zoomcal-day ${state.status}${state.iso === todayISO() ? ' today' : ''}${state.iso === selected ? ' selected' : ''}`} onClick={() => selectDay(state.iso)}><b>{d.getDate()}</b></button>
+      {showRoutine && <span className="zoomcal-routine" title={name}>{name}</span>}
+    </div>
+  }
+  const periodStats = (start, end) => {
+    let planned = 0, completed = 0
+    const stop = end < new Date() ? end : new Date()
+    for (const d = new Date(start); d <= stop; d.setDate(d.getDate() + 1)) {
+      const state = dayState(isoOf(d)); if (state.planned) planned++; if (state.workouts.length) completed++
+    }
+    return { planned, completed, rate: planned ? Math.min(1, completed / planned) : (completed ? 1 : 0) }
+  }
+  const shade = rate => ({ '--completion': `${Math.round(rate * 100)}%` })
+  const monthMap = (year, month) => {
+    const days = new Date(year, month + 1, 0).getDate(), off = (new Date(year, month, 1).getDay() + 6) % 7
+    return <span className="zoomcal-mini-month" aria-hidden="true">{Array.from({ length: off }, (_, i) => <i key={'e' + i} className="placeholder" />)}{Array.from({ length: days }, (_, i) => { const state = dayState(isoOf(new Date(year, month, i + 1))); return <i key={i} className={state.status} /> })}</span>
+  }
+  let body, title
+  if (level === 'week') { const start = new Date(anchor); start.setDate(start.getDate() - ((start.getDay() + 6) % 7)); title = `${fmtDate(isoOf(start), true)} – ${fmtDate(isoOf(new Date(start.getFullYear(), start.getMonth(), start.getDate() + 6)), true)}`; body = <div className="zoomcal-week">{Array.from({ length: 7 }, (_, i) => { const d = new Date(start); d.setDate(start.getDate() + i); return <div className="zoomcal-week-column" key={i}><small>{t(['Mo','Tu','We','Th','Fr','Sa','Su'][i])}</small>{dayButton(d, true)}</div> })}</div> }
+  else if (level === 'month') { const y = anchor.getFullYear(), m = anchor.getMonth(), off = (new Date(y,m,1).getDay()+6)%7, n = new Date(y,m+1,0).getDate(); title = `${t(MONTHS_LONG[m])} ${y}`; body = <div className="zoomcal-month">{['Mo','Tu','We','Th','Fr','Sa','Su'].map(x => <small key={x}>{t(x)}</small>)}{Array.from({length:off},(_,i)=><i className="zoomcal-month-placeholder" key={'e'+i}/>)}{Array.from({length:n},(_,i)=>dayButton(new Date(y,m,i+1)))}</div> }
+  else if (level === 'months') { const y = anchor.getFullYear(); title = String(y); body = <div className="zoomcal-periods months">{MONTHS_LONG.map((m,i) => { const stats = periodStats(new Date(y,i,1), new Date(y,i+1,0)); return <button key={m} style={shade(stats.rate)} onClick={() => { setAnchor(new Date(y,i,1)); setLevel('month') }}><span className="zoomcal-period-head"><b>{t(m)}</b><em>{Math.round(stats.rate * 100)}%</em></span>{monthMap(y,i)}<small>{stats.completed}/{stats.planned} {t('completed')}</small></button> })}</div> }
+  else { const y = Math.floor(anchor.getFullYear()/12)*12; title = `${y}–${y+11}`; body = <div className="zoomcal-periods years">{Array.from({length:12},(_,i)=>y+i).map(yr => { const stats = periodStats(new Date(yr,0,1), new Date(yr,11,31)); return <button key={yr} style={shade(stats.rate)} onClick={() => { setAnchor(new Date(yr,0,1)); setLevel('months') }}><span className="zoomcal-period-head"><b>{yr}</b><em>{Math.round(stats.rate * 100)}%</em></span><span className="zoomcal-mini-year">{Array.from({length:12},(_,m) => { const ms = periodStats(new Date(yr,m,1),new Date(yr,m+1,0)); return <i key={m} style={shade(ms.rate)} /> })}</span><small>{stats.completed}/{stats.planned} {t('completed')}</small></button> })}</div> }
+  const zi = levels.indexOf(level)
+  const selectedState = dayState(selected), selectedWorkout = selectedState.workouts.at(-1)
+  return <div className="zoomcal"><div className="zoomcal-nav"><button className="iconbtn" onClick={() => shift(-1)}><Icon name="chevronLeft" /></button><div className="zoomcal-title"><b>{title}</b><button aria-label={t('Zoom out')} title={t('Zoom out')} disabled={zi >= levels.length-1} onClick={() => setLevel(levels[zi+1])}><Icon name="minus" /></button><button aria-label={t('Zoom in')} title={t('Zoom in')} disabled={zi <= 0} onClick={() => setLevel(levels[zi-1])}><Icon name="plus" /></button></div><button className="iconbtn" onClick={() => shift(1)}><Icon name="chevronRight" /></button></div>{body}
+    {(level === 'week' || level === 'month') && <div className={`zoomcal-selection ${selectedState.status}`}><div><b>{fmtDate(selected, true)}</b><span>{selectedWorkout?.name || t(selectedState.status === 'completed' ? 'Completed' : selectedState.status === 'missed' ? 'Not completed' : selectedState.status === 'pending' ? 'Pending' : 'Rest day')}</span></div>{selectedWorkout && <Icon name="chevronRight" />}</div>}
+    <div className="zoomcal-legend"><span><i className="completed" />{t('Completed')}</span><span><i className="missed" />{t('Not completed')}</span><span><i className="pending" />{t('Pending')}</span></div>
+  </div>
+}
+
 function Calendar({ start, close }) {
   const st = useStore(s => s.S)
   const [cur, setCur] = useState(() => { const d = start ? new Date(start) : new Date(); d.setDate(1); return d })
@@ -974,14 +1382,15 @@ function Calendar({ start, close }) {
   const daysIn = new Date(y, mo + 1, 0).getDate()
   const monthWs = st.workouts.filter(w => w.d.startsWith(y + '-' + String(mo + 1).padStart(2, '0')))
   const monthVol = monthWs.reduce((a, w) => a + (w.vol || 0), 0)
-  const monthMs = monthWs.reduce((a, w) => a + Math.max(0, (w.end || w.start) - w.start), 0)
+  const monthMs = monthWs.reduce((a, w) => a + workoutElapsedMs(w), 0)
   const cells = []
   for (let i = 0; i < startOffset; i++) cells.push(<div key={'e' + i} />)
   for (let d = 1; d <= daysIn; d++) {
     const iso = y + '-' + String(mo + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0')
     const ws = byDay[iso], effId = effectiveRoutineId(st, iso), ovr = st.dayPlan[iso] !== undefined
+    const isDeload = deloadStatus(st, iso).active
     const dotCls = ws ? 'done' : ovr && effId ? 'ovr' : effId ? 'plan' : ''
-    cells.push(<button key={d} className={'cal-d' + (ws ? ' has' : '') + (iso === todayISO() ? ' today' : '')} onClick={() => {
+    cells.push(<button key={d} className={'cal-d' + (ws ? ' has' : '') + (isDeload ? ' deload' : '') + (iso === todayISO() ? ' today' : '')} title={isDeload ? t('Deload week') : undefined} onClick={() => {
       if (!ws) { close(); dayOverrideSheet(iso); return }
       if (ws.length === 1) { close(); workoutDetailSheet(ws[0]); return }
       close(); ui().openSheet(c2 => <><h3>{fmtDate(iso, true)}</h3><div className="list">{ws.map(w => <WorkoutRow key={w.id} w={w} onClick={() => { c2(); workoutDetailSheet(w) }} />)}</div></>)
@@ -999,11 +1408,52 @@ function Calendar({ start, close }) {
       <span><i style={{ background: 'var(--acc)' }} />{t('Trained')}</span>
       <span><i style={{ background: 'var(--label-3)' }} />{t('Planned')}</span>
       <span><i style={{ background: 'var(--orange)' }} />{t('Rescheduled')}</span>
+      {st.deload?.on && <span><i style={{ background: 'var(--purple)' }} />{t('Deload')}</span>}
     </div>
     <div className="small dim" style={{ textAlign: 'center', marginTop: 10 }}>{t('Tap a trained day for details · tap any other day to plan a session')}</div>
   </>
 }
 export const calendarSheet = start => ui().openSheet(close => <Calendar start={start} close={close} />)
+
+function ActivityHistory({ close }) {
+  const st = useStore(s => s.S)
+  const openDay = iso => {
+    const rows = st.workouts.filter(w => w.d === iso)
+    if (rows.length === 1) { close(); workoutDetailSheet(rows[0]) }
+    else if (rows.length) { close(); calendarSheet(iso) }
+  }
+  return <><h3>{t('Workout calendar')}</h3>
+    <div className="muted small" style={{ marginBottom: 14 }}>{t('Start with one week. Zoom out to browse months and years; tap a trained day for its workout.')}</div>
+    <ZoomCalendar S={st} onDay={openDay} />
+  </>
+}
+export const activityHistorySheet = () => ui().openSheet(close => <ActivityHistory close={close} />)
+
+const clockAt = timestamp => new Date(timestamp).toLocaleTimeString(dateLocale(), { hour: 'numeric', minute: '2-digit' })
+const clockMinutes = minutes => new Date(2000, 0, 1, 0, minutes).toLocaleTimeString(dateLocale(), { hour: 'numeric', minute: '2-digit' })
+
+function SessionTiming() {
+  const st = useStore(s => s.S)
+  const summary = sessionTimingSummary(st.workouts)
+  const points = summary.sessions.map(w => ({ t: w.start, d: w.d, y: Math.round(w.durationMs / 60000), note: w.name }))
+  return <><h3>{t('Training times and duration')}</h3>
+    {!summary.sessions.length ? <div className="muted small">{t('Finish a timed workout to see these statistics.')}</div> : <>
+      <div className="tiles">
+        <div className="tile"><div className="l">{t('Average duration')}</div><div className="v" style={{ fontSize: 20 }}>{fmtDur(summary.averageMs)}</div></div>
+        <div className="tile"><div className="l">{t('Usual start time')}</div><div className="v" style={{ fontSize: 20 }}>{clockMinutes(summary.usualStartMinutes)}</div></div>
+        <div className="tile"><div className="l">{t('Shortest')}</div><div className="v" style={{ fontSize: 20 }}>{fmtDur(summary.shortest.durationMs)}</div></div>
+        <div className="tile"><div className="l">{t('Longest')}</div><div className="v" style={{ fontSize: 20 }}>{fmtDur(summary.longest.durationMs)}</div></div>
+      </div>
+      <h4 className="sec">{t('Duration trend')}</h4><div className="chart"><LineChart points={points} h={150} unit="min" color="var(--blue)" /></div>
+      <h4 className="sec">{t('Recent session times')}</h4>
+      <div className="list">{[...summary.sessions].reverse().slice(0, 30).map(w => <div className="item" key={w.id || w.start} onClick={() => workoutDetailSheet(w)}>
+        <span className="lrow-i"><Icon name="clock" /></span><div className="grow"><div className="tt">{w.name}</div><div className="ss">{fmtDate(w.d, true)} · {clockAt(w.start)}–{clockAt(w.end)}</div></div><span className="tag nocap">{fmtDur(w.durationMs)}</span>
+      </div>)}</div>
+      <div className="small dim" style={{ marginTop: 10 }}>{t('Sessions shorter than one minute or longer than twelve hours stay in history but are excluded from these averages.')}</div>
+    </>}
+  </>
+}
+export const sessionTimingSheet = () => ui().openSheet(() => <SessionTiming />)
 
 /* shared small workout row (used in lists) */
 export function WorkoutRow({ w, onClick }) {
@@ -1012,7 +1462,7 @@ export function WorkoutRow({ w, onClick }) {
   return <div className="item" onClick={onClick}>
     <span className="lrow-i" style={{ width: 34, height: 34, borderRadius: 8, fontSize: 19 }}><Icon name={glyph} /></span>
     <div className="grow"><div className="tt">{w.name}</div>
-      <div className="ss">{[fmtDate(w.d, true), ...durPart(w.end - w.start), t('{0} sets', setsDone(w)), fmtVol(w.vol, st.unit)].join(' · ')}</div></div>
+      <div className="ss">{[fmtDate(w.d, true), ...durPart(workoutElapsedMs(w)), t('{0} sets', setsDone(w)), fmtVol(w.vol, st.unit)].join(' · ')}</div></div>
     {w.prs && w.prs.length > 0 && <span className="pr"><Icon name="trophy" />{w.prs.length} PR</span>}
     <Icon name="chevronRight" className="chev" />
   </div>
@@ -1028,14 +1478,18 @@ export function beginWorkout(routineId, bw) {
   // The prescription is applied as the session is built, so you walk up to the bar with the
   // right weight already on the screen instead of being told about it afterwards. `plan` is
   // kept on the entry purely so the workout can explain the number it chose.
+  const deload = deloadStatus(st)
   const entries = (r ? r.ex : []).map(cfg => {
     const plan = nextPrescription(st, cfg, r)
     const step = defaultIncrement(cfg.id, st.unit)
-    const sets = applyIntensifierPlan(applyPrescription(buildSets(st, cfg, { step }), plan, step), cfg)
-    return { id: cfg.id, sg: cfg.sg, target: { ...cfg }, plan, sets }
+    const prescribed = applyPrescription(buildSets(st, cfg, { step }), plan, step)
+    const target = deloadTargetFor(cfg, deload)
+    const sets = applyIntensifierPlan(applyTrainingPlan(prescribed, target, step, deload), target)
+    const shownPlan = deload.active ? { kind: 'deload', why: ['Deload session — load, working sets and effort are reduced for recovery.'] } : plan
+    return { id: cfg.id, sg: cfg.sg, target, plan: shownPlan, sets }
   })
   update(s => {
-    s.active = { id: uid(), d: todayISO(), start: Date.now(), routineId, name: r ? r.name : t('Freestyle'), bw: bw || null, cur: 0, entries }
+    s.active = { id: uid(), d: todayISO(), start: Date.now(), routineId, name: r ? r.name : t('Freestyle'), bw: bw || null, unit: st.unit, bwUnit: st.unit, cur: 0, deload: deload.active, entries }
   })
   useUI.getState().stopRest()
   nav('/workout')
@@ -1191,24 +1645,30 @@ export const sessionNoteSheet = () => ui().openSheet(close => <SessionNote close
 
 // Shown when the last exercise's last set is checked — finish, or keep going.
 function WorkoutComplete({ close }) {
+  const decided = useRef(false)
+  useEffect(() => () => { if (!decided.current) resumeActiveWorkoutClock() }, [])
   return <div style={{ textAlign: 'center', padding: '8px 0' }}>
     <div style={{ fontSize: 44, display: 'flex', justifyContent: 'center', color: 'var(--acc)' }}><Icon name="checkCircle" /></div>
     <h3 style={{ margin: '8px 0' }}>{t("That's the whole workout!")}</h3>
     <div className="muted small" style={{ marginBottom: 16 }}>{t('Every exercise done — great work. Finish up, or keep going and add another exercise.')}</div>
-    <Button variant="primary" icon="flag" onClick={() => { close(); finishWorkout() }}>{t('Finish workout')}</Button>
+    <Button variant="primary" icon="flag" onClick={() => { decided.current = true; close(); finishWorkout() }}>{t('Finish workout')}</Button>
     <div style={{ height: 8 }} />
-    <Button onClick={() => { close(); useUI.getState().toast(t('Keep going — tap “+ Add exercise” below')) }}>{t('Continue workout')}</Button>
+    <Button onClick={() => { decided.current = true; resumeActiveWorkoutClock(); close(); useUI.getState().toast(t('Keep going — tap “+ Add exercise” below')) }}>{t('Continue workout')}</Button>
   </div>
 }
 export const workoutCompleteSheet = () => ui().openSheet(close => <WorkoutComplete close={close} />, { kind: 'center' })
 
-function FinishSummary({ w, prs, e1prs = [], close }) {
+function FinishSummary({ w, prs, e1prs = [], milestone = null, close }) {
   const st = useStore(s => s.S)
   return <div style={{ textAlign: 'center', padding: '8px 0' }}>
+    {milestone && <div className={'streak-celebration streak-' + streakTier(milestone)}>
+      <StreakFlame value={milestone} />
+      <div><b>{t('{0}-workout streak!', milestone)}</b><span>{t('Your consistency is paying off. Keep the flame alive!')}</span></div>
+    </div>}
     <div style={{ fontSize: 44, display: 'flex', justifyContent: 'center', color: 'var(--acc)' }}><Icon name="trophy" /></div>
     <h3 style={{ margin: '8px 0' }}>{t('Workout complete!')}</h3>
     <div className="tiles" style={{ textAlign: 'left' }}>
-      <div className="tile"><div className="l">{t('Duration')}</div><div className="v" style={{ fontSize: '1.1rem' }}>{fmtDur(w.end - w.start)}</div></div>
+      <div className="tile"><div className="l">{t('Duration')}</div><div className="v" style={{ fontSize: '1.1rem' }}>{fmtDur(workoutElapsedMs(w))}</div></div>
       <div className="tile"><div className="l">{t('Volume')}</div><div className="v" style={{ fontSize: '1.1rem' }}>{fmtVol(w.vol, st.unit)}</div></div>
       <div className="tile"><div className="l">{t('Sets')}</div><div className="v" style={{ fontSize: '1.1rem' }}>{t('{0} sets · {1} work', setsDone(w), workSetsDone(w))}</div></div>
       <div className="tile"><div className="l">{t('PRs')}</div><div className="v" style={{ fontSize: 20 }}>{prs.length || '—'}</div></div>
@@ -1228,8 +1688,8 @@ export function finishWorkout() {
   if (!A) return
   const done = setsDoneActive(A)
   const total = A.entries.reduce((n, e) => n + e.sets.length, 0)
-  if (!done) { confirmSheet({ title: t('Nothing logged yet'), message: t('You haven’t checked off any sets. Finish the workout anyway?'), confirmText: t('Finish anyway'), onConfirm: doFinishWorkout }); return }
-  if (done < total) { confirmSheet({ title: t('Finish early?'), message: t(total - done === 1 ? '{0} set still unchecked. Finish the workout now?' : '{0} sets still unchecked. Finish the workout now?', total - done), confirmText: t('Finish workout'), onConfirm: doFinishWorkout }); return }
+  if (!done) { pauseActiveWorkoutClock(); confirmSheet({ title: t('Nothing logged yet'), message: t('You haven’t checked off any sets. Finish the workout anyway?'), confirmText: t('Finish anyway'), onConfirm: doFinishWorkout, onCancel: resumeActiveWorkoutClock }); return }
+  if (done < total) { pauseActiveWorkoutClock(); confirmSheet({ title: t('Finish early?'), message: t(total - done === 1 ? '{0} set still unchecked. Finish the workout now?' : '{0} sets still unchecked. Finish the workout now?', total - done), confirmText: t('Finish workout'), onConfirm: doFinishWorkout, onCancel: resumeActiveWorkoutClock }); return }
   doFinishWorkout()
 }
 function doFinishWorkout() {
@@ -1260,8 +1720,16 @@ function doFinishWorkout() {
     s.workouts.push(w)
     s.active = null
   })
+  const after = S()
+  const streak = trainingStreak(after)
+  const celebrated = after.streakCelebrations || []
+  const milestone = streak.milestones.includes(streak.current) && !celebrated.includes(streak.current) ? streak.current : null
+  if (milestone) {
+    update(s => { s.streakCelebrations = [...new Set([...(s.streakCelebrations || []), milestone])] })
+    if (after.vibration !== false) vibrate([70, 45, 100, 45, 160])
+  }
   useStore.getState().autoBackupNow()
   useUI.getState().stopRest()
   beep(snd(), 880, 0.15); beep(snd(), 1100, 0.15, 0.18); beep(snd(), 1320, 0.3, 0.36)
-  ui().openSheet(close => <FinishSummary w={w} prs={prs} e1prs={e1prs} close={close} />, { kind: 'center', locked: true })
+  ui().openSheet(close => <FinishSummary w={w} prs={prs} e1prs={e1prs} milestone={milestone} close={close} />, { kind: 'center', locked: true })
 }

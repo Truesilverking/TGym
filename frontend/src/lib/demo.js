@@ -10,5 +10,6 @@
 // time, so the demo-only UI folds away and the seed generator — imported dynamically — never
 // lands in a self-hosted bundle.
 export const DEMO = import.meta.env.VITE_DEMO === '1'
+export const STANDALONE = import.meta.env.VITE_STANDALONE === '1'
 export const DEMO_SEEDED = 'gym_demo_seeded_v1'
-export const REPO = 'https://gitlab.com/DuarteSantos8/opengym'
+export { APP_REPOSITORY as REPO } from './app-meta.js'

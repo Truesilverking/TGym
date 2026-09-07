@@ -130,11 +130,11 @@ describe('linear progression', () => {
     expect(p.weight).toBe(60)
   })
 
-  it('deloads after three misses in a row, onto a loadable weight', () => {
-    const p = nextPrescription(hist(LIFT, [[60, 5, 5, 3], [60, 5, 4, 4], [60, 5, 5, 4]]), cfg)
+  it('repeats once, then reduces after the second miss', () => {
+    const p = nextPrescription(hist(LIFT, [[60, 5, 5, 3], [60, 5, 4, 4]]), cfg)
     expect(p.kind).toBe('deload')
     expect(p.weight).toBe(55)             // 60 × 0.9 = 54 → nearest loadable 2.5 step
-    expect(DELOAD_AFTER.linear).toBe(3)
+    expect(DELOAD_AFTER.linear).toBe(2)
   })
 
   it('a good session in between clears the stall', () => {
@@ -158,6 +158,13 @@ describe('linear progression', () => {
   it('uses the heavier step for a lower-body lift', () => {
     const p = nextPrescription(hist(HEAVY, [[100, 5, 5, 5]]), { id: HEAVY, sets: 3, reps: 5, prog: 'linear' })
     expect(p.weight).toBe(105)
+  })
+
+  it('ignores scheduled deload workouts when judging future progression', () => {
+    const normal = hist(LIFT, [[60, 5, 5, 5]], { sets: 3, reps: 5 })
+    normal.workouts.push({ d: '2026-01-02', deload: true, entries: [{ id: LIFT, target: { sets: 2, reps: 5 }, sets: [{ w: 45, r: 5, done: true }] }] })
+    expect(sessionsFor(normal, LIFT, cfg)).toHaveLength(1)
+    expect(nextPrescription(normal, cfg).weight).toBe(62.5)
   })
 
   it('honours a per-exercise increment override', () => {
@@ -314,6 +321,12 @@ describe('double progression', () => {
 })
 
 describe('timed progression', () => {
+  it('requires both sides of a unilateral hold to reach the target', () => {
+    const target = { id: LIFT, mode: 'time', sets: 1, sec: 30, side: true }
+    expect(readSession({ id: LIFT, target, sets: [{ sec: 30, leftSec: 30, rightSec: 25, done: true }] }).ok).toBe(false)
+    expect(readSession({ id: LIFT, target, sets: [{ sec: 30, leftSec: 30, rightSec: 30, done: true }] }).ok).toBe(true)
+    expect(readSession({ id: LIFT, target, sets: [{ sec: 30, done: true }] }).ok).toBe(true)
+  })
   const cfg = { id: LIFT, mode: 'time', sets: 2, sec: 45, prog: 'time' }
   const T = { sets: 2, sec: 45, mode: 'time' }
   const timeHist = rows => ({

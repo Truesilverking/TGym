@@ -2,29 +2,32 @@ import { create } from 'zustand'
 import { api, setRemoteAuth } from '../lib/api.js'
 import { localTZ } from '../lib/format.js'
 import { registerCustom } from '../lib/exercises.js'
-import { DEMO, DEMO_SEEDED } from '../lib/demo.js'
+import { DEMO, DEMO_SEEDED, STANDALONE } from '../lib/demo.js'
 import { guestAllowed } from '../lib/guest.js'
 import { MOBILE, nativeLoad, nativeSave, syncReminder, writeAutoBackup } from '../lib/mobile.js'
 import { loadRemote, chooseLocal, forgetRemote, connect } from '../lib/remote.js'
+import { shouldRestoreNative } from '../lib/native-state.js'
 
 const KEY = 'gym_state_v1'
 export const DEF = {
-  unit: 'kg', restSec: 90, restPauseSec: 15, sound: true, keepAwake: true, lang: 'en',
-  theme: 'dark', accent: 'lime', body: 'male', targetW: null,
-  bodyweight: [], routines: [], week: {}, dayPlan: {},
+  unit: 'kg', restSec: 90, restPauseSec: 15, restAdvanced: { warmup: 45, supersetMove: 0, supersetRound: 120 }, sound: true, vibration: true, reduceMotion: false, keepAwake: true, lang: 'es',
+  theme: 'dark', accent: 'red', body: 'male', targetW: null, heightCm: null,
+  bodyweight: [], measurements: [], inbody: [], measurementUnit: 'cm', routines: [], week: {}, dayPlan: {}, scheduleStarted: null,
   exWeights: {}, workouts: [], active: null, customEx: [], gifSize: 'full',
   // effort: which per-set effort scale is logged — 'none' | 'rir' | 'rpe'. null, not 'none', so
   // that a profile which never chose (loaded state is overlaid on DEF, on every path: local,
   // server pull, backup import) still falls back to the `showRir` boolean this replaced and
   // keeps the column it had. See effortOf.
-  reminder: { on: false, time: '08:00', tz: null }, effort: null, autoBackup: false,
+  reminder: { on: false, time: '08:00', dayTimes: {}, quietStart: '22:00', quietEnd: '07:00', quietOn: false, tz: null }, effort: null, strictReps: false,
+  deload: { on: false, normalWeeks: 6, deloadWeeks: 1, loadPct: 80, setPct: 60, targetRir: 4, startDate: null }, autoBackup: false, streakCelebrations: [],
+  cloudSync: { on: false, provider: 'google-drive', clientId: '', authorizedOnce: false, lastBackupAt: null, lastAttemptAt: null, lastFileId: null, needsAuth: false, lastError: null },
   // Equipment profiles (issue: filter Library/picker/routines by what you actually own —
   // e.g. "Home" vs "Gym" — building on the session-only equipment filter from issue #6).
   equipProfiles: [], activeEquipId: null, equipFilterOn: false,
   // Standing per-exercise notes, keyed by exercise id: the gym-specific facts that are true
   // every time you do the movement ("seat 4, pin 7"). Distinct from a routine's `note`, which
   // belongs to one exercise in one plan, and from a session note, which belongs to one day.
-  exNotes: {},
+  exNotes: {}, exerciseAliases: {}, exerciseGoals: {}, avoidedExercises: {},
 }
 const clone = o => JSON.parse(JSON.stringify(o))
 
@@ -93,6 +96,17 @@ export const useStore = create((set, get) => {
     user: (() => { try { return JSON.parse(localStorage.getItem('gym_user')) || null } catch { return null } })(),
     ready: false,
     needsMobileOnboarding: false,   // mobile build only — set true by boot() on a genuine first launch
+    async completeOnboarding() {
+      localStorage.setItem('framegym_onboarded_v1', '1')
+      // Do not leave the final language/unit choice waiting in the debounce queue. A user can
+      // close the app immediately after this button and the private mirror must already agree.
+      if (MOBILE) {
+        clearTimeout(saveTm)
+        saveTm = null
+        await nativeSave(get().S)
+      }
+      set({ needsMobileOnboarding: false })
+    },
 
     // Mutate a draft of S via producer fn, then persist + schedule sync.
     update(mut, push = true) {
@@ -222,9 +236,9 @@ export const useStore = create((set, get) => {
         }
         const saved = await nativeLoad()
         const S = get().S
-        if (saved && (!hasData(S) || (saved._ts || 0) >= (S._ts || 0))) {
+        if (shouldRestoreNative(S, saved)) {
           persist(Object.assign(clone(DEF), saved), false)
-        } else if (hasData(S)) {
+        } else if (S._ts || hasData(S)) {
           nativeSave(S)   // first run after an update from a file-less version: seed the mirror
         }
         get().setGuest(true)
@@ -232,7 +246,14 @@ export const useStore = create((set, get) => {
         // Only a genuinely first launch — nothing chosen yet and nothing to lose either — offers
         // the choice. Picking local (even with no data yet) persists that choice below and this
         // never asks again.
-        set({ ready: true, needsMobileOnboarding: !remote && !hasData(get().S) })
+        set({ ready: true, needsMobileOnboarding: !localStorage.getItem('framegym_onboarded_v1') && !hasData(get().S) })
+        return
+      }
+      // TGym's free PWA build has no backend: each installation is a private local profile
+      // and JSON files are the explicit transfer mechanism.
+      if (STANDALONE) {
+        get().setGuest(true)
+        set({ ready: true, needsMobileOnboarding: !localStorage.getItem('framegym_onboarded_v1') && !hasData(get().S) })
         return
       }
       // Demo build (GitHub Pages): no backend at all — seed once, stay in guest mode.

@@ -5,7 +5,8 @@ import { t, exerciseNameFor } from '../lib/i18n.js'
 import Icon from './Icon.jsx'
 
 // Big autoplaying animation; tap toggles to the still frame. `compact` shrinks it (superset cards).
-// Custom exercises have no media — the animation stays blank by design (issue #11).
+// A custom image may itself be an animated GIF. Browsers preserve its animation in a data URL,
+// so render it directly even though custom exercises do not have a separate still frame.
 // `minimizable` (workout view) adds a persistent minimize/expand control so the animation stops
 // eating the screen; the chosen size is saved to settings and carries across exercises and
 // future workouts (issue #12).
@@ -13,7 +14,7 @@ export default function Media({ ex, id, compact, minimizable }) {
   const [playing, setPlaying] = useState(true)
   const gifSize = useStore(s => s.S.gifSize)
   const update = useStore(s => s.update)
-  if (!ex.gif) return null
+  if (!ex.gif) return ex.img ? <div className={'exmedia' + (compact ? ' compact' : '')}><img decoding="async" src={imgSrc(ex)} alt={exerciseNameFor(ex)} /></div> : null
   const mini = minimizable && gifSize === 'mini'
   const toggleSize = e => { e.stopPropagation(); update(s => { s.gifSize = mini ? 'full' : 'mini' }) }
   return (

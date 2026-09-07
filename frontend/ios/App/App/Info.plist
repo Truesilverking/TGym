@@ -5,7 +5,18 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-        <string>openGym</string>
+	<string>TGym</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>TGym usa Face ID para desbloquear tus datos privados de entrenamiento.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>TGym usa la cámara únicamente para escanear el código QR de TGym Connector.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>TGym se conecta directamente con tu computadora para sincronizar datos en tu red local.</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>

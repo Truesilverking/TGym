@@ -29,6 +29,11 @@ export default function RoutineEdit() {
   if (!r) return null
 
   const edit = fn => update(s => { fn(s.routines.find(x => x.id === id).ex) })
+  const fillSlot = slot => exercisePicker(ex => exConfigSheet(ex, null, cfg => update(s => {
+    const routine = s.routines.find(x => x.id === id)
+    routine.ex.push({ id: ex.id, ...cfg })
+    routine.guideSlots = (routine.guideSlots || []).filter(x => x.id !== slot.id)
+  }), null, r, { sets: slot.sets, repsMin: slot.repsMin, reps: slot.reps, restSec: slot.restSec }))
   const move = (i, dir) => edit(ex => { const j = i + dir; if (j < 0 || j >= ex.length) return;[ex[i], ex[j]] = [ex[j], ex[i]]; cleanupSg(ex) })
   const toggleLink = i => edit(ex => {
     if (i < 1) return
@@ -46,7 +51,7 @@ export default function RoutineEdit() {
 
   return <div className="narrow">
     <div className="hdr">
-      <button className="iconbtn" onClick={() => nav('/plan')} aria-label={t('Plan')}><Icon name="chevronLeft" /></button>
+      <button className="iconbtn" onClick={() => nav('/plan')} aria-label={t('Routine')}><Icon name="chevronLeft" /></button>
       <div style={{ flex: 1, margin: '0 12px' }}>
         <input className="input" defaultValue={r.name} style={{ fontWeight: 600, fontSize: 20, letterSpacing: '-.021em' }}
           onChange={e => update(s => { s.routines.find(x => x.id === id).name = e.target.value.trim() || t('Routine') })} />
@@ -62,12 +67,28 @@ export default function RoutineEdit() {
     <div className="small dim" style={{ margin: '-10px 2px 16px' }}>
       {t('Applies to every exercise in this routine that does not set its own rule.')}
     </div>
+    <div className="sect-b" style={{ marginBottom: 16 }}>
+      <SelectRow icon="timer" title={t('Rest between sets')} value={r.restSec ?? ''} onChange={v => update(s => { const x = s.routines.find(x => x.id === id); if (v === '') delete x.restSec; else x.restSec = v })}
+        options={[{ value: '', label: t('Follow global setting') }, ...[0, 30, 45, 60, 90, 120, 150, 180, 240, 300].map(v => ({ value: v, label: v ? v + 's' : t('Off') }))]} />
+      <SelectRow icon="link" title={t('Rest after a superset round')} value={r.supersetRoundRestSec ?? ''} onChange={v => update(s => { const x = s.routines.find(x => x.id === id); if (v === '') delete x.supersetRoundRestSec; else x.supersetRoundRestSec = v })}
+        options={[{ value: '', label: t('Follow global setting') }, ...[0, 30, 60, 90, 120, 150, 180, 240, 300].map(v => ({ value: v, label: v ? v + 's' : t('Off') }))]} />
+    </div>
 
     {missingCount > 0 && <div className="card" style={{ marginBottom: 16, borderColor: 'var(--orange)' }}>
       <div className="row" style={{ gap: 8, alignItems: 'center' }}>
         <Icon name="warning" style={{ color: 'var(--orange)' }} />
         <div className="small">{t('{0} of {1} exercises need equipment outside "{2}"', missingCount, r.ex.length, profile.name)}</div>
       </div>
+    </div>}
+
+    {!!r.guideSlots?.length && <div className="card" style={{ marginBottom: 16 }}>
+      <h2>{t('Complete your routine')}</h2>
+      <div className="small dim" style={{ marginBottom: 10 }}>{t('Choose the movement you prefer for each guided space.')}</div>
+      <div className="list">{r.guideSlots.map(slot => <div className="item" key={slot.id} onClick={() => fillSlot(slot)}>
+        <span className="lrow-i"><Icon name="plus" /></span>
+        <div className="grow"><div className="tt">{t(slot.label)}</div><div className="ss">{t(slot.hint)}</div><div className="ss accent">{slot.sets} × {slot.repsMin}–{slot.reps} · {slot.restSec}s</div></div>
+        <Icon name="chevronRight" className="chev" />
+      </div>)}</div>
     </div>}
 
     {r.ex.length ? <div className="list">{r.ex.map((e, i) => {
@@ -82,7 +103,7 @@ export default function RoutineEdit() {
           exConfigSheet(ex, e, cfg => edit(x => { x[i] = { id: x[i].id, sg: x[i].sg, ...cfg } }), () => edit(x => { x.splice(i, 1); cleanupSg(x) }), r)
         }}>
           <Thumb ex={ex} />
-          <div className="grow"><div className="tt capitalize">{exerciseNameFor(ex)}</div><div className="ss">{exLine(e, S.unit)}</div>
+          <div className="grow"><div className="tt capitalize">{exerciseNameFor(ex)}</div>{S.exerciseAliases?.[ex.id] && <div className="ss">{t('Alias')}: {S.exerciseAliases[ex.id]}</div>}<div className="ss">{exLine(e, S.unit)}</div>
             {e.note && <div className="small dim" style={{ marginTop: 2 }}>{e.note}</div>}</div>
           {noEquip && <span className="tag" style={{ color: 'var(--orange)', borderColor: 'var(--orange)' }} title={t('Needs {0} — not in your active profile', t(ex.eq))}><Icon name="warning" /></span>}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 'none', alignItems: 'center' }}>

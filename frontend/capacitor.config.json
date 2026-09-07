@@ -1,9 +1,9 @@
 {
-  "appId": "ch.duartesantos.opengym",
-  "appName": "openGym",
+  "appId": "app.framegym.mobile",
+  "appName": "TGym",
   "webDir": "dist",
   "backgroundColor": "#0c0e12",
   "android": {
-    "allowMixedContent": false
+    "allowMixedContent": true
   }
 }

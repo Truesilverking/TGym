@@ -10,6 +10,10 @@ data/
 
 # Build output / deps
 frontend/dist/
+frontend/.tools/
+.tools/
+frontend/package-staging-*/
+frontend/docs/REQUEST_*.md
 node_modules/
 *.log
 .DS_Store

@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">openGym</string>
-    <string name="title_activity_main">openGym</string>
-    <string name="package_name">ch.duartesantos.opengym</string>
-    <string name="custom_url_scheme">ch.duartesantos.opengym</string>
+    <string name="app_name">TGym</string>
+    <string name="title_activity_main">TGym</string>
+    <string name="package_name">app.framegym.mobile</string>
+    <string name="custom_url_scheme">app.framegym.mobile</string>
 </resources>

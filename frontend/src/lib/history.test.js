@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { modeOf, isTimed, fmtSec, setLabel, defaultConfig, buildSets, freestyleConfig, exLine, workoutVolume, bestWeightFor, bestWeightForEntry, effortOf, stepEffort, capEffort, isBw, isPerSide, sideReps, repStep, cascadeWeight, insertWarmupRow, removeRowAt, workSetsDone, pairAdjacent, unpairSuperset, supersetUnits, applyIntensifierPlan, pinnedNoteFor, exNoteFor } from './history.js'
+import { modeOf, isTimed, fmtSec, setLabel, defaultConfig, buildSets, freestyleConfig, exLine, workoutVolume, bestWeightFor, bestWeightForEntry, effortOf, stepEffort, capEffort, isBw, isPerSide, sideReps, repStep, cascadeWeight, cascadeTopBackWeight, cascadeTopBackReps, insertWarmupRow, removeRowAt, workSetsDone, pairAdjacent, unpairSuperset, supersetUnits, applyIntensifierPlan, pinnedNoteFor, exNoteFor } from './history.js'
 import { EXDB } from './exercises.js'
 
 // Real ids out of the shipped catalogue, so the body-part fallback is exercised for real.
@@ -289,8 +289,25 @@ describe('sideReps', () => {
 })
 
 describe('exLine — per side never reaches a timed hold', () => {
-  it('ignores a stale side flag on a hold, which has no reps to split', () => {
-    expect(exLine({ id: LIFT, sets: 3, sec: 45, mode: 'time', side: true }, 'kg')).toBe('3 × 0:45')
+  it('shows that a timed unilateral target applies to each side', () => {
+    expect(exLine({ id: LIFT, sets: 3, sec: 45, mode: 'time', side: true }, 'kg')).toBe('3 × 0:45 / side')
+  })
+})
+
+describe('timed work per side', () => {
+  it('builds unilateral timed rows without changing legacy timed rows', () => {
+    const S = { exWeights: {}, workouts: [] }
+    expect(buildSets(S, { id: LIFT, mode: 'time', sets: 1, sec: 30, side: true })).toEqual([
+      { sec: 30, w: 0, side: true, done: false },
+    ])
+    expect(buildSets(S, { id: LIFT, mode: 'time', sets: 1, sec: 30 })).toEqual([
+      { sec: 30, w: 0, done: false },
+    ])
+  })
+
+  it('keeps both actual sides in the saved summary', () => {
+    expect(setLabel(LIFT, { sec: 30, leftSec: 30, rightSec: 27, side: true }, { id: LIFT, mode: 'time', side: true }))
+      .toBe('0:30 / side · L 0:30 · R 0:27')
   })
 })
 
@@ -380,7 +397,7 @@ describe('freestyleConfig', () => {
     const S = { exWeights: {}, workouts: [] }
     const cfg = { id: '0025', mode: 'reps', sets: 2, reps: 5, weight: 100, warmupSets: 3 }
     const rows = buildSets(S, cfg, { step: 2.5 })
-    expect(rows.map(r => r.w)).toEqual([50, 75, 87.5, 100, 100])
+    expect(rows.map(r => r.w)).toEqual([35, 60, 80, 100, 100])
     expect(rows.slice(0, 3).every(r => r.phase === 'warmup')).toBe(true)
     expect(rows.slice(3).every(r => r.phase === undefined)).toBe(true)
   })
@@ -714,6 +731,32 @@ describe('superset editing', () => {
 
 
 describe('session row helpers', () => {
+  it('cascades automatic Back-off reps without rewriting completed rows', () => {
+    const rows = [{ role: 'top', r: 6, done: true }, { role: 'top', r: 6, done: false }, { role: 'backoff', r: 8, done: true }, { role: 'backoff', r: 8, done: false }]
+    const out = cascadeTopBackReps(rows, 1, 5, { setScheme: 'topback', autoBackoffReps: true, backoffRepOffset: 2 })
+    expect(out.map(x => x.r)).toEqual([6, 5, 8, 7])
+    const manual = cascadeTopBackReps(out, 3, 9, { setScheme: 'topback', autoBackoffReps: true, backoffRepOffset: 2 })
+    expect(manual[1].r).toBe(5)
+  })
+  it('recalculates every pending back-off from an edited top set and snaps it', () => {
+    const rows = [{ role: 'top', w: 100 }, { role: 'top', w: 100 }, { role: 'backoff', w: 90 }, { role: 'backoff', w: 90 }]
+    expect(cascadeTopBackWeight(rows, 0, 105, { setScheme: 'topback', backoffPct: 10 }, 2.5).map(x => x.w)).toEqual([105, 105, 95, 95])
+  })
+
+  it('treats a manual back-off as temporary until the top changes again', () => {
+    const cfg = { setScheme: 'topback', backoffPct: 10 }
+    const rows = [{ role: 'top', w: 100 }, { role: 'backoff', w: 90 }, { role: 'backoff', w: 90 }]
+    const manual = cascadeTopBackWeight(rows, 1, 87.5, cfg, 2.5)
+    expect(manual.map(x => x.w)).toEqual([100, 87.5, 87.5])
+    expect(cascadeTopBackWeight(manual, 0, 105, cfg, 2.5).map(x => x.w)).toEqual([105, 95, 95])
+  })
+
+  it('never rewrites done top/back-off sets or warm-ups', () => {
+    const rows = [{ warmup: true, w: 40 }, { role: 'top', w: 100, done: true }, { role: 'top', w: 100 }, { role: 'backoff', w: 90, done: true }, { role: 'backoff', w: 90 }]
+    const next = cascadeTopBackWeight(rows, 2, 105, { setScheme: 'topback', backoffPct: 10 }, 2.5)
+    expect(next.map(x => x.w)).toEqual([40, 100, 105, 90, 95])
+  })
+
   it('cascadeWeight propagates to same-flag undone rows and never rewrites done sets', () => {
     const rows = [
       { warmup: true, w: 20, done: true },
@@ -750,7 +793,7 @@ describe('session row helpers', () => {
     const next = insertWarmupRow(rows, 'reps', { reps: 8 }, 2.5)
     expect(next.length).toBe(4)
     expect(next[2].warmup).toBe(true)
-    expect(next[2].w).toBe(45)             // halfway from the last warm-up (30) to the work set (60)
+    expect(next[2].w).toBe(47.5)           // third row follows the deterministic 35/60/80% profile
     expect(next[3].w).toBe(60)             // work row still after the warm-up block
   })
 
@@ -760,7 +803,7 @@ describe('session row helpers', () => {
   it('gives the first warm-up half the working weight, not the working weight itself', () => {
     const next = insertWarmupRow([{ w: 100, r: 5, done: false }], 'reps', { reps: 5 }, 2.5)
     expect(next.length).toBe(2)
-    expect(next[0]).toMatchObject({ w: 50, r: 5, phase: 'warmup', warmup: true, done: false })
+    expect(next[0]).toMatchObject({ w: 50, r: 4, phase: 'warmup', warmup: true, done: false })
     expect(next[1].w).toBe(100)
   })
 
@@ -771,16 +814,16 @@ describe('session row helpers', () => {
 
   it('keeps bodyweight warm-ups at zero and never exceeds the work set', () => {
     expect(insertWarmupRow([{ w: 0, r: 12 }], 'reps', { reps: 12 }, 2.5)[0].w).toBe(0)
-    // A warm-up already at the working weight cannot ramp any further.
-    const at100 = insertWarmupRow([{ warmup: true, w: 100, r: 5 }, { w: 100, r: 5 }], 'reps', { reps: 5 }, 2.5)
-    expect(at100[1].w).toBe(100)
+    const at100 = insertWarmupRow([{ warmup: true, w: 100, r: 5, done: true }, { w: 100, r: 5 }], 'reps', { reps: 5 }, 2.5)
+    expect(at100[0].w).toBe(100)
+    expect(at100[1].w).toBe(70)
   })
 
   it('ramps a timed hold the same way and leaves cardio on the work row values', () => {
     expect(insertWarmupRow([{ sec: 45, w: 40, done: false }], 'time', { sec: 45 }, 2.5)[0])
-      .toMatchObject({ sec: 45, w: 20, phase: 'warmup' })
-    expect(insertWarmupRow([{ min: 20, speed: 10, done: false }], 'cardio', { min: 20 }, 2.5)[0])
-      .toMatchObject({ min: 20, speed: 10, phase: 'warmup' })
+      .toMatchObject({ sec: 23, w: 20, phase: 'warmup' })
+    expect(insertWarmupRow([{ min: 20, speed: 10, done: false }], 'cardio', { min: 20 }, 2.5))
+      .toEqual([{ min: 20, speed: 10, done: false }])
   })
 
   it('removeRowAt never empties an entry below one row', () => {

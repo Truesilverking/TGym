@@ -35,6 +35,11 @@ describe('completed workout boundary', () => {
       n: 'Custom lift', muscleWeights: { chest: 1 },
     })
   })
+
+  it('keeps unit stamps and the scheduled-deload marker with the completed workout', () => {
+    const active = { id: 'w', d: '2026-08-08', start: 1, unit: 'lb', bwUnit: 'lb', deload: true, entries: [{ id: 'x', sets: [{ done: true, w: 100, r: 5 }] }] }
+    expect(buildCompletedWorkout(active, { end: 2 })).toMatchObject({ unit: 'lb', bwUnit: 'lb', deload: true })
+  })
 })
 
 // Notes written during a session have to survive it, or "write a note during your workout"
