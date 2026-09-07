@@ -60,7 +60,9 @@ jobs:
           cp frontend/android/app/build/outputs/bundle/release/app-release.aab "frontend/release/TGym-Android-v${VERSION}.aab"
           (cd frontend/release && sha256sum * > checksums.txt)
           APK_SHA="$(sha256sum "frontend/release/TGym-Android-v${VERSION}.apk" | cut -d' ' -f1)"
-          jq -n --arg version "$VERSION" --argjson code "$CODE" --arg sha "$APK_SHA" --arg repo "$GITHUB_REPOSITORY" --arg at "$(date -u +%FT%TZ)" '{version:$version,versionCode:$code,publishedAt:$at,minimumVersion:null,mandatory:false,title:("TGym "+$version),notes:[],android:{apk:("https://github.com/"+$repo+"/releases/download/v"+$version+"/TGym-Android-v"+$version+".apk"),playStore:null,sha256:$sha},ios:{appStore:null}}' > frontend/updates/latest.json
+          OWNER="${GITHUB_REPOSITORY%%/*}"
+          NAME="${GITHUB_REPOSITORY#*/}"
+          jq -n --arg version "$VERSION" --argjson code "$CODE" --arg sha "$APK_SHA" --arg owner "$OWNER" --arg name "$NAME" --arg at "$(date -u +%FT%TZ)" '{version:$version,versionCode:$code,publishedAt:$at,minimumVersion:null,mandatory:false,title:("TGym "+$version),notes:[],android:{apk:("https://"+$owner+".github.io/"+$name+"/downloads/TGym-latest.apk"),playStore:null,sha256:$sha},ios:{appStore:null}}' > frontend/updates/latest.json
       - uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
@@ -69,7 +71,11 @@ jobs:
             frontend/release/TGym-Android-v*.aab
             frontend/release/checksums.txt
       - name: Build GitHub Pages PWA
-        run: VITE_GITHUB_OWNER=${{ github.repository_owner }} VITE_GITHUB_REPO=${{ github.event.repository.name }} VITE_APP_DISTRIBUTION=pwa pnpm run build:pwa && cp -r updates dist/updates
+        run: |
+          VITE_GITHUB_OWNER=${{ github.repository_owner }} VITE_GITHUB_REPO=${{ github.event.repository.name }} VITE_APP_DISTRIBUTION=pwa pnpm run build:pwa
+          cp -r updates dist/updates
+          mkdir -p dist/downloads
+          cp release/TGym-Android-v*.apk dist/downloads/TGym-latest.apk
         working-directory: frontend
       - uses: actions/upload-pages-artifact@v3
         with: { path: frontend/dist }

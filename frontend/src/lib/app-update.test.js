@@ -10,6 +10,7 @@ describe('app updates', () => {
     expect(() => parseUpdateManifest({ version:'1.2.3',versionCode:1,android:{apk:'http://evil.test/a.apk'} }, { repository:'https://github.com/acme/tgym' })).toThrow('untrusted_update_url')
   })
   it('accepts a release asset from the configured repository', () => expect(parseUpdateManifest({ version:'1.14.0',versionCode:34,android:{apk:'https://github.com/acme/tgym/releases/download/v1.14.0/a.apk'} }, { repository:'https://github.com/acme/tgym' }).version).toBe('1.14.0'))
+  it('accepts the repository GitHub Pages direct download', () => expect(parseUpdateManifest({ version:'1.15.1',versionCode:36,android:{apk:'https://acme.github.io/tgym/downloads/TGym-latest.apk'} }, { repository:'https://github.com/acme/tgym' }).android.apk).toContain('/downloads/TGym-latest.apk'))
   it('throttles automatic checks but force bypasses it', async () => {
     localStorage.setItem('tgym_update_checked_at','1000'); const fetcher=vi.fn(async()=>({ok:true,json:async()=>({version:'1.15.0',versionCode:35})}))
     expect((await checkForAppUpdate({currentVersion:'1.14.0',now:2000,manifestUrl:'https://x.test/latest.json',fetcher})).throttled).toBe(true)
