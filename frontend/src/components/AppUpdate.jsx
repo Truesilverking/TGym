@@ -3,6 +3,7 @@ import { useUI } from '../store/useUI.js'
 import { t } from '../lib/i18n.js'
 import { Button } from './ui.jsx'
 import { checkForAppUpdate, dismissUpdate, updateUrlFor } from '../lib/app-update.js'
+import { initializeUpdatePush } from '../lib/update-push.js'
 
 async function openUpdateUrl(url) {
   if (!url) { location.reload(); return }
@@ -31,11 +32,13 @@ export async function manualUpdateCheck() {
 export default function AppUpdate() {
   useEffect(() => {
     let gone = false
+    let stopPush = () => {}
     const check = () => checkForAppUpdate().then(r => { if (!gone && r.update) showUpdateSheet(r.update) }).catch(() => {})
     check()
+    void initializeUpdatePush(() => { if (!gone) check() }).then(stop => { stopPush = stop })
     const visible = () => { if (document.visibilityState === 'visible') check() }
     document.addEventListener('visibilitychange', visible)
-    return () => { gone = true; document.removeEventListener('visibilitychange', visible) }
+    return () => { gone = true; stopPush(); document.removeEventListener('visibilitychange', visible) }
   }, [])
   return null
 }

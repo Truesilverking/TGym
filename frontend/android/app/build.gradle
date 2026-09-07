@@ -60,6 +60,7 @@ dependencies {
     // Native Google authorization is required because Google blocks OAuth consent inside
     // embedded Android WebViews. Only the Drive app-data scope is requested by our plugin.
     implementation 'com.google.android.gms:play-services-auth:21.6.0'
+    implementation 'com.google.firebase:firebase-messaging:24.0.1'
 }
 
 apply from: 'capacitor.build.gradle'
