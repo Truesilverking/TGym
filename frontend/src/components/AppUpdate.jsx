@@ -3,7 +3,6 @@ import { useUI } from '../store/useUI.js'
 import { t } from '../lib/i18n.js'
 import { Button } from './ui.jsx'
 import { checkForAppUpdate, dismissUpdate, updateUrlFor } from '../lib/app-update.js'
-import { initializeUpdatePush } from '../lib/update-push.js'
 
 async function openUpdateUrl(url) {
   if (!url) { location.reload(); return }
@@ -36,9 +35,7 @@ export default function AppUpdate() {
     check()
     const visible = () => { if (document.visibilityState === 'visible') check() }
     document.addEventListener('visibilitychange', visible)
-    let disposePush = () => {}
-    initializeUpdatePush(() => checkForAppUpdate({ force: true }).then(r => { if (!gone && r.update) showUpdateSheet(r.update) })).then(dispose => { disposePush = dispose }).catch(() => {})
-    return () => { gone = true; disposePush(); document.removeEventListener('visibilitychange', visible) }
+    return () => { gone = true; document.removeEventListener('visibilitychange', visible) }
   }, [])
   return null
 }
