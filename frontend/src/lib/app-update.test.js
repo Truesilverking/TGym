@@ -16,10 +16,10 @@ describe('app updates', () => {
     expect((await checkForAppUpdate({currentVersion:'1.14.0',now:2000,manifestUrl:'https://x.test/latest.json',fetcher})).throttled).toBe(true)
     expect((await checkForAppUpdate({currentVersion:'1.14.0',now:2000,force:true,manifestUrl:'https://x.test/latest.json',fetcher})).update.version).toBe('1.15.0')
   })
-  it('checks again after one hour', async () => {
+  it('checks again after four hours', async () => {
     localStorage.setItem('tgym_update_checked_at','1000')
     const fetcher=vi.fn(async()=>({ok:true,json:async()=>({version:'1.15.5',versionCode:40})}))
-    const result = await checkForAppUpdate({currentVersion:'1.15.3',now:3601001,manifestUrl:'https://x.test/latest.json',fetcher})
+    const result = await checkForAppUpdate({currentVersion:'1.15.3',now:14401001,manifestUrl:'https://x.test/latest.json',fetcher})
     expect(result.update.version).toBe('1.15.5')
     expect(fetcher).toHaveBeenCalledOnce()
   })

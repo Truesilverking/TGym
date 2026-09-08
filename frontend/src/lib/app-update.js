@@ -44,9 +44,9 @@ export function updateUrlFor(manifest, distribution = APP_DISTRIBUTION) {
 export async function checkForAppUpdate({ currentVersion = __APP_VERSION__, force = false, fetcher = fetch, now = Date.now(), manifestUrl = UPDATE_MANIFEST_URL } = {}) {
   if (!manifestUrl) throw new Error('update_not_configured')
   const last = Number(localStorage.getItem('tgym_update_checked_at') || 0)
-  // Do not make a newly published APK wait half a day before it can discover an update.
-  // The manifest is fetched with no-store, and the foreground listener still prevents spam.
-  if (!force && now - last < 60 * 60 * 1000) return { throttled: true, update: null }
+  // Check every four hours automatically. The manifest is fetched with no-store, and the
+  // foreground listener still prevents repeated prompts while manual checks bypass this limit.
+  if (!force && now - last < 4 * 60 * 60 * 1000) return { throttled: true, update: null }
   const response = await fetcher(manifestUrl, { cache: 'no-store' })
   if (!response.ok) throw new Error('update_check_failed')
   const manifest = parseUpdateManifest(await response.json())
