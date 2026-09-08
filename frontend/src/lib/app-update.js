@@ -47,7 +47,11 @@ export async function checkForAppUpdate({ currentVersion = __APP_VERSION__, forc
   // Check every four hours automatically. The manifest is fetched with no-store, and the
   // foreground listener still prevents repeated prompts while manual checks bypass this limit.
   if (!force && now - last < 4 * 60 * 60 * 1000) return { throttled: true, update: null }
-  const response = await fetcher(manifestUrl, { cache: 'no-store' })
+  // GitHub Pages can briefly serve a cached manifest after a release. Add a
+  // request nonce as well as no-store so a newly published version is seen on
+  // the first foreground check instead of waiting for the CDN cache to expire.
+  const separator = manifestUrl.includes('?') ? '&' : '?'
+  const response = await fetcher(`${manifestUrl}${separator}check=${now}`, { cache: 'no-store' })
   if (!response.ok) throw new Error('update_check_failed')
   const manifest = parseUpdateManifest(await response.json())
   localStorage.setItem('tgym_update_checked_at', String(now))

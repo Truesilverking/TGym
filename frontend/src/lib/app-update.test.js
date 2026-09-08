@@ -22,5 +22,6 @@ describe('app updates', () => {
     const result = await checkForAppUpdate({currentVersion:'1.15.3',now:14401001,manifestUrl:'https://x.test/latest.json',fetcher})
     expect(result.update.version).toBe('1.15.5')
     expect(fetcher).toHaveBeenCalledOnce()
+    expect(fetcher.mock.calls[0][0]).toBe('https://x.test/latest.json?check=14401001')
   })
 })

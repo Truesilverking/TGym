@@ -97,4 +97,9 @@ jobs:
           TOKEN: ${{ steps.firebase-auth.outputs.access_token }}
           PROJECT: ${{ secrets.FIREBASE_PROJECT_ID }}
         run: |
-          curl --fail-with-body -X POST "https://fcm.googleapis.com/v1/projects/${PROJECT}/messages:send" -H "Authorization: Bearer ${TOKEN}" -H 'Content-Type: application/json' -d "{\"message\":{\"topic\":\"tgym_updates\",\"notification\":{\"title\":\"TGym ${GITHUB_REF_NAME#v} available\",\"body\":\"A new TGym update is ready.\"},\"data\":{\"type\":\"app_update\",\"version\":\"${GITHUB_REF_NAME#v}\"}}}"
+          # Retry transient Firebase/API failures; the update prompt remains available
+          # through the manifest check, but a successful release should notify subscribed devices.
+          curl --fail-with-body --retry 3 --retry-all-errors --retry-delay 5 \
+            -X POST "https://fcm.googleapis.com/v1/projects/${PROJECT}/messages:send" \
+            -H "Authorization: Bearer ${TOKEN}" -H 'Content-Type: application/json' \
+            -d "{\"message\":{\"topic\":\"tgym_updates\",\"notification\":{\"title\":\"TGym ${GITHUB_REF_NAME#v} available\",\"body\":\"A new TGym update is ready.\"},\"data\":{\"type\":\"app_update\",\"version\":\"${GITHUB_REF_NAME#v}\"}}}"
