@@ -647,10 +647,10 @@ h4.sec{
    evenly through the row and the values mask it, keeping both halves visually symmetrical. */
 .settargets{display:grid;grid-template-columns:24px minmax(0,1.4fr) minmax(0,1fr) 30px 30px;align-items:center;gap:8px;min-height:22px;margin:7px 0 6px;color:var(--acc);font-size:13px;font-weight:750;font-variant-numeric:tabular-nums;position:relative}
 .settargets::before{content:'';position:absolute;left:0;right:0;top:50%;height:1px;background:var(--sep);transform:translateY(-50%)}
-.settargets .phase-label{position:absolute;left:0;top:50%;transform:translateY(-50%);z-index:2;background:var(--surface);padding-right:10px;color:var(--dim);font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
+.settargets .phase-label{position:absolute;left:0;top:50%;transform:translateY(-50%);z-index:2;background:var(--surface);padding:0 10px 0 0;color:var(--dim);font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
 .settargets .n-sp{grid-column:1}.settargets .w-sp{grid-column:2;text-align:center}.settargets .r-sp{grid-column:3;text-align:center}.settargets .eff-sp{text-align:center}.settargets .ck-sp{grid-column:5;width:30px}
 .settargets span:not(.phase-label){position:relative;z-index:1}
-.settargets b{display:inline-block;background:var(--surface);padding:0 9px;font:inherit;color:inherit}
+.settargets b{display:inline-flex;min-width:42px;justify-content:center;background:var(--surface);padding:0 6px;font:inherit;color:inherit}
 .setsep{height:1px;background:var(--sep);margin:9px 0}
 .setrow .n{grid-column:1;
   width:24px;height:24px;border-radius:50%;background:var(--surface-2);color:var(--label-2);
@@ -665,6 +665,7 @@ h4.sec{
    just enough to make room since their values ("82.5", "12") need more of what's left.
    The header shares the numbers so its labels stay centred over the steppers they name. */
 .setrow.eff3,.sethead.eff3,.settargets.eff3{grid-template-columns:24px minmax(0,1.2fr) minmax(0,1fr) minmax(0,.85fr) 30px 30px;gap:6px}
+.sethead.eff3,.settargets.eff3{font-variant-numeric:tabular-nums}
 .sethead.eff3 .eff-sp,.settargets.eff3 .eff-sp{grid-column:4}.sethead.eff3 .ck-sp:last-child,.settargets.eff3 .ck-sp{grid-column:6}.setrow.eff3>.iconbtn,.setrow.eff3>.setgo{grid-column:5}.setrow.eff3>.chk{grid-column:6}
 .setrow.eff3 .stp button{width:23px}
 .setrow.eff3 .stp.eff button{width:20px}
