@@ -1526,8 +1526,8 @@ function TopWeight({ entryIdx, close }) {
     })
     close()
     if (advance && unitDone) {
-      if (isLastUnit) workoutCompleteSheet()               // whole workout done → finish/continue prompt
-      else update(s => { s.active.cur = units[unitIdx + 1][0] })
+      if (A.entries.every(e => e.sets.length > 0 && e.sets.every(s => s.done))) workoutCompleteSheet()
+      else if (!isLastUnit) update(s => { s.active.cur = units[unitIdx + 1][0] })
     } else toast(t('Tracked — next time starts at {0}', fmtNum(S().exWeights[entry.id].w) + ' ' + st.unit))
   }
   return <>
@@ -1645,18 +1645,19 @@ export const sessionNoteSheet = () => ui().openSheet(close => <SessionNote close
 
 // Shown when the last exercise's last set is checked — finish, or keep going.
 function WorkoutComplete({ close }) {
-  const decided = useRef(false)
-  useEffect(() => () => { if (!decided.current) resumeActiveWorkoutClock() }, [])
   return <div style={{ textAlign: 'center', padding: '8px 0' }}>
     <div style={{ fontSize: 44, display: 'flex', justifyContent: 'center', color: 'var(--acc)' }}><Icon name="checkCircle" /></div>
     <h3 style={{ margin: '8px 0' }}>{t("That's the whole workout!")}</h3>
     <div className="muted small" style={{ marginBottom: 16 }}>{t('Every exercise done — great work. Finish up, or keep going and add another exercise.')}</div>
-    <Button variant="primary" icon="flag" onClick={() => { decided.current = true; close(); finishWorkout() }}>{t('Finish workout')}</Button>
+    <Button variant="primary" icon="flag" onClick={() => { close(); finishWorkout() }}>{t('Finish workout')}</Button>
     <div style={{ height: 8 }} />
-    <Button onClick={() => { decided.current = true; resumeActiveWorkoutClock(); close(); useUI.getState().toast(t('Keep going — tap “+ Add exercise” below')) }}>{t('Continue workout')}</Button>
+    <Button onClick={() => { resumeActiveWorkoutClock(); close(); useUI.getState().toast(t('Keep going — tap “+ Add exercise” below')) }}>{t('Continue workout')}</Button>
   </div>
 }
-export const workoutCompleteSheet = () => ui().openSheet(close => <WorkoutComplete close={close} />, { kind: 'center' })
+export const workoutCompleteSheet = () => {
+  pauseActiveWorkoutClock()
+  ui().openSheet(close => <WorkoutComplete close={close} />, { kind: 'center' })
+}
 
 function FinishSummary({ w, prs, e1prs = [], milestone = null, close }) {
   const st = useStore(s => s.S)

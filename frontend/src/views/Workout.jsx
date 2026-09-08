@@ -466,7 +466,6 @@ function ActiveWorkout() {
   const toggle = (idx, i) => {
     const m = modeAt(idx)
     const cardioEntry = m === 'cardio'
-    const isLastUnit = unitIdx >= units.length - 1
     let askTop = false, exJustDone = false, workoutDone = false, checked = false
     mutEntry(idx, e => {
       e.sets[i].done = !e.sets[i].done
@@ -474,8 +473,10 @@ function ActiveWorkout() {
       if (e.sets[i].done) {
         e.sets[i].doneAt = Date.now()
         beep(S.sound, 1040, 0.12); vibrate(30)
-        const unitDone = unit.every(ui => (ui === idx ? e : A.entries[ui]).sets.every(x => x.done))
-        if (unitDone && isLastUnit) workoutDone = true      // last exercise's last set → done
+        workoutDone = A.entries.every((entry, ui) => {
+          const sets = (ui === idx ? e : entry).sets
+          return sets.length > 0 && sets.every(x => x.done)
+        })
         // Only loaded reps training has a "working weight" worth confirming — a bodyweight
         // plank has nothing to put in that slider, and neither does a set of push-ups
         // (issue #32: the fewest taps that still record what happened).
@@ -486,7 +487,6 @@ function ActiveWorkout() {
     update(s => {
       if (!s.active) return
       if (workoutDone && checked) s.active = pauseWorkoutClock(s.active)
-      else if (!checked && s.active.timerPausedAt) s.active = resumeWorkoutClock(s.active)
     }, true)
     // reps: topWeight first (it chains into the finish/continue prompt on the last unit).
     // cardio/timed or already-confirmed: go straight to the prompt.
@@ -634,6 +634,9 @@ function ActiveWorkout() {
         {A.note ? t('Edit session note') : t('Add session note')}
       </Button>
     </div>
+    {A.timerPausedAt && <Button onClick={() => update(s => {
+      if (s.active) s.active = resumeWorkoutClock(s.active)
+    }, true)}>{t('Continue workout')}</Button>}
     {(() => {
       const exDone = A.entries.filter(e => e.sets.length && e.sets.every(s => s.done)).length
       const allDone = A.entries.length > 0 && exDone === A.entries.length

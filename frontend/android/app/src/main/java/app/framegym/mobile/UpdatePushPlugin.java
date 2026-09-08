@@ -1,6 +1,5 @@
 package app.framegym.mobile;
 
-import androidx.annotation.NonNull;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.annotation.CapacitorPlugin;
@@ -14,7 +13,7 @@ public class UpdatePushPlugin extends Plugin {
             FirebaseMessaging.getInstance().subscribeToTopic("tgym_updates")
                 .addOnSuccessListener(unused -> call.resolve())
                 .addOnFailureListener(error -> call.reject("Update notifications unavailable", error));
-        } catch (Throwable error) {
+        } catch (Exception error) {
             call.reject("Update notifications unavailable", error);
         }
     }

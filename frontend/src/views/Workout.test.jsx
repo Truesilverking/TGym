@@ -122,6 +122,27 @@ afterEach(async () => {
 })
 
 describe('Workout set completion flow', () => {
+  it('pauses on completion out of order and only continues after the explicit button', async () => {
+    await mount([exercise('first', [false], { asked: true }), exercise('last', [true])])
+    await toggleSet(0)
+    const pausedAt = mocks.S.active.timerPausedAt
+    expect(pausedAt).toBeGreaterThan(0)
+    await toggleSet(0)
+    expect(mocks.S.active.timerPausedAt).toBe(pausedAt)
+    await act(async () => { root.render(React.createElement(Workout)) })
+    const resume = [...container.querySelectorAll('button')].find(b => b.textContent.includes('Continue workout'))
+    expect(resume).toBeTruthy()
+    await act(async () => { resume.dispatchEvent(new dom.Event('click', { bubbles: true })) })
+    expect(mocks.S.active.timerPausedAt).toBeUndefined()
+    expect(mocks.S.active.pausedDurationMs).toBeGreaterThanOrEqual(0)
+  })
+
+  it('does not pause just because the last listed exercise is done', async () => {
+    await mount([exercise('first', [false]), exercise('last', [false], { asked: true })], 1)
+    await toggleSet(0)
+    expect(mocks.S.active.timerPausedAt).toBeUndefined()
+  })
+
   it('starts rest after a non-final ordinary set, but stops rest without restarting it on the final set', async () => {
     await mount([exercise('plain-bench', [false, false, false])])
     await toggleSet(0)
