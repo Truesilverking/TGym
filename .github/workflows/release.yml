@@ -34,6 +34,7 @@ jobs:
         working-directory: frontend
       - name: Configure Firebase application
         if: ${{ env.HAS_GOOGLE_SERVICES == 'true' }}
+        continue-on-error: true
         env:
           GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
         run: printf '%s' "$GOOGLE_SERVICES_JSON_BASE64" | base64 --decode > frontend/android/app/google-services.json
@@ -82,6 +83,7 @@ jobs:
       - uses: actions/deploy-pages@v4
       - uses: google-github-actions/auth@v2
         if: ${{ env.HAS_FIREBASE == 'true' }}
+        continue-on-error: true
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         with:
@@ -90,6 +92,7 @@ jobs:
         id: firebase-auth
       - name: Notify update topic
         if: ${{ steps.firebase-auth.outputs.access_token != '' }}
+        continue-on-error: true
         env:
           TOKEN: ${{ steps.firebase-auth.outputs.access_token }}
           PROJECT: ${{ secrets.FIREBASE_PROJECT_ID }}
