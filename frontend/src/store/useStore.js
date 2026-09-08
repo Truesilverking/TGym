@@ -7,6 +7,7 @@ import { guestAllowed } from '../lib/guest.js'
 import { MOBILE, nativeLoad, nativeSave, syncReminder, writeAutoBackup } from '../lib/mobile.js'
 import { loadRemote, chooseLocal, forgetRemote, connect } from '../lib/remote.js'
 import { shouldRestoreNative } from '../lib/native-state.js'
+import { portableState, backupChecksum } from '../lib/backup.js'
 
 const KEY = 'gym_state_v1'
 export const DEF = {
@@ -53,6 +54,9 @@ export const useStore = create((set, get) => {
   }
 
   const persist = (S, push = true) => {
+    if (S.cloudSync?.on && backupChecksum(portableState(S)) !== backupChecksum(portableState(get().S))) {
+      S.cloudSync = { ...S.cloudSync, dirtyAt: Date.now() }
+    }
     S._ts = Date.now()
     registerCustom(S.customEx)
     localStorage.setItem(KEY, JSON.stringify(S))

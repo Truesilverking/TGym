@@ -17,6 +17,14 @@
    ========================================================================== */
 
 /* ---------------------------------------------------------------- tokens -- */
+.calendar-export .zoomcal-nav button { display: none; }
+.calendar-export .zoomcal-nav { display: flex; justify-content: center; }
+.calendar-export .zoomcal-routine { display: block; white-space: normal; overflow: visible; text-overflow: clip; height: auto; font-size: 13px; line-height: 1.4; }
+.calendar-export .zoomcal-day { max-width: none; }
+.calendar-export .zoomcal-day b { font-size: 22px; }
+.calendar-export .zoomcal-periods.months { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.calendar-export * { animation: none !important; transition: none !important; }
+
 :root {
   /* surfaces — dark is the default */
   --bg:        #000000;

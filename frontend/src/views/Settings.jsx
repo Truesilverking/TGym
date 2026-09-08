@@ -16,6 +16,7 @@ import { Section, Row, SelectRow, Switch, Segmented, Button } from '../component
 import { biometricEnabled, checkDeviceBiometry, deviceLockEnabled, enrollDeviceBiometry, removeDevicePin, setBiometricEnabled, setDevicePin, verifyDevicePin } from '../lib/app-lock.js'
 import { canUndoImport, consumeImportUndo, saveImportUndo } from '../lib/import-undo.js'
 import { parseTGymJson } from '../lib/json-import.js'
+import { createBackup } from '../lib/backup.js'
 import { convertMeasurementState, convertWeightState } from '../lib/unit-conversion.js'
 import { openRestoreSheet } from '../components/RestoreSheet.jsx'
 import { manualUpdateCheck } from '../components/AppUpdate.jsx'
@@ -90,8 +91,8 @@ export default function Settings() {
     : action()
 
   const exportNow = async () => {
-    const json = JSON.stringify({ framegym_backup: 1, ...S }, null, 2)
-    const name = 'framegym-backup-' + todayISO() + '.json'
+    const json = JSON.stringify(createBackup(S), null, 2)
+    const name = 'TGym-full-backup-' + todayISO() + '.json'
     // WKWebView can't download blob URLs — the native build hands the file to the share sheet.
     if (MOBILE) {
       try { await shareExport(json, name); toast(t('Backup exported')) } catch (e) { /* share sheet dismissed */ }
@@ -121,8 +122,6 @@ export default function Settings() {
       <Row icon="sparkles" iconTint="var(--acc)" title={t('Load starter plan (PPL)')} accessory="chevron" onClick={() => { close(); loadStarterPlan() }} />
       <Row icon="folder" iconTint="var(--blue)" title={t('Import or export routine')} subtitle={t('TGym routine files contain no workout history.')} accessory="chevron" onClick={() => { close(); planToolsSheet() }} />
       <Row icon="shuffle" iconTint="var(--teal)" title={t('Import from another app')} subtitle={t('FitNotes, Strong, Hevy — or body weight from Apple Health')} accessory="chevron" onClick={() => { close(); requestAnimationFrame(() => importRef.current?.click()) }} />
-      <Row icon="upload" iconTint="var(--blue)" title={t('Import backup')} accessory="chevron" onClick={() => { close(); requestAnimationFrame(() => fileRef.current?.click()) }} />
-      <Row icon="download" iconTint="var(--blue)" title={t('Export backup (JSON)')} accessory="chevron" onClick={() => { close(); doExport() }} />
     </div>
   </>)
   const signInHere = async () => {
@@ -150,10 +149,8 @@ export default function Settings() {
     </div>
 
     {/* ---------- account (demo and mobile builds have nothing to sign in to) ---------- */}
-    <Section title={(MOBILE || STANDALONE) ? t('Your data') : DEMO ? t('Demo') : t('Account')}>
-      {(MOBILE || STANDALONE) ? <>
-        <Row icon="lock" iconTint="var(--acc)" title={t('All data stays on this device')} subtitle={t('No account or server is required. Use JSON backups to move your data.')}/>
-      </> : DEMO ? <>
+    {!(MOBILE || STANDALONE) && <Section title={DEMO ? t('Demo') : t('Account')}>
+      {DEMO ? <>
         <Row icon="sparkles" iconTint="var(--acc)" title={t('You’re in the demo')} subtitle={t('Example data, stored only in this browser — change anything you like.')} />
         <Row icon="reset" iconTint="var(--blue)" title={t('Reset demo data')} accessory="chevron"
           onClick={() => confirmSheet({ title: t('Reset demo data?'), message: t('Puts the example plan, workouts and weigh-ins back the way they started.'), confirmText: t('Reset'), onConfirm: () => { resetDemo(); nav('/home'); toast(t('Demo data reset')) } })} />
@@ -172,7 +169,7 @@ export default function Settings() {
       </> : (
         <Row icon="lock" iconTint="var(--grey)" title={t('Passkeys not supported in this browser.')} />
       )}
-    </Section>
+    </Section>}
     {!user && !DEMO && !MOBILE && !STANDALONE && <p className="sect-f" style={{ marginTop: -18, marginBottom: 22 }}>{t('Guest mode — data lives only in this browser.')}</p>}
 
     {/* ---------- general ---------- */}
@@ -310,6 +307,9 @@ export default function Settings() {
 
     {/* ---------- data: fill it, bring things over, back it up, wipe it ---------- */}
     <Section title={t('Data')}>
+      {(MOBILE || STANDALONE) && <Row icon="lock" iconTint="var(--acc)" title={t('All Data stays on this device')} subtitle={t('Data is stored locally by default. Cloud copies are sent only when you enable cloud backup.')} />}
+      <Row icon="download" iconTint="var(--blue)" title={t('Export full backup')} accessory="chevron" onClick={doExport} />
+      <Row icon="upload" iconTint="var(--blue)" title={t('Import full backup')} accessory="chevron" onClick={() => authorize(() => fileRef.current?.click())} />
       <Row icon="cloud" iconTint="var(--blue)" title={t('Restore')} subtitle={t('Back up, synchronize or restore your TGym data.')} accessory="chevron" onClick={() => openRestoreSheet(authorize)} />
       <Row icon="folder" iconTint="var(--acc)" title={t('Load Routine')} subtitle={t('Create, import or export routines from one place.')} accessory="chevron" onClick={openLoadRoutine} />
       {canUndoImport() && <Row icon="reset" iconTint="var(--orange)" title={t('Undo last import')} subtitle={t('Available until this app session ends.')} accessory="chevron" onClick={() => confirmSheet({ title: t('Undo last import?'), message: t('Restores the data that was present immediately before the import.'), confirmText: t('Restore'), onConfirm: () => { const previous = consumeImportUndo(); if (previous) { replaceState(previous, true); toast(t('Import undone')) } } })} />}

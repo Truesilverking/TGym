@@ -1,5 +1,18 @@
 // Spanish UI strings. Keys are the English source strings (see lib/i18n.js).
 export default {
+  'All Data stays on this device': 'Todos los datos permanecen en este dispositivo',
+  'Data is stored locally by default. Cloud copies are sent only when you enable cloud backup.': 'Los datos se guardan localmente por defecto. Solo se envían copias a la nube cuando activas esa opción.',
+  'Export full backup': 'Exportar copia completa',
+  'Import full backup': 'Importar copia completa',
+  'Automatic Google Drive backup': 'Copia automática en Google Drive',
+  'Saves changes while online. Keeps ten daily restore points.': 'Guarda cambios con conexión. Conserva diez puntos de recuperación diarios.',
+  'Backup history': 'Historial de copias',
+  'Local data changed. Please synchronize again.': 'Los datos locales cambiaron. Vuelve a sincronizar.',
+  'Training calendar': 'Calendario de entrenamiento',
+  'Export calendar': 'Exportar calendario',
+  'Full report': 'Informe completo',
+  'Share / save': 'Compartir / guardar',
+  'Export failed. Please try again.': 'No se pudo exportar. Inténtalo de nuevo.',
   'Confirm': 'Confirmar',
   'Cancel': 'Cancelar',
   'Press back again to exit': 'Pulsa atrás otra vez para salir',

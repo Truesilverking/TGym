@@ -13,6 +13,8 @@ import Media, { Thumb } from './components/Media.jsx'
 import Stepper from './components/Stepper.jsx'
 import Icon from './components/Icon.jsx'
 import StreakFlame from './components/StreakFlame.jsx'
+import CalendarExport from './components/CalendarExport.jsx'
+import { calendarDay } from './lib/calendar-data.js'
 import { Button, Slider, Switch, Segmented, SelectRow, Row, TextField, MultiSelectRow, NumberField } from './components/ui.jsx'
 import { glyphOf, GLYPH_GROUPS, DEFAULT_GLYPH } from './lib/glyphs.js'
 import BodyMap from './components/BodyMap.jsx'
@@ -1324,18 +1326,14 @@ function WorkoutDetail({ w, close }) {
 export const workoutDetailSheet = w => ui().openSheet(close => <WorkoutDetail w={w} close={close} />)
 
 /* ============================ calendar ============================ */
-export function ZoomCalendar({ S: st, onDay }) {
+export function ZoomCalendar({ S: st, onDay, initialLevel = 'week', initialAnchor, exporting = false }) {
   const levels = ['week', 'month', 'months', 'years']
-  const [level, setLevel] = useState('week')
-  const [anchor, setAnchor] = useState(() => new Date())
+  const [level, setLevel] = useState(initialLevel)
+  const [anchor, setAnchor] = useState(() => initialAnchor ? new Date(initialAnchor) : new Date())
   const [selected, setSelected] = useState(todayISO())
   const byDay = {}; st.workouts.forEach(w => (byDay[w.d] = byDay[w.d] || []).push(w))
   const shift = dir => setAnchor(a => { const d = new Date(a); if (level === 'week') d.setDate(d.getDate() + dir * 7); else if (level === 'month') d.setMonth(d.getMonth() + dir); else if (level === 'months') d.setFullYear(d.getFullYear() + dir); else d.setFullYear(d.getFullYear() + dir * 12); return d })
-  const dayState = iso => {
-    const workouts = byDay[iso] || [], planned = !!effectiveRoutineId(st, iso)
-    const status = workouts.length ? 'completed' : planned ? (iso < todayISO() ? 'missed' : 'pending') : 'rest'
-    return { iso, workouts, planned, status }
-  }
+  const dayState = iso => calendarDay(st, iso)
   const selectDay = iso => { setSelected(iso); if ((byDay[iso] || []).length) onDay?.(iso) }
   const dayButton = (d, showRoutine = false) => {
     const state = dayState(isoOf(d)), workout = state.workouts.at(-1)
@@ -1367,8 +1365,9 @@ export function ZoomCalendar({ S: st, onDay }) {
   const zi = levels.indexOf(level)
   const selectedState = dayState(selected), selectedWorkout = selectedState.workouts.at(-1)
   return <div className="zoomcal"><div className="zoomcal-nav"><button className="iconbtn" onClick={() => shift(-1)}><Icon name="chevronLeft" /></button><div className="zoomcal-title"><b>{title}</b><button aria-label={t('Zoom out')} title={t('Zoom out')} disabled={zi >= levels.length-1} onClick={() => setLevel(levels[zi+1])}><Icon name="minus" /></button><button aria-label={t('Zoom in')} title={t('Zoom in')} disabled={zi <= 0} onClick={() => setLevel(levels[zi-1])}><Icon name="plus" /></button></div><button className="iconbtn" onClick={() => shift(1)}><Icon name="chevronRight" /></button></div>{body}
-    {(level === 'week' || level === 'month') && <div className={`zoomcal-selection ${selectedState.status}`}><div><b>{fmtDate(selected, true)}</b><span>{selectedWorkout?.name || t(selectedState.status === 'completed' ? 'Completed' : selectedState.status === 'missed' ? 'Not completed' : selectedState.status === 'pending' ? 'Pending' : 'Rest day')}</span></div>{selectedWorkout && <Icon name="chevronRight" />}</div>}
+    {!exporting && (level === 'week' || level === 'month') && <div className={`zoomcal-selection ${selectedState.status}`}><div><b>{fmtDate(selected, true)}</b><span>{selectedWorkout?.name || t(selectedState.status === 'completed' ? 'Completed' : selectedState.status === 'missed' ? 'Not completed' : selectedState.status === 'pending' ? 'Pending' : 'Rest day')}</span></div>{selectedWorkout && <Icon name="chevronRight" />}</div>}
     <div className="zoomcal-legend"><span><i className="completed" />{t('Completed')}</span><span><i className="missed" />{t('Not completed')}</span><span><i className="pending" />{t('Pending')}</span></div>
+    {!exporting && <Button onClick={() => ui().openSheet(close => <CalendarExport S={st} anchor={anchor} close={close} />)}><Icon name="download" />{t('Export calendar')}</Button>}
   </div>
 }
 

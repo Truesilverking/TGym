@@ -1,6 +1,7 @@
 import { parseTGymJson } from './json-import.js'
 import { Capacitor, registerPlugin } from '@capacitor/core'
 import { mergeTGymStates } from './state-merge.js'
+import { createBackup } from './backup.js'
 
 export const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.appdata'
 export const DRIVE_FILE = 'framegym-weekly-backup.json'
@@ -22,8 +23,9 @@ export function cloudBackupDue(state, now = Date.now()) {
   if (state.cloudSync.needsAuth) return false
   const last = Number(state.cloudSync.lastBackupAt) || 0
   const attempted = Number(state.cloudSync.lastAttemptAt) || 0
-  if (attempted && now - attempted < 6 * 60 * 60 * 1000) return false
-  return now - last >= WEEK_MS
+  if (attempted && now - attempted < 5 * 60 * 1000) return false
+  const dirty = Number(state.cloudSync.dirtyAt) || 0
+  return dirty ? now - dirty >= 3 * 60 * 1000 : now - last >= WEEK_MS
 }
 
 function readToken() {
@@ -115,11 +117,35 @@ async function latestFile(token) {
   return data.files?.[0] || null
 }
 
-export async function backupToGoogleDrive(state, { interactive = true } = {}) {
+async function snapshotFiles(token) {
+  const q = encodeURIComponent("trashed=false and appProperties has { key='app' and value='TGym' } and appProperties has { key='kind' and value='daily-snapshot' }")
+  const data = await (await driveFetch(`https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=${q}&orderBy=name%20desc&pageSize=1000&fields=files(id,name,modifiedTime)`, token)).json()
+  return data.files || []
+}
+async function retainDailySnapshot(token, content) {
+  const name = `TGym-backup-${new Date().toISOString().slice(0,10)}.json`
+  const files = await snapshotFiles(token)
+  if (!files.some(f => f.name === name)) {
+    const boundary = `tgym_snapshot_${Date.now()}`
+    const body = `--${boundary}\r\nContent-Type: application/json\r\n\r\n${JSON.stringify({ name, parents: ['appDataFolder'], appProperties: { app: 'TGym', kind: 'daily-snapshot' } })}\r\n--${boundary}\r\nContent-Type: application/json\r\n\r\n${content}\r\n--${boundary}--`
+    const created = await (await driveFetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,modifiedTime', token, { method:'POST', headers:{'Content-Type':`multipart/related; boundary=${boundary}`}, body })).json()
+    files.unshift(created)
+  }
+  for (const old of files.slice(10)) await driveFetch(`https://www.googleapis.com/drive/v3/files/${old.id}`, token, { method:'DELETE' })
+}
+export async function listGoogleDriveBackups(state) {
+  const token = await accessToken(configuredGoogleClientId(state), '', true)
+  return snapshotFiles(token)
+}
+
+export async function backupToGoogleDrive(state, { interactive = true, allowOverwrite = false } = {}) {
   const prompt = interactive && (!state?.cloudSync?.authorizedOnce || state?.cloudSync?.needsAuth) ? 'consent' : ''
   const token = await accessToken(configuredGoogleClientId(state), prompt, interactive)
   const existing = await latestFile(token)
-  const content = JSON.stringify({ framegym_backup: 1, ...state })
+  if (existing && !allowOverwrite && existing.modifiedTime !== state.cloudSync?.lastModifiedTime) {
+    throw Object.assign(new Error('Synchronize all devices before replacing a changed cloud backup.'), { code: 'sync_required' })
+  }
+  const content = JSON.stringify(createBackup(state))
   let response
   if (existing) {
     response = await driveFetch(`https://www.googleapis.com/upload/drive/v3/files/${existing.id}?uploadType=media&fields=id,modifiedTime`, token, {
@@ -133,13 +159,14 @@ export async function backupToGoogleDrive(state, { interactive = true } = {}) {
     })
   }
   const file = await response.json()
-  return { fileId: file.id || existing?.id, at: Date.now() }
+  await retainDailySnapshot(token, content)
+  return { fileId: file.id || existing?.id, modifiedTime: file.modifiedTime, at: Date.now() }
 }
 
-export async function restoreFromGoogleDrive(state, { interactive = true } = {}) {
+export async function restoreFromGoogleDrive(state, { interactive = true, fileId } = {}) {
   const prompt = interactive && (!state?.cloudSync?.authorizedOnce || state?.cloudSync?.needsAuth) ? 'consent' : ''
   const token = await accessToken(configuredGoogleClientId(state), prompt, interactive)
-  const file = await latestFile(token)
+  const file = fileId ? (await snapshotFiles(token)).find(f => f.id === fileId) : await latestFile(token)
   if (!file) throw Object.assign(new Error('No TGym backup was found in Google Drive'), { code: 'not_found' })
   const raw = await (await driveFetch(`https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`, token)).text()
   const parsed = parseTGymJson(raw)

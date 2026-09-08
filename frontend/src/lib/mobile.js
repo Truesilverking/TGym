@@ -110,7 +110,7 @@ export async function writeAutoBackup(state) {
     await Filesystem.writeFile({
       path: `framegym-backup-${todayISO()}.json`,
       directory: Directory.Documents,
-      data: JSON.stringify({ framegym_backup: 1, ...state }),
+      data: JSON.stringify((await import('./backup.js')).createBackup(state)),
       encoding: Encoding.UTF8,
       recursive: true,
     })

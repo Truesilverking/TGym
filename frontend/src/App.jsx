@@ -80,12 +80,12 @@ function Shell() {
     let running = false, gone = false
     const syncIfDue = async () => {
       const current = useStore.getState().S
-      if (running || !cloudBackupDue(current)) return
+      if (running || document.visibilityState === 'hidden' || navigator.onLine === false || !cloudBackupDue(current)) return
       running = true
       useStore.getState().update(s => { s.cloudSync = { ...(s.cloudSync || {}), lastAttemptAt: Date.now() } }, false)
       try {
         const result = await backupToGoogleDrive(current, { interactive: false })
-        if (!gone) useStore.getState().update(s => { s.cloudSync = { ...(s.cloudSync || {}), authorizedOnce: true, lastBackupAt: result.at, lastFileId: result.fileId, needsAuth: false, lastError: null } }, false)
+        if (!gone) useStore.getState().update(s => { s.cloudSync = { ...(s.cloudSync || {}), dirtyAt: s.cloudSync?.dirtyAt === current.cloudSync?.dirtyAt ? null : s.cloudSync?.dirtyAt, authorizedOnce: true, lastBackupAt: result.at, lastFileId: result.fileId, lastModifiedTime: result.modifiedTime, needsAuth: false, lastError: null } }, false)
       } catch (error) {
         const authCodes = new Set(['auth_required', 'configuration_required', 'access_denied', 'popup_failed_to_open', 'popup_closed'])
         if (!gone) useStore.getState().update(s => { s.cloudSync = { ...(s.cloudSync || {}), needsAuth: authCodes.has(error?.code), lastError: error?.message || 'Google Drive error' } }, false)
@@ -94,7 +94,9 @@ function Shell() {
     syncIfDue()
     const visible = () => { if (document.visibilityState === 'visible') syncIfDue() }
     document.addEventListener('visibilitychange', visible)
-    return () => { gone = true; document.removeEventListener('visibilitychange', visible) }
+    window.addEventListener('online', syncIfDue)
+    const timer = setInterval(syncIfDue, 30000)
+    return () => { gone = true; clearInterval(timer); window.removeEventListener('online', syncIfDue); document.removeEventListener('visibilitychange', visible) }
   }, [ready])
 
   const authed = user || isGuest
