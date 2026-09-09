@@ -6,6 +6,9 @@ permissions:
   contents: write
   pages: write
   id-token: write
+concurrency:
+  group: tgym-release
+  cancel-in-progress: false
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -32,9 +35,18 @@ jobs:
         working-directory: frontend
       - run: pnpm run build
         working-directory: frontend
+      - name: Validate notification configuration
+        run: |
+          test "$HAS_GOOGLE_SERVICES" = true || { echo "Missing GOOGLE_SERVICES_JSON_BASE64"; exit 1; }
+          test "$HAS_FIREBASE" = true || { echo "Missing FIREBASE_SERVICE_ACCOUNT or FIREBASE_PROJECT_ID"; exit 1; }
+      - name: Validate Firebase delivery credentials
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+        run: node frontend/scripts/notify-release.mjs --validate
       - name: Configure Firebase application
         if: ${{ env.HAS_GOOGLE_SERVICES == 'true' }}
-        continue-on-error: true
+
         env:
           GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
         run: printf '%s' "$GOOGLE_SERVICES_JSON_BASE64" | base64 --decode > frontend/android/app/google-services.json
@@ -61,9 +73,14 @@ jobs:
           cp frontend/android/app/build/outputs/bundle/release/app-release.aab "frontend/release/TGym-Android-v${VERSION}.aab"
           (cd frontend/release && sha256sum * > checksums.txt)
           APK_SHA="$(sha256sum "frontend/release/TGym-Android-v${VERSION}.apk" | cut -d' ' -f1)"
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)"
+          "$APKSIGNER" verify --print-certs "frontend/release/TGym-Android-v${VERSION}.apk" > frontend/release/signature.txt
+          CERT_SHA="$(sed -n 's/Signer #1 certificate SHA-256 digest: //p' frontend/release/signature.txt)"
+          test -n "$CERT_SHA"
+          jarsigner -verify "frontend/release/TGym-Android-v${VERSION}.aab"
           OWNER="${GITHUB_REPOSITORY%%/*}"
           NAME="${GITHUB_REPOSITORY#*/}"
-          jq -n --arg version "$VERSION" --argjson code "$CODE" --arg sha "$APK_SHA" --arg owner "$OWNER" --arg name "$NAME" --arg at "$(date -u +%FT%TZ)" '{version:$version,versionCode:$code,publishedAt:$at,minimumVersion:null,mandatory:false,title:("TGym "+$version),notes:[],android:{apk:("https://"+$owner+".github.io/"+$name+"/downloads/TGym-latest.apk"),playStore:null,sha256:$sha},ios:{appStore:null}}' > frontend/updates/latest.json
+          jq -n --arg version "$VERSION" --argjson code "$CODE" --arg sha "$APK_SHA" --arg cert "$CERT_SHA" --arg commit "$GITHUB_SHA" --arg owner "$OWNER" --arg name "$NAME" --arg at "$(date -u +%FT%TZ)" '{version:$version,commit:$commit,versionCode:$code,publishedAt:$at,minimumVersion:null,mandatory:false,title:("TGym "+$version),notes:[],android:{apk:("https://github.com/"+$owner+"/"+$name+"/releases/download/v"+$version+"/TGym-Android-v"+$version+".apk"),playStore:null,sha256:$sha,certificateSha256:$cert},ios:{appStore:null}}' > frontend/updates/latest.json
       - uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
@@ -71,6 +88,7 @@ jobs:
             frontend/release/TGym-Android-v*.apk
             frontend/release/TGym-Android-v*.aab
             frontend/release/checksums.txt
+            frontend/updates/latest.json
       - name: Build GitHub Pages PWA
         run: |
           VITE_GITHUB_OWNER=${{ github.repository_owner }} VITE_GITHUB_REPO=${{ github.event.repository.name }} VITE_APP_DISTRIBUTION=pwa pnpm run build:pwa
@@ -81,25 +99,12 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with: { path: frontend/dist }
       - uses: actions/deploy-pages@v4
-      - uses: google-github-actions/auth@v2
-        if: ${{ env.HAS_FIREBASE == 'true' }}
-        continue-on-error: true
+      - name: Verify published update metadata
+        env:
+          REPOSITORY: ${{ github.repository }}
+        run: node frontend/scripts/verify-published-update.mjs
+      - name: Notify update topic
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-        with:
-          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          token_format: access_token
-        id: firebase-auth
-      - name: Notify update topic
-        if: ${{ steps.firebase-auth.outputs.access_token != '' }}
-        continue-on-error: true
-        env:
-          TOKEN: ${{ steps.firebase-auth.outputs.access_token }}
-          PROJECT: ${{ secrets.FIREBASE_PROJECT_ID }}
-        run: |
-          # Retry transient Firebase/API failures; the update prompt remains available
-          # through the manifest check, but a successful release should notify subscribed devices.
-          curl --fail-with-body --retry 3 --retry-all-errors --retry-delay 5 \
-            -X POST "https://fcm.googleapis.com/v1/projects/${PROJECT}/messages:send" \
-            -H "Authorization: Bearer ${TOKEN}" -H 'Content-Type: application/json' \
-            -d "{\"message\":{\"topic\":\"tgym_updates\",\"notification\":{\"title\":\"TGym ${GITHUB_REF_NAME#v} available\",\"body\":\"A new TGym update is ready.\"},\"data\":{\"type\":\"app_update\",\"version\":\"${GITHUB_REF_NAME#v}\"}}}"
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+        run: node frontend/scripts/notify-release.mjs

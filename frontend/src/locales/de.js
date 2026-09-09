@@ -1,5 +1,7 @@
+import english from '../lib/english-fallback.js'
 // German UI strings. Keys are the English source strings (see lib/i18n.js).
 export default {
+  ...english,
   // --- generic ---
   'Confirm': 'Bestätigen',
   'Cancel': 'Abbrechen',

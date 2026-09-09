@@ -8,6 +8,7 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(GoogleDriveAuthPlugin.class);
         registerPlugin(UpdatePushPlugin.class);
+        registerPlugin(AppInstallerPlugin.class);
         super.onCreate(savedInstanceState);
     }
 }

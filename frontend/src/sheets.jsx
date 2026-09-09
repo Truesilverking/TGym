@@ -46,19 +46,21 @@ const resumeActiveWorkoutClock = () => update(s => { if (s.active) s.active = re
 
 /* ============================ custom confirm dialog ============================ */
 function ConfirmDialog({ title, message, confirmText, cancelText, danger, onConfirm, onCancel, close }) {
-  const decided = useRef(false)
-  useEffect(() => () => { if (!decided.current) onCancel?.() }, [])
   return <div style={{ textAlign: 'center', padding: '4px 0' }}>
     {title && <h3 style={{ marginBottom: 8 }}>{title}</h3>}
     <div className="muted" style={{ marginBottom: 18, lineHeight: 1.5 }}>{message}</div>
-    <button className={'btn ' + (danger ? 'danger' : 'primary')} onClick={() => { decided.current = true; close(); onConfirm && onConfirm() }}>{confirmText || t('Confirm')}</button>
+    <button className={'btn ' + (danger ? 'danger' : 'primary')} onClick={() => { onConfirm?.(); close() }}>{confirmText || t('Confirm')}</button>
     <div style={{ height: 8 }} />
     <Button variant="ghost" className="dim" onClick={close}>{cancelText || t('Cancel')}</Button>
   </div>
 }
 // Themed replacement for window.confirm — callback-based (no blocking).
 export function confirmSheet(opts) {
-  ui().openSheet(close => <ConfirmDialog {...opts} close={close} />, { kind: 'center' })
+  let decided = false
+  ui().openSheet(close => <ConfirmDialog {...opts} close={close} onConfirm={() => {
+    decided = true
+    opts.onConfirm?.()
+  }} />, { kind: 'center', onClose: () => { if (!decided) { decided = true; opts.onCancel?.() } } })
 }
 
 /* ============================ starter plan ============================ */

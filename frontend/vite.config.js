@@ -1,3 +1,4 @@
+import { pwaMetadata } from './scripts/pwa-metadata.mjs'
 import { readFileSync } from 'node:fs'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
@@ -36,7 +37,7 @@ const pkgVersion = JSON.parse(readFileSync(new URL('./package.json', import.meta
 
 export default defineConfig({
   define: { __APP_VERSION__: JSON.stringify(pkgVersion) },
-  plugins: [react(), umami],
+  plugins: [react(), umami, pwaMetadata(pkgVersion)],
   base: './',
   server: {
     proxy: {

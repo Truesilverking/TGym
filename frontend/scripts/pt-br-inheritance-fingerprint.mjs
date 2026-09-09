@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { createHash } from 'node:crypto'
-import pt from '../src/locales/pt.js'
+import { PT_TRANSLATIONS as pt } from '../src/locales/pt.js'
 import { PT_BR_OVERRIDES } from '../src/locales/pt-BR.js'
 
 const inherited = Object.entries(pt)

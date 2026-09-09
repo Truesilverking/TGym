@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { createHash } from 'node:crypto'
-import pt from '../locales/pt.js'
+import pt, { PT_TRANSLATIONS } from '../locales/pt.js'
 import ptBR, { PT_BR_OVERRIDES } from '../locales/pt-BR.js'
 import { DATE_LOCALES, LANGS } from './i18n-core.js'
 
@@ -22,7 +22,7 @@ describe('Brazilian Portuguese locale', () => {
   })
 
   test('makes every inherited pt-PT value an explicit reviewed snapshot', () => {
-    const inherited = Object.entries(pt)
+    const inherited = Object.entries(PT_TRANSLATIONS)
       .filter(([key]) => !(key in PT_BR_OVERRIDES))
       .sort(byCodeUnit)
     const fingerprint = createHash('sha256').update(JSON.stringify(inherited)).digest('hex')

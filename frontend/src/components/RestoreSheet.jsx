@@ -54,7 +54,7 @@ export default function RestoreSheet({ authorize = action => action() }) {
     const result = await restoreFromGoogleDrive(S, { interactive: true, fileId })
     update(s => { s.cloudSync = { ...(s.cloudSync || {}), authorizedOnce: true, needsAuth: false, lastError: null } }, false)
     confirmSheet({ title: t('Restore Google Drive backup?'), message: t('This replaces all current TGym data on this device.'), confirmText: t('Restore'), danger: true,
-      onConfirm: () => { saveImportUndo(S); replaceState(Object.assign(JSON.parse(JSON.stringify(DEF)), result.data), true); toast(t('Google Drive backup restored')) } })
+      onConfirm: () => { saveImportUndo(useStore.getState().S); const connection = useStore.getState().S.cloudSync; replaceState({ ...JSON.parse(JSON.stringify(DEF)), ...result.data, cloudSync: { ...connection, on: true, authorizedOnce: true, needsAuth: false, lastError: null, dirtyAt: Date.now() } }, true); toast(t('Google Drive backup restored')) } })
   })
   const history = () => run(async () => {
     const files = await listGoogleDriveBackups(S)

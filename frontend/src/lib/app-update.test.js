@@ -25,3 +25,10 @@ describe('app updates', () => {
     expect(fetcher.mock.calls[0][0]).toBe('https://x.test/latest.json?check=14401001')
   })
 })
+
+it('accepts the official mixed-case owner and detects the next version', async () => {
+  const raw={version:'1.15.10',versionCode:45,android:{apk:'https://Truesilverking.github.io/TGym/downloads/TGym-latest.apk'}}
+  expect(parseUpdateManifest(raw,{repository:'https://github.com/Truesilverking/TGym'}).version).toBe('1.15.10')
+  const result=await checkForAppUpdate({currentVersion:'1.15.9',force:true,fetcher:async()=>({ok:true,json:async()=>raw})})
+  expect(result.update.version).toBe('1.15.10')
+})

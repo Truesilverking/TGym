@@ -1,5 +1,9 @@
+import english from '../lib/english-fallback.js'
 // Spanish UI strings. Keys are the English source strings (see lib/i18n.js).
 export default {
+  ...english,
+  'Update failed. Please try again.': 'No se pudo actualizar. Inténtalo de nuevo.',
+  'Allow updates from TGym in Android settings, then return and tap Update.': 'Permite instalar actualizaciones desde TGym en los ajustes de Android, vuelve y pulsa Actualizar.',
   'All Data stays on this device': 'Todos los datos permanecen en este dispositivo',
   'Data is stored locally by default. Cloud copies are sent only when you enable cloud backup.': 'Los datos se guardan localmente por defecto. Solo se envían copias a la nube cuando activas esa opción.',
   'Export full backup': 'Exportar copia completa',

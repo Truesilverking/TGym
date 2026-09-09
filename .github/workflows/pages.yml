@@ -1,68 +1,29 @@
-# Publishes the browser-only demo to GitHub Pages: https://duartesantos8.github.io/openGym/
-#
-# DORMANT since 2026-08-19, when the GitHub account was suspended. The demo is now built with the
-# same command below and served from the project's own site at https://opengym.duarte-santos.ch/demo/
-# (Vite's base is './', so it drops into a subdirectory unchanged). Kept for the day the account
-# comes back, exactly like the other workflows in this folder.
-#
-# Pages serves static files only, so this build has no backend — VITE_DEMO=1 makes the app
-# boot straight into guest mode with a seeded example history (see frontend/src/lib/demo.js).
-# The exercise images/GIFs (~140 MB) are never committed here; the demo build points at the
-# upstream dataset on jsDelivr instead, pinned to a commit so the CDN can cache it forever.
-name: Deploy demo to GitHub Pages
-
+# Production Pages is published only by release.yml from the same commit as APK/AAB.
+name: Validate PWA
 on:
   push:
     branches: [main]
-    paths:
-      - 'frontend/**'
-      - '.github/workflows/pages.yml'
+    paths: ['frontend/**', '.github/workflows/pages.yml']
   workflow_dispatch:
-
 permissions:
   contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: pages
-  cancel-in-progress: true
-
-env:
-  DATASET: https://cdn.jsdelivr.net/gh/hasaneyldrm/exercises-dataset@7455efae41b330c265e7cd4b78dfa848e7ce5ebd
-
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
-        with:
-          version: 10
-      - uses: actions/setup-node@v7
+        with: { version: 10 }
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
           cache-dependency-path: frontend/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
         working-directory: frontend
-      - run: pnpm run build
+      - run: pnpm test
         working-directory: frontend
-        env:
-          VITE_DEMO: '1'
-          VITE_IMG_BASE: ${{ env.DATASET }}/images/
-          VITE_GIF_BASE: ${{ env.DATASET }}/videos/
-      - uses: actions/configure-pages@v6
-      - uses: actions/upload-pages-artifact@v5
-        with:
-          path: frontend/dist
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
-    steps:
-      - id: deploy
-        uses: actions/deploy-pages@v5
+      - run: pnpm run build:pwa
+        working-directory: frontend
+      - uses: actions/upload-artifact@v4
+        with: { name: pwa-validation, path: frontend/dist }

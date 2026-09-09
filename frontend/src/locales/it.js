@@ -1,5 +1,7 @@
+import english from '../lib/english-fallback.js'
 // Italian UI strings. Keys are the English source strings (see lib/i18n.js).
 export default {
+  ...english,
   'Confirm': 'Conferma',
   'Cancel': 'Annulla',
   'Press back again to exit': 'Premi di nuovo indietro per uscire',

@@ -20,7 +20,7 @@ const trustedUrl = (value, repository = APP_REPOSITORY) => {
   const repo = repository && new URL(repository)
   const githubRelease = repo && url.hostname === 'github.com' && url.pathname.startsWith(repo.pathname + '/releases/download/')
   const parts = repo?.pathname.split('/').filter(Boolean) || []
-  const githubPages = parts.length === 2 && url.hostname === `${parts[0]}.github.io` && url.pathname.startsWith(`/${parts[1]}/downloads/`)
+  const githubPages = parts.length === 2 && url.hostname === `${parts[0].toLowerCase()}.github.io` && url.pathname.startsWith(`/${parts[1]}/downloads/`)
   const store = ['play.google.com', 'apps.apple.com', 'testflight.apple.com'].includes(url.hostname)
   if (!githubRelease && !githubPages && !store) throw new Error('untrusted_update_url')
   return url.href

@@ -26,3 +26,12 @@ describe('rest timer set to Off', () => {
     expect(useUI.getState().timer.total).toBe(90)
   })
 })
+
+it('runs dismissal once only when a sheet is actually closed', () => {
+  const onClose = vi.fn()
+  const sheet = useUI.getState().openSheet(() => null, { onClose })
+  expect(onClose).not.toHaveBeenCalled()
+  sheet.close()
+  sheet.close()
+  expect(onClose).toHaveBeenCalledTimes(1)
+})

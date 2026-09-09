@@ -1,3 +1,4 @@
+import english from '../lib/english-fallback.js'
 // Brazilian Portuguese overrides. Shared, region-neutral strings inherit from pt-PT.
 // Tests fingerprint every deliberately inherited entry so upstream changes require review.
 // Some byte-identical overrides intentionally pin wording that must not drift with pt-PT.
@@ -305,4 +306,5 @@ export const PT_BR_OVERRIDES = {
   'Rest-pause always trains as one warm-up set at this rep count, then one rest-pause work set — "Sets" is not used.': 'O rest-pause sempre treina como uma série de aquecimento com essas repetições e uma série de trabalho rest-pause — “Séries” não é usado.'
 }
 
-export default { ...pt, ...PT_BR_OVERRIDES }
+export default {
+  ...english, ...pt, ...PT_BR_OVERRIDES }

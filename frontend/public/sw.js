@@ -1,45 +1,30 @@
-/* openGym service worker — runtime caching (works with Vite's hashed asset names).
-   Media (img/gif) cache-first; everything else network-first with offline fallback. */
-const CACHE = 'tgym-rt-v25'
-
-self.addEventListener('install', () => self.skipWaiting())
-self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys().then(keys =>
-    Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-  ).then(() => self.clients.claim()))
+/* Replaced at build time; precache only this TGym build's app shell and assets. */
+const CACHE = '__TGYM_CACHE__'
+const PRECACHE = ['__TGYM_PRECACHE__']
+self.addEventListener('install', e => e.waitUntil(caches.open(CACHE).then(c=>c.addAll(PRECACHE))))
+self.addEventListener('message', e => { if(e.data?.type==='SKIP_WAITING') self.skipWaiting() })
+self.addEventListener('activate', e => e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('tgym-') && k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())))
+self.addEventListener('push',e=>{
+ const data=e.data?e.data.json():{}
+ e.waitUntil(self.registration.showNotification(data.title||'TGym',{body:data.body||'',icon:'icon-512.png',tag:data.tag||'tgym'}))
 })
-self.addEventListener('push', e => {
-  const data = e.data ? e.data.json() : {}
-  e.waitUntil(self.registration.showNotification(data.title || 'TGym', {
-    body: data.body || '',
-    icon: 'icon-512.png',
-    badge: 'icon-180.png',
-    tag: data.tag || 'framegym',
-    renotify: true
-  }))
+self.addEventListener('notificationclick',e=>{
+ e.notification.close()
+ e.waitUntil(self.clients.matchAll({type:'window'}).then(clients=>clients[0]?.focus()||self.clients.openWindow('./')))
 })
-self.addEventListener('notificationclick', e => {
-  e.notification.close()
-  e.waitUntil(self.clients.matchAll({ type: 'window' }).then(clients => {
-    const c = clients.find(c => 'focus' in c)
-    return c ? c.focus() : self.clients.openWindow('./')
-  }))
-})
-
-self.addEventListener('fetch', e => {
-  const url = new URL(e.request.url)
-  if (e.request.method !== 'GET' || url.origin !== location.origin) return
-  if (url.pathname.startsWith('/api/')) return    // never cache auth/data
-
-  const isMedia = url.pathname.includes('/img/') || url.pathname.includes('/gif/')
-  if (isMedia) {
-    e.respondWith(caches.open(CACHE).then(c => c.match(e.request).then(hit =>
-      hit || fetch(e.request).then(res => { if (res.ok) c.put(e.request, res.clone()); return res })
-    )))
-  } else {
-    e.respondWith(fetch(e.request).then(res => {
-      if (res.ok) caches.open(CACHE).then(c => c.put(e.request, res.clone()))
-      return res
-    }).catch(() => caches.match(e.request).then(hit => hit || caches.match('index.html'))))
+self.addEventListener('fetch',e=>{
+ const url=new URL(e.request.url)
+ if(e.request.method!=='GET'||url.origin!==self.location.origin||url.pathname.includes('/api/')||url.pathname.includes('/updates/')||url.pathname.includes('/downloads/')) return
+ e.respondWith(caches.open(CACHE).then(async cache=>{
+  const hit=await cache.match(e.request)
+  if(hit) return hit
+  try {
+   const response=await fetch(e.request)
+   if(response.ok) await cache.put(e.request,response.clone())
+   return response
+  } catch(error) {
+   if(e.request.mode==='navigate') return (await cache.match('index.html'))||Response.error()
+   return Response.error()
   }
+ }))
 })

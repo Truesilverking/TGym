@@ -12,7 +12,8 @@ export async function initializeUpdatePush(onUpdate) {
     // received is used while TGym is open, actionPerformed when the user taps a
     // notification from the background. Listen to both so neither path is silent.
     const notify = event => {
-      if (event.notification?.data?.type === 'app_update') onUpdate?.(event.notification.data.version)
+      const data = (event.notification || event).data
+      if (data?.type === 'app_update') onUpdate?.(data.version)
     }
     const received = await PushNotifications.addListener('pushNotificationReceived', notify)
     const action = await PushNotifications.addListener('pushNotificationActionPerformed', notify)

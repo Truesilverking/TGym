@@ -68,14 +68,22 @@ export const useUI = create((set, get) => ({
   timer: null,         // rest countdown between sets — { left, total, endsAt }
   work: null,          // work countdown DURING a timed set (issue #16) — { left, total, endsAt, label }
 
-  openSheet(render, { kind = 'sheet', locked = false } = {}) {
+  openSheet(render, { kind = 'sheet', locked = false, onClose } = {}) {
     const id = uid()
-    set(s => ({ sheets: [...s.sheets, { id, render, kind, locked }] }))
+    set(s => ({ sheets: [...s.sheets, { id, render, kind, locked, onClose }] }))
     const close = () => get().closeSheet(id)
     return { id, close, lock: v => set(s => ({ sheets: s.sheets.map(x => x.id === id ? { ...x, locked: v } : x) })) }
   },
-  closeSheet(id) { set(s => ({ sheets: s.sheets.filter(x => x.id !== id) })) },
-  closeAll() { set({ sheets: [] }) },
+  closeSheet(id) {
+    const sheet = get().sheets.find(x => x.id === id)
+    set(s => ({ sheets: s.sheets.filter(x => x.id !== id) }))
+    sheet?.onClose?.()
+  },
+  closeAll() {
+    const sheets = get().sheets
+    set({ sheets: [] })
+    sheets.forEach(sheet => sheet.onClose?.())
+  },
 
   toast(msg) {
     set({ toastMsg: msg })

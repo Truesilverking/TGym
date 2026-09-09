@@ -1,5 +1,7 @@
+import english from '../lib/english-fallback.js'
 // Russian UI strings. Keys are the English source strings (see lib/i18n.js).
 export default {
+  ...english,
   'Confirm': 'Подтвердить',
   'Cancel': 'Отмена',
   'Press back again to exit': 'Нажмите «Назад» ещё раз, чтобы выйти',
