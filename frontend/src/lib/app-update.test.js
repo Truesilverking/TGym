@@ -1,5 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { compareVersions, parseUpdateManifest, checkForAppUpdate } from './app-update.js'
+import { signingCertificate } from '../../scripts/signing-certificate.mjs'
+
+it('reads verified signer fingerprints across Android build-tools versions', () => {
+  const sha = '8ee233c984615e2b3f6f083dc0c47d148bb8956ff7caca97be0b9a0d260e6082'
+  for (const label of ['Signer #1', 'V2 Signer:', 'V3 Signer:']) {
+    expect(signingCertificate(`${label} certificate SHA-256 digest: ${sha}\nWARNING: metadata\n`)).toBe(sha)
+  }
+  expect(() => signingCertificate('No signer')).toThrow()
+  expect(() => signingCertificate(`Signer #1 certificate SHA-256 digest: ${sha}\nSigner #2 certificate SHA-256 digest: ${'a'.repeat(64)}`)).toThrow()
+})
 describe('app updates', () => {
   const values = new Map()
   globalThis.localStorage = { getItem: key => values.get(key) ?? null, setItem: (key, value) => values.set(key, String(value)), clear: () => values.clear() }

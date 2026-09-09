@@ -1,7 +1,7 @@
 # TGym releases and verification
 
 The production version comes from frontend/package.json and must match Android versionName.
-Android versionCode must increase. Current candidate: 1.15.11 / 46.
+Android versionCode must increase. Current candidate: 1.15.12 / 47.
 Run frontend/scripts/check-version.mjs before tagging.
 
 ## Single publication
