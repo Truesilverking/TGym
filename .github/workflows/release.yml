@@ -74,9 +74,9 @@ jobs:
           (cd frontend/release && sha256sum * > checksums.txt)
           APK_SHA="$(sha256sum "frontend/release/TGym-Android-v${VERSION}.apk" | cut -d' ' -f1)"
           APKSIGNER="$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)"
-          "$APKSIGNER" verify --print-certs "frontend/release/TGym-Android-v${VERSION}.apk" > frontend/release/signature.txt
-          CERT_SHA="$(sed -n 's/Signer #1 certificate SHA-256 digest: //p' frontend/release/signature.txt)"
-          test -n "$CERT_SHA"
+          "$APKSIGNER" verify --print-certs "frontend/release/TGym-Android-v${VERSION}.apk" | tee frontend/release/signature.txt
+          CERT_SHA="$(sed -n 's/^Signer.* certificate SHA-256 digest: //p' frontend/release/signature.txt)"
+          [[ "$CERT_SHA" =~ ^[a-fA-F0-9]{64}$ ]] || { echo "Expected exactly one verified APK signing certificate"; exit 1; }
           jarsigner -verify "frontend/release/TGym-Android-v${VERSION}.aab"
           OWNER="${GITHUB_REPOSITORY%%/*}"
           NAME="${GITHUB_REPOSITORY#*/}"
