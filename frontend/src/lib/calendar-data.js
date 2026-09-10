@@ -1,11 +1,12 @@
 import { effectiveRoutineId } from './history.js'
 import { todayISO } from './format.js'
+import { measurementEventsOn } from './measurement-reminders.js'
 
 export function calendarDay(state, iso) {
   const workouts = state.workouts.filter(w => w.d === iso)
   const routine = state.routines.find(r => r.id === effectiveRoutineId(state, iso))
   const planned = !!effectiveRoutineId(state, iso)
-  return { iso, workouts, planned, name: workouts.at(-1)?.name || routine?.name || '',
+  return { iso, workouts, planned, measurements: measurementEventsOn(state, iso), name: workouts.at(-1)?.name || routine?.name || '',
     status: workouts.length ? 'completed' : planned ? (iso < todayISO() ? 'missed' : 'pending') : 'rest' }
 }
 const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`

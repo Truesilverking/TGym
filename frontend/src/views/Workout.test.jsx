@@ -178,6 +178,11 @@ describe('Workout set completion flow', () => {
 })
 
 describe('Top and back-off targets', () => {
+  it('shows the full target range even when a legacy profile has effort disabled', async () => {
+    await mount([{ id: 'squat', target: { mode: 'reps', reps: 6, targetRirMin: 1, targetRirMax: 2 }, sets: [{ w: 50, r: 6, rir: 2, done: true }] }], 0, S => { S.effort = 'none' })
+    expect(container.querySelector('.sethead .eff-sp').textContent).toContain('1–2')
+    expect(container.querySelector('.sethead .eff-sp').textContent).toContain('RIR')
+  })
   it('aligns each rep range and RIR value below its matching column heading', async () => {
     const target = { mode: 'reps', sets: 3, repsMin: 4, reps: 6, backoffRepsMin: 6, backoffRepsMax: 8,
       weight: 100, setScheme: 'topback', topRir: 1, backoffRir: 3 }

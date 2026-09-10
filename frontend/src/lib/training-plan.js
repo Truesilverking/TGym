@@ -1,5 +1,5 @@
 import { isoOf, todayISO } from './format.js'
-import { isWarmupRow } from './workout-model.js'
+import { isWarmupRow, modeForSet } from './workout-model.js'
 
 const DAY = 86400000
 const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n))
@@ -133,7 +133,7 @@ export function applyTrainingPlan(rows, cfg, step = 2.5, deload = null) {
     work = work.map(s => ({ ...s, w: s.w > 0 ? snap(s.w * clamp(Number(c.loadPct) || 90, 50, 100) / 100, step) : s.w, deload: true }))
     warm = warm.map(s => ({ ...s, w: s.w > 0 ? snap(s.w * clamp(Number(c.loadPct) || 90, 50, 100) / 100, step) : s.w, deload: true }))
   }
-  return [...warm, ...work]
+  return [...warm, ...work].map(row => seedPlannedRir(row, cfg))
 }
 
 /** A session-only target for a scheduled deload. The saved routine remains untouched. */
@@ -187,9 +187,13 @@ export const targetRirRangeFor = (cfg = {}, role = null) => {
   const prefix = role === 'top' ? 'top' : role === 'backoff' ? 'backoff' : 'target'
   const legacy = cfg[`${prefix}Rir`] ?? (role ? cfg.targetRir : undefined)
   let min = cfg[`${prefix}RirMin`], max = cfg[`${prefix}RirMax`]
-  if (min == null && max == null && role) { min = cfg.targetRirMin; max = cfg.targetRirMax }
+  if (min == null && max == null && role) {
+    if (cfg[`${prefix}Rir`] != null && cfg[`${prefix}Rir`] !== '') min = max = cfg[`${prefix}Rir`]
+    else { min = cfg.targetRirMin; max = cfg.targetRirMax }
+  }
   if (min == null && max == null && legacy != null && legacy !== '') min = max = legacy
   if (min == null && max == null) return null
+  if (![min ?? max, max ?? min].every(v => v !== '' && Number.isFinite(Number(v)))) return null
   min = rirHalf(min ?? max); max = rirHalf(max ?? min)
   if (min > max) max = min
   return { min, max }
@@ -198,11 +202,19 @@ export const targetRirRangeFor = (cfg = {}, role = null) => {
 // Kept for old callers and third-party imports. A scalar target is the upper edge of the range.
 export const targetRirFor = (cfg, role) => targetRirRangeFor(cfg, role)?.max ?? null
 
+// Called only when constructing NEW sets. The actual lives in row.rir; the immutable
+// prescription remains in entry.target. Never reseed an existing active/history record.
+export function seedPlannedRir(row, cfg) {
+  if (isWarmupRow(row) || modeForSet(row, cfg) !== 'reps') return row
+  const initial = targetRirFor(cfg, row.role)
+  return initial == null ? row : { ...row, rir: initial }
+}
+
 /** Simple, auditable advice. The athlete supplies RIR; TGym only compares it to the target. */
 export function rirAdvice(sets, cfg) {
-  const rated = (sets || []).filter(s => s.done && !isWarmupRow(s) && s.rir != null && targetRirRangeFor(cfg, s.role))
+  const rated = (sets || []).filter(s => s.done && !isWarmupRow(s) && s.rir != null && s.rir !== '' && Number.isFinite(Number(s.rir)) && Number(s.rir) >= 0 && Number(s.rir) <= 10 && targetRirRangeFor(cfg, s.role))
   if (!rated.length) return { kind: 'missing', delta: null, count: 0 }
-  const timestamped = rated.filter(s => Number.isFinite(Number(s.doneAt)))
+  const timestamped = rated.filter(s => s.doneAt != null && Number.isFinite(Number(s.doneAt)))
   const last = timestamped.length
     ? timestamped.reduce((latest, row) => Number(row.doneAt) >= Number(latest.doneAt) ? row : latest)
     : rated.at(-1)

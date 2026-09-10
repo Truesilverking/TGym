@@ -1075,3 +1075,13 @@ body.framegym-private::after{
   content:'TGym';position:fixed;inset:0;z-index:2147483647;display:grid;place-items:center;
   color:#e32636;background:#080808;font-size:30px;font-weight:700;letter-spacing:-.03em;
 }
+/* Scope the compact inline layout to this action only. */
+.calendar-export-button.btn { display:inline-flex; flex-direction:row; align-items:center; justify-content:center; gap:6px; width:auto; max-width:100%; min-height:44px; padding:8px 12px; white-space:nowrap; font-size:15px; }
+.calendar-export-button.btn>svg { width:18px; height:18px; flex:0 0 18px; margin:0; }
+.calendar-export-button.btn>span { white-space:nowrap; }
+.measurement-reminder-interval{display:grid;grid-template-columns:minmax(0,1fr) minmax(90px,.6fr);gap:10px;align-items:end;margin:12px 0}
+.measurement-calendar-dot{font-size:16px;line-height:1;color:var(--teal);position:absolute;bottom:3px;right:6px}
+.zoomcal-day{position:relative}
+.measurement-calendar-label{display:block;font-size:10px;line-height:1.2;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--teal)}
+
+.measurement-reminder-time.lrow{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}.measurement-reminder-time>input{width:100%;min-width:0;max-width:100%}

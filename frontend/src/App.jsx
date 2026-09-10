@@ -29,6 +29,7 @@ import Admin from './views/Admin.jsx'
 import AppLock from './components/AppLock.jsx'
 import AppUpdate from './components/AppUpdate.jsx'
 import { backupToGoogleDrive, cloudBackupDue } from './lib/cloud-sync.js'
+import { MOBILE } from './lib/mobile.js'
 
 bindUI(useUI)   // lets the shared controls open sheets without importing the store at module scope
 
@@ -53,6 +54,20 @@ function Shell() {
   const isGuest = useStore(s => s.isGuest())
   const needsMobileOnboarding = useStore(s => s.needsMobileOnboarding)
   const langV = useLang()   // re-renders the whole shell when the language (pack) changes
+  useEffect(() => {
+    if (!MOBILE) return
+    let disposed = false, listener
+    import('@capacitor/local-notifications').then(async ({ LocalNotifications }) => {
+      const handle = await LocalNotifications.addListener('localNotificationActionPerformed', async event => {
+        const extra = event.notification?.extra
+        if (extra?.type !== 'measurement' || disposed) return
+        const sheets = await import('./sheets.jsx')
+        if (!disposed) sheets.openMeasurementEntry(extra.metrics?.[0] || 'weight')
+      })
+      if (disposed) void handle.remove(); else listener = handle
+    }).catch(() => {})
+    return () => { disposed = true; void listener?.remove() }
+  }, [])
   useEffect(() => { setNav(navigate) }, [navigate])
   useEffect(() => { applyPrefs(S.theme, S.accent, S.reduceMotion) }, [S.theme, S.accent, S.reduceMotion])
   // 'system' needs to react live if the OS theme flips while the app is open, not just on
@@ -85,9 +100,9 @@ function Shell() {
       useStore.getState().update(s => { s.cloudSync = { ...(s.cloudSync || {}), lastAttemptAt: Date.now() } }, false)
       try {
         const result = await backupToGoogleDrive(current, { interactive: false })
-        if (!gone) useStore.getState().update(s => { s.cloudSync = { ...(s.cloudSync || {}), dirtyAt: s.cloudSync?.dirtyAt === current.cloudSync?.dirtyAt ? null : s.cloudSync?.dirtyAt, authorizedOnce: true, lastBackupAt: result.at, lastFileId: result.fileId, lastModifiedTime: result.modifiedTime, needsAuth: false, lastError: null } }, false)
+        if (!gone) useStore.getState().update(s => { s.cloudSync = { ...(s.cloudSync || {}), dirtyAt: s.cloudSync?.dirtyAt === current.cloudSync?.dirtyAt ? null : s.cloudSync?.dirtyAt, authorizedOnce: true, lastBackupAt: result.at, lastFileId: result.fileId, lastModifiedTime: result.modifiedTime, needsAuth: false, lastError: result.warning || null } }, false)
       } catch (error) {
-        const authCodes = new Set(['auth_required', 'configuration_required', 'access_denied', 'popup_failed_to_open', 'popup_closed'])
+        const authCodes = new Set(['auth_required', 'configuration_required', 'access_denied', 'popup_failed_to_open', 'popup_closed', 'auth_failed'])
         if (!gone) useStore.getState().update(s => { s.cloudSync = { ...(s.cloudSync || {}), needsAuth: authCodes.has(error?.code), lastError: error?.message || 'Google Drive error' } }, false)
       } finally { running = false }
     }

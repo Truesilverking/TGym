@@ -7,6 +7,8 @@ export const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.appdata'
 export const DRIVE_FILE = 'framegym-weekly-backup.json'
 export const WEEK_MS = 7 * 24 * 60 * 60 * 1000
 const TOKEN_KEY = 'framegym_google_drive_token_v1'
+// Public OAuth identifier, restricted in Google Cloud to the official Pages origin.
+const HOSTED_WEB_CLIENT_ID = '887118860717-2tnvjt17ogm34livib7pgv6p64tn806b.apps.googleusercontent.com'
 
 let gisPromise = null
 let memoryToken = null
@@ -16,7 +18,7 @@ export const nativeDriveAuthAvailable = () => Capacitor.isNativePlatform() && Ca
 export const configuredGoogleClientId = state =>
   nativeDriveAuthAvailable()
     ? 'native-android'
-    : String(state?.cloudSync?.clientId || import.meta.env.VITE_GOOGLE_CLIENT_ID || '').trim()
+    : String(state?.cloudSync?.clientId || import.meta.env.VITE_GOOGLE_CLIENT_ID || (globalThis.location?.origin === 'https://truesilverking.github.io' ? HOSTED_WEB_CLIENT_ID : '')).trim()
 
 export function cloudBackupDue(state, now = Date.now()) {
   if (!state?.cloudSync?.on || !configuredGoogleClientId(state)) return false
@@ -38,8 +40,10 @@ function readToken() {
   return null
 }
 
-function saveToken(response) {
+function saveToken(response, clientId) {
+  if (!response?.access_token) throw Object.assign(new Error('Google did not return an access token'), { code: 'auth_required' })
   memoryToken = {
+    clientId,
     accessToken: response.access_token,
     expiresAt: Date.now() + Math.max(60, Number(response.expires_in) || 3600) * 1000,
   }
@@ -53,32 +57,38 @@ function loadGoogleIdentity() {
   gisPromise = new Promise((resolve, reject) => {
     const existing = document.querySelector('script[data-framegym-gis]')
     const script = existing || document.createElement('script')
-    const done = () => globalThis.google?.accounts?.oauth2
-      ? resolve(globalThis.google)
-      : reject(new Error('Google Identity Services did not load'))
+    const fail = () => { clearTimeout(timeout); script.remove(); reject(new Error('Google Identity Services could not load')) }
+    const timeout = setTimeout(fail, 15000)
+    const done = () => {
+      clearTimeout(timeout)
+      if (globalThis.google?.accounts?.oauth2) resolve(globalThis.google)
+      else fail()
+    }
     script.addEventListener('load', done, { once: true })
-    script.addEventListener('error', () => reject(new Error('Google Identity Services could not load')), { once: true })
+    script.addEventListener('error', fail, { once: true })
     if (!existing) {
       script.src = 'https://accounts.google.com/gsi/client'
       script.async = true; script.defer = true; script.dataset.framegymGis = '1'
       document.head.appendChild(script)
     }
-  })
+  }).catch(error => { gisPromise = null; throw error })
   return gisPromise
 }
 
 async function accessToken(clientId, prompt, interactive) {
   const cached = readToken()
-  if (cached) return cached.accessToken
+  if (cached?.clientId === clientId) return cached.accessToken
   if (nativeDriveAuthAvailable()) {
     try {
       const result = await NativeGoogleDriveAuth.authorize({ interactive })
-      return saveToken({ access_token: result.accessToken, expires_in: result.expiresIn || 3000 }).accessToken
+      return saveToken({ access_token: result.accessToken, expires_in: result.expiresIn || 3000 }, clientId).accessToken
     } catch (error) {
       throw Object.assign(new Error(error?.message || 'Google Drive authorization failed'), { code: error?.code || 'auth_failed' })
     }
   }
   if (!clientId) throw Object.assign(new Error('Google OAuth client ID is required'), { code: 'configuration_required' })
+  // GIS token renewal may open a popup; never do that from an automatic backup.
+  if (!interactive) throw Object.assign(new Error('Reconnect Google Drive to continue.'), { code: 'auth_required' })
   const google = await loadGoogleIdentity()
   return new Promise((resolve, reject) => {
     const client = google.accounts.oauth2.initTokenClient({
@@ -86,7 +96,7 @@ async function accessToken(clientId, prompt, interactive) {
       scope: DRIVE_SCOPE,
       callback: response => {
         if (response?.error) reject(Object.assign(new Error(response.error_description || response.error), { code: response.error }))
-        else resolve(saveToken(response).accessToken)
+        else { try { resolve(saveToken(response, clientId).accessToken) } catch (error) { reject(error) } }
       },
       error_callback: error => reject(Object.assign(new Error(error?.message || error?.type || 'Google authorization failed'), { code: error?.type || 'auth_failed' })),
     })
@@ -96,15 +106,26 @@ async function accessToken(clientId, prompt, interactive) {
   })
 }
 
-async function driveFetch(path, token, init = {}) {
+async function driveFetch(path, token, init = {}, retried = false) {
   const response = await fetch(path, {
     ...init,
     headers: { Authorization: `Bearer ${token}`, ...(init.headers || {}) },
   })
   if (!response.ok) {
+    if (response.status === 401 && !retried) {
+      const clientId = readToken()?.clientId
+      memoryToken = null
+      try { sessionStorage.removeItem(TOKEN_KEY) } catch { /* optional */ }
+      if (nativeDriveAuthAvailable()) await NativeGoogleDriveAuth.clearToken({ accessToken: token })
+      if (clientId) return driveFetch(path, await accessToken(clientId, '', false), init, true)
+    }
     const body = await response.text().catch(() => '')
     const error = new Error(`Google Drive ${response.status}${body ? ': ' + body.slice(0, 180) : ''}`)
     error.code = response.status === 401 ? 'auth_required' : 'drive_error'
+    if (response.status === 403 && /accessNotConfigured|SERVICE_DISABLED/i.test(body)) {
+      error.code = 'configuration_required'
+      error.message = 'Enable Google Drive API in the TGym Google Cloud project.'
+    }
     throw error
   }
   return response
@@ -138,6 +159,13 @@ export async function listGoogleDriveBackups(state) {
   return snapshotFiles(token)
 }
 
+export async function connectGoogleDrive(state) {
+  const token = await accessToken(configuredGoogleClientId(state), 'consent', true)
+  // Verify Drive access, not just receipt of an OAuth token. Never replace remote data here.
+  const file = await latestFile(token)
+  return { hasBackup: !!file }
+}
+
 export async function backupToGoogleDrive(state, { interactive = true, allowOverwrite = false } = {}) {
   const prompt = interactive && (!state?.cloudSync?.authorizedOnce || state?.cloudSync?.needsAuth) ? 'consent' : ''
   const token = await accessToken(configuredGoogleClientId(state), prompt, interactive)
@@ -159,8 +187,10 @@ export async function backupToGoogleDrive(state, { interactive = true, allowOver
     })
   }
   const file = await response.json()
-  await retainDailySnapshot(token, content)
-  return { fileId: file.id || existing?.id, modifiedTime: file.modifiedTime, at: Date.now() }
+  let warning = null
+  try { await retainDailySnapshot(token, content) }
+  catch { warning = 'The latest backup was saved, but backup history could not be updated.' }
+  return { fileId: file.id || existing?.id, modifiedTime: file.modifiedTime, at: Date.now(), warning }
 }
 
 export async function restoreFromGoogleDrive(state, { interactive = true, fileId } = {}) {

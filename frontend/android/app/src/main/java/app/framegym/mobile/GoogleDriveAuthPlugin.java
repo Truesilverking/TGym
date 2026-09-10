@@ -12,6 +12,8 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 import com.google.android.gms.auth.api.identity.AuthorizationClient;
 import com.google.android.gms.auth.api.identity.AuthorizationRequest;
 import com.google.android.gms.auth.api.identity.AuthorizationResult;
+import com.google.android.gms.auth.api.identity.ClearTokenRequest;
+import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.auth.api.identity.Identity;
 import com.google.android.gms.common.api.Scope;
 import java.util.Collections;
@@ -21,9 +23,32 @@ public class GoogleDriveAuthPlugin extends Plugin {
     static final int AUTH_REQUEST = 9417;
     private static final String DRIVE_APPDATA = "https://www.googleapis.com/auth/drive.appdata";
     private AuthorizationClient authorizationClient;
+    private boolean authorizing;
+
+    private void rejectAuthorization(PluginCall call, Exception error) {
+        authorizing = false;
+        int status = error instanceof ApiException ? ((ApiException) error).getStatusCode() : -1;
+        String code = status == 10 ? "configuration_required" : status == 7 ? "network_error" : "auth_failed";
+        String message = status == 10
+            ? "Google Cloud must register Android package app.framegym.mobile and its release SHA-1."
+            : "Google Drive authorization failed (Google status " + status + ").";
+        call.reject(message, code, error);
+    }
+
+    @PluginMethod
+    public void clearToken(PluginCall call) {
+        String token = call.getString("accessToken", "");
+        if (token.isEmpty()) { call.resolve(); return; }
+        Identity.getAuthorizationClient(getActivity())
+            .clearToken(ClearTokenRequest.builder().setToken(token).build())
+            .addOnSuccessListener(unused -> call.resolve())
+            .addOnFailureListener(error -> call.reject("Reconnect Google Drive to continue.", "auth_required", error));
+    }
 
     @PluginMethod
     public void authorize(PluginCall call) {
+        if (authorizing) { call.reject("Google authorization is already open", "auth_busy"); return; }
+        authorizing = true;
         boolean interactive = call.getBoolean("interactive", true);
         authorizationClient = Identity.getAuthorizationClient(getActivity());
         AuthorizationRequest request = AuthorizationRequest.builder()
@@ -37,11 +62,13 @@ public class GoogleDriveAuthPlugin extends Plugin {
                     return;
                 }
                 if (!interactive) {
+                    authorizing = false;
                     call.reject("Google Drive needs authorization", "auth_required");
                     return;
                 }
                 PendingIntent pending = result.getPendingIntent();
                 if (pending == null) {
+                    authorizing = false;
                     call.reject("Google Drive authorization is unavailable", "auth_failed");
                     return;
                 }
@@ -49,14 +76,15 @@ public class GoogleDriveAuthPlugin extends Plugin {
                 try {
                     getActivity().startIntentSenderForResult(pending.getIntentSender(), AUTH_REQUEST, null, 0, 0, 0);
                 } catch (IntentSender.SendIntentException error) {
+                    rejectAuthorization(call, error);
                     freeSavedCall();
-                    call.reject("Could not open Google authorization", "auth_failed", error);
                 }
             })
-            .addOnFailureListener(error -> call.reject("Google Drive authorization failed", "auth_failed", error));
+            .addOnFailureListener(error -> rejectAuthorization(call, error));
     }
 
     private void resolveToken(PluginCall call, AuthorizationResult result) {
+        authorizing = false;
         String token = result.getAccessToken();
         if (token == null || token.isEmpty()) {
             call.reject("Google Drive did not return an access token", "auth_failed");
@@ -76,17 +104,18 @@ public class GoogleDriveAuthPlugin extends Plugin {
         PluginCall call = getSavedCall();
         if (call == null) return;
         if (resultCode != Activity.RESULT_OK || data == null) {
-            freeSavedCall();
+            authorizing = false;
             call.reject("Google Drive authorization was cancelled", "access_denied");
+            freeSavedCall();
             return;
         }
         try {
             AuthorizationResult result = authorizationClient.getAuthorizationResultFromIntent(data);
-            freeSavedCall();
             resolveToken(call, result);
         } catch (Exception error) {
+            rejectAuthorization(call, error);
+        } finally {
             freeSavedCall();
-            call.reject("Google Drive authorization failed", "auth_failed", error);
         }
     }
 }

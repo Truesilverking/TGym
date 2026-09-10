@@ -11,6 +11,7 @@
 // web bundles; the Capacitor plugins are only ever imported behind it.
 import { t } from './i18n-core.js'
 import { todayISO } from './format.js'
+import { measurementNotificationPlan, MEASUREMENT_NOTIFICATION_IDS } from './measurement-reminders.js'
 
 export const MOBILE = import.meta.env.VITE_MOBILE === '1'
 
@@ -56,15 +57,28 @@ export async function saveRemoteFile(data) {
 // routine in the weekly plan. Cheap enough to run after any state change — the plan or the
 // reminder time may just have been edited. `interactive` gates the OS permission prompt to
 // the Settings toggle; a background resync never pops a dialog.
-export async function syncReminder(S, interactive = false) {
+let reminderQueue = Promise.resolve()
+export function syncReminder(S, interactive = false) {
+  const snapshot = structuredClone(S)
+  reminderQueue = reminderQueue.catch(() => false).then(() => syncReminderNow(snapshot, interactive))
+  return reminderQueue
+}
+async function syncReminderNow(S, interactive = false) {
   try {
     const { LocalNotifications } = await import('@capacitor/local-notifications')
     await LocalNotifications.cancel({ notifications: [0, 1, 2, 3, 4, 5, 6].map(d => ({ id: 100 + d })) }).catch(() => {})
+    await LocalNotifications.cancel({ notifications: MEASUREMENT_NOTIFICATION_IDS.map(id => ({id})) })
     const r = S.reminder
-    if (!r?.on) return true
+    if (!r?.on && !S.measurementReminders?.notifications) return true
     let perm = await LocalNotifications.checkPermissions()
     if (perm.display !== 'granted' && interactive) perm = await LocalNotifications.requestPermissions()
     if (perm.display !== 'granted') return false
+    const measurementNotices = measurementNotificationPlan(S).map(group => ({
+      id: group.id, title: t('Time to update your measurements'), body: group.labels.map(label => t(label)).join(', '),
+      schedule: { at: group.at, allowWhileIdle: true }, extra: { type: 'measurement', metrics: group.metrics },
+    }))
+    if (measurementNotices.length) await LocalNotifications.schedule({ notifications: measurementNotices })
+    if (!r?.on) return true
     const notifications = Object.entries(S.week || {})
       .filter(([, rid]) => rid && (S.routines || []).some(x => x.id === rid))
       .map(([day, rid]) => {

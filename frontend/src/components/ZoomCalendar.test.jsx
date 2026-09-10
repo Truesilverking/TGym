@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { ZoomCalendar } from '../sheets.jsx'
+import { useUI } from '../store/useUI.js'
 
 const state = () => ({
   workouts: [{ id: 'w1', d: '2026-09-02', name: 'Upper A' }],
@@ -56,4 +57,33 @@ describe('zoom consistency calendar', () => {
     act(() => zoomIn.click())
     expect(host.querySelectorAll('.zoomcal-mini-month')).toHaveLength(12)
   })
+})
+
+it('uses a real inline export button with the existing icon before its text', () => {
+  const host=document.createElement('div'), root=createRoot(host)
+  act(()=>root.render(<ZoomCalendar S={state()} />))
+  const button=host.querySelector('button.calendar-export-button')
+  expect(button).not.toBeNull()
+  expect(button.firstElementChild.tagName.toLowerCase()).toBe('svg')
+  expect(button.lastElementChild.textContent).toBe('Export Calendar')
+  act(() => button.click())
+  expect(useUI.getState().sheets).toHaveLength(1)
+  const sheet = document.createElement('div'), sheetRoot = createRoot(sheet)
+  act(() => sheetRoot.render(useUI.getState().sheets[0].render(() => {})))
+  expect(sheet.querySelector('h3').textContent).toBe('Export Calendar')
+  act(() => sheetRoot.unmount())
+  useUI.getState().closeAll()
+  act(()=>root.unmount())
+})
+it('keeps measurement markers secondary to training and out of yearly mini cells', () => {
+  const host=document.createElement('div'), root=createRoot(host)
+  const S={...state(),bodyweight:[{d:'2026-09-01',w:80}],measurementReminders:{items:{weight:{enabled:true,intervalValue:1,intervalUnit:'days'}}}}
+  act(()=>root.render(<ZoomCalendar S={S} initialLevel="week" initialAnchor={new Date('2026-09-02T12:00:00')} />))
+  expect(host.querySelectorAll('.measurement-calendar-dot').length).toBeGreaterThan(0)
+  expect(host.querySelectorAll('.zoomcal-day.completed')).toHaveLength(1)
+  act(()=>root.unmount())
+  const yearRoot=createRoot(host)
+  act(()=>yearRoot.render(<ZoomCalendar S={S} initialLevel="months" initialAnchor={new Date('2026-09-02T12:00:00')} />))
+  expect(host.querySelector('.zoomcal-mini-month .measurement-calendar-dot')).toBeNull()
+  act(()=>yearRoot.unmount())
 })

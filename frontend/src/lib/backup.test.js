@@ -19,6 +19,12 @@ describe('portable full snapshots', () => {
     expect(() => parseTGymJson(future)).toThrow(/version/)
     expect(state.unit).toBe('lb')
   })
+  it('preserves planned ranges separately from actual RIR in active and historical sets', () => {
+    const entry = { ex: 'squat', target: { targetRirMin: 1, targetRirMax: 2, topRirMin: 1.5, topRirMax: 2.5 }, sets: [{ role: 'top', rir: 0.5, done: true, doneAt: 100 }, { role: 'back', rir: 2, done: false }] }
+    const restored = parseTGymJson(JSON.stringify(createBackup({ ...state, active: { entries: [entry] }, workouts: [{ id: 'w1', d: '2026-09-10', entries: [entry] }] }))).data
+    expect(restored.active.entries[0]).toEqual(entry)
+    expect(restored.workouts[0].entries[0]).toEqual(entry)
+  })
   it('validates legacy shapes and strips prototype pollution', () => {
     expect(() => parseTGymJson({workouts:[null],routines:[]})).toThrow()
     const data = parseTGymJson('{"workouts":[],"routines":[],"__proto__":{"polluted":true}}').data

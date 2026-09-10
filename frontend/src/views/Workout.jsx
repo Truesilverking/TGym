@@ -17,7 +17,7 @@ import { nextPrescription, applyPrescription, defaultIncrement } from '../lib/pr
 import { glyphOf } from '../lib/glyphs.js'
 import { isWarmupRow, isDropSet, isRestPauseSet, dropsOf, clustersOf, addDrop, addCluster, removeDropAt, removeClusterAt, setDropAt, setClusterAt, nextDropWeight, nextBurstReps } from '../lib/workout-model.js'
 import { restSeconds } from '../lib/rest-policy.js'
-import { applyTrainingPlan, clampReps, deloadStatus, deloadTargetFor, repBounds, repRangeEnabled, rirAdvice, targetRirFor, targetRirRangeFor } from '../lib/training-plan.js'
+import { seedPlannedRir, applyTrainingPlan, clampReps, deloadStatus, deloadTargetFor, repBounds, repRangeEnabled, rirAdvice, targetRirFor, targetRirRangeFor } from '../lib/training-plan.js'
 import { pauseWorkoutClock, resumeWorkoutClock, workoutElapsedMs } from '../lib/workout-time.js'
 
 /* ---------- start chooser (no active workout) ---------- */
@@ -129,7 +129,9 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
   // Effort (RIR or RPE, whichever the profile logs) only makes sense for weighted rep sets,
   // not cardio/timed holds, and is opt-in since it adds a third stepper to every row. `opt`
   // because an unlogged effort is not the same as 0 — RIR 0 says the set went to failure.
-  const kind = cfg.deload && targetRirFor(cfg, null) != null ? 'rir' : effortOf(S)
+  const hasRirTarget = [null, 'top', 'backoff'].some(role => targetRirFor(cfg, role) != null)
+  const preferredEffort = effortOf(S)
+  const kind = hasRirTarget && (cfg.deload || !preferredEffort || preferredEffort === 'none') ? 'rir' : preferredEffort
   const eff = EFFORT[kind]
   const col3 = mode === 'reps' && eff ? { ...eff, eff: kind, dec: true, opt: true, hd: t(eff.hd) } : null
   // The effort column walks its own scale — see stepEffort. Weight and reps step up from 0
@@ -203,7 +205,7 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
     {!cardio && !timed && (() => {
       const targetRir = targetRirRangeFor(cfg, null)
       return <div className="row" style={{ gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
-        {targetRir && cfg.setScheme !== 'topback' && <span className="tag nocap">RIR {fmtNum(targetRir.min)}{targetRir.max !== targetRir.min ? `–${fmtNum(targetRir.max)}` : ''}</span>}
+        {targetRir && cfg.setScheme !== 'topback' && <span className="tag nocap">{t('Target RIR')}: {fmtNum(targetRir.min)}{targetRir.max !== targetRir.min ? `–${fmtNum(targetRir.max)}` : ''}</span>}
       </div>
     })()}
     {S.exerciseGoals?.[entry.id] && <div className="small row" style={{ color: 'var(--yellow)', gap: 5, marginBottom: 8 }}><Icon name="target" />{t('Goal')}: {S.exerciseGoals[entry.id].weight > 0 ? fmtNum(S.exerciseGoals[entry.id].weight) + ' ' + S.unit : ''}{S.exerciseGoals[entry.id].weight > 0 && S.exerciseGoals[entry.id].reps > 0 ? ' × ' : ''}{S.exerciseGoals[entry.id].reps > 0 ? S.exerciseGoals[entry.id].reps + ' ' + t('reps') : ''}</div>}
@@ -212,7 +214,7 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
       <div className={'sethead' + (col3 ? ' eff3' : '')}><span className="n-sp" />
         <span className={'w-sp' + (col1.hd === t('Reps') ? ' sethead-range' : '')}><span>{col1.hd}</span>{mode === 'reps' && cfg.setScheme !== 'topback' && col1.hd === t('Reps') && repRangeEnabled(cfg) && <small>{repBounds(cfg).min}-{repBounds(cfg).max}</small>}</span>
         {col2 && <span className={'r-sp' + (col2.hd === t('Reps') ? ' sethead-range' : '')}><span>{col2.hd}</span>{mode === 'reps' && cfg.setScheme !== 'topback' && col2.hd === t('Reps') && repRangeEnabled(cfg) && <small>{repBounds(cfg).min}-{repBounds(cfg).max}</small>}</span>}
-        {col3 && <span className="eff-sp">{col3.hd}</span>}{(timed || cardio) && <span className="ck-sp" />}<span className="ck-sp" /></div>
+        {col3 && <span className="eff-sp sethead-range"><span>{col3.hd}</span>{cfg.setScheme !== 'topback' && col3.eff === 'rir' && targetRirRangeFor(cfg) && <small>{fmtNum(targetRirRangeFor(cfg).min)}{targetRirRangeFor(cfg).max !== targetRirRangeFor(cfg).min ? `–${fmtNum(targetRirRangeFor(cfg).max)}` : ''}</small>}</span>}{(timed || cardio) && <span className="ck-sp" />}<span className="ck-sp" /></div>
       {entry.sets.map((s, i) => {
         const warm = isWarmupRow(s)
         const warmBefore = i > 0 && isWarmupRow(entry.sets[i - 1])
@@ -360,7 +362,7 @@ function ActiveWorkout() {
     const m = modeOf({ ...(e.target || {}), id: e.id })
     if (m === 'cardio') e.sets.push({ min: l ? l.min : (e.target.min || 20), speed: l ? l.speed : (e.target.speed || 8), done: false })
     else if (m === 'time') e.sets.push({ sec: l ? l.sec : (e.target.sec || 45), w: l ? (l.w || 0) : (e.target.weight || 0), done: false })
-    else e.sets.push({ w: l ? l.w : 0, r: l ? l.r : e.target.reps, done: false })
+    else e.sets.push(seedPlannedRir({ w: l ? l.w : 0, r: l ? l.r : e.target.reps, role: l?.role, done: false }, e.target || {}))
   })
   const removeSet = idx => mutEntry(idx, e => { if (e.sets.length > 1) e.sets.pop() })
   const addWarmup = idx => mutEntry(idx, e => {

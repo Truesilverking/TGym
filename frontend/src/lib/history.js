@@ -3,6 +3,7 @@ import { todayISO, isoOf, weekKey, fmtNum } from './format.js'
 import { isCardio, isBodyweightEq } from './exercises.js'
 import { phaseForSet, modeForSet, modeForEntry, isWarmupRow, normalizeMode, extraVolumeOf, nextDropWeight, splitBurstReps } from './workout-model.js'
 import { warmupPrescription, recalculatePendingWarmups } from './warmup.js'
+import { seedPlannedRir } from './training-plan.js'
 const objectOf = value => value && typeof value === 'object' && !Array.isArray(value) ? value : {}
 // Completed-state-independent work rows whose authoritative mode matches the requested mode.
 const workRowsForMode = (entry = {}, mode = 'reps') => {
@@ -90,7 +91,7 @@ export function stepEffort(kind, cur, dir) {
 // A typed effort is capped but not floored — clamping up while someone types "10" would turn
 // the first keystroke into the floor and fight the input.
 export const capEffort = (kind, v) =>
-  (v == null || !EFFORT[kind] ? v : Math.min(EFFORT[kind].max, v))
+  (v == null || !EFFORT[kind] ? v : kind === 'rir' ? (Number.isFinite(Number(v)) ? Math.round(Math.max(0, Math.min(10, Number(v))) * 2) / 2 : null) : Math.min(EFFORT[kind].max, v))
 // Which scale a profile logs. `showRir` is the boolean this replaced and is only consulted
 // when the profile has no answer of its own — an explicit 'none' has to win over it, or a
 // backup or another device that still carries the old flag would switch the column back on.
@@ -302,7 +303,7 @@ export function effectiveRoutine(S, iso) {
  * passed in by the caller (see insertWarmupRow for why this module cannot read it itself).
  */
 export function buildSets(S, cfg, options = {}) {
-  const rows = buildWorkSets(S, cfg, options)
+  const rows = buildWorkSets(S, cfg, options).map(row => seedPlannedRir(row, cfg))
   const warm = Math.max(0, Math.min(MAX_PLANNED_WARMUPS, Math.round(cfg.warmupSets) || 0))
   if (!warm) return rows
   const mode = modeOf(cfg)

@@ -1,3 +1,4 @@
+import MeasurementReminders from './components/MeasurementReminders.jsx'
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
@@ -156,7 +157,7 @@ function BwSheet({ required, onDone, close }) {
   const recent = [...st.bodyweight].reverse().slice(0, 3)
   const delEntry = d => update(s => { s.bodyweight = s.bodyweight.filter(b => b.d !== d) })
   return <>
-    <h3>{required ? t('Quick check-in') : t('Log body weight')}</h3>
+    <h3>{required ? t('Quick check-in') : t('Log body weight')}</h3><Button size="sm" onClick={() => measurementRemindersSheet('weight')}>{t('Measurement reminder')}</Button>
     <div className="muted small">{required ? t('Slide or tap to set your weight — tracked before every workout so your curve stays honest.') : t('Today') + ', ' + fmtDate(todayISO(), true)}</div>
     <WeightInput value={v} setValue={setV} unit={unit} />
     <div style={{ height: 14 }} />
@@ -184,10 +185,10 @@ export function bwSheet(opts = {}) {
   return h
 }
 
-function MeasurementsSheet({ existing, close }) {
+function MeasurementsSheet({ existing, close, focusMetric }) {
   const st = useStore(s => s.S)
-  const latest = [...(st.measurements || [])].sort((a, b) => b.d.localeCompare(a.d))[0] || {}
-  const initial = existing || latest
+  const initial = existing || {}
+  useEffect(() => { if (focusMetric) document.getElementById('measure-' + focusMetric)?.querySelector('input')?.focus() }, [focusMetric])
   const [date, setDate] = useState(existing?.d || todayISO())
   const [values, setValues] = useState(() => Object.fromEntries(MEASURE_FIELDS.map(([k]) => [k, measurementValue(initial, k)])))
   const unit = st.measurementUnit || 'cm'
@@ -198,17 +199,19 @@ function MeasurementsSheet({ existing, close }) {
       const row = { d: date, ...Object.fromEntries(MEASURE_FIELDS.filter(([k]) => values[k] > 0).map(([k]) => [k, Math.round(values[k] * 10) / 10])) }
       if (existing?.d && existing.d !== date) s.measurements = s.measurements.filter(x => x.d !== existing.d)
       const i = s.measurements.findIndex(x => x.d === row.d)
-      if (i >= 0) s.measurements[i] = row; else s.measurements.push(row)
+      if (i >= 0) s.measurements[i] = existing ? row : { ...s.measurements[i], ...row }; else s.measurements.push(row)
     })
     close(); toast(t('Measurements saved'))
   }
-  return <><h3>{t('Body measurements')}</h3><div className="muted small" style={{ marginBottom: 14 }}>{t('Use the same measuring position each time for a useful trend.')}</div>
+  return <><h3>{t('Body measurements')}</h3><Button size="sm" onClick={() => measurementRemindersSheet(focusMetric || 'waist')}>{t('Measurement reminder')}</Button><div className="muted small" style={{ marginBottom: 14 }}>{t('Use the same measuring position each time for a useful trend.')}</div>
     <div className="exnote" style={{ marginBottom: 12 }}>{t('Measure relaxed, at the same time of day, without pulling the tape tight. Measure shoulders and chest around their widest point, waist at the navel, limbs at their widest point.')}</div>
     <label className="field-label">{t('Date')}</label><input className="input" type="date" value={date} max={todayISO()} onChange={e => setDate(e.target.value)} />
-    <div className="measurement-grid">{MEASURE_FIELDS.map(([k, label]) => <Stepper key={k} label={t('{0} ({1})', t(label), unit)} value={values[k]} step={0.5} onChange={v => setValues(x => ({ ...x, [k]: v }))} />)}</div>
+    <div className="measurement-grid">{MEASURE_FIELDS.map(([k, label]) => <div id={'measure-' + k} key={k}><Stepper label={t('{0} ({1})', t(label), unit)} value={values[k]} step={0.5} onChange={v => setValues(x => ({ ...x, [k]: v }))} /></div>)}</div>
     <div style={{ height: 14 }} /><Button variant="primary" onClick={save}>{t('Save')}</Button></>
 }
-export const measurementsSheet = existing => ui().openSheet(close => <MeasurementsSheet existing={existing} close={close} />)
+export const measurementsSheet = (existing, focusMetric) => ui().openSheet(close => <MeasurementsSheet existing={existing} focusMetric={focusMetric} close={close} />)
+export const openMeasurementEntry = metric => metric === 'weight' ? bwSheet() : measurementsSheet(undefined, metric)
+export const measurementRemindersSheet = metric => ui().openSheet(() => <MeasurementReminders initialMetric={metric} onRecord={openMeasurementEntry} />)
 
 function HeightSheet({ close }) {
   const st = useStore(s => s.S)
@@ -1329,7 +1332,7 @@ function WorkoutDetail({ w, close }) {
 export const workoutDetailSheet = w => ui().openSheet(close => <WorkoutDetail w={w} close={close} />)
 
 /* ============================ calendar ============================ */
-export function ZoomCalendar({ S: st, onDay, initialLevel = 'week', initialAnchor, exporting = false }) {
+export function ZoomCalendar({ S: st, onDay, initialLevel = 'week', initialAnchor, exporting = false, includeMeasurements = true }) {
   const levels = ['week', 'month', 'months', 'years']
   const [level, setLevel] = useState(initialLevel)
   const [anchor, setAnchor] = useState(() => initialAnchor ? new Date(initialAnchor) : new Date())
@@ -1343,8 +1346,8 @@ export function ZoomCalendar({ S: st, onDay, initialLevel = 'week', initialAncho
     const routine = st.routines.find(r => r.id === effectiveRoutineId(st, state.iso))
     const name = workout?.name || routine?.name || ''
     return <div key={state.iso} className="zoomcal-day-wrap">
-      <button className={`zoomcal-day ${state.status}${state.iso === todayISO() ? ' today' : ''}${state.iso === selected ? ' selected' : ''}`} onClick={() => selectDay(state.iso)}><b>{d.getDate()}</b></button>
-      {showRoutine && <span className="zoomcal-routine" title={name}>{name}</span>}
+      <button className={`zoomcal-day ${state.status}${state.iso === todayISO() ? ' today' : ''}${state.iso === selected ? ' selected' : ''}`} onClick={() => selectDay(state.iso)}><b>{d.getDate()}</b>{includeMeasurements && state.measurements.length > 0 && <span className="measurement-calendar-dot" aria-label={t('Measurement reminder')}>•</span>}</button>
+      {showRoutine && <span className="zoomcal-routine" title={name}>{name}</span>}{includeMeasurements && showRoutine && state.measurements.length > 0 && <span className="measurement-calendar-label">{t('Measurement')}</span>}
     </div>
   }
   const periodStats = (start, end) => {
@@ -1369,8 +1372,9 @@ export function ZoomCalendar({ S: st, onDay, initialLevel = 'week', initialAncho
   const selectedState = dayState(selected), selectedWorkout = selectedState.workouts.at(-1)
   return <div className="zoomcal"><div className="zoomcal-nav"><button className="iconbtn" onClick={() => shift(-1)}><Icon name="chevronLeft" /></button><div className="zoomcal-title"><b>{title}</b><button aria-label={t('Zoom out')} title={t('Zoom out')} disabled={zi >= levels.length-1} onClick={() => setLevel(levels[zi+1])}><Icon name="minus" /></button><button aria-label={t('Zoom in')} title={t('Zoom in')} disabled={zi <= 0} onClick={() => setLevel(levels[zi-1])}><Icon name="plus" /></button></div><button className="iconbtn" onClick={() => shift(1)}><Icon name="chevronRight" /></button></div>{body}
     {!exporting && (level === 'week' || level === 'month') && <div className={`zoomcal-selection ${selectedState.status}`}><div><b>{fmtDate(selected, true)}</b><span>{selectedWorkout?.name || t(selectedState.status === 'completed' ? 'Completed' : selectedState.status === 'missed' ? 'Not completed' : selectedState.status === 'pending' ? 'Pending' : 'Rest day')}</span></div>{selectedWorkout && <Icon name="chevronRight" />}</div>}
+    {!exporting && includeMeasurements && selectedState.measurements.map(reminder => <Button key={reminder.id} size="sm" onClick={() => openMeasurementEntry(reminder.metric)}>{t(reminder.label)} · {t(reminder.status)}</Button>)}
     <div className="zoomcal-legend"><span><i className="completed" />{t('Completed')}</span><span><i className="missed" />{t('Not completed')}</span><span><i className="pending" />{t('Pending')}</span></div>
-    {!exporting && <Button onClick={() => ui().openSheet(close => <CalendarExport S={st} anchor={anchor} close={close} />)}><Icon name="download" />{t('Export calendar')}</Button>}
+    {!exporting && <Button className="calendar-export-button" icon="download" onClick={() => ui().openSheet(close => <CalendarExport S={st} anchor={anchor} close={close} />)}>{t('Export Calendar')}</Button>}
   </div>
 }
 

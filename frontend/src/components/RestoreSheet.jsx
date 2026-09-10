@@ -3,7 +3,7 @@ import { useStore, DEF } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { t } from '../lib/i18n.js'
 import { Row, Switch, Button, TextField } from './ui.jsx'
-import { backupToGoogleDrive, configuredGoogleClientId, forgetGoogleDriveToken, nativeDriveAuthAvailable, restoreFromGoogleDrive, synchronizeWithGoogleDrive, listGoogleDriveBackups } from '../lib/cloud-sync.js'
+import { connectGoogleDrive, backupToGoogleDrive, configuredGoogleClientId, nativeDriveAuthAvailable, restoreFromGoogleDrive, synchronizeWithGoogleDrive, listGoogleDriveBackups } from '../lib/cloud-sync.js'
 import { applyRemoteConflicts } from '../lib/state-merge.js'
 import { saveImportUndo } from '../lib/import-undo.js'
 import { backupChecksum, portableState } from '../lib/backup.js'
@@ -17,22 +17,27 @@ export default function RestoreSheet({ authorize = action => action() }) {
   const nativeDrive = nativeDriveAuthAvailable()
   const guarded = action => { if (!busy) authorize(action) }
   const fail = error => {
-    const authCodes = new Set(['auth_required', 'configuration_required', 'access_denied', 'popup_failed_to_open', 'popup_closed'])
+    const authCodes = new Set(['auth_required', 'configuration_required', 'access_denied', 'popup_failed_to_open', 'popup_closed', 'auth_failed'])
     update(s => { s.cloudSync = { ...(s.cloudSync || {}), needsAuth: authCodes.has(error?.code), lastError: error?.message || 'Google Drive error' } }, false)
-    toast(error?.code === 'configuration_required' ? t('Add a Google OAuth client ID first.') : t('Google Drive could not complete the operation.'))
+    toast(t(error?.message || 'Google Drive could not complete the operation.'))
   }
   const run = async action => {
     if (busy) return
     setBusy(true)
     try { await action() } catch (error) { fail(error) } finally { setBusy(false) }
   }
+  const connect = () => run(async () => {
+    await connectGoogleDrive(useStore.getState().S)
+    update(s => { s.cloudSync = { ...(s.cloudSync || {}), on: true, authorizedOnce: true, needsAuth: false, lastError: null, lastAttemptAt: null } }, false)
+    toast(t('Google Drive connected'))
+  })
   const saveMerged = async next => {
     if (backupChecksum(portableState(useStore.getState().S)) !== backupChecksum(portableState(S))) throw new Error(t('Local data changed. Please synchronize again.'))
     saveImportUndo(useStore.getState().S)
     replaceState(next, false)
     const saved = await backupToGoogleDrive(next, { interactive: false, allowOverwrite: true })
     update(s => { s.cloudSync = { ...(s.cloudSync || {}), on: true, authorizedOnce: true, lastBackupAt: saved.at, lastAttemptAt: saved.at, lastFileId: saved.fileId, lastModifiedTime: saved.modifiedTime, needsAuth: false, lastError: null } }, false)
-    toast(t('All devices are synchronized'))
+    toast(t(saved.warning || 'All devices are synchronized'))
   }
   const synchronize = () => run(async () => {
     const result = await synchronizeWithGoogleDrive(S, { interactive: true })
@@ -48,7 +53,7 @@ export default function RestoreSheet({ authorize = action => action() }) {
   const backup = () => run(async () => {
     const result = await backupToGoogleDrive(S, { interactive: true })
     update(s => { s.cloudSync = { ...(s.cloudSync || {}), on: true, authorizedOnce: true, lastBackupAt: result.at, lastFileId: result.fileId, lastModifiedTime: result.modifiedTime, needsAuth: false, lastError: null } }, false)
-    toast(t('Google Drive backup saved'))
+    toast(t(result.warning || 'Google Drive backup saved'))
   })
   const restore = fileId => run(async () => {
     const result = await restoreFromGoogleDrive(S, { interactive: true, fileId })
@@ -65,7 +70,8 @@ export default function RestoreSheet({ authorize = action => action() }) {
   return <><h3>{t('Restore')}</h3><div className="small muted" style={{ marginBottom: 8 }}>{t('Cloud backup status')}</div>
     <div className="list">
       <Row icon="cloud" iconTint="var(--blue)" title="Google Drive" subtitle={status} />
-      <Row icon="history" iconTint="var(--blue)" title={t('Automatic Google Drive backup')} subtitle={t('Saves changes while online. Keeps ten daily restore points.')}><Switch disabled={busy} checked={!!S.cloudSync?.on} onChange={v => { if (!v) forgetGoogleDriveToken(); update(s => { s.cloudSync = { ...(s.cloudSync || {}), on: v, needsAuth: v ? s.cloudSync?.needsAuth : false } }) }} /></Row>
+      <Row icon="cloud" title={busy ? t('Working…') : t('Connect Google Drive')} accessory="chevron" onClick={() => guarded(connect)} />
+      <Row icon="history" iconTint="var(--blue)" title={t('Automatic Google Drive backup')} subtitle={t('Saves changes while online. Keeps ten daily restore points.')}><Switch disabled={busy} checked={!!S.cloudSync?.on} onChange={v => { if (v) { guarded(connect); return }; update(s => { s.cloudSync = { ...(s.cloudSync || {}), on: false } }, false) }} /></Row>
       <Row icon="reset" iconTint="var(--acc)" title={busy ? t('Working…') : t('Synchronize all devices')} accessory="chevron" onClick={() => guarded(synchronize)} />
       <Row icon="cloud" iconTint="var(--blue)" title={busy ? t('Working…') : t('Back up now')} accessory="chevron" onClick={() => guarded(backup)} />
       <Row icon="download" iconTint="var(--teal)" title={busy ? t('Working…') : t('Restore latest cloud backup')} subtitle={t('You will confirm before local data is replaced.')} accessory="chevron" onClick={() => guarded(() => restore())} />
