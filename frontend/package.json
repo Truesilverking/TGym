@@ -18,10 +18,10 @@
     "@aparajita/capacitor-biometric-auth": "9.1.2",
     "@capacitor/app": "^7.1.2",
     "@capacitor/browser": "^7.0.2",
-    "@capacitor/core": "^7.6.8",
+    "@capacitor/core": "^7.6.9",
     "@capacitor/filesystem": "^7.1.8",
     "@capacitor/local-notifications": "^7.0.7",
-    "@capacitor/push-notifications": "7.0.0",
+    "@capacitor/push-notifications": "7.0.7",
     "@capacitor/share": "^7.0.4",
     "html-to-image": "^1.11.13",
     "jspdf": "^4.2.1",
@@ -29,18 +29,18 @@
     "qrcode": "1.5.4",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
-    "react-router-dom": "^7.18.2",
-    "zustand": "^5.0.14"
+    "react-router-dom": "^7.18.3",
+    "zustand": "^5.0.15"
   },
   "devDependencies": {
-    "@capacitor/android": "^7.6.8",
+    "@capacitor/android": "^7.6.9",
     "@capacitor/assets": "^3.0.5",
-    "@capacitor/cli": "^7.6.8",
-    "@capacitor/ios": "^7.6.8",
-    "@vitejs/plugin-react": "^6.0.3",
-    "happy-dom": "^20.11.2",
+    "@capacitor/cli": "^7.6.9",
+    "@capacitor/ios": "^7.6.9",
+    "@vitejs/plugin-react": "^6.1.1",
+    "happy-dom": "^20.14.0",
     "linkedom": "^0.18.13",
-    "vite": "^8.1.5",
+    "vite": "^8.2.2",
     "vitest": "^4.1.10"
   }
 }
