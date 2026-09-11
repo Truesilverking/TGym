@@ -13,6 +13,7 @@ import { glyphOf } from '../lib/glyphs.js'
 import { Button, SelectRow } from '../components/ui.jsx'
 import { POLICIES_FOR, POLICY_NAME, POLICY_DESC } from '../lib/progression.js'
 import BodyMap from '../components/BodyMap.jsx'
+import { routineMuscleSheet } from '../components/RoutineMusclePreview.jsx'
 import { loadOfRoutine, rankOf, MUSCLE_NAME } from '../lib/muscles.js'
 
 export default function RoutineEdit() {
@@ -68,6 +69,7 @@ export default function RoutineEdit() {
       {t('Applies to every exercise in this routine that does not set its own rule.')}
     </div>
     <div className="sect-b" style={{ marginBottom: 16 }}>
+      <Button onClick={()=>routineMuscleSheet(r.id)}>{t('Muscles trained')}</Button>
       <SelectRow icon="timer" title={t('Rest between sets')} value={r.restSec ?? ''} onChange={v => update(s => { const x = s.routines.find(x => x.id === id); if (v === '') delete x.restSec; else x.restSec = v })}
         options={[{ value: '', label: t('Follow global setting') }, ...[0, 30, 45, 60, 90, 120, 150, 180, 240, 300].map(v => ({ value: v, label: v ? v + 's' : t('Off') }))]} />
       <SelectRow icon="link" title={t('Rest after a superset round')} value={r.supersetRoundRestSec ?? ''} onChange={v => update(s => { const x = s.routines.find(x => x.id === id); if (v === '') delete x.supersetRoundRestSec; else x.supersetRoundRestSec = v })}

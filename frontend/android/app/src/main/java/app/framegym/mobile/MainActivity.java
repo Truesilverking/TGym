@@ -9,6 +9,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(GoogleDriveAuthPlugin.class);
         registerPlugin(UpdatePushPlugin.class);
         registerPlugin(AppInstallerPlugin.class);
+        registerPlugin(WorkoutNotificationPlugin.class);
         super.onCreate(savedInstanceState);
     }
 }

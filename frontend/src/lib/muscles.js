@@ -168,6 +168,30 @@ export function muscleGroupsOf(entry) {
 
 export const normalizeMuscleGroups = muscleGroupsOf
 
+/** Catalogue roles for a planned preview; never guess roles from body-part fallbacks. */
+export function routineMusclePreview(routine, catalogue = EXIDX) {
+  const primary=new Set(),secondary=new Set(),unclassified=new Set(),exercises={}
+  for(const entry of routine?.ex || []) {
+    const ex=catalogue[entry.id] || entry
+    if(!hasExplicitMuscleMetadata(ex))continue
+    const parts=explicitPartsOf(ex)
+    const primaries=canonicalUnique(parts?parts.primary:[ex.tg || ex.mg])
+    const secondaries=canonicalUnique(parts?parts.secondary:arrayOf(smOf(ex)))
+    const other=canonicalUnique(explicitGroupsOf(ex) || [])
+    for(const slug of primaries)primary.add(slug)
+    for(const slug of secondaries)secondary.add(slug)
+    for(const slug of other)unclassified.add(slug)
+    for(const slug of new Set([...primaries,...secondaries,...other])) {
+      exercises[slug] ||= []
+      if(!exercises[slug].some(item=>item.id===entry.id))exercises[slug].push(ex)
+    }
+  }
+  const primaries=MUSCLES.filter(m=>primary.has(m)),secondaries=MUSCLES.filter(m=>secondary.has(m)&&!primary.has(m))
+  const others=MUSCLES.filter(m=>unclassified.has(m)&&!primary.has(m)&&!secondary.has(m))
+  return {primary:primaries,secondary:secondaries,other:others,exercises,
+    load:Object.fromEntries([...primaries.map(m=>[m,1]),...secondaries.map(m=>[m,0.4]),...others.map(m=>[m,0.7])])}
+}
+
 /** True when any requested group matches; an empty request is an intentionally unfiltered query. */
 export function matchesMuscleGroups(ex, requested) {
   const wanted = arrayOf(requested).map(canonicalMuscle).filter(Boolean)

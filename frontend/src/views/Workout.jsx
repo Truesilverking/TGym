@@ -19,6 +19,7 @@ import { isWarmupRow, isDropSet, isRestPauseSet, dropsOf, clustersOf, addDrop, a
 import { restSeconds } from '../lib/rest-policy.js'
 import { seedPlannedRir, applyTrainingPlan, clampReps, deloadStatus, deloadTargetFor, repBounds, repRangeEnabled, rirAdvice, targetRirFor, targetRirRangeFor } from '../lib/training-plan.js'
 import { pauseWorkoutClock, resumeWorkoutClock, workoutElapsedMs } from '../lib/workout-time.js'
+import { effectiveWorkoutComplete } from '../lib/workout-lifecycle.js'
 
 /* ---------- start chooser (no active workout) ---------- */
 function StartChooser() {
@@ -475,10 +476,7 @@ function ActiveWorkout() {
       if (e.sets[i].done) {
         e.sets[i].doneAt = Date.now()
         beep(S.sound, 1040, 0.12); vibrate(30)
-        workoutDone = A.entries.every((entry, ui) => {
-          const sets = (ui === idx ? e : entry).sets
-          return sets.length > 0 && sets.every(x => x.done)
-        })
+        workoutDone = effectiveWorkoutComplete({...A,entries:A.entries.map((entry,ui)=>ui===idx?e:entry)})
         // Only loaded reps training has a "working weight" worth confirming — a bodyweight
         // plank has nothing to put in that slider, and neither does a set of push-ups
         // (issue #32: the fewest taps that still record what happened).

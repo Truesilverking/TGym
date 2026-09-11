@@ -2,6 +2,12 @@ import { describe, expect, it } from 'vitest'
 import { convertMeasurementState, convertWeightState, weightStepFor } from './unit-conversion.js'
 
 describe('stored unit conversion', () => {
+  it('converts the auto-finish resume snapshot together with its history entry', () => {
+    const S={unit:'kg',workouts:[{resumeSnapshot:{unit:'kg',entries:[{sets:[{w:100}]}]}}]}
+    convertWeightState(S,'lb')
+    expect(S.workouts[0].resumeSnapshot.entries[0].sets[0].w).toBe(220.46)
+    expect(S.workouts[0].resumeSnapshot.unit).toBe('lb')
+  })
   it('converts all load-bearing records and their unit stamps together', () => {
     const S = {
       unit: 'kg', targetW: 80,

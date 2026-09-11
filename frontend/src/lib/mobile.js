@@ -12,6 +12,8 @@
 import { t } from './i18n-core.js'
 import { todayISO } from './format.js'
 import { measurementNotificationPlan, MEASUREMENT_NOTIFICATION_IDS } from './measurement-reminders.js'
+import { workoutNotificationPlan, WORKOUT_NOTIFICATION_IDS } from './workout-reminders.js'
+import { lastWorkoutActivity, INACTIVITY_WARNING_MINUTES } from './workout-time.js'
 
 export const MOBILE = import.meta.env.VITE_MOBILE === '1'
 
@@ -66,31 +68,31 @@ export function syncReminder(S, interactive = false) {
 async function syncReminderNow(S, interactive = false) {
   try {
     const { LocalNotifications } = await import('@capacitor/local-notifications')
-    await LocalNotifications.cancel({ notifications: [0, 1, 2, 3, 4, 5, 6].map(d => ({ id: 100 + d })) }).catch(() => {})
+    await LocalNotifications.cancel({ notifications: WORKOUT_NOTIFICATION_IDS.map(id => ({ id })) })
     await LocalNotifications.cancel({ notifications: MEASUREMENT_NOTIFICATION_IDS.map(id => ({id})) })
+    await LocalNotifications.cancel({ notifications: [{id:3000}] })
     const r = S.reminder
-    if (!r?.on && !S.measurementReminders?.notifications) return true
+    if (!r?.on && !S.measurementReminders?.notifications && !S.active) return true
     let perm = await LocalNotifications.checkPermissions()
     if (perm.display !== 'granted' && interactive) perm = await LocalNotifications.requestPermissions()
     if (perm.display !== 'granted') return false
+    if (S.active && S.active.timerPausedAt == null) {
+      const at = new Date(lastWorkoutActivity(S.active) + INACTIVITY_WARNING_MINUTES * 60000)
+      if (at > new Date()) await LocalNotifications.schedule({notifications:[{id:3000,title:t('Still training?'),body:t('No activity has been recorded for a while.'),schedule:{at,allowWhileIdle:true},extra:{type:'workout',routineId:S.active.routineId,date:S.active.d}}]})
+    }
     const measurementNotices = measurementNotificationPlan(S).map(group => ({
       id: group.id, title: t('Time to update your measurements'), body: group.labels.map(label => t(label)).join(', '),
       schedule: { at: group.at, allowWhileIdle: true }, extra: { type: 'measurement', metrics: group.metrics },
     }))
     if (measurementNotices.length) await LocalNotifications.schedule({ notifications: measurementNotices })
     if (!r?.on) return true
-    const notifications = Object.entries(S.week || {})
-      .filter(([, rid]) => rid && (S.routines || []).some(x => x.id === rid))
-      .map(([day, rid]) => {
-        const [hour, minute] = (r.dayTimes?.[day] || r.time || '08:00').split(':').map(Number)
-        return ({
-        id: 100 + Number(day),
-        title: t('Workout day'),
-        body: t('{0} is on the plan today — let’s go!', S.routines.find(x => x.id === rid).name),
-        // Capacitor weekdays are 1 (Sunday) … 7 (Saturday); S.week uses getDay() 0…6.
-        schedule: { on: { weekday: Number(day) + 1, hour, minute }, allowWhileIdle: true },
-        })
-      })
+    const notifications = workoutNotificationPlan(S).map(notice => ({
+      id: notice.id,
+      title: t(notice.kind === 'today' ? 'Workout reminder' : 'Next workout reminder'),
+      body: notice.kind === 'today' ? t('You still have {0} scheduled for today.', notice.name) : t('{0} is scheduled for {1}.',notice.name,notice.date),
+      schedule: {at:notice.at,allowWhileIdle:true},
+      extra: {type:'workout',routineId:notice.routineId,date:notice.date},
+    }))
     if (notifications.length) await LocalNotifications.schedule({ notifications })
     return true
   } catch (e) { return false }

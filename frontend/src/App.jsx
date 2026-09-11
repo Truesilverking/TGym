@@ -29,7 +29,10 @@ import Admin from './views/Admin.jsx'
 import AppLock from './components/AppLock.jsx'
 import AppUpdate from './components/AppUpdate.jsx'
 import { backupToGoogleDrive, cloudBackupDue } from './lib/cloud-sync.js'
-import { MOBILE } from './lib/mobile.js'
+import { MOBILE, syncReminder } from './lib/mobile.js'
+import { inactivityState, lastWorkoutActivity } from './lib/workout-time.js'
+import { doFinishWorkout, inactivityWarningSheet } from './sheets.jsx'
+import { syncWorkoutNotification } from './lib/workout-notification.js'
 
 bindUI(useUI)   // lets the shared controls open sheets without importing the store at module scope
 
@@ -54,13 +57,55 @@ function Shell() {
   const isGuest = useStore(s => s.isGuest())
   const needsMobileOnboarding = useStore(s => s.needsMobileOnboarding)
   const langV = useLang()   // re-renders the whole shell when the language (pack) changes
+  const restEndsAt=useUI(s=>s.timer?.endsAt)
+  useEffect(()=>{
+    if(ready) void syncWorkoutNotification(S.active,restEndsAt?{endsAt:restEndsAt}:null)
+  },[ready,S.active,restEndsAt,langV])
+  useEffect(()=>{
+    if(!MOBILE || !ready)return
+    let disposed=false,listener
+    const open=event=>{if(!disposed && event?.url==='tgym://workout')navigate(useStore.getState().S.active?'/workout':'/home')}
+    import('@capacitor/app').then(async({App})=>{
+      const handle=await App.addListener('appUrlOpen',open)
+      if(disposed)void handle.remove();else listener=handle
+      open(await App.getLaunchUrl())
+    }).catch(()=>{})
+    return ()=>{disposed=true;void listener?.remove()}
+  },[ready,navigate])
+  useEffect(()=>{
+    if (!ready) return
+    let warning=null, warned=null
+    const check=()=>{
+      const active=useStore.getState().S.active
+      const status=inactivityState(active)
+      if (status==='finish') {
+        warning?.close(); warning=null
+        doFinishWorkout({reason:'inactivity',end:lastWorkoutActivity(active)})
+      } else if (status==='warning' && document.visibilityState!=='hidden') {
+        const key=`${active.id}:${lastWorkoutActivity(active)}`
+        if(warned!==key){warning?.close();warned=key;warning=inactivityWarningSheet()}
+      } else if(status==='none'){warning?.close();warning=null}
+    }
+    check()
+    const timer=setInterval(check,10000)
+    document.addEventListener('visibilitychange',check)
+    return ()=>{clearInterval(timer);document.removeEventListener('visibilitychange',check);warning?.close()}
+  },[ready])
   useEffect(() => {
     if (!MOBILE) return
     let disposed = false, listener
     import('@capacitor/local-notifications').then(async ({ LocalNotifications }) => {
       const handle = await LocalNotifications.addListener('localNotificationActionPerformed', async event => {
         const extra = event.notification?.extra
-        if (extra?.type !== 'measurement' || disposed) return
+        if (disposed) return
+        if (extra?.type === 'workout') {
+          const state = useStore.getState().S
+          if (state.active) navigate('/workout')
+          else if (state.routines.some(r=>r.id===extra.routineId) && !state.workouts.some(w=>w.d===extra.date)) startFlow(extra.routineId)
+          else navigate('/home')
+          return
+        }
+        if (extra?.type !== 'measurement') return
         const sheets = await import('./sheets.jsx')
         if (!disposed) sheets.openMeasurementEntry(extra.metrics?.[0] || 'weight')
       })
@@ -68,6 +113,14 @@ function Shell() {
     }).catch(() => {})
     return () => { disposed = true; void listener?.remove() }
   }, [])
+  useEffect(() => {
+    if (!MOBILE || !ready) return
+    const sync = () => { if (document.visibilityState !== 'hidden') void syncReminder(useStore.getState().S) }
+    sync()
+    document.addEventListener('visibilitychange',sync)
+    const timer = setInterval(sync,60000)
+    return () => { clearInterval(timer); document.removeEventListener('visibilitychange',sync) }
+  }, [ready])
   useEffect(() => { setNav(navigate) }, [navigate])
   useEffect(() => { applyPrefs(S.theme, S.accent, S.reduceMotion) }, [S.theme, S.accent, S.reduceMotion])
   // 'system' needs to react live if the OS theme flips while the app is open, not just on

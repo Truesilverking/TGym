@@ -36,6 +36,8 @@ import { weightStepFor } from './lib/unit-conversion.js'
 import Heatmap from './components/Heatmap.jsx'
 import LineChart from './components/LineChart.jsx'
 import { pauseWorkoutClock, resumeWorkoutClock, workoutElapsedMs } from './lib/workout-time.js'
+import { effectiveWorkoutComplete, resumeAutoFinished } from './lib/workout-lifecycle.js'
+import { routineMuscleSheet } from './components/RoutineMusclePreview.jsx'
 
 const S = () => useStore.getState().S
 const update = (...a) => useStore.getState().update(...a)
@@ -210,7 +212,7 @@ function MeasurementsSheet({ existing, close, focusMetric }) {
     <div style={{ height: 14 }} /><Button variant="primary" onClick={save}>{t('Save')}</Button></>
 }
 export const measurementsSheet = (existing, focusMetric) => ui().openSheet(close => <MeasurementsSheet existing={existing} focusMetric={focusMetric} close={close} />)
-export const openMeasurementEntry = metric => metric === 'weight' ? bwSheet() : measurementsSheet(undefined, metric)
+export const openMeasurementEntry = metric => metric === 'weight' ? bwSheet() : metric === 'bodySize' ? heightSheet() : measurementsSheet(undefined, metric === 'bodyMeasurements' ? undefined : metric)
 export const measurementRemindersSheet = metric => ui().openSheet(() => <MeasurementReminders initialMetric={metric} onRecord={openMeasurementEntry} />)
 
 function HeightSheet({ close }) {
@@ -220,7 +222,7 @@ function HeightSheet({ close }) {
   const save = () => {
     const min = unit === 'in' ? 39 : 100, max = unit === 'in' ? 99 : 250
     if (!(height >= min && height <= max)) { toast(t('Enter a height between {0} and {1} {2}', min, max, unit)); return }
-    update(s => { s.heightCm = Math.round(height * 10) / 10 })
+    update(s => { s.heightCm = Math.round(height * 10) / 10; s.heightRecordedAt = todayISO() })
     close(); toast(t('Height saved'))
   }
   return <><h3>{t('Height')}</h3><div className="muted small" style={{ marginBottom: 14 }}>{t('Your height is used with your latest body weight to calculate BMI.')}</div>
@@ -1303,6 +1305,7 @@ function WorkoutDetail({ w, close }) {
   } })
   return <>
     <h3>{w.name}</h3>
+    {w.finishReason==='inactivity' && w.resumeSnapshot && !st.active && <Button onClick={()=>{update(s=>resumeAutoFinished(s,w.id));close();nav('/workout')}}>{t('Resume workout')}</Button>}
     <div className="muted small" style={{ marginBottom: 12 }}>{[fmtDate(w.d, true), ...(Number(w.end) > Number(w.start) ? [clockAt(w.start) + '–' + clockAt(w.end)] : []), ...durPart(workoutElapsedMs(w)), fmtVol(w.vol, st.unit), ...(w.bw ? [fmtNum(w.bw) + ' ' + st.unit] : [])].join(' · ')}</div>
     {(editing ? draftEntries : w.entries).map((e, i) => {
       const ex = EXIDX[e.id]
@@ -1373,6 +1376,7 @@ export function ZoomCalendar({ S: st, onDay, initialLevel = 'week', initialAncho
   return <div className="zoomcal"><div className="zoomcal-nav"><button className="iconbtn" onClick={() => shift(-1)}><Icon name="chevronLeft" /></button><div className="zoomcal-title"><b>{title}</b><button aria-label={t('Zoom out')} title={t('Zoom out')} disabled={zi >= levels.length-1} onClick={() => setLevel(levels[zi+1])}><Icon name="minus" /></button><button aria-label={t('Zoom in')} title={t('Zoom in')} disabled={zi <= 0} onClick={() => setLevel(levels[zi-1])}><Icon name="plus" /></button></div><button className="iconbtn" onClick={() => shift(1)}><Icon name="chevronRight" /></button></div>{body}
     {!exporting && (level === 'week' || level === 'month') && <div className={`zoomcal-selection ${selectedState.status}`}><div><b>{fmtDate(selected, true)}</b><span>{selectedWorkout?.name || t(selectedState.status === 'completed' ? 'Completed' : selectedState.status === 'missed' ? 'Not completed' : selectedState.status === 'pending' ? 'Pending' : 'Rest day')}</span></div>{selectedWorkout && <Icon name="chevronRight" />}</div>}
     {!exporting && includeMeasurements && selectedState.measurements.map(reminder => <Button key={reminder.id} size="sm" onClick={() => openMeasurementEntry(reminder.metric)}>{t(reminder.label)} · {t(reminder.status)}</Button>)}
+    {!exporting && selectedState.planned && <Button size="sm" onClick={()=>routineMuscleSheet(effectiveRoutineId(st,selected))}>{t('Muscles trained')}</Button>}
     <div className="zoomcal-legend"><span><i className="completed" />{t('Completed')}</span><span><i className="missed" />{t('Not completed')}</span><span><i className="pending" />{t('Pending')}</span></div>
     {!exporting && <Button className="calendar-export-button" icon="download" onClick={() => ui().openSheet(close => <CalendarExport S={st} anchor={anchor} close={close} />)}>{t('Export Calendar')}</Button>}
   </div>
@@ -1532,7 +1536,7 @@ function TopWeight({ entryIdx, close }) {
     })
     close()
     if (advance && unitDone) {
-      if (A.entries.every(e => e.sets.length > 0 && e.sets.every(s => s.done))) workoutCompleteSheet()
+      if (effectiveWorkoutComplete(A)) workoutCompleteSheet()
       else if (!isLastUnit) update(s => { s.active.cur = units[unitIdx + 1][0] })
     } else toast(t('Tracked — next time starts at {0}', fmtNum(S().exWeights[entry.id].w) + ' ' + st.unit))
   }
@@ -1651,6 +1655,8 @@ export const sessionNoteSheet = () => ui().openSheet(close => <SessionNote close
 
 // Shown when the last exercise's last set is checked — finish, or keep going.
 function WorkoutComplete({ close }) {
+  const active = useStore(s=>s.S.active)
+  useEffect(()=>{ if (!active || active.timerPausedAt == null) close() },[active?.timerPausedAt,active?.id])
   return <div style={{ textAlign: 'center', padding: '8px 0' }}>
     <div style={{ fontSize: 44, display: 'flex', justifyContent: 'center', color: 'var(--acc)' }}><Icon name="checkCircle" /></div>
     <h3 style={{ margin: '8px 0' }}>{t("That's the whole workout!")}</h3>
@@ -1663,6 +1669,9 @@ function WorkoutComplete({ close }) {
 export const workoutCompleteSheet = () => {
   pauseActiveWorkoutClock()
   ui().openSheet(close => <WorkoutComplete close={close} />, { kind: 'center' })
+}
+export function inactivityWarningSheet() {
+  return ui().openSheet(close=><><h3>{t('Still training?')}</h3><p>{t('No activity has been recorded for a while.')}</p><Button onClick={()=>{update(s=>{if(s.active)s.active.lastMeaningfulWorkoutActivityAt=Date.now()});close()}}>{t('Continue workout')}</Button><Button onClick={()=>{close();finishWorkout()}}>{t('Finish workout')}</Button></>)
 }
 
 function FinishSummary({ w, prs, e1prs = [], milestone = null, close }) {
@@ -1699,7 +1708,7 @@ export function finishWorkout() {
   if (done < total) { pauseActiveWorkoutClock(); confirmSheet({ title: t('Finish early?'), message: t(total - done === 1 ? '{0} set still unchecked. Finish the workout now?' : '{0} sets still unchecked. Finish the workout now?', total - done), confirmText: t('Finish workout'), onConfirm: doFinishWorkout, onCancel: resumeActiveWorkoutClock }); return }
   doFinishWorkout()
 }
-function doFinishWorkout() {
+export function doFinishWorkout(options = {}) {
   const st = S()
   const A = st.active
   if (!A) return
@@ -1714,12 +1723,14 @@ function doFinishWorkout() {
     if (rec && !prs.includes(e.id)) e1prs.push({ id: e.id, ...rec })
   })
   const w = buildCompletedWorkout(A, {
-    end: Date.now(),
+    end: options.end ?? Date.now(),
     prs,
     snapshotFor: e => EXIDX[e.id]?.custom ? exerciseMuscleSnapshot(EXIDX[e.id]) : null,
   })
   w.vol = workoutVolume(w)
+  if (options.reason === 'inactivity') { w.finishReason='inactivity'; w.resumeSnapshot=structuredClone(A) }
   update(s => {
+    if (s.active?.id !== A.id || s.workouts.some(row=>row.id===w.id)) return
     w.entries.forEach(e => {
       const mx = Math.max(0, ...e.sets.filter(x => x.done && !isWarmupRow(x)).map(x => x.w || 0), e.topW || 0)
       if (mx > 0) { const cur = s.exWeights[e.id]; if (!cur || mx > cur.w) s.exWeights[e.id] = { w: mx, d: w.d } }
@@ -1738,5 +1749,5 @@ function doFinishWorkout() {
   useStore.getState().autoBackupNow()
   useUI.getState().stopRest()
   beep(snd(), 880, 0.15); beep(snd(), 1100, 0.15, 0.18); beep(snd(), 1320, 0.3, 0.36)
-  ui().openSheet(close => <FinishSummary w={w} prs={prs} e1prs={e1prs} milestone={milestone} close={close} />, { kind: 'center', locked: true })
+  ui().openSheet(close => <><FinishSummary w={w} prs={prs} e1prs={e1prs} milestone={milestone} close={close} />{w.finishReason==='inactivity' && <Button onClick={()=>{update(s=>resumeAutoFinished(s,w.id));close();nav('/workout')}}>{t('Resume workout')}</Button>}</>, { kind: 'center', locked: true })
 }

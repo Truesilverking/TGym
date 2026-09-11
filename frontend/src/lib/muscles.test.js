@@ -1,6 +1,30 @@
 import { describe, it, expect } from 'vitest'
 import { EXIDX, EXDB, smOf } from './exercises.js'
-import { MUSCLE_NAME, exerciseMuscleSnapshot, hasExplicitMuscleMetadata, loadOf, loadOfWorkouts, matchesMuscleGroups, muscleGroupsOf, musclesOf } from './muscles.js'
+import { MUSCLE_NAME, exerciseMuscleSnapshot, hasExplicitMuscleMetadata, loadOf, loadOfWorkouts, matchesMuscleGroups, muscleGroupsOf, musclesOf, routineMusclePreview } from './muscles.js'
+
+describe('planned routine muscle preview',()=>{
+  const catalogue={a:{id:'a',tg:'pectorals',sm:['triceps']},b:{id:'b',primaries:['biceps'],secondaries:['forearms','biceps']}}
+  it('shares canonical muscles, deduplicates roles and lists each explaining exercise',()=>{
+    const preview=routineMusclePreview({ex:[{id:'a'},{id:'b'},{id:'a'}]},catalogue)
+    expect(preview.primary).toEqual(['chest','biceps'])
+    expect(preview.secondary).toEqual(['triceps','forearm'])
+    expect(preview.exercises.chest).toHaveLength(1)
+    expect(preview.load.chest).toBe(1)
+  })
+  it('reflects routine edits and does not guess missing legacy metadata',()=>{
+    const routine={ex:[{id:'a'},{id:'missing',bp:'back'}]}
+    expect(routineMusclePreview(routine,catalogue).primary).toEqual(['chest'])
+    routine.ex=[{id:'b'}]
+    expect(routineMusclePreview(routine,catalogue).primary).toEqual(['biceps'])
+    expect(routineMusclePreview(null,catalogue).load).toEqual({})
+  })
+  it('uses explicit custom groups without inventing primary/secondary roles',()=>{
+    const preview=routineMusclePreview({ex:[{id:'custom',muscleGroups:['chest','pectorals']}]},{})
+    expect(preview.other).toEqual(['chest'])
+    expect(preview.primary).toEqual([])
+    expect(preview.exercises.chest).toHaveLength(1)
+  })
+})
 
 describe('multi-muscle exercise metadata', () => {
   it('normalizes legacy primary/secondary fields and removes duplicate groups', () => {

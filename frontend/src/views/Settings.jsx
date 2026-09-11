@@ -426,6 +426,7 @@ function MobileReminderCard({ S, update, toast }) {
         </Row>
       )}
       {S.reminder?.on && Object.keys(S.week || {}).filter(day => S.week[day]).map(day => <Row key={day} icon="clock" iconTint="var(--blue)" title={t(DAYN[Number(day)])}><input type="time" className="timef" value={S.reminder?.dayTimes?.[day] || S.reminder?.time || DEF.reminder.time} onChange={e => setReminder({ dayTimes: { ...(S.reminder?.dayTimes || {}), [day]: e.target.value } })} /></Row>)}
+      {S.reminder?.on && <Row icon="clock" title={t('Next workout reminder')}><input aria-label={t('Next workout reminder')} type="time" className="timef" value={S.reminder.nextTime || '19:00'} onChange={e=>setReminder({nextTime:e.target.value})} /></Row>}
       <Row icon="moon" iconTint="var(--indigo)" title={t('Quiet hours')}><Switch checked={!!S.reminder?.quietOn} onChange={v => setReminder({ quietOn: v })} /></Row>
       {S.reminder?.quietOn && <Row icon="clock" title={t('Quiet period')} className="quiet-period-row">
         <span className="quiet-time-range">

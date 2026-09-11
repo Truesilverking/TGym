@@ -4,6 +4,7 @@ import { beep, vibrate } from '../lib/sound.js'
 import { api } from '../lib/api.js'
 import { t } from '../lib/i18n.js'
 import { useStore } from './useStore.js'
+import { resumeWorkoutClock } from '../lib/workout-time.js'
 
 // Fire-and-forget: lets the server push a "rest over" alert if this tab gets suspended
 // before the local timer completes. No-ops for guests / offline.
@@ -146,6 +147,7 @@ export const useUI = create((set, get) => ({
     get().stopRest()
     const total = Math.max(1, Math.round(sec) || 1)
     const endsAt = Date.now() + total * 1000
+    useStore.getState().update(s=>{ if(s.active) { s.active=resumeWorkoutClock(s.active); s.active.workEndsAt=endsAt; s.active.lastMeaningfulWorkoutActivityAt=Date.now() } })
     workDone = onDone
     set({ work: { left: total, total, endsAt, label } })
     workTick = () => {
@@ -180,6 +182,7 @@ export const useUI = create((set, get) => ({
   },
   // Abandon without logging anything.
   stopWork() {
+    if (get().work) useStore.getState().update(s=>{ if(s.active) { delete s.active.workEndsAt; s.active.lastMeaningfulWorkoutActivityAt=Date.now() } })
     if (workInt) clearInterval(workInt); workInt = null
     if (workTick) document.removeEventListener('visibilitychange', workTick); workTick = null
     workDone = null

@@ -8,6 +8,7 @@ import { Button } from '../components/ui.jsx'
 import { useEffect, useRef, useState } from 'react'
 import { glyphOf, DEFAULT_GLYPH } from '../lib/glyphs.js'
 import { vibrate } from '../lib/sound.js'
+import { routineMuscleSheet } from '../components/RoutineMusclePreview.jsx'
 
 export default function Plan() {
   const nav = useNavigate()
@@ -105,6 +106,7 @@ export default function Plan() {
           return <div key={d} className="item" onClick={() => dayAssignSheet(d)}>
             <div className="grow"><div className="tt">{t(DAYN[d])}</div></div>
             {r ? <span className="tag acc"><Icon name={glyphOf(r.emoji)} />{r.name}</span> : <span className="tag">{t('Rest')}</span>}
+            {r && <button className="iconbtn" aria-label={t('Muscles trained')} onClick={e=>{e.stopPropagation();routineMuscleSheet(r.id)}}><Icon name="info" /></button>}
             <Icon name="chevronRight" className="chev" /></div>
         })}
       </div>
@@ -118,6 +120,7 @@ export default function Plan() {
         <div className="item swipe-content" onPointerDown={e => beginSwipe(e, r)} onPointerMove={moveSwipe} onPointerUp={() => endSwipe(r)} onPointerCancel={() => { dragRef.current = null; setDrag({ id: null, dx: 0, armed: false }) }} onClick={() => { if (didSwipe.current) { didSwipe.current = false; return } nav('/plan/r/' + r.id) }}>
           <span className="lrow-i"><Icon name={glyphOf(r.emoji)} /></span>
           <div className="grow"><div className="tt">{r.name}</div><div className="ss">{exCount(r.ex.length)}</div></div>
+          <button className="iconbtn" aria-label={t('Muscles trained')} onPointerDown={e=>e.stopPropagation()} onClick={e=>{e.stopPropagation();routineMuscleSheet(r.id)}}><Icon name="info" /></button>
         </div></div>)}</div> : <>
         <div className="empty"><div className="ico"><Icon name="clipboard" /></div>{t('No routines yet.')}<br />{t('Create one or load the starter plan.')}</div>
         <Button icon="sparkles" onClick={guidedPlansSheet}>{t('Choose a guided plan')}</Button>

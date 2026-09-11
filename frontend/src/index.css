@@ -1085,3 +1085,10 @@ body.framegym-private::after{
 .measurement-calendar-label{display:block;font-size:10px;line-height:1.2;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--teal)}
 
 .measurement-reminder-time.lrow{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}.measurement-reminder-time>input{width:100%;min-width:0;max-width:100%}
+
+.routine-muscle-preview { min-width: 0; overflow-wrap: anywhere; }
+.routine-muscle-preview .bodymap { width: 100%; max-width: 430px; margin-inline: auto; }
+.routine-muscle-preview .bm-v { min-width: 0; }
+.routine-muscle-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+.routine-muscle-tags button { min-height: 36px; cursor: pointer; }
+.routine-muscle-tags button:focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; }

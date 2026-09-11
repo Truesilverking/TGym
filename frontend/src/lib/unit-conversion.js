@@ -29,8 +29,9 @@ function convertEntry(entry, factor, unit) {
   if (entry?.unit) entry.unit = unit
 }
 
-function convertSession(session, factor, unit) {
+function convertSession(session, factor, unit, includeResume = true) {
   if (!session) return
+  if (includeResume && session.resumeSnapshot) convertSession(session.resumeSnapshot, factor, unit, false)
   change(session, 'bw', factor)
   change(session, 'bodyweight', factor)
   change(session, 'vol', factor)

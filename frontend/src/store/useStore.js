@@ -8,6 +8,7 @@ import { MOBILE, nativeLoad, nativeSave, syncReminder, writeAutoBackup } from '.
 import { loadRemote, chooseLocal, forgetRemote, connect } from '../lib/remote.js'
 import { shouldRestoreNative } from '../lib/native-state.js'
 import { portableState, backupChecksum } from '../lib/backup.js'
+import { reconcileWorkoutEdit } from '../lib/workout-lifecycle.js'
 
 const KEY = 'gym_state_v1'
 export const DEF = {
@@ -116,6 +117,7 @@ export const useStore = create((set, get) => {
     update(mut, push = true) {
       const S = clone(get().S)
       mut(S)
+      if (S.unit === get().S.unit) S.active = reconcileWorkoutEdit(get().S.active, S.active)
       persist(S, push)
     },
     replaceState(S, push = false) { persist(clone(S), push) },

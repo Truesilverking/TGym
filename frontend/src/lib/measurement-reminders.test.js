@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { addReminderInterval, measurementReminders, measurementEventsOn, measurementNotificationPlan, postponeMeasurement, MEASUREMENT_NOTIFICATION_IDS } from './measurement-reminders.js'
+import { addReminderInterval, measurementReminders, measurementEventsOn, measurementNotificationPlan, postponeMeasurement, reminderConfig, REMINDER_METRICS, MEASUREMENT_NOTIFICATION_IDS } from './measurement-reminders.js'
 import { calendarDay, calendarPeriod } from './calendar-data.js'
 import { trainingStreak } from './training-plan.js'
 import { createBackup, readBackup } from './backup.js'
@@ -36,7 +36,7 @@ describe('measurement reminders independent from workouts', () => {
     const S=state(); S.measurementReminders.items.waist={...S.measurementReminders.items.weight}
     S.bodyweight.push({d:'2026-09-17',w:79})
     expect(measurementEventsOn(S,'2026-09-17').find(r=>r.metric==='weight').status).toBe('Completed')
-    expect(measurementEventsOn(S,'2026-09-17').find(r=>r.metric==='waist').status).not.toBe('Completed')
+    expect(measurementEventsOn(S,'2026-09-17').find(r=>r.metric==='bodyMeasurements').status).not.toBe('Completed')
   })
   it('snoozes without changing frequency and drops stale snooze after recording', () => {
     const S=state(); postponeMeasurement(S,'weight',false,'2026-09-17')
@@ -55,7 +55,7 @@ describe('measurement reminders independent from workouts', () => {
     const restored=readBackup(createBackup(S)), now=new Date('2026-09-10T12:00:00')
     expect(measurementNotificationPlan(restored,now)).toEqual(measurementNotificationPlan(S,now))
     expect(measurementNotificationPlan(S,now)).toHaveLength(1)
-    expect(measurementNotificationPlan(S,now)[0].metrics).toEqual(['weight','waist'])
+    expect(measurementNotificationPlan(S,now)[0].metrics).toEqual(['weight','bodyMeasurements'])
     restored.measurementReminders.items.weight.enabled=false
     restored.measurementReminders.items.waist.enabled=false
     expect(measurementNotificationPlan(restored,now)).toEqual([])
@@ -71,6 +71,33 @@ describe('measurement reminders independent from workouts', () => {
     notificationMocks.schedule.mockClear(); S.measurementReminders.notifications=false
     await syncReminder(S)
     expect(notificationMocks.schedule).not.toHaveBeenCalled()
+  })
+  it('offers exactly three categories without enabling suggested defaults', () => {
+    const S = state(); S.measurementReminders.items = {}
+    expect(REMINDER_METRICS.map(([key])=>key)).toEqual(['weight','bodySize','bodyMeasurements'])
+    expect(measurementReminders(S)).toEqual([])
+    expect(reminderConfig(S,'bodySize')).toMatchObject({enabled:false,intervalValue:1,intervalUnit:'months'})
+    expect(reminderConfig(S,'bodyMeasurements')).toMatchObject({enabled:false,intervalValue:2,intervalUnit:'weeks'})
+  })
+  it('groups legacy circumference reminders and lets a partial session reset that category only', () => {
+    const S = state()
+    S.measurementReminders.items.waist = {...S.measurementReminders.items.weight}
+    S.measurementReminders.items.chest = {...S.measurementReminders.items.weight,intervalValue:2}
+    S.measurements.push({d:'2026-09-15',waist:82})
+    expect(measurementReminders(S).map(r=>[r.metric,r.due])).toEqual([['weight','2026-09-17'],['bodyMeasurements','2026-09-22']])
+    expect(S.measurementReminders.items.chest.intervalValue).toBe(2)
+    postponeMeasurement(S,'bodyMeasurements',false,'2026-09-16')
+    expect(measurementReminders(S).find(r=>r.metric==='bodyMeasurements').due).toBe('2026-09-17')
+    expect(readBackup(createBackup(S)).measurementReminders).toEqual(S.measurementReminders)
+  })
+  it('uses a real recorded height date without inventing dates for legacy height', () => {
+    const S = state(); S.heightCm = 170
+    S.measurementReminders.items.bodySize = {enabled:true,intervalValue:1,intervalUnit:'months',anchorDate:'2026-09-10'}
+    expect(measurementReminders(S).find(r=>r.metric==='bodySize').last).toBeNull()
+    S.heightRecordedAt = '2026-09-15'
+    expect(measurementReminders(S).find(r=>r.metric==='bodySize')).toMatchObject({last:'2026-09-15',due:'2026-10-15'})
+    expect(measurementEventsOn(S,'2026-09-15').find(r=>r.metric==='bodySize').status).toBe('Completed')
+    expect(readBackup(createBackup(S)).heightRecordedAt).toBe('2026-09-15')
   })
 })
 
