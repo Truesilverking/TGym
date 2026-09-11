@@ -16,16 +16,16 @@ jobs:
       HAS_GOOGLE_SERVICES: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 != '' }}
       HAS_FIREBASE: ${{ secrets.FIREBASE_SERVICE_ACCOUNT != '' && secrets.FIREBASE_PROJECT_ID != '' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with: { fetch-depth: 0 }
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with: { version: 10 }
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: pnpm
           cache-dependency-path: frontend/pnpm-lock.yaml
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with: { distribution: temurin, java-version: '21', cache: gradle }
       - run: pnpm install --frozen-lockfile
         working-directory: frontend
@@ -80,7 +80,7 @@ jobs:
           OWNER="${GITHUB_REPOSITORY%%/*}"
           NAME="${GITHUB_REPOSITORY#*/}"
           jq -n --arg version "$VERSION" --argjson code "$CODE" --arg sha "$APK_SHA" --arg cert "$CERT_SHA" --arg commit "$GITHUB_SHA" --arg owner "$OWNER" --arg name "$NAME" --arg at "$(date -u +%FT%TZ)" '{version:$version,commit:$commit,versionCode:$code,publishedAt:$at,minimumVersion:null,mandatory:false,title:("TGym "+$version),notes:[],android:{apk:("https://github.com/"+$owner+"/"+$name+"/releases/download/v"+$version+"/TGym-Android-v"+$version+".apk"),playStore:null,sha256:$sha,certificateSha256:$cert},ios:{appStore:null}}' > frontend/updates/latest.json
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           generate_release_notes: true
           files: |
@@ -95,9 +95,9 @@ jobs:
           mkdir -p dist/downloads
           cp release/TGym-Android-v*.apk dist/downloads/TGym-latest.apk
         working-directory: frontend
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with: { path: frontend/dist }
-      - uses: actions/deploy-pages@v4
+      - uses: actions/deploy-pages@v5
       - name: Verify published update metadata
         env:
           REPOSITORY: ${{ github.repository }}
