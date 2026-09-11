@@ -63,6 +63,14 @@ function Shell() {
   },[ready,S.active,restEndsAt,langV])
   useEffect(()=>{
     if(!MOBILE || !ready)return
+    const refresh=()=>{
+      if(document.visibilityState==='visible') void syncWorkoutNotification(useStore.getState().S.active,useUI.getState().timer)
+    }
+    document.addEventListener('visibilitychange',refresh)
+    return ()=>document.removeEventListener('visibilitychange',refresh)
+  },[ready])
+  useEffect(()=>{
+    if(!MOBILE || !ready)return
     let disposed=false,listener
     const open=event=>{if(!disposed && event?.url==='tgym://workout')navigate(useStore.getState().S.active?'/workout':'/home')}
     import('@capacitor/app').then(async({App})=>{

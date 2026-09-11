@@ -22,6 +22,19 @@ import { openRestoreSheet } from '../components/RestoreSheet.jsx'
 import { manualUpdateCheck } from '../components/AppUpdate.jsx'
 import { APP_REPOSITORY, ORIGINAL_OPENGYM_REPOSITORY } from '../lib/app-meta.js'
 
+function BackupSheet({ onExport, onImport }) {
+  const autoBackup = useStore(s => !!s.S.autoBackup)
+  const update = useStore(s => s.update)
+  return <><h3>{t('Backup')}</h3><div className="list">
+    <Row icon="download" iconTint="var(--blue)" title={t('Export full backup')} accessory="chevron" onClick={onExport} />
+    <Row icon="upload" iconTint="var(--blue)" title={t('Import full backup')} accessory="chevron" onClick={onImport} />
+    {MOBILE && <Row icon="history" iconTint="var(--blue)" title={t('Auto-backup on changes')}
+      subtitle={t('Saves a dated copy to the Documents folder after finishing a workout or editing a routine — point a sync app at it, or copy it out by hand.')}>
+      <Switch checked={autoBackup} onChange={v => update(s => { s.autoBackup = v })} />
+    </Row>}
+  </div></>
+}
+
 function DevicePinSheet({ removing, close, onChanged }) {
   const [pin, setPin] = useState('')
   const [again, setAgain] = useState('')
@@ -309,15 +322,10 @@ export default function Settings() {
     {/* ---------- data: fill it, bring things over, back it up, wipe it ---------- */}
     <Section title={t('Data')}>
       {(MOBILE || STANDALONE) && <Row icon="lock" iconTint="var(--acc)" title={t('All Data stays on this device')} subtitle={t('Data is stored locally by default. Cloud copies are sent only when you enable cloud backup.')} />}
-      <Row icon="download" iconTint="var(--blue)" title={t('Export full backup')} accessory="chevron" onClick={doExport} />
-      <Row icon="upload" iconTint="var(--blue)" title={t('Import full backup')} accessory="chevron" onClick={() => authorize(() => fileRef.current?.click())} />
+      <Row icon="folder" iconTint="var(--blue)" title={t('Backup')} accessory="chevron" onClick={() => useUI.getState().openSheet(() => <BackupSheet onExport={doExport} onImport={() => authorize(() => fileRef.current?.click())} />)} />
       <Row icon="cloud" iconTint="var(--blue)" title={t('Restore')} subtitle={t('Back up, synchronize or restore your TGym data.')} accessory="chevron" onClick={() => openRestoreSheet(authorize)} />
       <Row icon="folder" iconTint="var(--acc)" title={t('Load Routine')} subtitle={t('Create, import or export routines from one place.')} accessory="chevron" onClick={openLoadRoutine} />
       {canUndoImport() && <Row icon="reset" iconTint="var(--orange)" title={t('Undo last import')} subtitle={t('Available until this app session ends.')} accessory="chevron" onClick={() => confirmSheet({ title: t('Undo last import?'), message: t('Restores the data that was present immediately before the import.'), confirmText: t('Restore'), onConfirm: () => { const previous = consumeImportUndo(); if (previous) { replaceState(previous, true); toast(t('Import undone')) } } })} />}
-      {MOBILE && <Row icon="history" iconTint="var(--blue)" title={t('Auto-backup on changes')}
-        subtitle={t('Saves a dated copy to the Documents folder after finishing a workout or editing a routine — point a sync app at it, or copy it out by hand.')}>
-        <Switch checked={!!S.autoBackup} onChange={v => update(s => { s.autoBackup = v })} />
-      </Row>}
       <Row icon="trash" iconTint="var(--red)" title={t('Reset everything')} danger onClick={() => authorize(() => confirmSheet({ title: t('Reset everything?'), message: t('Deletes your plan, workouts and body weight on this device. This cannot be undone.'), confirmText: t('Delete everything'), danger: true, onConfirm: () => { replaceState(JSON.parse(JSON.stringify(DEF)), true); nav('/home'); toast(t('All data reset')) } }))} />
     </Section>
 

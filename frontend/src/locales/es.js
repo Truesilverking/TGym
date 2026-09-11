@@ -59,6 +59,7 @@ export default {
   'Enter the values shown on your report.': 'Introduce los valores que aparecen en tu informe.',
   'Automatic Google Drive backup': 'Copia automática en Google Drive',
   'Saves changes while online. Keeps ten daily restore points.': 'Guarda cambios con conexión. Conserva diez puntos de recuperación diarios.',
+  'Backup': 'Backup',
   'Backup history': 'Historial de copias',
   'Local data changed. Please synchronize again.': 'Los datos locales cambiaron. Vuelve a sincronizar.',
   'Training calendar': 'Calendario de entrenamiento',

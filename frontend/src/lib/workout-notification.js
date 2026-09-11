@@ -11,9 +11,18 @@ export function workoutNotificationState(active, rest, now=Date.now()) {
     autoFinishAt:paused?0:lastWorkoutActivity(active)+INACTIVITY_AUTO_FINISH_MINUTES*60000}
 }
 let queue=Promise.resolve()
+let permissionRequested=false
 export function syncWorkoutNotification(active,rest) {
   if (!Capacitor.isNativePlatform() || Capacitor.getPlatform()!=='android') return Promise.resolve(false)
   const state=workoutNotificationState(active,rest)
-  queue=queue.catch(()=>false).then(()=>native.sync(state)).catch(()=>false)
+  queue=queue.catch(()=>false).then(async()=>{
+    if(state.active && !permissionRequested && document.visibilityState!=='hidden') {
+      permissionRequested=true
+      const {LocalNotifications}=await import('@capacitor/local-notifications')
+      const permission=await LocalNotifications.checkPermissions()
+      if(permission.display==='prompt' || permission.display==='prompt-with-rationale') await LocalNotifications.requestPermissions()
+    }
+    return native.sync(state)
+  }).catch(()=>false)
   return queue
 }

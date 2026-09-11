@@ -139,6 +139,7 @@ export default {
   "Back-off rep offset": "Back-off rep offset",
   "Back-off reps follow the latest Top Set.": "Back-off reps follow the latest Top Set.",
   "Back-off sets": "Back-off sets",
+  "Backup": "Backup",
   "Backup exported": "Backup exported",
   "Backup history": "Backup history",
   "Backup imported": "Backup imported",
