@@ -39,10 +39,11 @@ jobs:
         shell: bash
         run: |
           sudo chmod 666 /dev/kvm
+          export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH"
           sdkmanager 'system-images;android-35;google_apis;x86_64' 'emulator' >/dev/null
           echo no | avdmanager create avd --force --name tgym-test --package 'system-images;android-35;google_apis;x86_64'
           "$ANDROID_HOME/emulator/emulator" -avd tgym-test -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot > /tmp/tgym-emulator.log 2>&1 &
-          adb wait-for-device
+          timeout 120 adb wait-for-device
           timeout 300 bash -c 'until adb shell getprop sys.boot_completed | grep -q 1; do sleep 2; done'
           cd frontend/android
           ./gradlew connectedDebugAndroidTest
