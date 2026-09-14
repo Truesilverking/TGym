@@ -12,7 +12,7 @@
 import { t } from './i18n-core.js'
 import { todayISO } from './format.js'
 import { measurementNotificationPlan, MEASUREMENT_NOTIFICATION_IDS } from './measurement-reminders.js'
-import { workoutNotificationPlan, WORKOUT_NOTIFICATION_IDS } from './workout-reminders.js'
+import { workoutNotificationPlan, WORKOUT_NOTIFICATION_IDS, deloadNotificationPlan, DELOAD_NOTIFICATION_IDS } from './workout-reminders.js'
 import { lastWorkoutActivity, INACTIVITY_WARNING_MINUTES } from './workout-time.js'
 
 export const MOBILE = import.meta.env.VITE_MOBILE === '1'
@@ -71,11 +71,14 @@ async function syncReminderNow(S, interactive = false) {
     await LocalNotifications.cancel({ notifications: WORKOUT_NOTIFICATION_IDS.map(id => ({ id })) })
     await LocalNotifications.cancel({ notifications: MEASUREMENT_NOTIFICATION_IDS.map(id => ({id})) })
     await LocalNotifications.cancel({ notifications: [{id:3000}] })
+    await LocalNotifications.cancel({ notifications: DELOAD_NOTIFICATION_IDS.map(id => ({id})) })
     const r = S.reminder
-    if (!r?.on && !S.measurementReminders?.notifications && !S.active) return true
+    if (!r?.on && !S.measurementReminders?.notifications && !S.active && !(S.deload?.on && S.deload?.notifications)) return true
     let perm = await LocalNotifications.checkPermissions()
     if (perm.display !== 'granted' && interactive) perm = await LocalNotifications.requestPermissions()
     if (perm.display !== 'granted') return false
+    const deloadNotices = deloadNotificationPlan(S).map(n => ({id:n.id, title:t('Deload week'), body:t('Deload: {0} – {1}. Follow your reduced training targets.',n.start,n.end), schedule:{at:n.at,allowWhileIdle:true},extra:{type:'deload'}}))
+    if (deloadNotices.length) await LocalNotifications.schedule({notifications:deloadNotices})
     if (S.active && S.active.timerPausedAt == null) {
       const at = new Date(lastWorkoutActivity(S.active) + INACTIVITY_WARNING_MINUTES * 60000)
       if (at > new Date()) await LocalNotifications.schedule({notifications:[{id:3000,title:t('Still training?'),body:t('No activity has been recorded for a while.'),schedule:{at,allowWhileIdle:true},extra:{type:'workout',routineId:S.active.routineId,date:S.active.d}}]})

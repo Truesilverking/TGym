@@ -1,5 +1,12 @@
 // Explicit source-language fallback. Entries in language packs override these values.
 export default {
+"Deload follows your cycle from Monday. Saved workouts stay unchanged. Alerts use your reminder time and respect quiet hours.": "Deload follows your cycle from Monday. Saved workouts stay unchanged. Alerts use your reminder time and respect quiet hours.",
+"Deload alerts": "Deload alerts",
+"One day before and on the first day.": "One day before and on the first day.",
+"Enable notifications in your device settings.": "Enable notifications in your device settings.",
+"Purple marks reduced training days.": "Purple marks reduced training days.",
+"Deload: {0} – {1}. Follow your reduced training targets.": "Deload: {0} – {1}. Follow your reduced training targets.",
+"Load {0}% · Working sets {1}% · RIR {2}": "Load {0}% · Working sets {1}% · RIR {2}",
   "Muscles trained": "Muscles trained",
   "Primary muscles": "Primary muscles",
   "Secondary muscles": "Secondary muscles",

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { applyTrainingPlan, backoffRepOffsetFor, clampReps, defaultDeload, deloadStatus, deloadTargetFor, repBounds, repRangeEnabled, rirAdvice, streakTier, targetRirFor, targetRirRangeFor, trainingStreak } from './training-plan.js'
+import { applyTrainingPlan, calendarDeload, backoffRepOffsetFor, clampReps, defaultDeload, deloadStatus, deloadTargetFor, repBounds, repRangeEnabled, rirAdvice, streakTier, targetRirFor, targetRirRangeFor, trainingStreak } from './training-plan.js'
 
 const base = { routines: [{ id: 'r', name: 'Push' }], week: { 1: 'r', 3: 'r', 5: 'r' }, dayPlan: {}, workouts: [] }
 describe('trainingStreak', () => {
@@ -134,4 +134,21 @@ it.each([[{targetRir:2},2],[{targetRirMin:1,targetRirMax:2},2],[{targetRirMin:1.
 it('respects role-specific legacy targets above the general range', () => {
   expect(targetRirRangeFor({targetRirMin:2,targetRirMax:3,topRir:1},'top')).toEqual({min:1,max:1})
   expect(targetRirRangeFor({targetRirMin:'bad',targetRirMax:2})).toBeNull()
+})
+
+ describe('deload calendar boundaries', () => {
+ it('does not start a cycle before the configured date', () => {
+ const result=deloadStatus({deload:{on:true,startDate:'2026-09-14',normalWeeks:6}},'2026-09-01')
+ expect(result.active).toBe(false); expect(result.nextStart).toBe('2026-10-26'); expect(result.daysUntil).toBe(55)
+ })
+ it('returns the entire two-week download period and rejects invalid dates', () => {
+ const s={deload:{on:true,startDate:'2026-01-05',normalWeeks:6,deloadWeeks:2}}
+ expect(deloadStatus(s,'2026-02-25')).toMatchObject({active:true,start:'2026-02-16',end:'2026-03-01'})
+ expect(deloadStatus({...s,deload:{...s.deload,startDate:'bad'}}).active).toBe(false)
+ })
+ })
+
+it('retains recorded deload status after cycle settings change',()=>{
+ expect(calendarDeload({deload:{on:false},workouts:[{d:'2026-09-02',deload:true}]},'2026-09-02')).toBe(true)
+ expect(calendarDeload({deload:{on:true,startDate:'2026-08-03'},workouts:[{d:'2026-09-02'}]},'2026-09-02')).toBe(false)
 })

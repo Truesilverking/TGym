@@ -1,5 +1,5 @@
 import {describe,it,expect} from 'vitest'
-import {workoutNotificationPlan} from './workout-reminders.js'
+import {workoutNotificationPlan,deloadNotificationPlan} from './workout-reminders.js'
 import {createBackup,readBackup} from './backup.js'
 const now = new Date('2026-09-10T07:00:00')
 const state = () => ({routines:[{id:'a',name:'Upper A'},{id:'b',name:'Lower A'}],week:{4:'a',5:'b'},dayPlan:{},workouts:[],reminder:{on:true,time:'08:00',nextTime:'19:00'}})
@@ -37,3 +37,19 @@ describe('state-aware workout reminders',()=>{
     expect(workoutNotificationPlan(S,now)).toEqual([])
   })
 })
+
+ describe('deload alerts',()=>{
+ const S={deload:{on:true,notifications:true,startDate:'2026-01-05',normalWeeks:6},reminder:{time:'08:00'}}
+ it('schedules the day before and first day, not every workout',()=>{
+ const notices=deloadNotificationPlan(S,new Date('2026-02-14T12:00:00'))
+ expect(notices.map(n=>n.at.getDate())).toEqual([15,16]); expect(notices.map(n=>n.id)).toEqual([3200,3201])
+ })
+ it('honors disabled alerts and omits elapsed reminders',()=>{
+ expect(deloadNotificationPlan({...S,deload:{...S.deload,notifications:false}})).toEqual([])
+ expect(deloadNotificationPlan(S,new Date('2026-02-16T09:00:00'))).toEqual([])
+ })
+ it('moves notifications out of quiet hours',()=>{
+ const notices=deloadNotificationPlan({...S,reminder:{time:'06:00',quietOn:true,quietStart:'22:00',quietEnd:'07:00'}},new Date('2026-02-14T12:00:00'))
+ expect(notices.every(n=>n.at.getHours()===7)).toBe(true)
+ })
+ })

@@ -1092,3 +1092,6 @@ body.framegym-private::after{
 .routine-muscle-tags { display: flex; flex-wrap: wrap; gap: 8px; }
 .routine-muscle-tags button { min-height: 36px; cursor: pointer; }
 .routine-muscle-tags button:focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; }
+.zoomcal-day.deload { box-shadow: inset 0 -4px #b887ff; }
+.zoomcal-mini-month i.deload { box-shadow: inset 0 -2px #b887ff; }
+.deload-calendar-label { color: #b887ff; margin: 8px 0; }

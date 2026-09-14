@@ -1,6 +1,13 @@
 import english from '../lib/english-fallback.js'
 // Spanish UI strings. Keys are the English source strings (see lib/i18n.js).
 export default {
+"Deload follows your cycle from Monday. Saved workouts stay unchanged. Alerts use your reminder time and respect quiet hours.": "La descarga sigue tu ciclo desde el lunes. Los entrenamientos guardados no cambian. Los avisos usan tu hora de recordatorio y respetan las horas de no molestar.",
+"Deload alerts": "Avisos de descarga",
+"One day before and on the first day.": "Un día antes y el primer día.",
+"Enable notifications in your device settings.": "Activa las notificaciones en los ajustes de tu dispositivo.",
+"Purple marks reduced training days.": "El morado marca los días de descarga.",
+"Deload: {0} – {1}. Follow your reduced training targets.": "Descarga: {0} – {1}. Sigue tus objetivos de entrenamiento reducidos.",
+"Load {0}% · Working sets {1}% · RIR {2}": "Carga {0}% · Series de trabajo {1}% · RIR {2}",
   ...english,
   "Muscles trained": "Músculos trabajados",
   "Primary muscles": "Músculos principales",

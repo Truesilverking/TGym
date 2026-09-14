@@ -69,7 +69,7 @@ export function streakTier(value) {
 
 // A predictable recovery week: six normal weeks, then one week with a clear
 // reduction in both load and volume. All values remain editable in Settings.
-export const defaultDeload = () => ({ on: false, normalWeeks: 6, deloadWeeks: 1, loadPct: 80, setPct: 60, targetRir: 4, startDate: todayISO() })
+export const defaultDeload = () => ({ on: false, notifications: true, normalWeeks: 6, deloadWeeks: 1, loadPct: 80, setPct: 60, targetRir: 4, startDate: todayISO() })
 
 function mondayOf(iso) {
   const d = atNoon(iso), shift = (d.getDay() + 6) % 7
@@ -81,15 +81,25 @@ export function deloadStatus(S, iso = todayISO()) {
   const c = { ...defaultDeload(), ...(S.deload || {}) }
   if (!c.on || !c.startDate) return { active: false, daysUntil: null, config: c }
   const start = mondayOf(c.startDate), day = atNoon(iso)
-  const weeks = Math.floor((mondayOf(iso) - start) / (7 * DAY))
-  if (weeks < 0) return { active: false, daysUntil: Math.max(0, Math.ceil((start - day) / DAY)), config: c }
+  if (!Number.isFinite(start.getTime()) || !Number.isFinite(day.getTime())) return { active: false, daysUntil: null, config: c }
+  // Calendar weeks, not elapsed hours: DST can make a week one hour shorter.
+  const calendarDay = d => Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / DAY
+  const weeks = Math.floor((calendarDay(mondayOf(iso)) - calendarDay(start)) / 7)
   const normal = clamp(Math.round(c.normalWeeks) || 6, 1, 24)
   const deload = clamp(Math.round(c.deloadWeeks) || 1, 1, 4)
-  const cycle = normal + deload, phase = ((weeks % cycle) + cycle) % cycle
+  const cycle = normal + deload, phase = weeks < 0 ? weeks : weeks % cycle
   const active = phase >= normal
   const nextWeek = active ? cycle - phase + normal : normal - phase
   const nextStart = new Date(mondayOf(iso)); nextStart.setDate(nextStart.getDate() + nextWeek * 7)
-  return { active, week: phase + 1, cycle, daysUntil: active ? 0 : Math.max(0, Math.ceil((nextStart - day) / DAY)), nextStart: isoOf(nextStart), config: c }
+  const currentStart = new Date(mondayOf(iso)); currentStart.setDate(currentStart.getDate() - (phase - normal) * 7)
+  const end = new Date(active ? currentStart : nextStart); end.setDate(end.getDate() + deload * 7 - 1)
+  return { active, week: phase + 1, cycle, daysUntil: active ? 0 : Math.max(0, calendarDay(nextStart) - calendarDay(day)), nextStart: isoOf(nextStart), start: isoOf(active ? currentStart : nextStart), end: isoOf(end), config: c }
+}
+
+// Past sessions retain their recorded status even if the user changes the cycle.
+export function calendarDeload(S, iso) {
+  const workouts = (S.workouts || []).filter(w => w.d === iso)
+  return workouts.some(w => w.deload) || deloadStatus(S, iso).active
 }
 
 const snap = (value, step) => Math.max(step || 0, Math.round(value / (step || 1)) * (step || 1))

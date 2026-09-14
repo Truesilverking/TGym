@@ -256,11 +256,17 @@ export default function Settings() {
       </Row>
     </Section>
 
-    <Section title={t('Deload week')} footer={t('TGym changes only the planned session. It never rewrites completed workouts and sends no extra notifications.')}>
+    <Section title={t('Deload week')} footer={t('Deload follows your cycle from Monday. Saved workouts stay unchanged. Alerts use your reminder time and respect quiet hours.')}>
       <Row icon="arrowDown" iconTint="var(--orange)" title={t('Scheduled deload')} subtitle={S.deload?.on ? t('{0} normal weeks + {1} deload week', S.deload?.normalWeeks || 6, S.deload?.deloadWeeks || 1) : t('Off')}>
         <Switch checked={!!S.deload?.on} onChange={v => update(s => { s.deload = { ...DEF.deload, ...(s.deload || {}), on: v, startDate: s.deload?.startDate || todayISO() } })} />
       </Row>
       {!!S.deload?.on && <>
+        {MOBILE && <Row icon="bell" title={t('Deload alerts')} subtitle={t('One day before and on the first day.')}><Switch checked={S.deload?.notifications !== false} onChange={async v => {
+          const next = {...S,deload:{...S.deload,notifications:v}}
+          const ok = await syncReminder(next,v)
+          if (v && !ok) { toast(t('Enable notifications in your device settings.')); return }
+          update(s => {s.deload = {...s.deload,notifications:v}})
+        }} /></Row>}
         <SelectRow title={t('Normal weeks')} value={S.deload?.normalWeeks || 6} onChange={v => update(s => { s.deload = { ...s.deload, normalWeeks: v } })}
           options={[4, 5, 6, 7, 8, 10, 12].map(v => ({ value: v, label: String(v) }))} />
         <SelectRow title={t('Deload weeks')} value={S.deload?.deloadWeeks || 1} onChange={v => update(s => { s.deload = { ...s.deload, deloadWeeks: v } })}
