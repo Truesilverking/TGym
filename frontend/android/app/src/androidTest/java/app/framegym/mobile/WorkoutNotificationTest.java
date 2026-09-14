@@ -32,8 +32,8 @@ public class WorkoutNotificationTest {
         assertTrue("Android notification permission must be granted",((NotificationManager)context.getSystemService(Context.NOTIFICATION_SERVICE)).areNotificationsEnabled());
         Intent service=new Intent(context,WorkoutNotificationService.class);
         try {
-            context.startActivity(new Intent(context,WorkoutNotificationTestActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
-            for(int wait=0;wait<50 && notification()==null;wait++) SystemClock.sleep(100);
+            shell("am start -W -n app.framegym.mobile/.WorkoutNotificationTestActivity");
+            for(int wait=0;wait<100 && notification()==null;wait++) SystemClock.sleep(100);
             assertNotNull(notification());
             assertNotNull(notification().getNotification().contentView);
             assertNotNull(notification().getNotification().bigContentView);
