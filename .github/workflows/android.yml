@@ -50,7 +50,7 @@ jobs:
           timeout 120 adb wait-for-device
           timeout 300 bash -c 'until adb shell getprop sys.boot_completed | grep -q 1; do sleep 2; done'
           cd frontend/android
-          ./gradlew connectedDebugAndroidTest
+          ./gradlew :app:connectedDebugAndroidTest
       - uses: actions/upload-artifact@v4
         if: always()
         with:
