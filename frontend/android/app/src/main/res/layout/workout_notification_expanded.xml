@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:paddingTop="4dp" android:paddingBottom="8dp">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="12dp" android:background="@drawable/workout_timer_panel">
+        <TextView android:id="@+id/workout_label" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginBottom="4dp" android:textAppearance="@android:style/TextAppearance.Material.Notification" />
+        <Chronometer android:id="@+id/workout_clock" android:textSize="32sp" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textAppearance="@android:style/TextAppearance.Material.Notification" />
+        <TextView android:id="@+id/workout_duration" android:textSize="32sp" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textAppearance="@android:style/TextAppearance.Material.Notification" />
+    </LinearLayout>
+    <LinearLayout android:id="@+id/rest_row" android:layout_marginTop="8dp" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="12dp" android:background="@drawable/workout_timer_panel">
+        <TextView android:id="@+id/rest_label" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginBottom="4dp" android:textAppearance="@android:style/TextAppearance.Material.Notification" />
+        <Chronometer android:id="@+id/rest_clock" android:textSize="28sp" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textAppearance="@android:style/TextAppearance.Material.Notification" />
+    </LinearLayout>
+</LinearLayout>

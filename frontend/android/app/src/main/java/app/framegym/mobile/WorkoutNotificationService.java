@@ -33,6 +33,22 @@ public class WorkoutNotificationService extends Service {
         long seconds=Math.max(0,millis/1000);
         return seconds>=3600?String.format(Locale.ROOT,"%dh %dm",seconds/3600,(seconds%3600)/60):String.format(Locale.ROOT,"%02d:%02d",seconds/60,seconds%60);
     }
+    private RemoteViews timerView(int layout, long elapsed, long rest) {
+        RemoteViews content=new RemoteViews(getPackageName(),layout);
+        content.setTextViewText(R.id.workout_label,state.optString("workoutLabel","Workout"));
+        boolean live=!state.optBoolean("paused") && elapsed<3600000;
+        content.setViewVisibility(R.id.workout_clock,live?View.VISIBLE:View.GONE);
+        content.setViewVisibility(R.id.workout_duration,live?View.GONE:View.VISIBLE);
+        content.setTextViewText(R.id.workout_duration,duration(elapsed));
+        content.setChronometer(R.id.workout_clock,SystemClock.elapsedRealtime()-elapsed,null,live);
+        content.setViewVisibility(R.id.rest_row,rest>0?View.VISIBLE:View.GONE);
+        content.setTextViewText(R.id.rest_label,state.optString("restLabel","Rest"));
+        if(rest>0){
+            if(Build.VERSION.SDK_INT>=24){content.setChronometerCountDown(R.id.rest_clock,true);content.setChronometer(R.id.rest_clock,SystemClock.elapsedRealtime()+rest,null,true);}
+            else {content.setChronometer(R.id.rest_clock,SystemClock.elapsedRealtime(),duration(rest),false);}
+        }
+        return content;
+    }
     private void render(){
         handler.removeCallbacks(refresh);
         long now=System.currentTimeMillis(), elapsed=Math.max(0,state.optLong("elapsedMs")+(state.optBoolean("paused")?0:now-state.optLong("observedAt",now)));
@@ -45,24 +61,14 @@ public class WorkoutNotificationService extends Service {
         }
         Intent open=new Intent(this,MainActivity.class).setData(Uri.parse("tgym://workout")).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP|Intent.FLAG_ACTIVITY_CLEAR_TOP);
         PendingIntent tap=PendingIntent.getActivity(this,3100,open,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
-        RemoteViews content=new RemoteViews(getPackageName(),R.layout.workout_notification);
-        content.setTextViewText(R.id.workout_label,state.optString("workoutLabel","Workout"));
-        boolean live=!state.optBoolean("paused") && elapsed<3600000;
-        content.setViewVisibility(R.id.workout_clock,live?View.VISIBLE:View.GONE);
-        content.setViewVisibility(R.id.workout_duration,live?View.GONE:View.VISIBLE);
-        content.setTextViewText(R.id.workout_duration,duration(elapsed));
-        content.setChronometer(R.id.workout_clock,SystemClock.elapsedRealtime()-elapsed,null,live);
         long rest=state.optLong("restEndsAt")-now;
-        content.setViewVisibility(R.id.rest_row,rest>0?View.VISIBLE:View.GONE);
-        content.setTextViewText(R.id.rest_label,state.optString("restLabel","Rest"));
-        if(rest>0){
-            if(Build.VERSION.SDK_INT>=24){content.setChronometerCountDown(R.id.rest_clock,true);content.setChronometer(R.id.rest_clock,SystemClock.elapsedRealtime()+rest,null,true);}
-            else {content.setChronometer(R.id.rest_clock,SystemClock.elapsedRealtime(),duration(rest),false);}
-        }
+        RemoteViews content=timerView(R.layout.workout_notification,elapsed,rest);
         Notification notice=new NotificationCompat.Builder(this,CHANNEL)
             .setSmallIcon(R.drawable.ic_workout_notification).setContentTitle("TGym · "+state.optString("name","Workout"))
             .setContentText(state.optString("workoutLabel","Workout")+" "+duration(elapsed))
-            .setCustomContentView(content).setStyle(new NotificationCompat.DecoratedCustomViewStyle())
+            .setCustomContentView(content)
+            .setCustomBigContentView(timerView(R.layout.workout_notification_expanded,elapsed,rest))
+            .setColor(0xFFFF453A).setStyle(new NotificationCompat.DecoratedCustomViewStyle())
             .setContentIntent(tap).setOngoing(true).setOnlyAlertOnce(true).setSilent(true)
             .setPriority(NotificationCompat.PRIORITY_LOW).build();
         try {
