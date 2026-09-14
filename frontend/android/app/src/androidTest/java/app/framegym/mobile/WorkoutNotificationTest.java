@@ -17,6 +17,11 @@ import static org.junit.Assert.*;
 @RunWith(AndroidJUnit4.class)
 public class WorkoutNotificationTest {
     private Context context;
+    private void shell(String command) throws Exception {
+        try(android.os.ParcelFileDescriptor.AutoCloseInputStream stream=new android.os.ParcelFileDescriptor.AutoCloseInputStream(InstrumentationRegistry.getInstrumentation().getUiAutomation().executeShellCommand(command))) {
+            byte[] buffer=new byte[1024]; while(stream.read(buffer)!=-1) {}
+        }
+    }
     private StatusBarNotification notification() {
         for (StatusBarNotification item : ((NotificationManager)context.getSystemService(Context.NOTIFICATION_SERVICE)).getActiveNotifications())
             if(item.getId()==3100)return item;
@@ -24,7 +29,8 @@ public class WorkoutNotificationTest {
     }
     @Test public void workoutAndRestSurviveBackgroundAndStopOnFinish() throws Exception {
         context=InstrumentationRegistry.getInstrumentation().getTargetContext();
-        InstrumentationRegistry.getInstrumentation().getUiAutomation().executeShellCommand("pm grant app.framegym.mobile android.permission.POST_NOTIFICATIONS").close();
+        shell("pm grant app.framegym.mobile android.permission.POST_NOTIFICATIONS");
+        assertTrue("Android notification permission must be granted",((NotificationManager)context.getSystemService(Context.NOTIFICATION_SERVICE)).areNotificationsEnabled());
         context.startActivity(new Intent(context,MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
         SystemClock.sleep(15000); // Allow WebView boot and its initial inactive-state sync to settle.
         long now=System.currentTimeMillis();
@@ -36,7 +42,7 @@ public class WorkoutNotificationTest {
             assertNotNull(notification());
             assertNotNull(notification().getNotification().contentView);
             assertNotNull(notification().getNotification().bigContentView);
-            InstrumentationRegistry.getInstrumentation().getUiAutomation().executeShellCommand("input keyevent KEYCODE_HOME").close();
+            shell("input keyevent KEYCODE_HOME");
             SystemClock.sleep(6000);
             StatusBarNotification item=notification();
             assertNotNull("Workout remains visible in background",item);
