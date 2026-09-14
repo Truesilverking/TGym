@@ -31,8 +31,6 @@ public class WorkoutNotificationTest {
         context=InstrumentationRegistry.getInstrumentation().getTargetContext();
         shell("pm grant app.framegym.mobile android.permission.POST_NOTIFICATIONS");
         assertTrue("Android notification permission must be granted",((NotificationManager)context.getSystemService(Context.NOTIFICATION_SERVICE)).areNotificationsEnabled());
-        context.startActivity(new Intent(context,MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
-        SystemClock.sleep(15000); // Allow WebView boot and its initial inactive-state sync to settle.
         long now=System.currentTimeMillis();
         JSONObject state=new JSONObject().put("active",true).put("name","QA Workout").put("workoutLabel","Workout").put("restLabel","Rest").put("elapsedMs",120000).put("observedAt",now).put("paused",false).put("restEndsAt",now+5000).put("autoFinishAt",now+60000);
         Intent service=new Intent(context,WorkoutNotificationService.class).putExtra("state",state.toString());
