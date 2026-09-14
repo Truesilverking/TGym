@@ -75,7 +75,9 @@ export default function AppUpdate() {
   useEffect(() => {
     let gone = false, stopPush = () => {}
     const check = (force = false) => checkForAppUpdate({force}).then(r => {if (!gone && r.update) showUpdateSheet(r.update)}).catch(() => {})
-    void check()
+    // Native builds check immediately on launch, bypassing the background interval throttle.
+    // The four-hour interval still limits subsequent automatic checks while the app remains open.
+    void check(Capacitor.isNativePlatform())
     void initializeUpdatePush(() => {if (!gone) void check(true)}).then(stop => {if (gone) stop(); else stopPush = stop})
     const visible = () => {if (document.visibilityState === 'visible') void check()}
     const online = () => {void check()}

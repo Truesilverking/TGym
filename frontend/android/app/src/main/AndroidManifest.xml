@@ -29,7 +29,8 @@
             android:authorities="${applicationId}.fileprovider"
             android:exported="false"
             android:grantUriPermissions="true">
-            <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" />
+        <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" />
+        <meta-data android:name="com.google.firebase.messaging.default_notification_channel_id" android:value="@string/update_notification_channel" />
         </provider>
     </application>
 

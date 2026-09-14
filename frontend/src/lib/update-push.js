@@ -17,9 +17,13 @@ export async function initializeUpdatePush(onUpdate) {
     }
     const received = await PushNotifications.addListener('pushNotificationReceived', notify)
     const action = await PushNotifications.addListener('pushNotificationActionPerformed', notify)
+    // Re-subscribe after FCM has issued or refreshed the device token. This covers a
+    // reinstall, restored backup, and token rotation without requiring the user to toggle
+    // notifications again.
+    const registration = await PushNotifications.addListener('registration', () => { void UpdatePush.subscribe() })
     await PushNotifications.register()
     if (Capacitor.getPlatform() === 'android') await UpdatePush.subscribe()
-    return () => { void received.remove(); void action.remove() }
+    return () => { void received.remove(); void action.remove(); void registration.remove() }
   } catch {
     // A build without Firebase configuration must remain fully usable.
     return () => {}

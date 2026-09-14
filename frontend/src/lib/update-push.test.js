@@ -12,6 +12,6 @@ describe('update push routing',()=>{
   mocks.listeners.pushNotificationReceived({data:{type:'unrelated'}})
   expect(notify.mock.calls).toEqual([['1.15.10'],['1.15.10']])
   expect(mocks.subscribe).toHaveBeenCalledOnce()
-  stop(); expect(mocks.removed).toHaveBeenCalledTimes(2)
+ stop(); expect(mocks.removed).toHaveBeenCalledTimes(3)
  })
 })
