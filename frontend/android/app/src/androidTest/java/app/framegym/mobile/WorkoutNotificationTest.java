@@ -9,7 +9,6 @@ import android.view.View;
 import android.widget.FrameLayout;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
-import org.json.JSONObject;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import static org.junit.Assert.*;
@@ -31,11 +30,9 @@ public class WorkoutNotificationTest {
         context=InstrumentationRegistry.getInstrumentation().getTargetContext();
         shell("pm grant app.framegym.mobile android.permission.POST_NOTIFICATIONS");
         assertTrue("Android notification permission must be granted",((NotificationManager)context.getSystemService(Context.NOTIFICATION_SERVICE)).areNotificationsEnabled());
-        long now=System.currentTimeMillis();
-        JSONObject state=new JSONObject().put("active",true).put("name","QA Workout").put("workoutLabel","Workout").put("restLabel","Rest").put("elapsedMs",120000).put("observedAt",now).put("paused",false).put("restEndsAt",now+5000).put("autoFinishAt",now+60000);
-        Intent service=new Intent(context,WorkoutNotificationService.class).putExtra("state",state.toString());
+        Intent service=new Intent(context,WorkoutNotificationService.class);
         try {
-            context.startForegroundService(service);
+            context.startActivity(new Intent(context,WorkoutNotificationTestActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
             for(int wait=0;wait<50 && notification()==null;wait++) SystemClock.sleep(100);
             assertNotNull(notification());
             assertNotNull(notification().getNotification().contentView);
