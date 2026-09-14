@@ -111,6 +111,13 @@ describe('training prescription helpers', () => {
     expect(target).not.toHaveProperty('intensifier')
     expect(cfg.intensifier).toBe('drop')
   })
+  it('reduces timed and cardio duration when there is no weight to lower', () => {
+    const deload = { active: true, config: { loadPct: 80, setPct: 100, targetRir: 4 } }
+    const timed = applyTrainingPlan([{ sec: 60, done: false }], { mode: 'time', sets: 1 }, 2.5, deload)
+    const cardio = applyTrainingPlan([{ min: 20, speed: 8, done: false }], { mode: 'cardio', sets: 1 }, 2.5, deload)
+    expect(timed[0]).toMatchObject({ sec: 48, deload: true })
+    expect(cardio[0]).toMatchObject({ min: 16, speed: 8, deload: true })
+  })
   it('falls back to the shared RIR target for each Top and Back-off row', () => {
     expect(targetRirFor({ targetRir: 2 }, 'top')).toBe(2)
     expect(targetRirFor({ targetRir: 2 }, 'backoff')).toBe(2)

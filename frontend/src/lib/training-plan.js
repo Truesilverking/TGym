@@ -130,6 +130,7 @@ export function applyTrainingPlan(rows, cfg, step = 2.5, deload = null) {
   if (deload?.active) {
     const c = deload.config
     const pct = clamp(Number(c.setPct) || 60, 20, 100) / 100
+    const loadPct = clamp(Number(c.loadPct) || 90, 50, 100) / 100
     // Preserve both groups in a Top + Back-off prescription. Reducing a four-set 2+2 plan by
     // simply slicing it could leave two Top sets and no Back-off work at all.
     if (cfg.setScheme === 'topback') {
@@ -140,8 +141,17 @@ export function applyTrainingPlan(rows, cfg, step = 2.5, deload = null) {
     } else {
       work = work.slice(0, Math.max(1, Math.round(work.length * pct)))
     }
-    work = work.map(s => ({ ...s, w: s.w > 0 ? snap(s.w * clamp(Number(c.loadPct) || 90, 50, 100) / 100, step) : s.w, deload: true }))
-    warm = warm.map(s => ({ ...s, w: s.w > 0 ? snap(s.w * clamp(Number(c.loadPct) || 90, 50, 100) / 100, step) : s.w, deload: true }))
+    // Weighted work lowers the load. Timed and cardio work has no weight column, so lower
+    // its duration by the same intensity percentage; keep speed/technique unchanged.
+    const reduce = s => ({
+      ...s,
+      w: s.w > 0 ? snap(s.w * loadPct, step) : s.w,
+      sec: s.sec > 0 ? Math.max(1, Math.round(s.sec * loadPct)) : s.sec,
+      min: s.min > 0 ? Math.max(0.1, Math.round(s.min * loadPct * 10) / 10) : s.min,
+      deload: true,
+    })
+    work = work.map(reduce)
+    warm = warm.map(reduce)
   }
   return [...warm, ...work].map(row => seedPlannedRir(row, cfg))
 }
