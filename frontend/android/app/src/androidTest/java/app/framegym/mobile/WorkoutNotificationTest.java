@@ -26,13 +26,13 @@ public class WorkoutNotificationTest {
         context=InstrumentationRegistry.getInstrumentation().getTargetContext();
         InstrumentationRegistry.getInstrumentation().getUiAutomation().executeShellCommand("pm grant app.framegym.mobile android.permission.POST_NOTIFICATIONS").close();
         context.startActivity(new Intent(context,MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
-        SystemClock.sleep(2000);
+        SystemClock.sleep(15000); // Allow WebView boot and its initial inactive-state sync to settle.
         long now=System.currentTimeMillis();
         JSONObject state=new JSONObject().put("active",true).put("name","QA Workout").put("workoutLabel","Workout").put("restLabel","Rest").put("elapsedMs",120000).put("observedAt",now).put("paused",false).put("restEndsAt",now+5000).put("autoFinishAt",now+60000);
         Intent service=new Intent(context,WorkoutNotificationService.class).putExtra("state",state.toString());
         try {
             context.startForegroundService(service);
-            SystemClock.sleep(1000);
+            for(int wait=0;wait<50 && notification()==null;wait++) SystemClock.sleep(100);
             assertNotNull(notification());
             assertNotNull(notification().getNotification().contentView);
             assertNotNull(notification().getNotification().bigContentView);

@@ -43,7 +43,7 @@ jobs:
           export ANDROID_USER_HOME="$RUNNER_TEMP/tgym-android"
           export ANDROID_AVD_HOME="$ANDROID_USER_HOME/avd"
           mkdir -p "$ANDROID_AVD_HOME"
-          trap 'cat /tmp/tgym-emulator.log 2>/dev/null || true' EXIT
+          trap 'cat /tmp/tgym-emulator.log 2>/dev/null || true; adb logcat -d -s TGymWorkoutNotification:E AndroidRuntime:E || true' EXIT
           sdkmanager 'system-images;android-35;google_apis;x86_64' 'emulator' >/dev/null
           echo no | avdmanager create avd --force --name tgym-test --package 'system-images;android-35;google_apis;x86_64'
           "$ANDROID_HOME/emulator/emulator" -avd tgym-test -no-window -no-audio -no-boot-anim -gpu swiftshader -no-snapshot -no-metrics > /tmp/tgym-emulator.log 2>&1 &

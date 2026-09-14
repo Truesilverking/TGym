@@ -27,7 +27,7 @@ public class WorkoutNotificationService extends Service {
             getSharedPreferences(CHANNEL,0).edit().putString("state",raw).apply();
             render();
             return START_STICKY;
-        } catch(Exception error){stopSelf();return START_NOT_STICKY;}
+        } catch(Exception error){android.util.Log.e("TGymWorkoutNotification","Unable to render workout notification",error);stopSelf();return START_NOT_STICKY;}
     }
     private String duration(long millis){
         long seconds=Math.max(0,millis/1000);
@@ -74,7 +74,7 @@ public class WorkoutNotificationService extends Service {
         try {
             if(Build.VERSION.SDK_INT>=34)startForeground(ID,notice,ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
             else startForeground(ID,notice);
-        }catch(RuntimeException error){stopSelf();return;}
+        }catch(RuntimeException error){android.util.Log.e("TGymWorkoutNotification","Unable to start workout notification",error);stopSelf();return;}
         long delay=state.optBoolean("paused")?Long.MAX_VALUE:60000-elapsed%60000;
         if(rest>0)delay=Math.min(delay,Build.VERSION.SDK_INT>=24?rest:1000);
         if(autoAt>now)delay=Math.min(delay,autoAt-now);
