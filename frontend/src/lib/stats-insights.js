@@ -1,4 +1,4 @@
-import { effectiveRoutineId } from './history.js'
+import { consistencyStats } from './consistency.js'
 import { isoOf } from './format.js'
 import { workoutElapsedMs } from './workout-time.js'
 
@@ -26,13 +26,40 @@ export function bmiBand(value) {
   return 'Obesity range'
 }
 
-export function validTimedSessions(workouts) {
-  return (workouts || []).filter(w => {
-    const ms = workoutElapsedMs(w)
-    // Very long sessions almost always mean an old session was left running. Keep them in
-    // history, but do not let one forgotten timer ruin averages and the duration chart.
-    return Number.isFinite(ms) && ms >= 60000 && ms <= 12 * 3600000
-  }).map(w => ({ ...w, durationMs: workoutElapsedMs(w) }))
+export function validTimedSessions(workouts, { activeId } = {}) {
+  const seen = new Set()
+  const timestamp = value => value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value)) && Number.isFinite(new Date(Number(value)).getTime())
+  return (workouts || []).flatMap(w => {
+    if (!w || w.active || (activeId != null && w.id === activeId) || w.cancelled || w.canceled || ['active','cancelled','canceled'].includes(w.status) || ['cancelled','canceled'].includes(w.finishReason)) return []
+    if (!timestamp(w.start) || !timestamp(w.end) || Number(w.end) < Number(w.start)) return []
+    const paused = Number(w.pausedDurationMs ?? 0)
+    if (!Number.isFinite(paused) || paused < 0 || paused > Number(w.end)-Number(w.start)) return []
+    if (w.timerPausedAt != null && (!timestamp(w.timerPausedAt) || Number(w.timerPausedAt) < Number(w.start) || Number(w.timerPausedAt) > Number(w.end))) return []
+    const durationMs = workoutElapsedMs(w)
+    // No maximum duration: length alone cannot establish that historical data is corrupt.
+    if (!Number.isFinite(durationMs) || durationMs <= 0) return []
+    const key = w.id != null ? `id:${w.id}` : JSON.stringify([w.start,w.end,w.routineId ?? null,w.name ?? '',w.entries ?? [],paused])
+    if (seen.has(key)) return []
+    seen.add(key)
+    return [{ ...w, durationMs }]
+  })
+}
+
+export function routineDurationSummary(workouts, { routines = [], activeId, days = 0, now = Date.now() } = {}) {
+  const groups = new Map()
+  const cutoff = days > 0 ? now - days * 86400000 : -Infinity
+  for (const w of validTimedSessions(workouts, { activeId })) {
+    if (Number(w.start) < cutoff || Number(w.start) > now) continue
+    // Legacy names never merge into a known ID: two routines can have the same name.
+    const key = w.routineId != null ? `id:${w.routineId}` : `legacy:${w.name || ''}`
+    if (!groups.has(key)) groups.set(key, { key, routineId:w.routineId ?? null, name:routines.find(r=>r.id===w.routineId)?.name || w.name || '', durations:[] })
+    groups.get(key).durations.push(w.durationMs)
+  }
+  return [...groups.values()].map(({durations,...group}) => {
+    durations.sort((a,b)=>a-b)
+    const count = durations.length, mid = Math.floor(count/2)
+    return {...group,count,meanMs:durations.reduce((sum,ms)=>sum+ms,0)/count,medianMs:count%2 ? durations[mid] : (durations[mid-1]+durations[mid])/2}
+  }).sort((a,b)=>b.count-a.count || a.name.localeCompare(b.name))
 }
 
 export function sessionTimingSummary(workouts) {
@@ -54,20 +81,7 @@ export function sessionTimingSummary(workouts) {
 }
 
 export function routineConsistency(S, days = 56, now = new Date()) {
-  const safe = { ...S, routines: S.routines || [], week: S.week || {}, dayPlan: S.dayPlan || {} }
-  const end = new Date(now); end.setHours(12, 0, 0, 0); end.setDate(end.getDate() - 1)
-  const byDay = {}
-  ;(S.workouts || []).forEach(w => (byDay[w.d] = byDay[w.d] || []).push(w))
-  let planned = 0, completed = 0, missed = 0, extra = 0
-  for (let i = days - 1; i >= 0; i--) {
-    const d = new Date(end); d.setDate(end.getDate() - i)
-    const iso = isoOf(d), routineId = effectiveRoutineId(safe, iso), rows = byDay[iso] || []
-    if (routineId) {
-      planned++
-      const routine = safe.routines.find(r => r.id === routineId)
-      const matched = rows.some(w => w.routineId === routineId || (!w.routineId && routine && w.name === routine.name))
-      if (matched) completed++; else missed++
-    } else if (rows.length) extra++
-  }
-  return { planned, completed, missed, extra, rate: planned ? completed / planned : null }
+  const end = new Date(now); end.setDate(end.getDate() - 1)
+  const start = new Date(end); start.setDate(start.getDate() - days + 1)
+  return consistencyStats(S, isoOf(start), isoOf(end), now)
 }

@@ -12,13 +12,15 @@ export function workoutElapsedMs(workout, now = Date.now()) {
 
 export function pauseWorkoutClock(workout, now = Date.now()) {
   if (!workout || workout.timerPausedAt != null || workout.end != null) return workout
-  return { ...workout, timerPausedAt: n(now) }
+  const next = { ...workout, timerPausedAt: n(now) }
+  delete next.timerContinuedAt
+  return next
 }
 
 export function resumeWorkoutClock(workout, now = Date.now()) {
   if (!workout || workout.timerPausedAt == null || workout.end != null) return workout
   const pausedDurationMs = Math.max(0, n(workout.pausedDurationMs)) + Math.max(0, n(now) - n(workout.timerPausedAt))
-  const next = { ...workout, pausedDurationMs, lastMeaningfulWorkoutActivityAt: n(now) }
+  const next = { ...workout, pausedDurationMs, lastMeaningfulWorkoutActivityAt: n(now), timerContinuedAt: n(now) }
   delete next.timerPausedAt
   delete next.completedAt
   return next

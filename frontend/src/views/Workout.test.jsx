@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { parseHTML } from 'linkedom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import Workout from './Workout.jsx'
+import { workoutCompleteSheet } from '../sheets.jsx'
 
 const mocks = vi.hoisted(() => {
   const state = {
@@ -122,6 +123,23 @@ afterEach(async () => {
 })
 
 describe('Workout set completion flow', () => {
+  it('reopens the finish decision once for restored completed work, ignoring unchecked warmups', async () => {
+    await mount([exercise('restored', [false, true])], 0, S => {
+      S.active.entries[0].sets[0].phase = 'warmup'
+      S.active.timerPausedAt = Date.now()
+    })
+    expect(workoutCompleteSheet).toHaveBeenCalledOnce()
+    await act(async () => { root.render(React.createElement(Workout)) })
+    expect(workoutCompleteSheet).toHaveBeenCalledOnce()
+  })
+
+  it('does not reopen the finish decision after explicit Continue survives restore', async () => {
+    await mount([exercise('continued', [true])], 0, S => {
+      S.active.timerContinuedAt = Date.now()
+    })
+    expect(workoutCompleteSheet).not.toHaveBeenCalled()
+  })
+
   it('pauses on completion out of order and only continues after the explicit button', async () => {
     await mount([exercise('first', [false], { asked: true }), exercise('last', [true])])
     await toggleSet(0)

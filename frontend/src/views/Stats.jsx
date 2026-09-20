@@ -1,3 +1,4 @@
+import ConsistencyCard from '../components/ConsistencyCard.jsx'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
@@ -9,6 +10,7 @@ import { bwSheet, goalSheet, workoutDetailSheet, WorkoutRow, bwDeltaColor, measu
 import LineChart from '../components/LineChart.jsx'
 import Icon from '../components/Icon.jsx'
 import BodyMap, { BodyMapLegend } from '../components/BodyMap.jsx'
+import RoutineDuration from '../components/RoutineDuration.jsx'
 import { loadOfWorkouts, rankOf, MUSCLE_NAME, musclesOf } from '../lib/muscles.js'
 import { fatigueOf, strengthOf, STRENGTH_FLOOR, LB_TO_KG } from '../lib/recovery.js'
 import { strengthExerciseRowsForMuscle } from '../lib/strength-exercises.js'
@@ -312,7 +314,6 @@ export default function Stats() {
   const bwDelta30 = bw30.length > 1 ? bw30[bw30.length - 1].w - bw30[0].w : null
   const workouts = S.workouts
   const monthW = workouts.filter(w => String(w.d || '').slice(0, 7) === todayISO().slice(0, 7)).length
-  const consistency = routineConsistency(S)
   const streak = trainingStreak(S)
   const measures = [...(S.measurements || [])].sort((a, b) => a.d.localeCompare(b.d))
   const selectedMeasureKey = measures.some(m => measurementValue(m, measureKey) > 0) ? measureKey : (MEASURE_FIELDS.find(([key]) => measures.some(m => measurementValue(m, key) > 0))?.[0] || measureKey)
@@ -432,18 +433,16 @@ export default function Stats() {
 
     </div>
 
-    <div className="card"><div className="row between" style={{ marginBottom: 10 }}><h2 style={{ margin: 0 }}>{t('Routine consistency')} <span className="dim">· {t('last 8 weeks')}</span></h2><Button size="sm" icon="timer" onClick={sessionTimingSheet}>{t('Times')}</Button></div>
-      <div className="tiles"><div className="tile"><div className="l">{t('Completed')}</div><div className="v">{consistency.completed}</div><div className="small dim">{t('{0} planned', consistency.planned)}</div></div><div className="tile"><div className="l">{t('Completion')}</div><div className="v">{consistency.rate == null ? '—' : Math.round(consistency.rate * 100) + '%'}</div><div className="small dim">{t('{0} missed · {1} extra', consistency.missed, consistency.extra)}</div></div></div>
-      <div className="muted small" style={{ marginTop: 8 }}>{t('A scheduled routine counts as completed when that routine is recorded on its planned day.')}</div>
-    </div>
+    <ConsistencyCard S={S} onTimes={sessionTimingSheet} />
 
+    <RoutineDuration S={S} />
     {workouts.length > 0 && <MuscleBalance S={S} />}
     {hasEffort(S) && <EffortCard S={S} />}
 
     <div className="cols">
       <div className="card">
         <div className="row between" style={{ marginBottom: 8 }}>
-          <h2 style={{ margin: 0 }}>{t('Body weight')}</h2>
+          <h2 className="body-weight-title">{t('Body Weight')}</h2>
           <div className="row" style={{ gap: 8 }}>
             <Button size="sm" icon="target" style={S.targetW ? { color: 'var(--yellow)' } : undefined} onClick={goalSheet}>{S.targetW ? fmtNum(S.targetW) : t('Goal')}</Button>
             <Button size="sm" icon="plus" onClick={() => bwSheet()}>{t('Log')}</Button>

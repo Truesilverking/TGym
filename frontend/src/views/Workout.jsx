@@ -312,6 +312,13 @@ function ActiveWorkout() {
   const update = useStore(s => s.update)
   const { startRest, stopRest, work } = useUI()
   const A = S.active
+  // A restored paused workout needs the same finish decision as a newly checked final set.
+  const restoredDecision = useRef(false)
+  useEffect(() => {
+    if (restoredDecision.current) return
+    restoredDecision.current = true
+    if (A.timerPausedAt != null && effectiveWorkoutComplete(A)) workoutCompleteSheet()
+  }, [])
   const routine = S.routines.find(r => r.id === A.routineId) || {}
   const restFor = (idx, setIndex, phase = 'set') => restSeconds({ state: S, routine, target: A.entries[idx]?.target || {}, setIndex, warmup: isWarmupRow(A.entries[idx]?.sets?.[setIndex]), phase })
   const beginRest = sec => { if (sec > 0) startRest(sec); else stopRest() }

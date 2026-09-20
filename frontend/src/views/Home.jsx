@@ -1,17 +1,17 @@
+import ConsistencyCard from '../components/ConsistencyCard.jsx'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { effectiveRoutine, effectiveRoutineId, lastBW, setsDoneActive } from '../lib/history.js'
 import { fmtNum, fmtDate, todayISO, isoOf, weekKey, DAYS } from '../lib/format.js'
 import { t, dateLocale } from '../lib/i18n.js'
-import { bwSheet, goalSheet, dayOverrideSheet, startFlow, guidedPlansSheet, bwDeltaColor, streakDetailSheet, sessionTimingSheet } from '../sheets.jsx'
+import { bwSheet, goalSheet, dayOverrideSheet, startFlow, guidedPlansSheet, bwDeltaColor, streakDetailSheet, sessionTimingSheet, homeCalendarSheet } from '../sheets.jsx'
 import { routineMuscleSheet } from '../components/RoutineMusclePreview.jsx'
 import LineChart from '../components/LineChart.jsx'
 import Icon from '../components/Icon.jsx'
 import { Button } from '../components/ui.jsx'
 import { glyphOf } from '../lib/glyphs.js'
 import { bmiBand, bmiFor } from '../lib/stats-insights.js'
-import { routineConsistency } from '../lib/stats-insights.js'
 import { deloadStatus, streakTier, trainingStreak } from '../lib/training-plan.js'
 import StreakFlame from '../components/StreakFlame.jsx'
 
@@ -29,7 +29,6 @@ export default function Home() {
   const delta = bw && prevBW ? bw.w - prevBW.w : null
   const bmi = bmiFor(bw?.w, S.unit, S.heightCm, S.measurementUnit)
   const streak = trainingStreak(S)
-  const consistency = routineConsistency(S)
   const deload = deloadStatus(S)
 
   const monday = new Date(today); monday.setDate(today.getDate() - ((today.getDay() + 6) % 7) + weekOffset * 7)
@@ -66,7 +65,7 @@ export default function Home() {
     <div className="card">
       <div className="row between" style={{ marginBottom: 8 }}>
         <button className="iconbtn" style={{ width: 30, height: 30, fontSize: 15 }} onClick={() => setWeekOffset(w => w - 1)} aria-label="Previous week"><Icon name="chevronLeft" /></button>
-        <div className="small muted" style={{ fontWeight: 500 }}>{wkLabel}</div>
+        <button className="week-expand" onClick={() => homeCalendarSheet(monday)} aria-label={t('Expand calendar')}>{wkLabel}<Icon name="chevronRight" /></button>
         <button className="iconbtn" style={{ width: 30, height: 30, fontSize: 15 }} onClick={() => setWeekOffset(w => w + 1)} aria-label="Next week"><Icon name="chevronRight" /></button>
       </div>
       <div className="week">{strip}</div>
@@ -96,10 +95,7 @@ export default function Home() {
       </div>
     </div>
 
-    <div className="card"><div className="row between" style={{ marginBottom: 10 }}><h2 style={{ margin: 0 }}>{t('Routine consistency')} <span className="dim">· {t('last 8 weeks')}</span></h2><Button size="sm" icon="timer" onClick={sessionTimingSheet}>{t('Times')}</Button></div>
-      <div className="tiles"><div className="tile"><div className="l">{t('Completed')}</div><div className="v">{consistency.completed}</div><div className="small dim">{t('{0} planned', consistency.planned)}</div></div><div className="tile"><div className="l">{t('Completion')}</div><div className="v" style={{ color: consistency.rate == null ? 'inherit' : `color-mix(in srgb,var(--red) ${Math.round(consistency.rate * 100)}%,var(--label))` }}>{consistency.rate == null ? '—' : Math.round(consistency.rate * 100) + '%'}</div><div className="small dim">{t('{0} missed · {1} extra', consistency.missed, consistency.extra)}</div></div></div>
-      <div className="muted small" style={{ marginTop: 8 }}>{t('A scheduled routine counts as completed when that routine is recorded on its planned day.')}</div>
-    </div>
+    <ConsistencyCard S={S} onTimes={sessionTimingSheet} />
 
     {!S.routines.length && !S.active && (
       <div className="card">
@@ -115,7 +111,7 @@ export default function Home() {
 
     <div className="card">
       <div className="row between" style={{ marginBottom: 6 }}>
-        <h2 style={{ margin: 0 }}>{t('Body weight')}</h2>
+        <h2 className="body-weight-title">{t('Body Weight')}</h2>
         <div className="row" style={{ gap: 8 }}>
           <Button size="sm" icon="target" style={S.targetW ? { color: 'var(--yellow)' } : undefined} onClick={goalSheet}>{S.targetW ? fmtNum(S.targetW) : t('Goal')}</Button>
           <Button size="sm" icon="plus" onClick={() => bwSheet()}>{t('Log')}</Button>
@@ -139,7 +135,7 @@ export default function Home() {
             <span>{t('Goal')} {fmtNum(S.targetW)} {S.unit} · {Math.abs(S.targetW - bw.w) < 0.05 ? t('reached!') : t(S.targetW > bw.w ? '{0} to gain' : '{0} to lose', fmtNum(Math.abs(S.targetW - bw.w)) + ' ' + S.unit)}</span>
           </div>
         )}
-        {bmi && <div className="small row" style={{ marginTop: 6, gap: 5 }}><Icon name="scale" style={{ color: 'var(--orange)', fontSize: 13 }} /><span>{t('Current BMI')}: <b>{fmtNum(bmi)}</b> · {t(bmiBand(bmi))}</span></div>}
+        {bmi && <div className="small row" style={{ marginTop: 6, gap: 5 }}><Icon name="scale" style={{ color: 'var(--orange)', fontSize: 13 }} /><span>{t('BMI')}: <b>{fmtNum(bmi)}</b> · {t(bmiBand(bmi))}</span></div>}
         <div className="chart" style={{ marginTop: 8 }}><LineChart points={bwPoints} h={130} unit={S.unit} goal={S.targetW} /></div>
       </> : <div className="muted small">{t("No entries yet — log your weight to start the curve. It's also asked before every workout.")}</div>}
     </div>

@@ -27,11 +27,17 @@ export async function nativeLoad() {
   } catch (e) { return null }   // first launch, or unreadable — localStorage copy takes over
 }
 
-export async function nativeSave(state) {
-  try {
-    const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem')
-    await Filesystem.writeFile({ path: FILE, directory: Directory.Data, data: JSON.stringify(state), encoding: Encoding.UTF8 })
-  } catch (e) { /* keep the localStorage copy */ }
+let nativeSaveQueue = Promise.resolve()
+export function nativeSave(state) {
+  const data = JSON.stringify(state)
+  // A pending debounced write must not finish after a newer immediate clock snapshot.
+  nativeSaveQueue = nativeSaveQueue.then(async () => {
+    try {
+      const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem')
+      await Filesystem.writeFile({ path: FILE, directory: Directory.Data, data, encoding: Encoding.UTF8 })
+    } catch (e) { /* keep the localStorage copy */ }
+  })
+  return nativeSaveQueue
 }
 
 // "Connect to my server" mode (lib/remote.js): which of local-only / a paired remote account this

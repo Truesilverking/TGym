@@ -5,7 +5,17 @@ export function effectiveWorkoutComplete(active) {
   const rows = (active?.entries || []).flatMap(e=>e.sets || []).filter(s=>!isWarmupRow(s))
   return rows.length > 0 && rows.every(s=>s.done)
 }
-const activitySignature = active => JSON.stringify((active?.entries || []).map(e=>({id:e.id,sets:(e.sets || []).map(s=>({w:s.w,r:s.r,rir:s.rir,rpe:s.rpe,sec:s.sec,min:s.min,speed:s.speed,done:s.done,phase:s.phase,role:s.role,drops:s.drops,bursts:s.bursts}))})))
+// Repair at restore/background boundaries using recorded activity, never time away.
+// Explicit Continue remains running until another completion transition or inactivity.
+export function ensureWorkoutCompletionPaused(active, now=Date.now()) {
+  if (!active || active.end != null || active.timerPausedAt != null || active.timerContinuedAt != null || !effectiveWorkoutComplete(active)) return active
+  const timestamps = (active.entries || []).flatMap(e=>e.sets || []).filter(s=>!isWarmupRow(s) && s.done).map(s=>s.doneAt)
+  const recorded = [active.completedAt, ...timestamps, active.lastMeaningfulWorkoutActivityAt].filter(v=>v != null && Number.isFinite(Number(v)))
+  const start = Number(active.start) || 0
+  const at = recorded.length ? Math.max(start, ...recorded.map(Number)) : start
+  return pauseWorkoutClock(active, Math.min(now, at))
+}
+const activitySignature = active => JSON.stringify((active?.entries || []).map(e=>({id:e.id,sets:(e.sets || []).map(s=>({w:s.w,r:s.r,rir:s.rir,rpe:s.rpe,sec:s.sec,leftSec:s.leftSec,rightSec:s.rightSec,min:s.min,speed:s.speed,done:s.done,phase:s.phase,role:s.role,drops:s.drops,clusters:s.clusters,bursts:s.bursts}))})))
 // Called at the existing persistence boundary: navigation/preferences are excluded.
 export function reconcileWorkoutEdit(before, after, now=Date.now()) {
   if (!after || after.end != null) return after

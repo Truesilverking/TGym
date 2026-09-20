@@ -8,7 +8,7 @@ import { MOBILE, nativeLoad, nativeSave, syncReminder, writeAutoBackup } from '.
 import { loadRemote, chooseLocal, forgetRemote, connect } from '../lib/remote.js'
 import { shouldRestoreNative } from '../lib/native-state.js'
 import { portableState, backupChecksum } from '../lib/backup.js'
-import { reconcileWorkoutEdit } from '../lib/workout-lifecycle.js'
+import { reconcileWorkoutEdit, ensureWorkoutCompletionPaused } from '../lib/workout-lifecycle.js'
 
 const KEY = 'gym_state_v1'
 export const DEF = {
@@ -36,7 +36,16 @@ const clone = o => JSON.parse(JSON.stringify(o))
 function loadState() {
   try {
     const raw = localStorage.getItem(KEY)
-    if (raw) return Object.assign(clone(DEF), JSON.parse(raw))
+    if (raw) {
+      const S = Object.assign(clone(DEF), JSON.parse(raw))
+      const active = ensureWorkoutCompletionPaused(S.active)
+      if (active !== S.active) {
+        S.active = active
+        // Preserve freshness until boot has compared the native mirror.
+        localStorage.setItem(KEY, JSON.stringify(S))
+      }
+      return S
+    }
   } catch (e) { /* ignore */ }
   return clone(DEF)
 }
@@ -55,6 +64,8 @@ export const useStore = create((set, get) => {
   }
 
   const persist = (S, push = true) => {
+    S.active = ensureWorkoutCompletionPaused(S.active)
+    const clockChanged = S.active?.timerPausedAt !== get().S.active?.timerPausedAt || S.active?.timerContinuedAt !== get().S.active?.timerContinuedAt
     if (S.cloudSync?.on && backupChecksum(portableState(S)) !== backupChecksum(portableState(get().S))) {
       S.cloudSync = { ...S.cloudSync, dirtyAt: Date.now() }
     }
@@ -62,7 +73,14 @@ export const useStore = create((set, get) => {
     registerCustom(S.customEx)
     localStorage.setItem(KEY, JSON.stringify(S))
     set({ S })
-    if (MOBILE) nativePersist()
+    if (MOBILE) {
+      if (clockChanged) {
+        clearTimeout(saveTm)
+        saveTm = null
+        nativeSave(S)
+        syncReminder(S)
+      } else nativePersist()
+    }
     if (push && get().user) {
       clearTimeout(pushTm)
       pushTm = setTimeout(() => get().pushState(), 1500)
@@ -73,8 +91,10 @@ export const useStore = create((set, get) => {
   // (e.g. setting the reminder time then immediately backgrounding to test it). On mobile the
   // same applies to the file mirror — backgrounding is often the last thing before the OS
   // kills the app.
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState !== 'hidden') return
+  const flushOnBackground = () => {
+    const S = get().S
+    const active = ensureWorkoutCompletionPaused(S.active)
+    if (active !== S.active) persist({ ...S, active })
     if (MOBILE && saveTm) {
       clearTimeout(saveTm)
       saveTm = null
@@ -85,7 +105,11 @@ export const useStore = create((set, get) => {
       pushTm = null
       get().pushState()
     }
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') flushOnBackground()
   })
+  window.addEventListener('pagehide', flushOnBackground)
 
   // Everything a sign-out leaves behind on this device, whichever way it was triggered.
   const clearLocalSession = () => {

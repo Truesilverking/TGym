@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { bmiBand, bmiFor, measurementValue, routineConsistency, sessionTimingSummary, validTimedSessions } from './stats-insights.js'
+import { bmiBand, bmiFor, measurementValue, routineConsistency, routineDurationSummary, sessionTimingSummary, validTimedSessions } from './stats-insights.js'
 
 describe('body and session insights', () => {
   it('keeps legacy one-side measurements readable as left and right', () => {
@@ -12,9 +12,9 @@ describe('body and session insights', () => {
     expect(bmiBand(24.7)).toBe('Healthy range')
   })
 
-  it('ignores missing and implausibly long timers', () => {
+  it('ignores missing timers without rejecting valid long sessions', () => {
     const start = new Date(2026, 7, 1, 18, 0).getTime()
-    expect(validTimedSessions([{ start, end: start + 60 * 60000 }, { start, end: start + 14 * 3600000 }, { start }])).toHaveLength(1)
+    expect(validTimedSessions([{ start, end: start + 60 * 60000 }, { start, end: start + 14 * 3600000 }, { start }])).toHaveLength(2)
   })
 
   it('summarises duration and a usual start time across midnight', () => {
@@ -32,5 +32,32 @@ describe('body and session insights', () => {
     }
     const result = routineConsistency(S, 7, new Date(2026, 7, 31, 12))
     expect(result).toMatchObject({ planned: 1, completed: 1, missed: 0, extra: 1, rate: 1 })
+  })
+})
+
+describe('routine duration from corrected history', () => {
+  const min=60000, now=Date.UTC(2026,8,20)
+  const w=(id,routineId,duration,name='Upper')=>({id,routineId,name,start:now-86400000,end:now-86400000+duration*min})
+  it('groups by ID through renames and keeps same-name routines distinct', () => {
+    const rows=routineDurationSummary([w('a','r1',60,'Old'),w('b','r1',90),w('c','r2',45),w('d',null,30)],{now,routines:[{id:'r1',name:'Renamed'}]})
+    expect(rows).toHaveLength(3)
+    expect(rows[0]).toMatchObject({routineId:'r1',name:'Renamed',count:2,meanMs:75*min,medianMs:75*min})
+  })
+  it('uses paused duration and includes corrected inactivity completion', () => {
+    const a={...w('a','r',100),pausedDurationMs:40*min}
+    const b={...w('b','r',72),finishReason:'inactivity'}
+    expect(routineDurationSummary([a,b],{now})[0]).toMatchObject({count:2,meanMs:66*min,medianMs:66*min})
+  })
+  it('excludes active, cancelled, duplicate and technically invalid records', () => {
+    const a=w('a','r',60)
+    const rows=[a,{...a},w('active','r',90),{...w('cancel','r',30),cancelled:true},{start:now},w('negative','r',-1),{...w('pause','r',10),pausedDurationMs:11*min},{...w('nan','r',10),start:'bad'},{...w('blank','r',10),start:''},{...w('inf','r',10),end:Infinity}]
+    expect(validTimedSessions(rows,{activeId:'active'}).map(w=>w.id)).toEqual(['a'])
+  })
+  it('deduplicates ID-less imports and computes odd median and the selected period', () => {
+    const a=w(undefined,null,30), old={...w('old','r',60),start:now-100*86400000,end:now-100*86400000+60*min}
+    expect(validTimedSessions([a,{...a}])).toHaveLength(1)
+    const rows=routineDurationSummary([w('a','r',30),w('b','r',60),w('c','r',120),old],{now,days:90})
+    expect(rows[0]).toMatchObject({count:3,meanMs:70*min,medianMs:60*min})
+    expect(routineDurationSummary([old],{now,days:0})[0].count).toBe(1)
   })
 })

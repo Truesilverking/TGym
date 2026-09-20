@@ -181,7 +181,8 @@ body.resting #app{padding-bottom:calc(250px + var(--sab))}
 #app.vfade{animation:viewfade var(--med) var(--ease)}
 
 /* large title, the way a nav bar does it */
-.hdr{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin:8px 0 18px}
+.hdr{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin:8px 0 18px}
+.hdr > div{min-width:0}
 .hdr h1{font-size:34px;line-height:1.06;font-weight:700;letter-spacing:-.028em}
 .hdr .sub{color:var(--label-2);font-size:15px;letter-spacing:-.006em;margin-top:4px}
 .hdr-centered{display:grid;grid-template-columns:36px minmax(0,1fr) 36px;align-items:center}
@@ -1095,3 +1096,10 @@ body.framegym-private::after{
 .zoomcal-day.deload { box-shadow: inset 0 -4px #b887ff; }
 .zoomcal-mini-month i.deload { box-shadow: inset 0 -2px #b887ff; }
 .deload-calendar-label { color: #b887ff; margin: 8px 0; }
+/* Routine duration keeps names readable and metrics aligned on narrow phones. */
+.routine-duration-list { list-style: none; margin: 12px 0 0; padding: 0; }
+.routine-duration-list li { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, auto); align-items: center; gap: 12px; padding: 12px 0; }
+.routine-duration-list li + li { border-top: 1px solid var(--sep); }
+.routine-duration-name, .routine-duration-value { display: flex; flex-direction: column; gap: 4px; min-width: 0; overflow-wrap: anywhere; }
+.routine-duration-value { text-align: end; font-variant-numeric: tabular-nums; }
+.routine-duration-value > strong { font-size: 1.15rem; }

@@ -1,5 +1,10 @@
 // Explicit source-language fallback. Entries in language packs override these values.
 export default {
+"Routine duration": "Routine duration",
+"Average duration by routine from completed workouts.": "Average duration by routine from completed workouts.",
+"Median: {0}": "Median: {0}",
+"No completed workouts with a valid duration in this period.": "No completed workouts with a valid duration in this period.",
+"Only completed, unique sessions with valid recorded durations are included. Long sessions are not excluded just for their length.": "Only completed, unique sessions with valid recorded durations are included. Long sessions are not excluded just for their length.",
 "Deload follows your cycle from Monday. Saved workouts stay unchanged. Alerts use your reminder time and respect quiet hours.": "Deload follows your cycle from Monday. Saved workouts stay unchanged. Alerts use your reminder time and respect quiet hours.",
 "Deload alerts": "Deload alerts",
 "One day before and on the first day.": "One day before and on the first day.",

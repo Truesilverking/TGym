@@ -1461,7 +1461,7 @@ function SessionTiming() {
       <div className="list">{[...summary.sessions].reverse().slice(0, 30).map(w => <div className="item" key={w.id || w.start} onClick={() => workoutDetailSheet(w)}>
         <span className="lrow-i"><Icon name="clock" /></span><div className="grow"><div className="tt">{w.name}</div><div className="ss">{fmtDate(w.d, true)} · {clockAt(w.start)}–{clockAt(w.end)}</div></div><span className="tag nocap">{fmtDur(w.durationMs)}</span>
       </div>)}</div>
-      <div className="small dim" style={{ marginTop: 10 }}>{t('Sessions shorter than one minute or longer than twelve hours stay in history but are excluded from these averages.')}</div>
+      <div className="small dim" style={{ marginTop: 10 }}>{t('Only completed, unique sessions with valid recorded durations are included. Long sessions are not excluded just for their length.')}</div>
     </>}
   </>
 }
@@ -1668,9 +1668,12 @@ function WorkoutComplete({ close }) {
     <Button onClick={() => { resumeActiveWorkoutClock(); close(); useUI.getState().toast(t('Keep going — tap “+ Add exercise” below')) }}>{t('Continue workout')}</Button>
   </div>
 }
+let completionDecision = null
 export const workoutCompleteSheet = () => {
+  if (completionDecision && ui().sheets.some(sheet=>sheet.id===completionDecision.id)) return completionDecision
   pauseActiveWorkoutClock()
-  ui().openSheet(close => <WorkoutComplete close={close} />, { kind: 'center' })
+  completionDecision = ui().openSheet(close => <WorkoutComplete close={close} />, { kind: 'center', onClose:()=>{completionDecision=null} })
+  return completionDecision
 }
 export function inactivityWarningSheet() {
   return ui().openSheet(close=><><h3>{t('Still training?')}</h3><p>{t('No activity has been recorded for a while.')}</p><Button onClick={()=>{update(s=>{if(s.active)s.active.lastMeaningfulWorkoutActivityAt=Date.now()});close()}}>{t('Continue workout')}</Button><Button onClick={()=>{close();finishWorkout()}}>{t('Finish workout')}</Button></>)
