@@ -595,6 +595,7 @@ export default {
   "Next": "Next",
   "Next milestone": "Next milestone",
   "Next scheduled workout": "Next scheduled workout",
+  "No upcoming workout": "No upcoming workout",
   "Nice!": "Nice!",
   "No InBody results in this period": "No InBody results in this period",
   "No account or server is required. Use JSON backups to move your data.": "No account or server is required. Use JSON backups to move your data.",

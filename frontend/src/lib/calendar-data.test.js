@@ -14,6 +14,6 @@ describe('calendar export periods', () => {
   it('handles leap years and filenames', () => {
     expect(calendarPeriod(state,new Date(2024,1,10),'month').days).toHaveLength(29)
     expect(calendarPeriod(state,new Date(2024,1,10),'year').days).toHaveLength(366)
-    expect(calendarFilename('full','2026-01-01','2026-12-31','pdf')).toBe('TGym-Training-Calendar-Report-2026.pdf')
+    expect(calendarFilename('full','2026-01-01','2026-12-31','pdf')).toBe('TGym-Consistency-Report-2026.pdf')
   })
 })

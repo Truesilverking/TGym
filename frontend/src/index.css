@@ -1103,3 +1103,23 @@ body.framegym-private::after{
 .routine-duration-name, .routine-duration-value { display: flex; flex-direction: column; gap: 4px; min-width: 0; overflow-wrap: anywhere; }
 .routine-duration-value { text-align: end; font-variant-numeric: tabular-nums; }
 .routine-duration-value > strong { font-size: 1.15rem; }
+
+/* Prompt 1 Updates */
+.zoomcal-routine { display: block !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; min-height: auto !important; margin-top: 4px !important; }
+.zoomcal-legend i.deload { background: var(--purple, #b887ff) !important; }
+.zoomcal-actions-row { display: flex; gap: 8px; margin-top: 8px; }
+.zoomcal-actions-row button { flex: 1; }
+.zoomcal-export-wrap { display: flex; justify-content: center; margin-top: 12px; }
+.streak-main-label { font-size: clamp(12px, 4vw, 15px) !important; white-space: nowrap !important; }
+.recent-streak-item .lrow-i { align-self: center !important; }
+/* Prompt 2 CSS Overrides */
+.header-streak { width: auto; min-width: 72px; height: 48px; padding: 0 12px; gap: 6px; }
+.header-streak b { font-size: 24px !important; }
+.header-streak .streak-flame { width: 30px !important; height: 30px !important; }
+.consistency-card h2, .body-weight-title { font-size: 26px !important; font-weight: 800 !important; line-height: 1.1; margin-bottom: 2px; }
+.consistency-metrics { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 16px; }
+.consistency-metrics > div { display: flex; flex-direction: column-reverse; align-items: flex-start; }
+.consistency-metrics dt { font-size: 15px; color: var(--label-2); margin-top: 2px; font-weight: 500; }
+.consistency-metrics dd { font-size: 38px; font-weight: 800; line-height: 1; margin: 0; }
+.times-action { font-size: 15px !important; padding: 6px 12px !important; }
+
