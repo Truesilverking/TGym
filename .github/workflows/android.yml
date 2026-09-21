@@ -26,7 +26,9 @@ jobs:
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
-        run: node frontend/scripts/notify-release.mjs --validate
+        run: |
+          export UPDATE_VERSION="$(node -p "require('./frontend/package.json').version")"
+          node frontend/scripts/notify-release.mjs --validate
       - name: Configure Firebase
         env:
           CONFIG: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
