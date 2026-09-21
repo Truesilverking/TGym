@@ -13,7 +13,8 @@ if(!tokenResponse.ok) throw new Error(`Firebase OAuth failed (HTTP ${tokenRespon
 const {access_token:token}=await tokenResponse.json()
 if(!token) throw new Error('Firebase returned no token')
 const validate = process.argv.includes('--validate')
-const version = (process.env.GITHUB_REF_NAME || '').replace(/^v/,'')
+const version = (process.env.UPDATE_VERSION || process.env.GITHUB_REF_NAME || '').replace(/^v/,'')
+if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version)) throw new Error('Missing or invalid update version')
 const body={validate_only:validate,message:{topic:'tgym_updates',notification:{title:`TGym ${version} available`,body:'A new TGym update is ready.'},data:{type:'app_update',version},android:{priority:'HIGH',notification:{channel_id:'tgym_updates',tag:'tgym-update'}}}}
 const response = await fetch(`https://fcm.googleapis.com/v1/projects/${encodeURIComponent(project)}/messages:send`,{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify(body)})
 if(!response.ok) {

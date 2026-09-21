@@ -24,6 +24,10 @@ Keep the same Android signing key for every release. Losing or changing it preve
 
 Android's `google-services.json` is project configuration; configure FCM for package `app.framegym.mobile`. Devices must be subscribed to `tgym_updates` by the native notification setup. iOS uses APNs through Firebase or its configured App Store/TestFlight channel; GitHub does not install an IPA.
 
+## Resending a missed Android notification
+
+Run **Resend Android update notification** from GitHub Actions. It reads the already-published `latest.json`, verifies that its APK is reachable, confirms the sender project matches the Android Firebase configuration and sends only to the native `tgym_updates` topic. It does not create or modify a release, and the manifest remains the source of truth.
+
 ## Pages and rollback
 
 Enable GitHub Pages with **GitHub Actions** as its source. To roll back, publish a new higher patch version/versionCode containing the reverted code. Do not move an existing release tag or lower Android's versionCode. Mark a bad release as a prerelease and remove its download links only after the replacement exists.

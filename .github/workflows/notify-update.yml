@@ -1,0 +1,53 @@
+name: Resend Android update notification
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[resend-android-update]')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate Firebase audience
+        env:
+          GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+        shell: bash
+        run: |
+          test -n "$GOOGLE_SERVICES_JSON_BASE64" || { echo "Missing GOOGLE_SERVICES_JSON_BASE64"; exit 1; }
+          test -n "$FIREBASE_PROJECT_ID" || { echo "Missing FIREBASE_PROJECT_ID"; exit 1; }
+          printf '%s' "$GOOGLE_SERVICES_JSON_BASE64" | base64 --decode > "$RUNNER_TEMP/google-services.json"
+          test "$(jq -er '.project_info.project_id' "$RUNNER_TEMP/google-services.json")" = "$FIREBASE_PROJECT_ID" || { echo "Firebase sender and Android app use different projects"; exit 1; }
+          jq -e '.client[] | select(.client_info.android_client_info.package_name == "app.framegym.mobile")' "$RUNNER_TEMP/google-services.json" >/dev/null
+      - name: Read published Android update
+        id: update
+        env:
+          REPOSITORY: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        shell: bash
+        run: |
+          OWNER="${REPOSITORY%%/*}"
+          NAME="${REPOSITORY#*/}"
+          URL="https://${OWNER,,}.github.io/${NAME}/updates/latest.json?check=${RUN_ID}"
+          curl --fail --silent --show-error "$URL" -o "$RUNNER_TEMP/latest.json"
+          VERSION="$(jq -er '.version' "$RUNNER_TEMP/latest.json")"
+          APK="$(jq -er '.android.apk' "$RUNNER_TEMP/latest.json")"
+          test "$(jq -er '.versionCode' "$RUNNER_TEMP/latest.json")" -gt 0
+          test "$APK" = "https://github.com/${REPOSITORY}/releases/download/v${VERSION}/TGym-Android-v${VERSION}.apk"
+          curl --fail --location --silent --show-error --range 0-0 "$APK" -o /dev/null
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+      - name: Notify Android update topic
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          UPDATE_VERSION: ${{ steps.update.outputs.version }}
+        run: node frontend/scripts/notify-release.mjs
