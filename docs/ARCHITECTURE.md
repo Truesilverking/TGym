@@ -1,6 +1,6 @@
 # TGym architecture
 
-Source audit baseline: commit `56e1c8b`, with local `feature/workout-duration` changes reviewed on 2026-09-20. These changes have not been committed or published.
+Source audit baseline: `56e1c8b`; timer/calendar changes integrated through `286bad7`, followed by the independent release audit. See `docs/RELEASE-AUDIT-1.15.19.md` for current evidence and limitations.
 
 ## Repository and runtime
 
@@ -55,7 +55,7 @@ Progression supports off, linear, Greyskull, double and timed modes. Warmups and
 
 ## Calendar, history and statistics
 
-The shared calendar sheet supports week/month/multiple-month/year views, date scheduling, deload context and measurement reminders. Calendar export renders image/PDF material through html-to-image/jsPDF. Calendar day completion can mean any workout that day, while routine consistency matches the scheduled routine (ID, or a legacy name fallback); these are different metrics.
+The shared calendar sheet supports week/month/multiple-month/year views, date scheduling, deload context and measurement reminders. Calendar export uses dedicated SVG report pages, rasterized at 2x and fitted proportionally into jsPDF pages. Year PDFs have three four-month pages; full reports add a twelve-month overview. Calendar day completion can mean any workout that day, while routine consistency matches the scheduled routine (ID, or a legacy name fallback); these are different metrics.
 
 History feeds statistics, progression and workout detail. Routine consistency examines planned/completed/missed/extra sessions over its window. Other cards derive streak/frequency, exercise/muscle effort, bodyweight and measurement trends. Time summaries use the shared clock. `validTimedSessions` requires finite recorded start/end, a positive elapsed duration and consistent pause bounds; it excludes active/cancelled and duplicate sessions. Valid long sessions and sub-minute sessions are retained. IDs deduplicate records, with a content-based fallback for ID-less imports.
 
@@ -71,7 +71,7 @@ Google Drive backup uses app-data access, a backup file and bounded daily snapsh
 
 ## Android and notifications
 
-Native code is under `frontend/android/app/src/main/`. Application/namespace identity remains `app.framegym.mobile`; the product name is TGym. Baseline version is 1.15.18, versionCode 53; min SDK 23, compile/target SDK 35, Gradle 8.11.1 and CI JDK 21.
+Native code is under `frontend/android/app/src/main/`. Application/namespace identity remains `app.framegym.mobile`; the product name is TGym. Release candidate version is 1.15.19, versionCode 54; min SDK 23, compile/target SDK 35, Gradle 8.11.1 and CI JDK 21.
 
 `MainActivity` registers Google Drive authentication, update push, installer and workout notification bridges. The foreground workout service uses native chronometers and persisted notification state. Notification taps target the activity with `tgym://workout`; React handles that navigation. This is not proof of a general externally browsable deep-link manifest filter.
 
@@ -101,4 +101,4 @@ Use pnpm's frozen lockfile for frontend work to match CI; do not arbitrarily upd
 
 The initial final Android attempt failed with `SDK location not found`. The coordinator subsequently verified the final build using `--no-daemon`, User SDK/JDK variables and the Windows certificate-root configuration. Its log was read during the prompt audit: `BUILD SUCCESSFUL in 25s`, 186 tasks (20 executed, 166 up-to-date). This supersedes the Android compilation blocker. Visual/device checks remain pending; no visual matrix was marked passed.
 
-The subsequent audit of the user's Prompt 1 and Prompt 2 found their calendar/Home/Stats redesign incomplete. Existing timer/RoutineDuration work does not implement those prompts: next-scheduled selection still ignores completion, weekly measurement labels and two-line routine names remain, Home's This week label is not expandable, and calendar export still has separate consistency calculations and includes secondary content. Publication remains conditional on completing and verifying those requirements.
+The Prompt 1/2 audit led to shared ConsistencyCard and consistency calculations, matching the scheduled routine by stable ID with a legacy name fallback. Completion is completed / (completed + missed); today and future pending days are excluded from the denominator. Next scheduled selection skips completed scheduled work. Home opens the shared Week/Month calendar; legends, truncation and report exports have component and data coverage. Browser-based visual acceptance was explicitly removed from the publication gate by the user after Computer Use failed.
