@@ -90,16 +90,17 @@ jobs:
           jarsigner -verify "frontend/release/TGym-Android-v${VERSION}.aab"
           OWNER="${GITHUB_REPOSITORY%%/*}"
           NAME="${GITHUB_REPOSITORY#*/}"
-          jq -n --arg version "$VERSION" --argjson code "$CODE" --arg sha "$APK_SHA" --arg cert "$CERT_SHA" --arg commit "$GITHUB_SHA" --arg owner "$OWNER" --arg name "$NAME" --arg at "$(date -u +%FT%TZ)" '{version:$version,commit:$commit,versionCode:$code,publishedAt:$at,minimumVersion:null,mandatory:false,title:("TGym "+$version),notes:[],android:{apk:("https://github.com/"+$owner+"/"+$name+"/releases/download/v"+$version+"/TGym-Android-v"+$version+".apk"),playStore:null,sha256:$sha,certificateSha256:$cert},ios:{appStore:null}}' > frontend/updates/latest.json
+          jq -n --arg version "$VERSION" --argjson code "$CODE" --arg sha "$APK_SHA" --arg cert "$CERT_SHA" --arg commit "$GITHUB_SHA" --arg owner "$OWNER" --arg name "$NAME" --arg pwaVersion "$(jq -er '.pwa.version // .version' "$RUNNER_TEMP/tgym-previous.json")" --arg pwaCommit "$(jq -er '.pwa.sourceCommit // .commit' "$RUNNER_TEMP/tgym-previous.json")" --arg at "$(date -u +%FT%TZ)" '{version:$version,commit:$commit,versionCode:$code,publishedAt:$at,pwa:{version:$pwaVersion,sourceCommit:$pwaCommit},minimumVersion:null,mandatory:false,title:("TGym "+$version),notes:[],android:{apk:("https://github.com/"+$owner+"/"+$name+"/releases/download/v"+$version+"/TGym-Android-v"+$version+".apk"),playStore:null,sha256:$sha,certificateSha256:$cert},ios:{appStore:null}}' > frontend/updates/latest.json
       # Independent PWA migration: retain its published source/version and patch only
       # update discovery. The Android release must not ship the new native UI to PWA.
       - name: Build isolated PWA updater migration
         shell: bash
         run: |
-          PREVIOUS_COMMIT="$(jq -er '.commit' "$RUNNER_TEMP/tgym-previous.json")"
+          PREVIOUS_COMMIT="$(jq -er '.pwa.sourceCommit // .commit' "$RUNNER_TEMP/tgym-previous.json")"
           test "$(git rev-parse "${PREVIOUS_COMMIT}^{commit}")" = "$PREVIOUS_COMMIT"
           git worktree add --detach "$RUNNER_TEMP/tgym-pwa" "$PREVIOUS_COMMIT"
           cp frontend/src/lib/app-update.js "$RUNNER_TEMP/tgym-pwa/frontend/src/lib/app-update.js"
+          cp frontend/src/components/AppUpdate.jsx "$RUNNER_TEMP/tgym-pwa/frontend/src/components/AppUpdate.jsx"
           cp frontend/public/sw.js "$RUNNER_TEMP/tgym-pwa/frontend/public/sw.js"
           cd "$RUNNER_TEMP/tgym-pwa/frontend"
           pnpm install --frozen-lockfile
@@ -120,7 +121,7 @@ jobs:
           OWNER="${GITHUB_REPOSITORY%%/*}"
           NAME="${GITHUB_REPOSITORY#*/}"
           curl --fail --silent --show-error "https://${OWNER,,}.github.io/${NAME}/build.json?check=${GITHUB_RUN_ID}" -o "$RUNNER_TEMP/tgym-pwa-build.json"
-          test "$(jq -er '.version' "$RUNNER_TEMP/tgym-pwa-build.json")" = "$(jq -er '.version' "$RUNNER_TEMP/tgym-previous.json")"
+          test "$(jq -er '.version' "$RUNNER_TEMP/tgym-pwa-build.json")" = "$(jq -er '.pwa.version // .version' "$RUNNER_TEMP/tgym-previous.json")"
           test "$(jq -er '.commit' "$RUNNER_TEMP/tgym-pwa-build.json")" = "$GITHUB_SHA"
       - uses: softprops/action-gh-release@v2
         with:

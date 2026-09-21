@@ -10,6 +10,7 @@ import { createBackup } from '../lib/backup.js'
 import { initializeUpdatePush } from '../lib/update-push.js'
 
 const Installer = registerPlugin('AppInstaller')
+const distribution = Capacitor.isNativePlatform() ? APP_DISTRIBUTION : 'pwa'
 async function snapshotBeforeUpdate() {
   const data = JSON.stringify(createBackup(useStore.getState().S))
   if (Capacitor.isNativePlatform()) {
@@ -31,11 +32,11 @@ function UpdateDialog({manifest, close}) {
     setBusy(true); setError('')
     try {
       await snapshotBeforeUpdate()
-      if (APP_DISTRIBUTION === 'github' && Capacitor.getPlatform() === 'android') {
+      if (distribution === 'github' && Capacitor.getPlatform() === 'android') {
         const result = permission ? await Installer.resumeInstall() : await Installer.install({url: manifest.android.apk, sha256:manifest.android.sha256, versionCode:manifest.versionCode})
         setPermission(!!result.permissionRequired)
         if (result.installerOpened) close()
-      } else if (APP_DISTRIBUTION === 'pwa') {
+      } else if (distribution === 'pwa') {
         const reg = await navigator.serviceWorker?.getRegistration()
         await reg?.update()
         if (reg?.waiting) {
@@ -43,7 +44,7 @@ function UpdateDialog({manifest, close}) {
           reg.waiting.postMessage({type:'SKIP_WAITING'})
         } else location.reload()
       } else {
-        const url = updateUrlFor(manifest)
+        const url = updateUrlFor(manifest, distribution)
         if (!url) throw new Error('Update unavailable')
         const { Browser } = await import('@capacitor/browser')
         await Browser.open({url}); close()
@@ -57,7 +58,7 @@ function UpdateDialog({manifest, close}) {
     {permission && <p>{t('Allow updates from TGym in Android settings, then return and tap Update.')}</p>}
     {error && <p role="alert">{error}</p>}
     <Button variant="primary" disabled={busy} onClick={install}>{busy ? `${t('Working…')} ${percent}%` : t('Update')}</Button>
-    {!manifest.mandatory && <Button disabled={busy} onClick={() => {dismissUpdate(manifest.version); close()}}>{t('Later')}</Button>}
+    {!manifest.mandatory && <Button disabled={busy} onClick={() => {dismissUpdate(manifest.version, distribution); close()}}>{t('Later')}</Button>}
   </>
 }
 let visibleVersion = null
@@ -67,14 +68,14 @@ export function showUpdateSheet(manifest) {
   useUI.getState().openSheet(close => <UpdateDialog manifest={manifest} close={close} />, {onClose: () => {visibleVersion = null}})
 }
 export async function manualUpdateCheck() {
-  const result = await checkForAppUpdate({force:true})
+  const result = await checkForAppUpdate({force:true, distribution})
   if (result.update) showUpdateSheet(result.update)
   else useUI.getState().toast(t('TGym is up to date.'))
 }
 export default function AppUpdate() {
   useEffect(() => {
     let gone = false, stopPush = () => {}
-    const check = (force = false) => checkForAppUpdate({force}).then(r => {if (!gone && r.update) showUpdateSheet(r.update)}).catch(() => {})
+    const check = (force = false) => checkForAppUpdate({force, distribution}).then(r => {if (!gone && r.update) showUpdateSheet(r.update)}).catch(() => {})
     // Native builds check immediately on launch, bypassing the background interval throttle.
     // The four-hour interval still limits subsequent automatic checks while the app remains open.
     void check(Capacitor.isNativePlatform())

@@ -64,4 +64,4 @@ export async function checkForAppUpdate({ currentVersion = __APP_VERSION__, forc
   const dismissed = localStorage.getItem(dismissedKey)
   return { throttled: false, manifest, update: updateAvailable(currentVersion, manifest) && (force || dismissed !== manifest.version) ? manifest : null }
 }
-export const dismissUpdate = version => localStorage.setItem(APP_DISTRIBUTION === 'pwa' ? 'tgym_pwa_update_dismissed' : 'tgym_update_dismissed', version)
+export const dismissUpdate = (version, distribution = APP_DISTRIBUTION) => localStorage.setItem(distribution === 'pwa' ? 'tgym_pwa_update_dismissed' : 'tgym_update_dismissed', version)
