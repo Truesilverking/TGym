@@ -562,7 +562,8 @@ function ActiveWorkout() {
       const tot = A2.entries.reduce((n, e) => n + e.sets.length, 0)
       api('/api/activity', { method: 'POST', body: JSON.stringify({
         active, name: A2.name, exIdx: ui + 1, exTotal: u.length,
-        setsDone: setsDoneActive(A2), setsTotal: tot, startedAt: A2.start
+        setsDone: setsDoneActive(A2), setsTotal: tot, startedAt: A2.start,
+        pausedDurationMs: A2.pausedDurationMs || 0, timerPausedAt: A2.timerPausedAt ?? null
       }) }).catch(() => {})
     }
     ping(true)

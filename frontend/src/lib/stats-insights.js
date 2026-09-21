@@ -26,12 +26,12 @@ export function bmiBand(value) {
   return 'Obesity range'
 }
 
-export function validTimedSessions(workouts, { activeId } = {}) {
+export function validTimedSessions(workouts, { activeId, now = Date.now() } = {}) {
   const seen = new Set()
-  const timestamp = value => value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value)) && Number.isFinite(new Date(Number(value)).getTime())
+  const timestamp = value => (typeof value === 'number' || (typeof value === 'string' && value.trim() !== '')) && Number.isFinite(Number(value)) && Number.isFinite(new Date(Number(value)).getTime())
   return (workouts || []).flatMap(w => {
     if (!w || w.active || (activeId != null && w.id === activeId) || w.cancelled || w.canceled || ['active','cancelled','canceled'].includes(w.status) || ['cancelled','canceled'].includes(w.finishReason)) return []
-    if (!timestamp(w.start) || !timestamp(w.end) || Number(w.end) < Number(w.start)) return []
+    if (!timestamp(w.start) || !timestamp(w.end) || Number(w.end) < Number(w.start) || Number(w.end) > now) return []
     const paused = Number(w.pausedDurationMs ?? 0)
     if (!Number.isFinite(paused) || paused < 0 || paused > Number(w.end)-Number(w.start)) return []
     if (w.timerPausedAt != null && (!timestamp(w.timerPausedAt) || Number(w.timerPausedAt) < Number(w.start) || Number(w.timerPausedAt) > Number(w.end))) return []
@@ -48,7 +48,7 @@ export function validTimedSessions(workouts, { activeId } = {}) {
 export function routineDurationSummary(workouts, { routines = [], activeId, days = 0, now = Date.now() } = {}) {
   const groups = new Map()
   const cutoff = days > 0 ? now - days * 86400000 : -Infinity
-  for (const w of validTimedSessions(workouts, { activeId })) {
+  for (const w of validTimedSessions(workouts, { activeId, now })) {
     if (Number(w.start) < cutoff || Number(w.start) > now) continue
     // Legacy names never merge into a known ID: two routines can have the same name.
     const key = w.routineId != null ? `id:${w.routineId}` : `legacy:${w.name || ''}`

@@ -3,6 +3,11 @@ import { calendarPeriod, calendarFilename } from './calendar-data.js'
 const state = { workouts: [{ d:'2026-09-02', name:'Upper' }], routines:[{id:'r',name:'Upper'}], week:{3:'r',4:'r'}, dayPlan:{} }
 afterEach(() => vi.useRealTimers())
 describe('calendar export periods', () => {
+  it('uses the supplied report date for both cell status and summary', () => {
+    const result = calendarPeriod(state, new Date(2026,8,2), 'week', new Date(2026,8,2,12))
+    expect(result.days.find(d => d.iso === '2026-09-03').status).toBe('pending')
+    expect(result.stats.pending).toBe(1)
+  })
   it('exports seven Monday to Sunday days without changing input', () => {
     vi.useFakeTimers(); vi.setSystemTime(new Date(2026,8,2,12))
     const before = JSON.stringify(state)

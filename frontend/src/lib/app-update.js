@@ -41,9 +41,14 @@ export function updateUrlFor(manifest, distribution = APP_DISTRIBUTION) {
   if (distribution === 'ios') return manifest.ios.appStore
   return distribution === 'github' ? manifest.android.apk : null
 }
-export async function checkForAppUpdate({ currentVersion = __APP_VERSION__, force = false, fetcher = fetch, now = Date.now(), manifestUrl = UPDATE_MANIFEST_URL } = {}) {
+export async function checkForAppUpdate({ currentVersion = __APP_VERSION__, force = false, fetcher = fetch, now = Date.now(), manifestUrl = UPDATE_MANIFEST_URL, distribution = APP_DISTRIBUTION } = {}) {
+  const pwa = distribution === 'pwa'
+  // Web checks only its own deployed build, never an Android release manifest.
+  if (pwa) manifestUrl = new URL('build.json', document.baseURI).href
   if (!manifestUrl) throw new Error('update_not_configured')
-  const last = Number(localStorage.getItem('tgym_update_checked_at') || 0)
+  const checkedKey = pwa ? 'tgym_pwa_update_checked_at' : 'tgym_update_checked_at'
+  const dismissedKey = pwa ? 'tgym_pwa_update_dismissed' : 'tgym_update_dismissed'
+  const last = Number(localStorage.getItem(checkedKey) || 0)
   // Check every four hours automatically. The manifest is fetched with no-store, and the
   // foreground listener still prevents repeated prompts while manual checks bypass this limit.
   if (!force && now - last < 4 * 60 * 60 * 1000) return { throttled: true, update: null }
@@ -53,9 +58,10 @@ export async function checkForAppUpdate({ currentVersion = __APP_VERSION__, forc
   const separator = manifestUrl.includes('?') ? '&' : '?'
   const response = await fetcher(`${manifestUrl}${separator}check=${now}`, { cache: 'no-store' })
   if (!response.ok) throw new Error('update_check_failed')
-  const manifest = parseUpdateManifest(await response.json())
-  localStorage.setItem('tgym_update_checked_at', String(now))
-  const dismissed = localStorage.getItem('tgym_update_dismissed')
+  const raw = await response.json()
+  const manifest = pwa ? parseUpdateManifest({version:raw.version, versionCode:0}) : parseUpdateManifest(raw)
+  localStorage.setItem(checkedKey, String(now))
+  const dismissed = localStorage.getItem(dismissedKey)
   return { throttled: false, manifest, update: updateAvailable(currentVersion, manifest) && (force || dismissed !== manifest.version) ? manifest : null }
 }
-export const dismissUpdate = version => localStorage.setItem('tgym_update_dismissed', version)
+export const dismissUpdate = version => localStorage.setItem(APP_DISTRIBUTION === 'pwa' ? 'tgym_pwa_update_dismissed' : 'tgym_update_dismissed', version)

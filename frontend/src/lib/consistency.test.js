@@ -39,6 +39,12 @@ describe('shared consistency', () => {
 })
 
 describe('next scheduled workout', () => {
+  it('ignores malformed, explicitly active and duplicate rows', () => {
+    const S = base(); S.week = {6:'r'}
+    S.workouts = [null, {id:'active',active:true,d:'2026-09-26',routineId:'r'}, {id:'extra',d:'2026-09-26',routineId:'other'}, {id:'extra',d:'2026-09-26',routineId:'other'}]
+    expect(consistencyStats(S,'2026-09-26','2026-09-26',now)).toMatchObject({completed:0,extra:1,pending:1})
+    expect(nextScheduledWorkout(S,now)).toBe('2026-09-26')
+  })
   it('shows pending today then immediately advances after matching completion, skipping rest', () => {
     const S = base(); S.week = { 6: 'r', 1: 'r' }
     expect(nextScheduledWorkout(S, now)).toBe('2026-09-26')

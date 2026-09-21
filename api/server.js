@@ -812,6 +812,8 @@ const routes = {
         exIdx: +body.exIdx || 0, exTotal: +body.exTotal || 0,
         setsDone: +body.setsDone || 0, setsTotal: +body.setsTotal || 0,
         startedAt: +body.startedAt || Date.now(),
+        pausedDurationMs: Number.isFinite(body.pausedDurationMs) ? Math.max(0, body.pausedDurationMs) : 0,
+        timerPausedAt: Number.isFinite(body.timerPausedAt) ? body.timerPausedAt : null,
         updatedAt: Date.now()
       });
     } else presence.delete(user.id);

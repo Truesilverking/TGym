@@ -1,10 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-const mocks=vi.hoisted(()=>({listeners:{}, subscribe:vi.fn(), register:vi.fn(), removed:vi.fn()}))
-vi.mock('@capacitor/core',()=>({Capacitor:{isNativePlatform:()=>true,getPlatform:()=> 'android'},registerPlugin:()=>({subscribe:mocks.subscribe})}))
+const mocks=vi.hoisted(()=>({platform:'android',listeners:{}, subscribe:vi.fn(), register:vi.fn(), removed:vi.fn()}))
+vi.mock('@capacitor/core',()=>({Capacitor:{isNativePlatform:()=>mocks.platform!=='web',getPlatform:()=>mocks.platform},registerPlugin:()=>({subscribe:mocks.subscribe})}))
 vi.mock('@capacitor/push-notifications',()=>({PushNotifications:{checkPermissions:async()=>({receive:'granted'}),addListener:async(name,fn)=>{mocks.listeners[name]=fn;return {remove:mocks.removed}},register:mocks.register}}))
 import { initializeUpdatePush } from './update-push.js'
-beforeEach(()=>vi.clearAllMocks())
+beforeEach(()=>{vi.clearAllMocks();mocks.platform='android'})
 describe('update push routing',()=>{
+ it.each(['web','ios'])('does not register %s installations in the Android topic',async platform=>{
+  mocks.platform=platform
+  await initializeUpdatePush(vi.fn())
+  expect(mocks.register).not.toHaveBeenCalled()
+  expect(mocks.subscribe).not.toHaveBeenCalled()
+ })
  it('handles foreground data and background notification data',async()=>{
   const notify=vi.fn(); const stop=await initializeUpdatePush(notify)
   mocks.listeners.pushNotificationReceived({data:{type:'app_update',version:'1.15.10'}})

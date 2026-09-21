@@ -38,6 +38,11 @@ describe('body and session insights', () => {
 describe('routine duration from corrected history', () => {
   const min=60000, now=Date.UTC(2026,8,20)
   const w=(id,routineId,duration,name='Upper')=>({id,routineId,name,start:now-86400000,end:now-86400000+duration*min})
+  it('rejects future ends and non-timestamp types without losing valid legacy numbers', () => {
+    const valid = w('valid','r',30)
+    const rows = [valid, {...valid,id:'future',end:now+86400000}, {...valid,id:'boolean',start:true}, {...valid,id:'array',start:[]}]
+    expect(routineDurationSummary(rows,{now})[0]).toMatchObject({count:1,meanMs:30*min})
+  })
   it('groups by ID through renames and keeps same-name routines distinct', () => {
     const rows=routineDurationSummary([w('a','r1',60,'Old'),w('b','r1',90),w('c','r2',45),w('d',null,30)],{now,routines:[{id:'r1',name:'Renamed'}]})
     expect(rows).toHaveLength(3)

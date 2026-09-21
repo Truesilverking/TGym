@@ -189,7 +189,7 @@ export default function Admin() {
       {liveUsers.map(u => <div key={u.id} className="row between" style={{ padding: '8px 2px', borderBottom: '1px solid var(--sep)' }} onClick={() => openUser(u.id)}>
         <div><div className="small" style={{ fontWeight: 600 }}>{u.name}</div>
           <div className="dim" style={{ fontSize: '.72rem' }}>{u.live.name} · ex {u.live.exIdx}/{u.live.exTotal} · {u.live.setsDone}/{u.live.setsTotal} sets</div></div>
-        <span className="tag acc">{dur(Date.now() - u.live.startedAt)}</span>
+        <span className="tag acc">{dur(workoutElapsedMs({start:u.live.startedAt,pausedDurationMs:u.live.pausedDurationMs,timerPausedAt:u.live.timerPausedAt}))}</span>
       </div>)}
     </div>}
 

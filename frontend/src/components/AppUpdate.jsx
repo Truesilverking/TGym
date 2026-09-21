@@ -79,9 +79,9 @@ export default function AppUpdate() {
     // The four-hour interval still limits subsequent automatic checks while the app remains open.
     void check(Capacitor.isNativePlatform())
     void initializeUpdatePush(() => {if (!gone) void check(true)}).then(stop => {if (gone) stop(); else stopPush = stop})
-    const visible = () => {if (document.visibilityState === 'visible') void check()}
-    const online = () => {void check()}
-    const interval = setInterval(visible, 4 * 60 * 60 * 1000)
+    const visible = () => {if (document.visibilityState === 'visible') void check(Capacitor.isNativePlatform())}
+    const online = () => {void check(Capacitor.isNativePlatform())}
+    const interval = setInterval(() => {if (document.visibilityState === 'visible') void check()}, 4 * 60 * 60 * 1000)
     document.addEventListener('visibilitychange', visible)
     window.addEventListener('online', online)
     return () => {gone = true; stopPush(); clearInterval(interval); document.removeEventListener('visibilitychange',visible); window.removeEventListener('online',online)}

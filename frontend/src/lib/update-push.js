@@ -3,7 +3,7 @@ import { PushNotifications } from '@capacitor/push-notifications'
 
 const UpdatePush = registerPlugin('UpdatePush')
 export async function initializeUpdatePush(onUpdate) {
-  if (!Capacitor.isNativePlatform()) return () => {}
+  if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== 'android') return () => {}
   try {
     const permission = await PushNotifications.checkPermissions()
     const granted = permission.receive === 'granted' ? permission : await PushNotifications.requestPermissions()

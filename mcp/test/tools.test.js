@@ -55,6 +55,14 @@ beforeEach(() => {
 })
 
 /* ---------- list_routines ---------- */
+test('all workout duration responses exclude pauses, including timestamp zero', () => {
+  S.workouts = [{id:'paused',d:'2026-07-27',start:0,end:120*60000,pausedDurationMs:30*60000,entries:[]}]
+  _seedStateForTests(S)
+  expect(call('list_workouts').workouts[0]).toMatchObject({duration_ms:90*60000,duration:'1h 30m'})
+  expect(call('get_workout',{workout_id:'paused'}).duration).toBe('1h 30m')
+  S.workouts.push({...S.workouts[0],id:'second'})
+  expect(call('get_workout',{date:'2026-07-27'}).workouts.map(w=>w.duration)).toEqual(['1h 30m','1h 30m'])
+})
 
 describe('list_routines', () => {
   test('returns the three starter routines with names + counts', () => {

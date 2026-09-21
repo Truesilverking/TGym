@@ -1,14 +1,14 @@
 import { consistencyStats } from './consistency.js'
 import { effectiveRoutineId } from './history.js'
-import { todayISO } from './format.js'
+import { isoOf } from './format.js'
 import { measurementEventsOn } from './measurement-reminders.js'
 
-export function calendarDay(state, iso) {
+export function calendarDay(state, iso, now = new Date()) {
   const workouts = state.workouts.filter(w => w.d === iso)
   const routine = state.routines.find(r => r.id === effectiveRoutineId(state, iso))
   const planned = !!effectiveRoutineId(state, iso)
   return { iso, workouts, planned, measurements: measurementEventsOn(state, iso), name: workouts.at(-1)?.name || routine?.name || '',
-    status: workouts.length ? 'completed' : planned ? (iso < todayISO() ? 'missed' : 'pending') : 'rest' }
+    status: workouts.length ? 'completed' : planned ? (iso < isoOf(now) ? 'missed' : 'pending') : 'rest' }
 }
 const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
 export function calendarPeriod(state, anchor, period, now = new Date()) {
@@ -20,7 +20,7 @@ export function calendarPeriod(state, anchor, period, now = new Date()) {
   else if (period === 'month') { end.setMonth(end.getMonth()+1); end.setDate(0) }
   else { end.setFullYear(end.getFullYear()+1); end.setDate(0) }
   const days = []
-  for (const d = new Date(start); d <= end; d.setDate(d.getDate()+1)) days.push(calendarDay(state, iso(d)))
+  for (const d = new Date(start); d <= end; d.setDate(d.getDate()+1)) days.push(calendarDay(state, iso(d), now))
   const counts = { scheduled: 0, completed: 0, missed: 0, pending: 0, rest: 0 }
   for (const day of days) { counts[day.status]++; if (day.planned) counts.scheduled++ }
   const stats = consistencyStats(state, iso(start), iso(end), now)

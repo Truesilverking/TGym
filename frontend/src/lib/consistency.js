@@ -2,7 +2,16 @@ import { effectiveRoutineId } from './history.js'
 import { isoOf } from './format.js'
 
 const safeState = S => ({ ...S, routines: S.routines || [], week: S.week || {}, dayPlan: S.dayPlan || {} })
-export const loggedWorkouts = S => (S.workouts || []).filter(w => w.id !== S.active?.id || w.id == null).filter(w => !w.cancelled && !w.canceled && !['active', 'cancelled', 'canceled'].includes(w.status) && !['cancelled', 'canceled'].includes(w.finishReason))
+export const loggedWorkouts = S => {
+  const seen = new Set()
+  return (S.workouts || []).filter(w => {
+    if (!w || w.active || (w.id != null && w.id === S.active?.id) || w.cancelled || w.canceled || ['active', 'cancelled', 'canceled'].includes(w.status) || ['cancelled', 'canceled'].includes(w.finishReason)) return false
+    if (w.id == null) return true // Legacy rows without IDs can be distinct sessions.
+    if (seen.has(w.id)) return false
+    seen.add(w.id)
+    return true
+  })
+}
 export function matchesScheduled(workout, routineId, routines) {
   return workout.routineId === routineId || (!workout.routineId && routines.some(r => r.id === routineId && r.name === workout.name))
 }

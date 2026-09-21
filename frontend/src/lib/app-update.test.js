@@ -34,6 +34,18 @@ describe('app updates', () => {
     expect(fetcher).toHaveBeenCalledOnce()
     expect(fetcher.mock.calls[0][0]).toBe('https://x.test/latest.json?check=14401001')
   })
+  it('PWA checks only its own build and keeps native throttling separate', async () => {
+    vi.stubGlobal('document',{baseURI:'https://example.test/TGym/'})
+    localStorage.setItem('tgym_update_checked_at','1000')
+    const fetcher=vi.fn(async()=>({ok:true,json:async()=>({version:'1.15.18',commit:'web-build'})}))
+    try {
+      const result=await checkForAppUpdate({distribution:'pwa',currentVersion:'1.15.18',now:20000000,fetcher})
+      expect(result.update).toBeNull()
+      expect(fetcher.mock.calls[0][0]).toBe('https://example.test/TGym/build.json?check=20000000')
+      expect(localStorage.getItem('tgym_update_checked_at')).toBe('1000')
+      expect(localStorage.getItem('tgym_pwa_update_checked_at')).toBe('20000000')
+    } finally {vi.unstubAllGlobals()}
+  })
 })
 
 it('accepts the official mixed-case owner and detects the next version', async () => {

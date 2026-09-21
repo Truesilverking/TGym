@@ -2,6 +2,7 @@
    {0}/{1} template the lib returns so the LLM gets final text, not template strings.
    ISO dates are validated on the way in; the handlers never see 'yesterday'. */
 import { z } from 'zod'
+import { workoutElapsedMs } from '../../frontend/src/lib/workout-time.js'
 import { getState, getUser } from './state.js'
 import {
   setLabel, exLine, muscleName, policyName, friendlyDuration, ratio, muscleOrder
@@ -201,8 +202,8 @@ export const listWorkouts = {
         sets_planned: plannedSets(w),
         sets_ratio: ratio(setsDone(w), plannedSets(w)),
         volume: workoutVolume(w),
-        duration_ms: w.end && w.start ? (w.end - w.start) : null,
-        duration: w.end && w.start ? friendlyDuration(w.end - w.start) : null,
+        duration_ms: w.end != null && w.start != null ? workoutElapsedMs(w) : null,
+        duration: w.end != null && w.start != null ? friendlyDuration(workoutElapsedMs(w)) : null,
         prs: (w.prs || []).length,
         bodyweight_at_workout: w.bw || null
       }))
@@ -247,7 +248,7 @@ export const getWorkout = {
             routine_name: x.name || null,
             sets_done: setsDone(x),
             volume: workoutVolume(x),
-            duration: x.end && x.start ? friendlyDuration(x.end - x.start) : null
+            duration: x.end != null && x.start != null ? friendlyDuration(workoutElapsedMs(x)) : null
           }))
         }
       }
@@ -265,7 +266,7 @@ export const getWorkout = {
       volume: workoutVolume(w),
       sets_done: setsDone(w),
       sets_planned: plannedSets(w),
-      duration: w.end && w.start ? friendlyDuration(w.end - w.start) : null,
+      duration: w.end != null && w.start != null ? friendlyDuration(workoutElapsedMs(w)) : null,
       prs: (w.prs || []).map(id => EXIDX[id]?.n || id),
       entries: (w.entries || []).map(e => entryView(e, S))
     }

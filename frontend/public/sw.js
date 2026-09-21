@@ -14,7 +14,7 @@ self.addEventListener('notificationclick',e=>{
 })
 self.addEventListener('fetch',e=>{
  const url=new URL(e.request.url)
- if(e.request.method!=='GET'||url.origin!==self.location.origin||url.pathname.includes('/api/')||url.pathname.includes('/updates/')||url.pathname.includes('/downloads/')) return
+ if(e.request.method!=='GET'||url.origin!==self.location.origin||url.pathname.endsWith('/build.json')||url.pathname.includes('/api/')||url.pathname.includes('/updates/')||url.pathname.includes('/downloads/')) return
  e.respondWith(caches.open(CACHE).then(async cache=>{
   const hit=await cache.match(e.request)
   if(hit) return hit
