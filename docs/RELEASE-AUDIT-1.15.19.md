@@ -33,4 +33,14 @@ The user explicitly removed Computer Use validation from the publication gate af
 
 Candidate version is 1.15.19 / Android code 54, following remotely verified 1.15.18 / code 53. Signing material stays in existing CI secrets. The existing `tgym_updates` subscription is Android-native; browser web-push uses the separate optional API. Do not claim delivery to a device from an accepted FCM request.
 
-Publication status and exact remote run/commit evidence will be recorded after CI finishes.
+## Published release verification (2026-09-21)
+
+- Release `v1.15.19` points to `ae968761b72011fb3baf6a1ba96b0109339ee56e`, Android versionCode 54.
+- [Release workflow](https://github.com/Truesilverking/TGym/actions/runs/35558230937) passed signed APK/AAB compilation, PWA migration, published artifact verification and native FCM submission.
+- [Android workflow](https://github.com/Truesilverking/TGym/actions/runs/35558224780) passed `assembleDebug` and emulator notification instrumentation.
+- Downloaded APK from the release and GitHub Pages: identical 8,554,224 bytes; SHA-256 `8310a85498d9f861d89af71818d34a81295e770893df2acc7f900dcd918ca9f1`; ZIP CRC valid; embedded build metadata matches the release commit/version.
+- Verified APK cryptographic signature with the existing cached Android apksig library. Package `app.framegym.mobile`, versionCode 54, minimum SDK 23; certificate SHA-256 `8ee233c984615e2b3f6f083dc0c47d148bb8956ff7caca97be0b9a0d260e6082` matches published metadata.
+- Downloaded AAB matches `checksums.txt`; ZIP CRC and JAR signature verification pass. Jarsigner reports the Android self-signed certificate, absent timestamp and ZIP manifest ordering warnings; these are not APK download failures.
+- Remote native manifest is 1.15.19; PWA build remains 1.15.18. No browser/PWA push was sent by the native workflow.
+- User reports receiving the notification but tapping it only opens the previous app without an update dialog. This is not evidence of a failed APK download. Version 1.15.18 throttles foreground checks for four hours; 1.15.19 forces native foreground/reconnection checks. Manual Settings > Check for updates bypasses the old throttle. The exact phone-side cause cannot be established without its manual-check result or device diagnostics.
+- The later notification-resend commit introduced an unrelated CI failure: `main` was validated as a version. Android CI now supplies the package version explicitly to FCM's validate-only request. No new notification or replacement release is needed for this CI correction.
