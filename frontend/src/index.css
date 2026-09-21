@@ -399,10 +399,36 @@ h4.sec{
 .wday .dot.ovr{background:var(--orange)}
 .wday .dot.done{background:var(--acc)}
 .wday:active{background:var(--surface-2)}
-.wday.today .num{
-  background:var(--acc);color:var(--on-acc);font-weight:600;
+.wday.today .num {
+  background: var(--acc);color: var(--on-acc);font-weight:600;
   width:31px;height:31px;border-radius:50%;display:flex;align-items:center;
   justify-content:center;margin:2px auto;
+}
+
+/* Weekly consistency progress bar */
+.weekly-progress {
+  margin-top:8px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.progress-bg {
+  flex:1;
+  height:4px;
+  background:var(--surface-2);
+  border-radius:99px;
+  overflow:hidden;
+}
+.progress-fg {
+  height:100%;
+  background:var(--acc);
+  border-radius:99px;
+  transition:width var(--med) var(--ease);
+}
+.progress-label {
+  font-size:13px;
+  color:var(--label-3);
+  white-space:nowrap;
 }
 
 /* ----------------------------------------------------------------- list -- */
@@ -1093,8 +1119,8 @@ body.framegym-private::after{
 .routine-muscle-tags { display: flex; flex-wrap: wrap; gap: 8px; }
 .routine-muscle-tags button { min-height: 36px; cursor: pointer; }
 .routine-muscle-tags button:focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; }
-.zoomcal-day.deload { box-shadow: inset 0 -4px #b887ff; }
-.zoomcal-mini-month i.deload { box-shadow: inset 0 -2px #b887ff; }
+.zoomcal-day.deload { box-shadow: inset 0 -4px var(--deload); }
+.zoomcal-mini-month i.deload { box-shadow: inset 0 -2px var(--deload); }
 .deload-calendar-label { color: #b887ff; margin: 8px 0; }
 /* Routine duration keeps names readable and metrics aligned on narrow phones. */
 .routine-duration-list { list-style: none; margin: 12px 0 0; padding: 0; }
@@ -1104,22 +1130,41 @@ body.framegym-private::after{
 .routine-duration-value { text-align: end; font-variant-numeric: tabular-nums; }
 .routine-duration-value > strong { font-size: 1.15rem; }
 
-/* Prompt 1 Updates */
-.zoomcal-routine { display: block !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; min-height: auto !important; margin-top: 4px !important; }
-.zoomcal-legend i.deload { background: var(--purple, #b887ff) !important; }
-.zoomcal-actions-row { display: flex; gap: 8px; margin-top: 8px; }
-.zoomcal-actions-row button { flex: 1; }
-.zoomcal-export-wrap { display: flex; justify-content: center; margin-top: 12px; }
-.streak-main-label { font-size: clamp(12px, 4vw, 15px) !important; white-space: nowrap !important; }
-.recent-streak-item .lrow-i { align-self: center !important; }
-/* Prompt 2 CSS Overrides */
-.header-streak { width: auto; min-width: 72px; height: 48px; padding: 0 12px; gap: 6px; }
-.header-streak b { font-size: 24px !important; }
-.header-streak .streak-flame { width: 30px !important; height: 30px !important; }
-.consistency-card h2, .body-weight-title { font-size: 26px !important; font-weight: 800 !important; line-height: 1.1; margin-bottom: 2px; }
-.consistency-metrics { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 16px; }
-.consistency-metrics > div { display: flex; flex-direction: column-reverse; align-items: flex-start; }
-.consistency-metrics dt { font-size: 15px; color: var(--label-2); margin-top: 2px; font-weight: 500; }
-.consistency-metrics dd { font-size: 38px; font-weight: 800; line-height: 1; margin: 0; }
-.times-action { font-size: 15px !important; padding: 6px 12px !important; }
 
+/* Shared Home/Stats hierarchy and compact calendar details. */
+:root { --deload: #b887ff; }
+.zoomcal-routine { display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-height:12px; margin-top:4px; }
+.zoomcal-legend i.deload { background:var(--deload); }
+.zoomcal-actions-row,.zoomcal-schedule-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+.zoomcal-actions-row .btn { flex:1 1 auto; min-width:0; }
+.zoomcal-export-wrap { display:flex; justify-content:center; margin-top:12px; }
+.streak-main { gap:clamp(4px,1.5vw,9px); }
+.streak-main-label { margin-left:0; font-size:clamp(14px,3.8vw,18px); font-weight:600; white-space:nowrap; }
+.streak-main.compact>.streak-flame { width:clamp(30px,9vw,42px); height:clamp(30px,9vw,42px); }
+.streak-main.compact .streak-number { font-size:clamp(28px,9vw,42px); }
+.recent-streak-item .lrow-i { align-self:center; }
+.recent-streak-row { min-width:0; }
+.recent-streak-row .tt { display:flex; align-items:center; gap:10px; white-space:nowrap; }
+.recent-streak-row .recent-routine-name { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:end; margin-left:auto; }
+.header-streak { width:64px; height:46px; margin-left:0; padding:0 4px; gap:4px; }
+.header-streak b { font-size:24px; }
+.header-streak .streak-flame { width:28px; height:32px; }
+.hdr-centered { grid-template-columns:64px minmax(0,1fr) 64px; gap:6px; }
+.hdr-centered .hdr-center { min-width:0; }
+.hdr-centered h1 { font-size:clamp(26px,8vw,34px); }
+.hdr-centered .sub { font-size:clamp(11px,3.2vw,15px); }
+.week-expand { display:flex; align-items:center; gap:6px; font-size:15px; font-weight:600; min-height:36px; }
+.week-expand .icn { font-size:12px; }
+.consistency-heading { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+.consistency-heading h2,.body-weight-title,.times-title { font-size:clamp(24px,6.6vw,28px); font-weight:700; line-height:1.15; margin:0; }
+.body-weight-title { white-space:nowrap; }
+.consistency-heading p { margin:5px 0 0; }
+.consistency-metrics { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px 12px; margin:20px 0 0; }
+.consistency-metrics>div { display:flex; flex-direction:column-reverse; min-width:0; }
+.consistency-metrics dt { font-size:14px; color:var(--label-2); margin-top:5px; }
+.consistency-metrics dd { font-size:clamp(30px,9vw,38px); font-weight:700; line-height:1.1; margin:0; font-variant-numeric:tabular-nums; }
+.times-action.btn { font-size:16px; min-height:40px; padding:8px 12px; width:auto; }
+.times-metrics .v { font-size:clamp(23px,6.5vw,30px); }
+.times-metrics .l { font-size:14px; }
+.times-title { margin-bottom:16px; }
+.card:has(.body-weight-title)>.row.between { flex-wrap:wrap; gap:10px; }

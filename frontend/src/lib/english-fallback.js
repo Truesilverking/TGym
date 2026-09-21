@@ -1,5 +1,15 @@
 // Explicit source-language fallback. Entries in language packs override these values.
 export default {
+"Month": "Month",
+"No scheduled workout": "No scheduled workout",
+"Consistency Report": "Consistency Report",
+"Edit schedule": "Edit schedule",
+"Expand calendar": "Expand calendar",
+"Deload Week": "Deload Week",
+"Missed": "Missed",
+"Body Weight": "Body Weight",
+"Last 8 weeks": "Last 8 weeks",
+"Consistency": "Consistency",
 "Routine duration": "Routine duration",
 "Average duration by routine from completed workouts.": "Average duration by routine from completed workouts.",
 "Median: {0}": "Median: {0}",

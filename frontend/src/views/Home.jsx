@@ -14,6 +14,7 @@ import { glyphOf } from '../lib/glyphs.js'
 import { bmiBand, bmiFor } from '../lib/stats-insights.js'
 import { deloadStatus, streakTier, trainingStreak } from '../lib/training-plan.js'
 import StreakFlame from '../components/StreakFlame.jsx'
+import { consistencyDays } from '../lib/consistency.js'
 
 // Home = what to do now + a quick glance. Deep charts & history live in Stats.
 export default function Home() {
@@ -69,6 +70,23 @@ export default function Home() {
         <button className="iconbtn" style={{ width: 30, height: 30, fontSize: 15 }} onClick={() => setWeekOffset(w => w + 1)} aria-label="Next week"><Icon name="chevronRight" /></button>
       </div>
       <div className="week">{strip}</div>
+      {/* Weekly consistency progress */}
+      {(() => {
+        const startIso = isoOf(monday);
+        const endIso = isoOf(sunday);
+        const weekDays = consistencyDays(S, startIso, endIso);
+        const plannedDays = weekDays.filter(d => d.planned).length;
+        const completedDays = weekDays.filter(d => d.status === 'completed').length;
+        const progress = plannedDays ? (completedDays / plannedDays) * 100 : 0;
+        return (
+          <div className="weekly-progress">
+            <div className="progress-bg">
+              <div className="progress-fg" style={{ width: `${progress}%` }} />
+            </div>
+            <span className="progress-label">{completedDays}/{plannedDays} días</span>
+          </div>
+        );
+      })()}
       {routine && <button className="btn sm" onClick={()=>routineMuscleSheet(routine.id)}>{t('Muscles trained')}</button>}
       {/* Once today's session is logged the row stops asking for it. The week strip already
           knew (its dot goes 'done'); this row did not, so a finished day kept showing the
