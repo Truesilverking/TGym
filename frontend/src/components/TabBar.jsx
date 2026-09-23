@@ -25,7 +25,7 @@ export default function TabBar({ onStart }) {
     nav('/workout')
   }
   const Tab = ({ k, icon, to, label }) => (
-    <button className={on(k) ? 'on' : ''} onClick={() => nav(to)}>
+    <button aria-current={cur === k ? 'page' : undefined} className={on(k) ? 'on' : ''} onClick={() => nav(to)}>
       <Icon name={icon} /><span>{label}</span>
     </button>
   )

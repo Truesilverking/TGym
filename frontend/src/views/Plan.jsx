@@ -100,7 +100,7 @@ export default function Plan() {
     </div>
     <div className="cols"><div>
       <h4 className="sec week-schedule-title">{t('Week schedule')}</h4>
-      <div className="list" style={{ display: 'flex', flexDirection: 'column' }}>
+      <div className="list week-schedule" style={{ display: 'flex', flexDirection: 'column' }}>
         {[1, 2, 3, 4, 5, 6, 0].map(d => {
           const r = S.routines.find(x => x.id === S.week[d])
           return <div key={d} className="item" onClick={() => dayAssignSheet(d)}>

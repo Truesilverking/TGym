@@ -13,8 +13,9 @@
 //   · :active gives a scale/tint response so touch feels acknowledged
 //   · focus-visible draws a ring; pointer interaction never does
 
-import { useRef, useState, useEffect, useCallback, forwardRef } from 'react'
+import { useRef, useState, useEffect, useCallback, forwardRef, useId, Children, cloneElement } from 'react'
 import Icon from './Icon.jsx'
+import { t } from '../lib/i18n.js'
 
 /* ============================ text ============================ */
 
@@ -66,7 +67,7 @@ export function SearchField({ value, onChange, onClear, ...rest }) {
       <Icon name="magnifier" className="lead" />
       <input className="field" value={value} onChange={onChange} {...rest} />
       {!!value && (
-        <button className="clear" onClick={onClear} aria-label="Clear">
+        <button className="clear" onClick={onClear} type="button" aria-label={t('Clear')}>
           <Icon name="xmark" />
         </button>
       )}
@@ -76,9 +77,10 @@ export function SearchField({ value, onChange, onClear, ...rest }) {
 
 /* ============================ switch ============================ */
 
-export function Switch({ checked, onChange, disabled }) {
+export function Switch({ checked, onChange, disabled, ...rest }) {
   return (
     <button
+      {...rest}
       role="switch"
       aria-checked={!!checked}
       disabled={disabled}
@@ -226,15 +228,16 @@ export function Section({ title, footer, children, className = '' }) {
 }
 
 export function Row({ icon, iconTint, title, subtitle, value, accessory = 'none', onClick, danger, children, className = '' }) {
+  const titleId = useId()
   const Tag = onClick ? 'button' : 'div'
   return (
     <Tag className={'lrow' + (onClick ? ' tap' : '') + (danger ? ' danger' : '') + ' ' + className} onClick={onClick}>
       {icon && <span className="lrow-i" style={iconTint ? { '--tint': iconTint } : null}><Icon name={icon} /></span>}
       <span className="lrow-m">
-        <span className="lrow-t">{title}</span>
+        <span className="lrow-t" id={titleId}>{title}</span>
         {subtitle && <span className="lrow-s">{subtitle}</span>}
       </span>
-      {children}
+      {Children.map(children, child => child?.type === Switch && !child.props['aria-label'] && !child.props['aria-labelledby'] ? cloneElement(child, { 'aria-labelledby': titleId }) : child)}
       {value != null && <span className="lrow-v">{value}</span>}
       {accessory === 'chevron' && <Icon name="chevronRight" className="lrow-c" />}
       {accessory === 'check' && <Icon name="check" className="lrow-k" />}
@@ -271,7 +274,7 @@ export function SelectRow({ icon, iconTint, title, value, options, onChange, she
   }
   return (
     <Row icon={icon} iconTint={iconTint} title={title} value={cur ? cur.label : value} accessory="chevron" onClick={open}
-      className={stackedValue ? 'lrow-stack-value' : ''} />
+      className={'lrow-select' + (stackedValue ? ' lrow-stack-value' : '')} />
   )
 }
 

@@ -1,10 +1,35 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useId } from 'react'
 import { useUI } from '../store/useUI.js'
+import Icon from './Icon.jsx'
+import { t } from '../lib/i18n.js'
 
 // One bottom sheet (or centered dialog) with swipe-to-dismiss.
-function Sheet({ sheet }) {
+function Sheet({ sheet, active }) {
   const { closeSheet } = useUI()
   const ref = useRef(null)
+  const panel = useRef(null)
+  const titleId = useId()
+  const opener = useRef(null)
+  useEffect(() => {
+    if (!active || !panel.current) return
+    const el = panel.current
+    opener.current ||= document.activeElement
+    const previous = opener.current
+    const heading = el.querySelector('h1,h2,h3')
+    if (heading) { heading.id ||= titleId; el.setAttribute('aria-labelledby', heading.id) }
+    if (!el.contains(document.activeElement)) el.focus()
+    const trap = e => {
+      if (e.key !== 'Tab') return
+      const controls = [...el.querySelectorAll('button:not(:disabled),a[href],input:not(:disabled),select:not(:disabled),textarea:not(:disabled),[tabindex="0"]')]
+        .filter(node => node.getClientRects().length && !node.closest('[hidden],[inert]'))
+      const first = controls[0], last = controls.at(-1)
+      if (!first) { e.preventDefault(); el.focus(); return }
+      if (e.shiftKey && (document.activeElement === first || document.activeElement === el)) { e.preventDefault(); last.focus() }
+      else if (!e.shiftKey && (document.activeElement === last || document.activeElement === el)) { e.preventDefault(); first.focus() }
+    }
+    el.addEventListener('keydown', trap)
+    return () => { el.removeEventListener('keydown', trap); queueMicrotask(() => { if (previous?.isConnected && !previous.closest?.('[inert]')) previous.focus?.() }) }
+  }, [active, titleId])
   const drag = useRef({ startY: null, delta: 0 })
 
   const onTouchStart = e => {
@@ -70,20 +95,24 @@ function Sheet({ sheet }) {
   }, [])
 
   const close = () => closeSheet(sheet.id)
+  const toolbar = <div className="sheet-tools" data-nodrag>
+    {sheet.kind !== 'center' && <div className="grab" aria-hidden="true" />}
+    {!sheet.locked && <button type="button" className="iconbtn sheet-close" aria-label={t('Close')} onClick={close}><Icon name="xmark" /></button>}
+  </div>
   if (sheet.kind === 'center') {
     return (
-      <div>
+      <div inert={!active} aria-hidden={!active || undefined}>
         <div className="mback" onClick={() => { if (!sheet.locked) close() }} />
-        <div className="center">{sheet.render(close)}</div>
+        <div className="center" ref={panel} role="dialog" aria-label="TGym" aria-modal={active || undefined} tabIndex={-1}>{toolbar}{sheet.render(close)}</div>
       </div>
     )
   }
   return (
-    <div>
+    <div inert={!active} aria-hidden={!active || undefined}>
       <div className="mback" onClick={() => { if (!sheet.locked) close() }} />
-      <div className="sheet" ref={ref} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}
+      <div className="sheet" role="dialog" aria-label="TGym" aria-modal={active || undefined} tabIndex={-1} ref={el => { ref.current = el; panel.current = el }} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}
         onMouseDown={onMouseDown} onMouseMove={onMouseMove} onMouseUp={onMouseUp} onMouseLeave={onMouseUp}>
-        <div className="grab" />
+        {toolbar}
         {sheet.render(close)}
       </div>
     </div>
@@ -155,10 +184,13 @@ export default function Modals() {
   }, [sheets.length])
   useEffect(() => {
     if (!sheets.length) return
+    const behind = [...document.querySelectorAll('#app, #tabbar, #timer')].map(el => [el, el.hasAttribute('inert')])
+    behind.forEach(([el]) => el.setAttribute('inert', ''))
     const y = window.scrollY || 0
     const b = document.body.style
     b.position = 'fixed'; b.top = -y + 'px'; b.left = '0'; b.right = '0'; b.width = '100%'
     return () => {
+      behind.forEach(([el, wasInert]) => { if (!wasInert) el.removeAttribute('inert') })
       b.position = b.top = b.left = b.right = b.width = ''
       window.scrollTo(0, y)
     }
@@ -167,7 +199,7 @@ export default function Modals() {
   if (!sheets.length) return null
   return (
     <div id="modal-root" className="open">
-      {sheets.map(s => <Sheet key={s.id} sheet={s} />)}
+      {sheets.map((s, i) => <Sheet key={s.id} sheet={s} active={i === sheets.length - 1} />)}
     </div>
   )
 }

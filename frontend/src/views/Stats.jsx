@@ -1,3 +1,4 @@
+import ExerciseSessions from '../components/ExerciseSessions.jsx'
 import TrainingHistory from '../components/TrainingHistory.jsx'
 import { statisticsState, historySummary } from '../lib/training-history.js'
 import ConsistencyCard from '../components/ConsistencyCard.jsx'
@@ -480,7 +481,7 @@ export default function Stats() {
           : <div className="muted small">{!S.heightCm ? t('Add your height to calculate BMI from your latest body weight.') : t('Log your body weight to calculate BMI.')}</div>}
       </div>
 
-      <div className="card">
+      <div className="card exercise-progress insight-panel">
         <h2>{t('Exercise progress')}</h2>
         {exHist.length ? <>
           <div className="sect-b" style={{ marginBottom: 10 }}>
@@ -493,8 +494,7 @@ export default function Stats() {
               ? <LineChart points={effPts} h={150} unit={hd} color="var(--yellow)" invert={kind === 'rir'} />
               : <LineChart points={onE1 ? e1ChartPts : topPts} h={150} unit={exUnit} color="var(--blue)" />}
           </div>
-          <div style={{ marginTop: 8 }}>{exList.map((p, i) => <div key={i} className="row between small" style={{ padding: '6px 0', borderBottom: 'var(--hair) solid var(--sep)' }}>
-            <span className="muted">{fmtDate(p.d, true)}</span><span>{p.sets.map(s => setLabel(curEx, s, p.target)).join('  ')}</span></div>)}</div>
+          <ExerciseSessions name={nameOf(curEx)} exerciseId={curEx} sessions={exList} />
           <div className="small dim" style={{ marginTop: 8 }}>
             {onEff ? t('Average effort per workout') : onE1 ? t('Estimated 1RM per workout') : curCardio ? t('Top speed per workout') : curTimed ? t('Longest hold per workout') : repsOnly ? t('Most reps in a set per workout') : t('Best set weight per workout')}
             {onEff ? '' : <> · {t('Best:')}{' '}<b className="accent">{fmtNum(onE1 ? e1Best.est : exBest)} {onE1 ? S.unit : exUnit}</b></>}

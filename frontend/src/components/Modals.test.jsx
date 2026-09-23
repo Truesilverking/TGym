@@ -199,3 +199,32 @@ describe('Modals mouse dragging', () => {
     expect(mocks.state.sheets).toHaveLength(1)
   })
 })
+
+
+describe('Modals accessible presentation', () => {
+  it('labels the dialog and offers a close control without spending unrelated history', async () => {
+    await setSheets([sheet('detail', { render: () => React.createElement('h3', null, 'Details') })])
+    const dialog = container.querySelector('[role="dialog"]')
+    expect(dialog.getAttribute('aria-modal')).toBe('true')
+    expect(dialog.getAttribute('aria-labelledby')).toBe(dialog.querySelector('h3').id)
+    await act(async () => { dialog.querySelector('.sheet-close').click() })
+    expect(mocks.state.sheets).toHaveLength(0)
+    expect(historyMock.go).toHaveBeenCalledWith(-1)
+  })
+  it('keeps locked dialogs locked and makes covered sheets inert', async () => {
+    await setSheets([sheet('lower'), sheet('locked', { locked: true })])
+    const dialogs = container.querySelectorAll('[role="dialog"]')
+    expect(dialogs[0].parentElement.hasAttribute('inert')).toBe(true)
+    expect(dialogs[1].parentElement.hasAttribute('inert')).toBe(false)
+    expect(dialogs[1].querySelector('.sheet-close')).toBe(null)
+    expect(dialogs[1].getAttribute('aria-modal')).toBe('true')
+  })
+  it('restores the page availability after closing the last dialog', async () => {
+    const page = document.createElement('main'); page.id = 'app'; document.body.appendChild(page)
+    await setSheets([sheet('detail')])
+    expect(page.hasAttribute('inert')).toBe(true)
+    await setSheets([])
+    expect(page.hasAttribute('inert')).toBe(false)
+    page.remove()
+  })
+})

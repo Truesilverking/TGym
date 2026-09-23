@@ -536,9 +536,9 @@ function CustomExForm({ existing, prefill, onDone, close }) {
   return <>
     <h3>{existing ? t('Edit custom exercise') : t('Create your own exercise')}</h3>
     <div className="muted small" style={{ marginBottom: 12 }}>{t('Name it, choose a body part, and optionally add an image or animated GIF.')}</div>
-    <input className="input" placeholder={t('Exercise name')} value={n} onChange={e => setN(e.target.value)} />
+    <input className="input" aria-label={t('Exercise name')} placeholder={t('Exercise name')} value={n} onChange={e => setN(e.target.value)} />
     <div className="sect-b" style={{ marginTop: 12 }}><SelectRow title={t('Equipment')} value={eq} onChange={setEq} options={[{ value: 'custom', label: t('Other') }, ...ALL_EQUIPMENT.map(x => ({ value: x, label: t(x) }))]} /></div>
-    <div className="chips" style={{ margin: '12px 0' }}>
+    <div className="chips choice-grid" style={{ margin: '12px 0' }}>
       {BODYPARTS.map(b => <button key={b} className={'chip' + (bp === b ? ' on' : '')} onClick={() => setBp(b)}>{t(b)}</button>)}
     </div>
     {bp && bp !== 'cardio' && <>
@@ -687,11 +687,11 @@ function EquipmentProfileSheet({ profile, close }) {
     <div className="muted small" style={{ marginBottom: 14 }}>
       {t('Name it after where you train — e.g. "Home" or "Gym" — then check what you have there.')}
     </div>
-    <TextField ref={nameRef} defaultValue={profile?.name || ''} placeholder={t('Profile name')} maxLength={40} />
+    <TextField aria-label={t('Profile name')} ref={nameRef} defaultValue={profile?.name || ''} placeholder={t('Profile name')} maxLength={40} />
     <div style={{ height: 12 }} />
-    <div className="chips">
+    <div className="chips choice-grid">
       {ALL_EQUIPMENT.map(k => (
-        <button key={k} className={'chip' + (checked.has(k) ? ' on' : '')} onClick={() => toggle(k)}>{t(k)}</button>
+        <button key={k} aria-pressed={checked.has(k)} className={'chip' + (checked.has(k) ? ' on' : '')} onClick={() => toggle(k)}>{t(k)}</button>
       ))}
     </div>
     <div className="dim small" style={{ marginTop: 10 }}>

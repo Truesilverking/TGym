@@ -1348,4 +1348,16 @@ export default {
   "Weekly average includes all calendar days since your start, including breaks.": "Weekly average includes all calendar days since your start, including breaks.",
   "Not tracking yet": "Not tracking yet"
   ,"Recorded workouts": "Recorded workouts"
+  ,"Plan your time with the typical length of each routine.": "Plan your time with the typical length of each routine."
+  ,"Last 30 days": "Last 30 days"
+  ,"Last 3 months": "Last 3 months"
+  ,"Last 12 months": "Last 12 months"
+  ,"All time": "All time"
+  ,"Median": "Median"
+  ,"Bar: average · marker: median. Longer does not mean better.": "Bar: average · marker: median. Longer does not mean better."
+  ,"No scheduled sessions to evaluate yet.": "No scheduled sessions to evaluate yet."
+  ,"Recent sessions": "Recent sessions"
+  ,"Set {0}": "Set {0}"
+  ,"Close": "Close"
+  ,"Clear": "Clear"
 }
