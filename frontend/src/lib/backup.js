@@ -1,3 +1,5 @@
+import { validateTrainingHistory } from './training-history.js'
+import { dayNumber } from './training-pause.js'
 // Portable training state only. Device credentials and authentication are never portable.
 export const BACKUP_SCHEMA = 1
 const blocked = new Set(['__proto__', 'prototype', 'constructor', 'accessToken', 'refreshToken', 'password', 'pin', 'pinHash', 'recoveryKey', 'idToken'])
@@ -25,10 +27,12 @@ export function portableState(state) {
   return data
 }
 export function validateBackupState(data) {
+  if (data?.trainingStartDate != null && (!Number.isFinite(dayNumber(data.trainingStartDate)) || !validateTrainingHistory(data.trainingStartDate, data.trainingHistory))) throw new Error('Invalid training history')
   if (!data || typeof data !== 'object' || Array.isArray(data) || !Array.isArray(data.workouts) || !Array.isArray(data.routines)) throw new Error('Invalid backup data')
-  for (const key of ['workouts','routines','customEx','bodyweight','measurements','inbody','equipProfiles']) {
+  for (const key of ['workouts','routines','customEx','bodyweight','measurements','inbody','equipProfiles','trainingPauses']) {
     if (data[key] !== undefined && (!Array.isArray(data[key]) || data[key].some(v => !v || typeof v !== 'object' || Array.isArray(v)))) throw new Error(`Invalid backup field: ${key}`)
   }
+  if (data.trainingPauses?.some(p=>!p.id || !Number.isFinite(dayNumber(p.start)) || (p.end != null && (!Number.isFinite(dayNumber(p.end)) || p.end < p.start)))) throw new Error('Invalid training pause')
   if (data.unit !== undefined && !['kg','lb'].includes(data.unit)) throw new Error('Invalid weight unit')
   if (data.active !== undefined && data.active !== null && (typeof data.active !== 'object' || Array.isArray(data.active))) throw new Error('Invalid active workout')
   return clean(data)

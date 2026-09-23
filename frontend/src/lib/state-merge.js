@@ -8,6 +8,9 @@ export function mergeTGymStates(local, remote) {
     if (same(a, b)) return structuredClone(a)
     if (a == null) return structuredClone(b)
     if (b == null) return structuredClone(a)
+    // A closed pause always wins over a stale open copy; concurrent resumptions
+    // use the earliest date, never silently extending an excused period.
+    if(path[0] === 'trainingPauses' && path.at(-1) === 'end' && typeof a === 'string' && typeof b === 'string') return a < b ? a : b
     if (path.length === 1 && localOnlyRoots.has(path[0])) return structuredClone(a)
     if (Array.isArray(a) && Array.isArray(b)) {
       if (![...a, ...b].some(value => value && typeof value === 'object')) return [...new Set([...a, ...b])]

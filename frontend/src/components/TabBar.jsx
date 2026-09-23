@@ -1,3 +1,4 @@
+import { isTrainingPaused } from '../lib/training-pause.js'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { effectiveRoutine } from '../lib/history.js'
@@ -17,6 +18,7 @@ export default function TabBar({ onStart }) {
 
   const startWorkout = () => {
     if (!S.active) {
+      if(isTrainingPaused(S,todayISO())) { onStart(); return }
       const r = effectiveRoutine(S, todayISO())
       if (r && r.ex.length) { onStart(r.id); return }
     }

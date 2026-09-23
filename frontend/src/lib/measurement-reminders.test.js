@@ -27,7 +27,7 @@ describe('measurement reminders independent from workouts', () => {
   })
   it('does not change workout counts, day status or streak', () => {
     const S=state(), without={...S,measurementReminders:{}}
-    expect(calendarDay(S,'2026-09-17').status).toBe('rest')
+    expect(calendarDay(S,'2026-09-17').status).toBe('untracked')
     expect(calendarPeriod(S,new Date('2026-09-17T12:00:00'),'week').counts).toEqual(calendarPeriod(without,new Date('2026-09-17T12:00:00'),'week').counts)
     expect(trainingStreak(S)).toEqual(trainingStreak(without))
     expect(measurementReminders(S,'2026-09-20')[0].status).toBe('Overdue')

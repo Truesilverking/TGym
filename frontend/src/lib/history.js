@@ -1,3 +1,4 @@
+import { isTrainingPaused } from './training-pause.js'
 // Pure helpers over the state object S (ported 1:1 from the vanilla app).
 import { todayISO, isoOf, weekKey, fmtNum } from './format.js'
 import { isCardio, isBodyweightEq } from './exercises.js'
@@ -282,6 +283,7 @@ export function bestWeightFor(S, exId) {
   return best
 }
 export function effectiveRoutineId(S, iso) {
+  if (isTrainingPaused(S, iso)) return null
   const ov = S.dayPlan[iso]
   if (ov === 'rest') return null
   if (ov && S.routines.some(r => r.id === ov)) return ov

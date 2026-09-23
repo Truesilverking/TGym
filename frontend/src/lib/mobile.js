@@ -1,3 +1,4 @@
+import { fmtScheduledDate } from './format.js'
 // Mobile build (VITE_MOBILE=1) — the standalone app-store version (Capacitor native shell).
 //
 // There is no backend: nothing to sign in to, everything lives on the phone. Unlike guest
@@ -100,7 +101,7 @@ async function syncReminderNow(S, interactive = false) {
     const notifications = workoutNotificationPlan(S).map(notice => ({
       id: notice.id,
       title: t(notice.kind === 'today' ? 'Workout reminder' : 'Next workout reminder'),
-      body: notice.kind === 'today' ? t('You still have {0} scheduled for today.', notice.name) : t('{0} is scheduled for {1}.',notice.name,notice.date),
+      body: notice.kind === 'today' ? t('You still have {0} scheduled for today.', notice.name) : t('{0} is scheduled for {1}.',notice.name,fmtScheduledDate(notice.date)),
       schedule: {at:notice.at,allowWhileIdle:true},
       extra: {type:'workout',routineId:notice.routineId,date:notice.date},
     }))

@@ -23,7 +23,7 @@ describe('zoom consistency calendar', () => {
   const zoomOut = () => [...host.querySelectorAll('button')].find(b => b.getAttribute('aria-label') === 'Zoom out')
 
   it('marks deload days without replacing completion state in both day views', () => {
-    const S=state(); S.deload={on:true,startDate:'2026-07-20',normalWeeks:6}; S.workouts[0].deload=true
+    const S=state(); S.trainingStartDate='2026-07-20'; S.deload={on:true,startDate:'2026-07-20',normalWeeks:6}; S.workouts[0].deload=true
     act(()=>root.render(<ZoomCalendar S={S}/>))
     expect(host.querySelectorAll('.zoomcal-day.deload')).toHaveLength(7)
     expect(host.querySelector('.zoomcal-day.completed.deload')).not.toBeNull()

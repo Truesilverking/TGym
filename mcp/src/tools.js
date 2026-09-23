@@ -1,3 +1,4 @@
+import { isTrainingPaused } from '../../frontend/src/lib/training-pause.js'
 /* The eight read-only tools. Each handler returns JSON; labels.js pre-substitutes any
    {0}/{1} template the lib returns so the LLM gets final text, not template strings.
    ISO dates are validated on the way in; the handlers never see 'yesterday'. */
@@ -145,6 +146,7 @@ export const getWeekPlan = {
     const todayWd = today.getDay()
     return {
       today: isoToday,
+      today_training_paused: isTrainingPaused(S,isoToday),
       weekdays: [0, 1, 2, 3, 4, 5, 6].map(d => {
         const rid = S.week?.[d] || null
         const r = rid ? (S.routines || []).find(x => x.id === rid) : null

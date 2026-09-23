@@ -1,3 +1,5 @@
+import { isUntracked } from '../lib/training-history.js'
+import { isTrainingPaused } from '../lib/training-pause.js'
 import { useEffect, useRef } from 'react'
 import { isoOf, todayISO, MONTHS } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
@@ -34,14 +36,16 @@ export default function Heatmap({ S, onDay }) {
       const day = new Date(colStart); day.setDate(colStart.getDate() + d)
       const key = isoOf(day)
       const a = agg[key]
-      const planned = effectiveRoutineId(S, key)
+      const untracked = isUntracked(S,key)
+      const planned = untracked ? null : effectiveRoutineId(S, key)
       const routine = planned && (S.routines || []).find(r => r.id === planned)
       const complete = !!planned && !!a?.rows.some(w => w.routineId === planned || (!w.routineId && routine && w.name === routine.name))
-      const status = complete ? ' complete' : a?.rows.length ? ' extra' : planned && day < today ? ' missed' : ''
+      const paused = isTrainingPaused(S,key)
+      const status = untracked ? ' untracked' : paused && !a?.rows.length ? ' paused' : complete ? ' complete' : a?.rows.length ? ' extra' : planned && day < today ? ' missed' : ''
       const de = deloadStatus(S, key).active
       const cls = 'hm-c' + status + (de ? ' deload' : '') + (key === todayISO() ? ' today' : '') + (day > today ? ' future' : '')
       cells.push(<div key={d} className={cls}
-        title={key + (de ? ' · ' + t('Deload week') : '') + (complete ? ' · ' + t('Planned routine completed') : a?.rows.length ? ' · ' + t('Extra or different workout') : planned && day < today ? ' · ' + t('Planned routine not completed') : '')}
+        title={key + (untracked ? ' · ' + t('Not tracking yet') : '') + (paused ? ' · ' + t('Training paused') : '') + (de ? ' · ' + t('Deload week') : '') + (complete ? ' · ' + t('Planned routine completed') : a?.rows.length ? ' · ' + t('Extra or different workout') : planned && day < today ? ' · ' + t('Planned routine not completed') : '')}
         onClick={a ? () => onDay(key) : undefined} />)
     }
     cols.push(<div key={wk} className="hm-col">{cells}</div>)

@@ -5,18 +5,19 @@ import { t } from '../lib/i18n.js'
 import { MOBILE, shareBase64 } from '../lib/mobile.js'
 import { Button } from './ui.jsx'
 
-export async function rasterizeReport({ svg, width, height }) {
+export async function rasterizeReport({ svg, width, height }, mime = 'image/png') {
   const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml;charset=utf-8' }))
+  let canvas
   try {
     const image = new Image()
     await new Promise((resolve, reject) => { image.onload = resolve; image.onerror = reject; image.src = url })
-    const canvas = document.createElement('canvas')
+    canvas = document.createElement('canvas')
     canvas.width = width * 2; canvas.height = height * 2
     const ctx = canvas.getContext('2d')
     if (!ctx) throw new Error('Canvas unavailable')
     ctx.drawImage(image, 0, 0, canvas.width, canvas.height)
-    return canvas.toDataURL('image/png')
-  } finally { URL.revokeObjectURL(url) }
+    return canvas.toDataURL(mime, 0.92)
+  } finally { if (canvas) { canvas.width=0; canvas.height=0 }; URL.revokeObjectURL(url) }
 }
 
 export async function buildCalendarExport(S, anchor, period, format) {
@@ -26,9 +27,9 @@ export async function buildCalendarExport(S, anchor, period, format) {
   const pdf = new jsPDF({ unit: 'mm', format: 'a4' })
   for (const [i, page] of pages.entries()) {
     if (i) pdf.addPage()
-    const png = await rasterizeReport(page)
+    const jpeg = await rasterizeReport(page, 'image/jpeg')
     const scale = Math.min(190 / page.width, 277 / page.height)
-    pdf.addImage(png, 'PNG', (210 - page.width * scale) / 2, 10, page.width * scale, page.height * scale)
+    pdf.addImage(jpeg, 'JPEG', (210 - page.width * scale) / 2, 10, page.width * scale, page.height * scale)
   }
   return { name, blob: pdf.output('blob') }
 }
@@ -51,7 +52,7 @@ export default function CalendarExport({ S, anchor, close }) {
       } else {
         const file = new File([result.blob], result.name, { type: result.blob.type })
         if (navigator.canShare?.({ files: [file] })) await navigator.share({ files: [file] })
-        else { const a = document.createElement('a'); a.href = result.url; a.download = result.name; a.click() }
+        else { const a = document.createElement('a'); a.href = result.url; a.download = result.name; document.body.appendChild(a); a.click(); a.remove() }
       }
     } catch (e) { if (e.name !== 'AbortError') setError(t('Export failed. Please try again.')) }
   }

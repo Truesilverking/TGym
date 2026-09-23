@@ -1,3 +1,4 @@
+import { openTrainingHistory } from '../components/TrainingHistory.jsx'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore, DEF, hasData } from '../store/useStore.js'
@@ -256,7 +257,7 @@ export default function Settings() {
       </Row>
     </Section>
 
-    <Section title={t('Deload week')} footer={t('Deload follows your cycle from Monday. Saved workouts stay unchanged. Alerts use your reminder time and respect quiet hours.')}>
+    <Section title={t('Deload week')} footer={t('The cycle starts on Monday. Training breaks freeze it and shift its dates. Saved workouts stay unchanged. Alerts respect quiet hours.')}>
       <Row icon="arrowDown" iconTint="var(--orange)" title={t('Scheduled deload')} subtitle={S.deload?.on ? t('{0} normal weeks + {1} deload week', S.deload?.normalWeeks || 6, S.deload?.deloadWeeks || 1) : t('Off')}>
         <Switch checked={!!S.deload?.on} onChange={v => update(s => { s.deload = { ...DEF.deload, ...(s.deload || {}), on: v, startDate: s.deload?.startDate || todayISO() } })} />
       </Row>
@@ -327,6 +328,7 @@ export default function Settings() {
 
     {/* ---------- data: fill it, bring things over, back it up, wipe it ---------- */}
     <Section title={t('Data')}>
+      <Row icon="history" title={t('Training history settings')} accessory="chevron" onClick={openTrainingHistory} />
       {(MOBILE || STANDALONE) && <Row icon="lock" iconTint="var(--acc)" title={t('All Data stays on this device')} subtitle={t('Data is stored locally by default. Cloud copies are sent only when you enable cloud backup.')} />}
       <Row icon="folder" iconTint="var(--blue)" title={t('Backup')} accessory="chevron" onClick={() => useUI.getState().openSheet(() => <BackupSheet onExport={doExport} onImport={() => authorize(() => fileRef.current?.click())} />)} />
       <Row icon="cloud" iconTint="var(--blue)" title={t('Restore')} subtitle={t('Back up, synchronize or restore your TGym data.')} accessory="chevron" onClick={() => openRestoreSheet(authorize)} />

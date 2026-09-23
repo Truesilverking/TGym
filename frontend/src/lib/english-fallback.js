@@ -1,5 +1,20 @@
 // Explicit source-language fallback. Entries in language packs override these values.
 export default {
+'How this pause works':'How this pause works',
+"Training paused": "Training paused",
+"Training break": "Training break",
+"Training resumed": "Training resumed",
+"Pause training": "Pause training",
+"Resume training": "Resume training",
+"Retry saving": "Retry saving",
+"Paused from {0}. Resume when you are ready.": "Paused from {0}. Resume when you are ready.",
+"Pause for illness, travel or recovery. Your streak is protected without adding training days.": "Pause for illness, travel or recovery. Your streak is protected without adding training days.",
+"Workout and deload alerts stop. The deload cycle freezes; resuming shifts it by the paused days. Your usual weekdays stay unchanged, with no catch-up backlog.": "Workout and deload alerts stop. The deload cycle freezes; resuming shifts it by the paused days. Your usual weekdays stay unchanged, with no catch-up backlog.",
+"Starts today, or tomorrow if you already logged a workout today. Previous missed days stay unchanged.": "Starts today, or tomorrow if you already logged a workout today. Previous missed days stay unchanged.",
+"Finish or discard the active workout before pausing your plan.": "Finish or discard the active workout before pausing your plan.",
+"The cycle starts on Monday. Training breaks freeze it and shift its dates. Saved workouts stay unchanged. Alerts respect quiet hours.": "The cycle starts on Monday. Training breaks freeze it and shift its dates. Saved workouts stay unchanged. Alerts respect quiet hours.",
+"Saved, but reminder updates failed. Reopen the app to retry.": "Saved, but reminder updates failed. Reopen the app to retry.",
+
 "Torso": "Torso",
 "Body composition": "Body composition",
 "Metabolism": "Metabolism",
@@ -1315,5 +1330,22 @@ export default {
   "“{0}” already exists. Use the existing exercise instead?": "“{0}” already exists. Use the existing exercise instead?",
   "“{0}” and its exercises will be removed.": "“{0}” and its exercises will be removed.",
   "“{0}” created": "“{0}” created",
-  "“{0}” is very similar to an existing exercise: “{1}”. You can still add it if they are different.": "“{0}” is very similar to an existing exercise: “{1}”. You can still add it if they are different."
+  "“{0}” is very similar to an existing exercise: “{1}”. You can still add it if they are different.": "“{0}” is very similar to an existing exercise: “{1}”. You can still add it if they are different.",
+  "Training history settings": "Training history settings",
+  "Training history": "Training history",
+  "Since when have you trained consistently?": "Since when have you trained consistently?",
+  "Confirm your start date. Earlier records are kept; statistics use the selected period.": "Confirm your start date. Earlier records are kept; statistics use the selected period.",
+  "App tracking began": "App tracking began",
+  "Estimated workouts before app tracking": "Estimated workouts before app tracking",
+  "Usual workouts per week before tracking": "Usual workouts per week before tracking",
+  "Estimates only add to your lifetime total. They do not create sessions, streaks, durations or calendar results. Dates before tracking are not missed workouts.": "Estimates only add to your lifetime total. They do not create sessions, streaks, durations or calendar results. Dates before tracking are not missed workouts.",
+  "Check the dates and estimates. Prior workouts require a start before tracking began.": "Check the dates and estimates. Prior workouts require a start before tracking began.",
+  "Training since {0}": "Training since {0}",
+  "Total workouts": "Total workouts",
+  "Average workouts per week": "Average workouts per week",
+  "Currently scheduled per week": "Currently scheduled per week",
+  "{0} recorded · {1} estimated before tracking": "{0} recorded · {1} estimated before tracking",
+  "Weekly average includes all calendar days since your start, including breaks.": "Weekly average includes all calendar days since your start, including breaks.",
+  "Not tracking yet": "Not tracking yet"
+  ,"Recorded workouts": "Recorded workouts"
 }

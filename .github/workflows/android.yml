@@ -1,7 +1,7 @@
 name: Validate Android
 on:
   push:
-    branches: [main, feature/workout-duration, feature/ui-persistence-audit]
+    branches: [main, feature/workout-duration, feature/ui-persistence-audit, feature/training-pause]
     paths: ['frontend/**', '.github/workflows/android.yml']
   workflow_dispatch:
 permissions:

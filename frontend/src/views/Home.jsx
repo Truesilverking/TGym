@@ -1,3 +1,7 @@
+import { statisticsState, isUntracked } from '../lib/training-history.js'
+import TrainingHistory from '../components/TrainingHistory.jsx'
+import TrainingPauseCard from '../components/TrainingPauseCard.jsx'
+import { isTrainingPaused } from '../lib/training-pause.js'
 import ConsistencyCard from '../components/ConsistencyCard.jsx'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -19,17 +23,19 @@ import StreakFlame from '../components/StreakFlame.jsx'
 export default function Home() {
   const nav = useNavigate()
   const S = useStore(s => s.S)
+  const statsState = statisticsState(S)
   const [weekOffset, setWeekOffset] = useState(0)
 
   const today = new Date()
   const routine = effectiveRoutine(S, todayISO())
   const todayOvr = S.dayPlan[todayISO()] !== undefined
-  const bw = lastBW(S)
-  const prevBW = S.bodyweight.length > 1 ? S.bodyweight[S.bodyweight.length - 2] : null
+  const bw = lastBW(statsState)
+  const prevBW = statsState.bodyweight.length > 1 ? statsState.bodyweight[statsState.bodyweight.length - 2] : null
   const delta = bw && prevBW ? bw.w - prevBW.w : null
   const bmi = bmiFor(bw?.w, S.unit, S.heightCm, S.measurementUnit)
   const streak = trainingStreak(S)
   const deload = deloadStatus(S)
+  const paused = isTrainingPaused(S,todayISO())
 
   const monday = new Date(today); monday.setDate(today.getDate() - ((today.getDay() + 6) % 7) + weekOffset * 7)
   const doneDays = new Set(S.workouts.map(w => w.d))
@@ -41,17 +47,18 @@ export default function Home() {
     const d = new Date(monday); d.setDate(monday.getDate() + i)
     const iso = isoOf(d)
     const eff = effectiveRoutineId(S, iso), ovr = S.dayPlan[iso] !== undefined, done = doneDays.has(iso)
-    const dot = done ? ' done' : ovr && eff ? ' ovr' : eff ? ' plan' : ''
-    strip.push(<div key={i} className={'wday' + (iso === todayISO() ? ' today' : '')} onClick={() => dayOverrideSheet(iso)}>
+    const pausedDay = isTrainingPaused(S,iso)
+    const dot = isUntracked(S,iso) ? '' : done ? ' done' : ovr && eff ? ' ovr' : eff ? ' plan' : ''
+    strip.push(<div key={i} className={'wday' + (pausedDay ? ' paused' : '') + (iso === todayISO() ? ' today' : '')} title={pausedDay ? t('Training paused') : undefined} onClick={() => dayOverrideSheet(iso)}>
       <div className="lbl">{t(DAYS[d.getDay()])}</div><div className="num">{d.getDate()}</div><div className={'dot' + dot} /></div>)
   }
   const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6)
   const wkLabel = weekOffset === 0 ? t('This week') : `${monday.getDate()} ${monday.toLocaleDateString(dateLocale(), { month: 'short' })} – ${sunday.getDate()} ${sunday.toLocaleDateString(dateLocale(), { month: 'short' })}`
 
-  const bwPoints = S.bodyweight.slice(-30).map(b => ({ t: b.t || new Date(b.d).getTime(), y: b.w, d: b.d }))
+  const bwPoints = statsState.bodyweight.slice(-30).map(b => ({ t: b.t || new Date(b.d).getTime(), y: b.w, d: b.d }))
 
   // today's session shown right under the week strip
-  const onToday = () => { if (S.active) nav('/workout'); else if (routine) startFlow(routine.id); else dayOverrideSheet(todayISO()) }
+  const onToday = () => { if (S.active) nav('/workout'); else if (paused) startFlow(); else if (routine) startFlow(routine.id); else dayOverrideSheet(todayISO()) }
 
   return <div className="narrow">
     <div className="hdr hdr-centered">
@@ -85,7 +92,7 @@ export default function Home() {
             <div className="lbl2">{t('Today')}</div>
             <div className="ttl">{S.active ? t('{0} — in progress', S.active.name)
               : doneToday ? (doneToday.name ? t('{0} — done', doneToday.name) : t('Workout done'))
-              : routine ? routine.name : t('Rest day')}{todayOvr && routine && !doneToday ? ' · ' + t('rescheduled') : ''}</div>
+              : paused ? t('Training paused') : routine ? routine.name : t('Rest day')}{todayOvr && routine && !doneToday ? ' · ' + t('rescheduled') : ''}</div>
           </div>
         </div>
         {S.active ? <span className="tag" style={{ color: 'var(--orange)', background: 'color-mix(in srgb,var(--orange) 16%,transparent)' }}>{t('Resume')}</span>
@@ -94,6 +101,9 @@ export default function Home() {
           : <Icon name="plus" className="chev" />}
       </div>
     </div>
+
+    <TrainingHistory promptOnly />
+    <TrainingPauseCard />
 
     <ConsistencyCard S={S} onTimes={sessionTimingSheet} />
 

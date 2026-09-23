@@ -47,3 +47,8 @@ export const localTZ = () => { try { return Intl.DateTimeFormat().resolvedOption
 
 export const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7)
 export const ACCENTS = { lime: '#30d158', sky: '#0a84ff', orange: '#ff9f0a', violet: '#bf5af2', pink: '#ff375f', red: '#ff453a', teal: '#40c8e0', gold: '#ffd60a' }
+export function fmtScheduledDate(iso, locale = dateLocale()) {
+  const date = new Date(iso + 'T12:00:00Z')
+  if (!Number.isFinite(date.getTime())) return ''
+  return new Intl.DateTimeFormat(locale, { weekday:'long', timeZone:'UTC' }).format(date) + ', ' + new Intl.DateTimeFormat(locale, { day:'2-digit', month:'2-digit', year:'numeric', timeZone:'UTC' }).format(date)
+}

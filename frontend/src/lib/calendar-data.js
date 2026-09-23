@@ -1,14 +1,19 @@
+import { isUntracked, trackingStart } from './training-history.js'
+import { loggedWorkouts } from './consistency.js'
+import { isTrainingPaused } from './training-pause.js'
 import { consistencyStats } from './consistency.js'
 import { effectiveRoutineId } from './history.js'
 import { isoOf } from './format.js'
 import { measurementEventsOn } from './measurement-reminders.js'
 
-export function calendarDay(state, iso, now = new Date()) {
-  const workouts = state.workouts.filter(w => w.d === iso)
-  const routine = state.routines.find(r => r.id === effectiveRoutineId(state, iso))
-  const planned = !!effectiveRoutineId(state, iso)
+export function calendarDay(state, iso, now = new Date(), context) {
+  if (context ? iso < context.start : isUntracked(state, iso, isoOf(now))) return { iso, workouts:[], planned:false, measurements:measurementEventsOn(state, iso), name:'', status:'untracked' }
+  state = { ...state, routines:state.routines || [], week:state.week || {}, dayPlan:state.dayPlan || {} }
+  const workouts = context ? context.workouts[iso] || [] : loggedWorkouts(state).filter(w => w.d === iso)
+  const routine = (state.routines || []).find(r => r.id === effectiveRoutineId(state, iso))
+  const planned = !!routine
   return { iso, workouts, planned, measurements: measurementEventsOn(state, iso), name: workouts.at(-1)?.name || routine?.name || '',
-    status: workouts.length ? 'completed' : planned ? (iso < isoOf(now) ? 'missed' : 'pending') : 'rest' }
+    status: workouts.length ? 'completed' : isTrainingPaused(state, iso) ? 'paused' : planned ? (iso < isoOf(now) ? 'missed' : 'pending') : 'rest' }
 }
 const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
 export function calendarPeriod(state, anchor, period, now = new Date()) {
@@ -19,9 +24,11 @@ export function calendarPeriod(state, anchor, period, now = new Date()) {
   if (period === 'week') end.setDate(end.getDate()+6)
   else if (period === 'month') { end.setMonth(end.getMonth()+1); end.setDate(0) }
   else { end.setFullYear(end.getFullYear()+1); end.setDate(0) }
+  const context = { start:trackingStart(state,isoOf(now)), workouts:{} }
+  for (const w of loggedWorkouts(state)) (context.workouts[w.d] ||= []).push(w)
   const days = []
-  for (const d = new Date(start); d <= end; d.setDate(d.getDate()+1)) days.push(calendarDay(state, iso(d), now))
-  const counts = { scheduled: 0, completed: 0, missed: 0, pending: 0, rest: 0 }
+  for (const d = new Date(start); d <= end; d.setDate(d.getDate()+1)) days.push(calendarDay(state, iso(d), now, context))
+  const counts = { scheduled: 0, completed: 0, missed: 0, pending: 0, rest: 0, paused: 0, untracked: 0 }
   for (const day of days) { counts[day.status]++; if (day.planned) counts.scheduled++ }
   const stats = consistencyStats(state, iso(start), iso(end), now)
   return { days, counts, stats, completion: stats.rate == null ? null : Math.round(stats.rate * 100), start: iso(start), end: iso(end) }

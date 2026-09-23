@@ -1174,3 +1174,23 @@ body.framegym-private::after{
 .measurement-history > div { padding-top:8px; line-height:1.7; overflow-wrap:anywhere; }
 .inbody-list button.item { background:transparent; border:0; cursor:pointer; }
 .inbody-list button.item:focus-visible { outline:2px solid var(--acc); outline-offset:-2px; }
+
+.training-pause-card h2 { font-size:18px; margin:0 0 8px; }
+.training-pause-card p { line-height:1.5; margin:8px 0; }
+.training-pause-card .btn { margin-top:8px; }
+.zoomcal-day.paused,.zoomcal-legend i.paused,.hm-c.paused { background:color-mix(in srgb,var(--acc) 18%,var(--surface-2)); outline:1px dashed var(--acc); }
+.zoomcal-selection.paused { border-color:var(--acc); }
+
+.wday.paused .num { border-bottom:1px dashed var(--acc); }
+
+.training-pause-card h2 { font-weight:600; }
+.training-pause-card summary { color:var(--acc); font-size:13px; cursor:pointer; padding:6px 0; }
+
+.training-history-form { display:grid; gap:14px; }
+.training-history-form label { display:grid; gap:6px; }
+.training-history-card h2 { font-size:var(--font-body, 16px); margin:0; }
+.training-history-card .tiles { grid-template-columns:repeat(3,minmax(0,1fr)); }
+.training-history-card .tile .v { font-size:22px; }
+.zoomcal-day.untracked, .zoomcal-mini-month .untracked, .hm-c.untracked { background:var(--fill); color:var(--label-3); opacity:.5; }
+
+.training-history-card .tile { display:flex; flex-direction:column; justify-content:space-between; gap:6px; }

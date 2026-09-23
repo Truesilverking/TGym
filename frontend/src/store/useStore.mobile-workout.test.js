@@ -70,3 +70,29 @@ it('reports a failed durable save and retains the local copy for retry',async()=
  native.save.mockResolvedValue(true)
  await expect(useStore.getState().flushPersistence()).resolves.toBeUndefined()
 })
+
+it('restores an active training break from the native mirror after reopening',async()=>{
+ const trainingPauses=[{id:'break',start:'2026-01-12',end:null}]
+ native.save.mockResolvedValue(true)
+ useStore.getState().update(s=>{s.trainingPauses=trainingPauses})
+ await useStore.getState().flushPersistence()
+ const disk=JSON.parse(JSON.stringify(native.save.mock.calls.at(-1)[0]))
+ localStorage.clear()
+ useStore.setState({S:structuredClone(DEF),ready:false})
+ native.load.mockResolvedValue(disk)
+ await useStore.getState().boot()
+ expect(useStore.getState().S.trainingPauses).toEqual(trainingPauses)
+ expect(useStore.getState().needsMobileOnboarding).toBe(false)
+})
+
+it('restores confirmed training history and estimates from the native mirror',async()=>{
+ const trainingHistory={trackedFrom:'2026-01-12',historicalWorkouts:100,workoutsPerWeek:3,source:'user-estimate'}
+ native.save.mockResolvedValue(true)
+ useStore.getState().update(s=>{s.trainingStartDate='2025-01-01';s.trainingHistory=trainingHistory})
+ await useStore.getState().flushPersistence()
+ const disk=JSON.parse(JSON.stringify(native.save.mock.calls.at(-1)[0]))
+ localStorage.clear();useStore.setState({S:structuredClone(DEF),ready:false});native.load.mockResolvedValue(disk)
+ await useStore.getState().boot()
+ expect(useStore.getState().S.trainingStartDate).toBe('2025-01-01')
+ expect(useStore.getState().S.trainingHistory).toEqual(trainingHistory)
+})

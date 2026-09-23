@@ -1,3 +1,5 @@
+import TrainingPauseCard from '../components/TrainingPauseCard.jsx'
+import { isTrainingPaused } from '../lib/training-pause.js'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
@@ -28,6 +30,7 @@ function StartChooser() {
   const todayR = effectiveRoutine(S, todayISO())
   const todayOvr = S.dayPlan[todayISO()] !== undefined
   const others = S.routines.filter(r => r !== todayR)
+  if(isTrainingPaused(S,todayISO())) return <div className="narrow"><TrainingPauseCard /></div>
   return <div className="narrow">
     <div className="hdr"><div><h1>{t('Start workout')}</h1><div className="sub">{t(DAYN[new Date().getDay()])} — {todayR ? t('today is {0}', todayR.name) : t('rest day, but no one’s stopping you')}</div></div></div>
     {todayR && <div className="card" style={{ borderColor: 'var(--acc)' }}>

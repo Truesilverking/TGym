@@ -14,7 +14,7 @@ const KEY = 'gym_state_v1'
 export const DEF = {
   unit: 'kg', restSec: 90, restPauseSec: 15, restAdvanced: { warmup: 45, supersetMove: 0, supersetRound: 120 }, sound: true, vibration: true, reduceMotion: false, keepAwake: true, lang: 'es',
   theme: 'dark', accent: 'red', body: 'male', targetW: null, heightCm: null,
-  bodyweight: [], measurements: [], inbody: [], measurementUnit: 'cm', measurementReminders: { time: '08:00', notifications: false, items: {} }, routines: [], week: {}, dayPlan: {}, scheduleStarted: null,
+  bodyweight: [], measurements: [], inbody: [], measurementUnit: 'cm', measurementReminders: { time: '08:00', notifications: false, items: {} }, routines: [], week: {}, dayPlan: {}, scheduleStarted: null, trainingPauses: [], trainingStartDate: null, trainingHistory: null,
   exWeights: {}, workouts: [], active: null, customEx: [], gifSize: 'full',
   // effort: which per-set effort scale is logged — 'none' | 'rir' | 'rpe'. null, not 'none', so
   // that a profile which never chose (loaded state is overlaid on DEF, on every path: local,
@@ -50,7 +50,7 @@ function loadState() {
   return clone(DEF)
 }
 
-const hasData = st => !!((st.workouts || []).length || (st.routines || []).length || (st.bodyweight || []).length || (st.measurements || []).length || (st.inbody || []).length)
+const hasData = st => !!(st.trainingStartDate || (st.workouts || []).length || (st.routines || []).length || (st.bodyweight || []).length || (st.measurements || []).length || (st.inbody || []).length || (st.trainingPauses || []).length)
 
 export const useStore = create((set, get) => {
   let pushTm = null

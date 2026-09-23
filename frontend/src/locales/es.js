@@ -9,6 +9,21 @@ export default {
 "Deload: {0} – {1}. Follow your reduced training targets.": "Descarga: {0} – {1}. Sigue tus objetivos de entrenamiento reducidos.",
 "Load {0}% · Working sets {1}% · RIR {2}": "Carga {0}% · Series de trabajo {1}% · RIR {2}",
   ...english,
+'How this pause works':'Cómo funciona la pausa',
+"Training paused": "Entrenamiento en pausa",
+"Training break": "Pausa del plan",
+"Training resumed": "Entrenamiento reanudado",
+"Pause training": "Pausar entrenamientos",
+"Resume training": "Reanudar entrenamientos",
+"Retry saving": "Reintentar guardado",
+"Paused from {0}. Resume when you are ready.": "Pausa desde el {0}. Reanuda cuando estés listo.",
+"Pause for illness, travel or recovery. Your streak is protected without adding training days.": "Pausa por enfermedad, viaje o recuperación. Tu racha se conserva sin sumar días de entrenamiento.",
+"Workout and deload alerts stop. The deload cycle freezes; resuming shifts it by the paused days. Your usual weekdays stay unchanged, with no catch-up backlog.": "Se suspenden los avisos de entrenamiento y descarga. El ciclo de descarga se detiene y se desplaza por los días pausados al reanudar. Mantienes tus días habituales, sin acumular sesiones pendientes.",
+"Starts today, or tomorrow if you already logged a workout today. Previous missed days stay unchanged.": "Empieza hoy, o mañana si ya registraste un entrenamiento hoy. Las ausencias anteriores no cambian.",
+"Finish or discard the active workout before pausing your plan.": "Finaliza o descarta la sesión activa antes de pausar el plan.",
+"The cycle starts on Monday. Training breaks freeze it and shift its dates. Saved workouts stay unchanged. Alerts respect quiet hours.": "El ciclo comienza un lunes. Las pausas lo detienen y desplazan sus fechas. Los entrenamientos guardados no cambian. Los avisos respetan las horas de no molestar.",
+"Saved, but reminder updates failed. Reopen the app to retry.": "Guardado, pero no se pudieron actualizar los avisos. Reabre la app para reintentar.",
+
 "Torso": "Torso",
 "Body composition": "Composición corporal",
 "Metabolism": "Metabolismo",
@@ -1257,4 +1272,21 @@ export default {
   ,'Synchronizing…': 'Sincronizando…'
   ,'Synchronize now': 'Sincronizar ahora'
   ,'Camera permission is required to scan the QR code.': 'Se necesita permiso para usar la cámara y escanear el código QR.'
+  ,"Training history settings": "Configuración del historial de entrenamiento"
+  ,"Training history": "Historial de entrenamiento"
+  ,"Since when have you trained consistently?": "¿Desde qué fecha entrenas de forma consistente?"
+  ,"Confirm your start date. Earlier records are kept; statistics use the selected period.": "Confirma tu fecha de inicio. Los registros anteriores se conservan; las estadísticas usan el período seleccionado."
+  ,"App tracking began": "Inicio del seguimiento en la app"
+  ,"Estimated workouts before app tracking": "Entrenamientos estimados antes del seguimiento"
+  ,"Usual workouts per week before tracking": "Entrenamientos habituales por semana antes del seguimiento"
+  ,"Estimates only add to your lifetime total. They do not create sessions, streaks, durations or calendar results. Dates before tracking are not missed workouts.": "Las estimaciones solo se suman al total histórico. No crean sesiones, rachas, duraciones ni resultados del calendario. Los días anteriores al seguimiento no cuentan como faltas."
+  ,"Check the dates and estimates. Prior workouts require a start before tracking began.": "Revisa las fechas y estimaciones. Para incluir entrenamientos previos, la fecha de inicio debe ser anterior al seguimiento."
+  ,"Training since {0}": "Entrenando desde {0}"
+  ,"Total workouts": "Entrenamientos totales"
+  ,"Average workouts per week": "Promedio de entrenamientos por semana"
+  ,"Currently scheduled per week": "Programados por semana actualmente"
+  ,"{0} recorded · {1} estimated before tracking": "{0} registrados · {1} estimados antes del seguimiento"
+  ,"Weekly average includes all calendar days since your start, including breaks.": "El promedio semanal incluye todos los días desde el inicio, incluidas las pausas."
+  ,"Not tracking yet": "Sin seguimiento todavía"
+  ,"Recorded workouts": "Entrenamientos registrados"
 }

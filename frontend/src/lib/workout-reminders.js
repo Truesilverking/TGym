@@ -1,10 +1,11 @@
+import { isTrainingPaused, openTrainingPause } from './training-pause.js'
 import { effectiveRoutine } from './history.js'
 import { isoOf } from './format.js'
 import { deloadStatus } from './training-plan.js'
 
 export const DELOAD_NOTIFICATION_IDS = [3200, 3201]
 export function deloadNotificationPlan(S, now = new Date()) {
-  if (!S.deload?.on || S.deload?.notifications === false) return []
+  if (openTrainingPause(S) || isTrainingPaused(S, isoOf(now)) || !S.deload?.on || S.deload?.notifications === false) return []
   const status = deloadStatus(S, isoOf(now))
   if (!status.nextStart) return []
   const start = status.active ? status.start : status.nextStart
@@ -20,14 +21,14 @@ export function deloadNotificationPlan(S, now = new Date()) {
         const [h,m] = to.split(':').map(Number); at.setHours(h,m,0,0)
       }
     }
-    return at > now ? [{id:DELOAD_NOTIFICATION_IDS[index], at, start, end:status.end}] : []
+    return at > now && !isTrainingPaused(S, isoOf(at)) ? [{id:DELOAD_NOTIFICATION_IDS[index], at, start, end:status.end}] : []
   }).filter((notice,index,all) => all.findIndex(n => +n.at === +notice.at) === index)
 }
 
 export const WORKOUT_NOTIFICATION_IDS = [100, 101, 102, 103, 104, 105, 106]
 const timeOf = (value, fallback) => /^([01]\d|2[0-3]):[0-5]\d$/.test(value || '') ? value : fallback
 export function workoutNotificationPlan(state, now = new Date()) {
-  if (!state.reminder?.on) return []
+  if (isTrainingPaused(state, isoOf(now)) || !state.reminder?.on) return []
   const S = {week:{},dayPlan:{},routines:[],workouts:[],...state}
   const today = isoOf(now), settings = S.reminder
   const pending = date => {

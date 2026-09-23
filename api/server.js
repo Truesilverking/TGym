@@ -1,3 +1,4 @@
+import { isTrainingPaused } from './training-pause.js';
 /* opengym-api — passkey (WebAuthn) auth + per-user state storage for openGym
    No framework, JSON-file storage, signed session cookies.               */
 import http from 'node:http';
@@ -185,6 +186,7 @@ function cancelRestTimer(userId) {
 // "Workout planned today" reminder — one per user per day, at their chosen time.
 // Duplicated (not imported) from frontend/src/lib/history.js effectiveRoutineId — tiny pure helper, not worth sharing across the two runtimes.
 function effectiveRoutineId(S, iso) {
+  if (isTrainingPaused(S, iso)) return null;
   const ov = S.dayPlan?.[iso];
   if (ov === 'rest') return null;
   if (ov && S.routines?.some(r => r.id === ov)) return ov;

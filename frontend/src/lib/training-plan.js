@@ -1,10 +1,12 @@
+import { isTrainingPaused, pausedDaysBetween, calendarDateForTrainingDay, dayNumber } from './training-pause.js'
+import { trackingStart, statisticsState, isUntracked } from './training-history.js'
 import { isoOf, todayISO } from './format.js'
 import { isWarmupRow, modeForSet } from './workout-model.js'
 
-const DAY = 86400000
 const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n))
 const atNoon = iso => new Date(iso + 'T12:00:00')
 const effectiveRoutineId = (S, iso) => {
+  if (isTrainingPaused(S, iso)) return null
   const ov = (S.dayPlan || {})[iso]
   if (ov === 'rest') return null
   if (ov && (S.routines || []).some(r => r.id === ov)) return ov
@@ -17,12 +19,12 @@ const matchWorkout = (S, iso, routineId) => {
 
 /** A gym-safe streak: only scheduled training days advance it; rest days neither add nor break. */
 export function trainingStreak(S, now = new Date()) {
+  S = statisticsState(S, isoOf(now))
   const safe = { ...S, routines: S.routines || [], workouts: S.workouts || [], week: S.week || {}, dayPlan: S.dayPlan || {} }
   const endIso = isoOf(now)
-  const firstWorkout = safe.workouts.map(w => w.d).filter(Boolean).sort()[0]
-  const startIso = safe.scheduleStarted || firstWorkout || endIso
+  const startIso = trackingStart(safe, endIso)
   const rows = []
-  for (let i = 730; i >= 0; i--) {
+  for (let i = Math.max(0, dayNumber(endIso) - dayNumber(startIso)); i >= 0; i--) {
     const d = new Date(now); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() - i)
     const iso = isoOf(d)
     if (iso < startIso) continue
@@ -82,24 +84,32 @@ export function deloadStatus(S, iso = todayISO()) {
   if (!c.on || !c.startDate) return { active: false, daysUntil: null, config: c }
   const start = mondayOf(c.startDate), day = atNoon(iso)
   if (!Number.isFinite(start.getTime()) || !Number.isFinite(day.getTime())) return { active: false, daysUntil: null, config: c }
-  // Calendar weeks, not elapsed hours: DST can make a week one hour shorter.
-  const calendarDay = d => Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / DAY
-  const weeks = Math.floor((calendarDay(mondayOf(iso)) - calendarDay(start)) / 7)
+  const anchor = dayNumber(isoOf(start)), today = dayNumber(iso)
+  const elapsed = today - anchor - pausedDaysBetween(S, isoOf(start), iso)
   const normal = clamp(Math.round(c.normalWeeks) || 6, 1, 24)
   const deload = clamp(Math.round(c.deloadWeeks) || 1, 1, 4)
-  const cycle = normal + deload, phase = weeks < 0 ? weeks : weeks % cycle
-  const active = phase >= normal
-  const nextWeek = active ? cycle - phase + normal : normal - phase
-  const nextStart = new Date(mondayOf(iso)); nextStart.setDate(nextStart.getDate() + nextWeek * 7)
-  const currentStart = new Date(mondayOf(iso)); currentStart.setDate(currentStart.getDate() - (phase - normal) * 7)
-  const end = new Date(active ? currentStart : nextStart); end.setDate(end.getDate() + deload * 7 - 1)
-  return { active, week: phase + 1, cycle, daysUntil: active ? 0 : Math.max(0, calendarDay(nextStart) - calendarDay(day)), nextStart: isoOf(nextStart), start: isoOf(active ? currentStart : nextStart), end: isoOf(end), config: c }
+  const cycle = normal + deload
+  const weeks = Math.floor(elapsed / 7), phase = weeks < 0 ? weeks : weeks % cycle
+  const paused = isTrainingPaused(S, iso)
+  const active = !paused && phase >= normal
+  const cycleStart = anchor + (weeks < 0 ? 0 : Math.floor(weeks / cycle) * cycle * 7)
+  const currentStartDay = cycleStart + normal * 7
+  const nextStartDay = phase >= normal ? currentStartDay + cycle * 7 : currentStartDay
+  const convert = n => calendarDateForTrainingDay(S, n, anchor)
+  const nextStart = paused ? null : convert(nextStartDay)
+  const periodStart = active ? convert(currentStartDay) : nextStart
+  const periodEnd = paused ? null : convert((active ? currentStartDay : nextStartDay) + deload * 7 - 1)
+  return { active, paused, week:phase+1, cycle,
+    daysUntil:paused || !nextStart ? null : active ? 0 : Math.max(0,dayNumber(nextStart)-today),
+    nextStart, start:periodStart, end:periodEnd, config:c }
+
 }
 
 // Past sessions retain their recorded status even if the user changes the cycle.
 export function calendarDeload(S, iso) {
+  if (isUntracked(S,iso)) return false
   const workouts = (S.workouts || []).filter(w => w.d === iso)
-  return workouts.some(w => w.deload) || deloadStatus(S, iso).active
+  return workouts.length ? workouts.some(w => w.deload) : deloadStatus(S, iso).active
 }
 
 const snap = (value, step) => Math.max(step || 0, Math.round(value / (step || 1)) * (step || 1))
