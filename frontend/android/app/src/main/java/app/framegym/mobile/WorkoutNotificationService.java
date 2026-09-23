@@ -13,6 +13,10 @@ import java.util.Locale;
 
 /** Native chronometers render seconds; only phase boundaries/minute labels update here. */
 public class WorkoutNotificationService extends Service {
+    private int notificationColor() {
+        try { return android.graphics.Color.parseColor(state.optString("accentColor")); }
+        catch (IllegalArgumentException e) { return NotificationCompat.COLOR_DEFAULT; }
+    }
     private static final String CHANNEL="tgym_workout_live";
     private static final int ID=3100;
     private final Handler handler=new Handler(Looper.getMainLooper());
@@ -35,14 +39,16 @@ public class WorkoutNotificationService extends Service {
     }
     private RemoteViews timerView(int layout, long elapsed, long rest) {
         RemoteViews content=new RemoteViews(getPackageName(),layout);
+        content.setInt(R.id.accent_rail,"setBackgroundColor",notificationColor());
         content.setTextViewText(R.id.workout_label,state.optString("workoutLabel","Workout"));
-        boolean live=!state.optBoolean("paused") && elapsed<3600000;
+        boolean live=!state.optBoolean("paused");
         content.setViewVisibility(R.id.workout_clock,live?View.VISIBLE:View.GONE);
         content.setViewVisibility(R.id.workout_duration,live?View.GONE:View.VISIBLE);
         content.setTextViewText(R.id.workout_duration,duration(elapsed));
         content.setChronometer(R.id.workout_clock,SystemClock.elapsedRealtime()-elapsed,null,live);
-        content.setViewVisibility(R.id.rest_row,rest>0?View.VISIBLE:View.GONE);
-        content.setTextViewText(R.id.rest_label,state.optString("restLabel","Rest"));
+        content.setViewVisibility(R.id.rest_row,state.optLong("restEndsAt")>0?View.VISIBLE:View.GONE);
+        content.setTextViewText(R.id.rest_label,state.optString("restLabel","Rest")+(rest<=0?" · "+state.optString("restDoneLabel","Done"):""));
+        content.setViewVisibility(R.id.rest_clock,rest>0?View.VISIBLE:View.GONE);
         if(rest>0){
             if(Build.VERSION.SDK_INT>=24){content.setChronometerCountDown(R.id.rest_clock,true);content.setChronometer(R.id.rest_clock,SystemClock.elapsedRealtime()+rest,null,true);}
             else {content.setChronometer(R.id.rest_clock,SystemClock.elapsedRealtime(),duration(rest),false);}
@@ -68,7 +74,7 @@ public class WorkoutNotificationService extends Service {
             .setContentText(state.optString("workoutLabel","Workout")+" "+duration(elapsed))
             .setCustomContentView(content)
             .setCustomBigContentView(timerView(R.layout.workout_notification_expanded,elapsed,rest))
-            .setColor(0xFFFF453A).setStyle(new NotificationCompat.DecoratedCustomViewStyle())
+            .setColor(notificationColor()).setStyle(new NotificationCompat.DecoratedCustomViewStyle())
             .setContentIntent(tap).setOngoing(true).setOnlyAlertOnce(true).setSilent(true)
             .setPriority(NotificationCompat.PRIORITY_LOW).build();
         try {

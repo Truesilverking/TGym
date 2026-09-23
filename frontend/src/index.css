@@ -1143,3 +1143,34 @@ body.framegym-private::after{
 .times-metrics .l { font-size:14px; }
 .times-title { margin-bottom:16px; }
 .card:has(.body-weight-title)>.row.between { flex-wrap:wrap; gap:10px; }
+
+/* Compact statistics and grouped, accessible measurement entry. */
+.consistency-metrics { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:12px; }
+.consistency-metrics > div { grid-column:span 2; padding:10px 0; min-width:0; }
+.consistency-metrics > div:nth-child(-n+2) { grid-column:span 3; border-bottom:1px solid var(--sep); }
+.consistency-metrics dt { font-size:12px; overflow-wrap:anywhere; }
+.consistency-metrics dd { font-size:20px; line-height:1.25; font-variant-numeric:tabular-nums; margin:5px 0 0; }
+.consistency-metrics > div:nth-child(-n+2) dd { font-size:26px; color:var(--acc); }
+.consistency-heading h2,.routine-duration h2 { font-size:20px; }
+.routine-duration-list li { align-items:center; gap:12px; padding:12px 0; }
+.routine-duration-name { min-width:0; overflow-wrap:anywhere; }
+.routine-duration-value { flex-shrink:0; font-variant-numeric:tabular-nums; }
+.routine-duration-value strong { font-size:20px; }
+.metric-group { border:1px solid var(--sep); border-radius:var(--radius,16px); padding:12px; margin:16px 0; min-width:0; }
+.metric-group legend { font-size:13px; font-weight:600; padding:0 6px; color:var(--acc); }
+.metric-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px 12px; }
+.metric-fields label { min-width:0; font-size:12px; display:flex; flex-direction:column; gap:6px; }
+.metric-fields input { width:100%; min-width:0; font-variant-numeric:tabular-nums; }
+.metric-fields small { color:var(--label-2); }
+#toast { border:1px solid var(--acc); border-radius:16px; padding:12px 18px; line-height:1.4; max-width:calc(100vw - 32px); }
+.framegym-private::after { color:var(--acc); background:var(--bg); }
+.inbody-list .item { width:100%; text-align:start; color:inherit; font:inherit; }
+.inbody-list .ss { overflow-wrap:anywhere; }
+
+.metric-fields input[aria-invalid="true"] { border-color:var(--red); }
+.metric-fields .metric-error { color:var(--red); }
+.measurement-history { min-width:0; flex:1; padding:6px 0; }
+.measurement-history summary { cursor:pointer; font-size:14px; }
+.measurement-history > div { padding-top:8px; line-height:1.7; overflow-wrap:anywhere; }
+.inbody-list button.item { background:transparent; border:0; cursor:pointer; }
+.inbody-list button.item:focus-visible { outline:2px solid var(--acc); outline-offset:-2px; }

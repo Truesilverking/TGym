@@ -6,7 +6,7 @@ export function workoutNotificationState(active, rest, now=Date.now()) {
   if (!active || active.end != null) return {active:false}
   const paused=active.timerPausedAt != null
   return {active:true,name:active.name || t('Workout'),paused,observedAt:now,
-    elapsedMs:workoutElapsedMs(active,now),workoutLabel:t(paused?'Workout complete!':'Workout'),restLabel:t('Rest'),
+    elapsedMs:workoutElapsedMs(active,now),workoutLabel:t(paused?'Workout complete!':'Workout'),restLabel:t('Rest'),restDoneLabel:t('Done'),
     restEndsAt:rest?.endsAt > now ? rest.endsAt : 0,
     autoFinishAt:paused?0:lastWorkoutActivity(active)+INACTIVITY_AUTO_FINISH_MINUTES*60000}
 }
@@ -15,6 +15,7 @@ let permissionRequested=false
 export function syncWorkoutNotification(active,rest) {
   if (!Capacitor.isNativePlatform() || Capacitor.getPlatform()!=='android') return Promise.resolve(false)
   const state=workoutNotificationState(active,rest)
+  state.accentColor=getComputedStyle(document.documentElement).getPropertyValue('--acc').trim()
   queue=queue.catch(()=>false).then(async()=>{
     if(state.active && !permissionRequested && document.visibilityState!=='hidden') {
       permissionRequested=true

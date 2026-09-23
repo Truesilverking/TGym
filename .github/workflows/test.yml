@@ -10,7 +10,7 @@ on:
       - 'api/**'
       - '.github/workflows/test.yml'
   push:
-    branches: [main, feature/workout-duration]
+    branches: [main, feature/workout-duration, feature/ui-persistence-audit]
     paths:
       - 'frontend/**'
       - 'mcp/**'

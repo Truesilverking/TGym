@@ -1,5 +1,18 @@
 // Explicit source-language fallback. Entries in language packs override these values.
 export default {
+"Torso": "Torso",
+"Body composition": "Body composition",
+"Metabolism": "Metabolism",
+"Water and nutrients": "Water and nutrients",
+"Edit InBody result": "Edit InBody result",
+"Enter a positive number.": "Enter a positive number.",
+"Enter a value above 0 and up to 100.": "Enter a value above 0 and up to 100.",
+"Check the date and highlighted values.": "Check the date and highlighted values.",
+
+"Arms": "Arms",
+"A measurement already exists on this date. Edit it from history.": "A measurement already exists on this date. Edit it from history.",
+"Could not save. Check available storage and try again.": "Could not save. Check available storage and try again.",
+
   'Year': 'Year',
   'Export': 'Export',
   'Checking for updates…': 'Checking for updates…',

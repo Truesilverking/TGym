@@ -46,3 +46,27 @@ it('writes final completion and Continue without waiting for the native debounce
   expect(saved.active.timerPausedAt).toBeUndefined()
   expect(workoutElapsedMs(saved.active, 541 * minute)).toBe(73 * minute)
 })
+
+it('flushes body data and restores images and IDs after closing with WebView storage loss',async()=>{
+ const inbody=[{id:'report',d:'2026-09-01',weight:80,image:'data:image/jpeg;base64,AA'}]
+ const measurements=[{id:'measure',d:'2026-09-01',arm:30,waist:80}]
+ native.save.mockResolvedValue(true)
+ useStore.getState().update(s=>{s.inbody=inbody;s.measurements=measurements})
+ await useStore.getState().flushPersistence()
+ const disk=JSON.parse(JSON.stringify(native.save.mock.calls.at(-1)[0]))
+ localStorage.clear()
+ useStore.setState({S:structuredClone(DEF),ready:false})
+ native.load.mockResolvedValue(disk)
+ await useStore.getState().boot()
+ expect(useStore.getState().S.inbody).toEqual(inbody)
+ expect(useStore.getState().S.measurements).toEqual(measurements)
+ expect(useStore.getState().needsMobileOnboarding).toBe(false)
+})
+it('reports a failed durable save and retains the local copy for retry',async()=>{
+ native.save.mockResolvedValue(false)
+ useStore.getState().update(s=>{s.inbody=[{id:'safe',d:'2026-09-01',image:'photo'}]})
+ await expect(useStore.getState().flushPersistence()).rejects.toThrow('Native storage unavailable')
+ expect(JSON.parse(localStorage.getItem('gym_state_v1')).inbody[0].id).toBe('safe')
+ native.save.mockResolvedValue(true)
+ await expect(useStore.getState().flushPersistence()).resolves.toBeUndefined()
+})

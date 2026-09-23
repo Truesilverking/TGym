@@ -16,3 +16,9 @@ it('serializes native writes so a slow old snapshot cannot replace a paused cloc
   expect(writeFile).toHaveBeenCalledTimes(2)
   expect(JSON.parse(writeFile.mock.calls[1][0].data).active.timerPausedAt).toBe(72*60000)
 })
+
+it('reports storage failure without poisoning subsequent queued saves',async()=>{
+ writeFile.mockRejectedValueOnce(new Error('full')).mockResolvedValueOnce(undefined)
+ expect(await nativeSave({inbody:[{id:'a',image:'photo'}]})).toBe(false)
+ expect(await nativeSave({inbody:[{id:'a',image:'photo'}]})).toBe(true)
+})

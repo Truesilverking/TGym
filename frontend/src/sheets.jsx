@@ -1,3 +1,5 @@
+import MetricFields from './components/MetricFields.jsx'
+import { upsertBodyRecord, parseMetrics, validMeasurementDate } from './lib/body-records.js'
 import MeasurementReminders from './components/MeasurementReminders.jsx'
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from './store/useStore.js'
@@ -192,26 +194,39 @@ export function bwSheet(opts = {}) {
 function MeasurementsSheet({ existing, close, focusMetric }) {
   const st = useStore(s => s.S)
   const initial = existing || {}
+  const recordId = useRef(existing?.id || uid())
+  const [saving, setSaving] = useState(false)
   useEffect(() => { if (focusMetric) document.getElementById('measure-' + focusMetric)?.querySelector('input')?.focus() }, [focusMetric])
   const [date, setDate] = useState(existing?.d || todayISO())
-  const [values, setValues] = useState(() => Object.fromEntries(MEASURE_FIELDS.map(([k]) => [k, measurementValue(initial, k)])))
+  const [values, setValues] = useState(() => Object.fromEntries(MEASURE_FIELDS.map(([k]) => [k, measurementValue(initial, k) || ''])))
   const unit = st.measurementUnit || 'cm'
-  const save = () => {
-    if (!MEASURE_FIELDS.some(([k]) => values[k] > 0)) { toast(t('Enter at least one measurement')); return }
-    update(s => {
-      s.measurements = s.measurements || []
-      const row = { d: date, ...Object.fromEntries(MEASURE_FIELDS.filter(([k]) => values[k] > 0).map(([k]) => [k, Math.round(values[k] * 10) / 10])) }
-      if (existing?.d && existing.d !== date) s.measurements = s.measurements.filter(x => x.d !== existing.d)
-      const i = s.measurements.findIndex(x => x.d === row.d)
-      if (i >= 0) s.measurements[i] = existing ? row : { ...s.measurements[i], ...row }; else s.measurements.push(row)
-    })
-    close(); toast(t('Measurements saved'))
+  const save = async () => {
+    const parsed = parseMetrics(values, MEASURE_FIELDS)
+    if (!validMeasurementDate(date, todayISO()) || !parsed) { toast(t('Check the date and highlighted values.')); return }
+    if (!Object.values(parsed).some(v=>v>0)) { toast(t('Enter at least one measurement')); return }
+    if (existing?.d !== date && (st.measurements || []).some(r=>r.d===date && r.id!==recordId.current)) { toast(t('A measurement already exists on this date. Edit it from history.')); return }
+    setSaving(true)
+    try {
+      update(s => {
+        const index = existing ? (st.measurements || []).indexOf(existing) : -1
+        const row = {...existing, id:recordId.current, d:date, ...parsed}
+        for (const [key] of MEASURE_FIELDS) if(row[key] == null) row[key]=0
+        s.measurements = upsertBodyRecord(s.measurements, row, index)
+      })
+      await useStore.getState().flushPersistence()
+      close(); toast(t('Measurements saved'))
+    } catch { toast(t('Could not save. Check available storage and try again.')) }
+    finally { setSaving(false) }
   }
   return <><h3>{t('Body measurements')}</h3><Button size="sm" onClick={() => measurementRemindersSheet(focusMetric || 'waist')}>{t('Measurement reminder')}</Button><div className="muted small" style={{ marginBottom: 14 }}>{t('Use the same measuring position each time for a useful trend.')}</div>
     <div className="exnote" style={{ marginBottom: 12 }}>{t('Measure relaxed, at the same time of day, without pulling the tape tight. Measure shoulders and chest around their widest point, waist at the navel, limbs at their widest point.')}</div>
     <label className="field-label">{t('Date')}</label><input className="input" type="date" value={date} max={todayISO()} onChange={e => setDate(e.target.value)} />
-    <div className="measurement-grid">{MEASURE_FIELDS.map(([k, label]) => <div id={'measure-' + k} key={k}><Stepper label={t('{0} ({1})', t(label), unit)} value={values[k]} step={0.5} onChange={v => setValues(x => ({ ...x, [k]: v }))} /></div>)}</div>
-    <div style={{ height: 14 }} /><Button variant="primary" onClick={save}>{t('Save')}</Button></>
+    <MetricFields prefix="measure" values={values} onChange={setValues} groups={[
+      ['Torso',MEASURE_FIELDS.slice(0,5).map(([k,l])=>[k,l,unit])],
+      ['Arms',MEASURE_FIELDS.slice(5,9).map(([k,l])=>[k,l,unit])],
+      ['Legs',MEASURE_FIELDS.slice(9).map(([k,l])=>[k,l,unit])],
+    ]} />
+    <div style={{ height: 14 }} /><Button variant="primary" disabled={saving} onClick={save}>{t('Save')}</Button></>
 }
 export const measurementsSheet = (existing, focusMetric) => ui().openSheet(close => <MeasurementsSheet existing={existing} focusMetric={focusMetric} close={close} />)
 export const openMeasurementEntry = metric => metric === 'weight' ? bwSheet() : metric === 'bodySize' ? heightSheet() : measurementsSheet(undefined, metric === 'bodyMeasurements' ? undefined : metric)
@@ -1231,6 +1246,9 @@ function InBodyHistory() {
   const [values, setValues] = useState({})
   const [image, setImage] = useState('')
   const [scanning, setScanning] = useState(false)
+  const [editing, setEditing] = useState(null)
+  const [saving, setSaving] = useState(false)
+  const draftId = useRef(uid())
   const cutoff = range ? Date.now() - range * 86400000 : 0
   const shown = rows.filter(r => !cutoff || new Date(r.d + 'T12:00:00').getTime() >= cutoff)
   const first = shown[0], last = shown.at(-1)
@@ -1244,35 +1262,51 @@ function InBodyHistory() {
     if (!file) return
     if (file.size > 8_000_000) { toast(t('Image must be smaller than 8 MB')); return }
     setScanning(true)
+    let bitmap
     try {
-      const bitmap = await createImageBitmap(file)
+      bitmap = await createImageBitmap(file)
       const canvas = document.createElement('canvas'), max = 1500, scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height))
       canvas.width = Math.round(bitmap.width * scale); canvas.height = Math.round(bitmap.height * scale)
       canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height)
-      setImage(canvas.toDataURL('image/jpeg', .76))
+      let encoded = canvas.toDataURL('image/jpeg', .76)
+      for (const quality of [.65,.5,.35]) {
+        if(encoded.length <= 700000) break
+        encoded = canvas.toDataURL('image/jpeg',quality)
+      }
+      if(encoded.length > 700000) throw new Error('Image too large')
+      setImage(encoded)
       if ('TextDetector' in window) {
-        const blocks = await new window.TextDetector().detect(bitmap)
+        const blocks = await new window.TextDetector().detect(bitmap).catch(()=>[])
         const parsed = parseInBodyText(blocks.map(b => b.rawValue).join('\n'))
         setValues(v => ({ ...v, ...parsed })); toast(Object.keys(parsed).length ? t('{0} InBody values detected. Review them before saving.', Object.keys(parsed).length) : t('No values were detected. Enter them manually while viewing the attached image.'))
       } else toast(t('Automatic text recognition is not available on this phone. The image was attached for manual entry.'))
-      bitmap.close?.()
+
     } catch { toast(t('The image could not be read. Try another photo.')) }
-    finally { setScanning(false) }
+    finally { bitmap?.close?.(); setScanning(false) }
   }
-  const save = () => {
-    if (!date || !Object.values(values).some(v => Number(v) > 0)) { toast(t('Enter at least one InBody value')); return }
-    change(s => { s.inbody = [...(s.inbody || []).filter(r => r.d !== date), { id: uid(), d: date, ...values, ...(image ? { image } : {}) }].sort((a, b) => a.d.localeCompare(b.d)) })
-    setAdding(false); setValues({}); setImage(''); toast(t('InBody result saved'))
+  const save = async () => {
+    const parsed = parseMetrics(values, INBODY_FIELDS)
+    if (!validMeasurementDate(date, todayISO()) || !parsed) { toast(t('Check the date and highlighted values.')); return }
+    if (!image && !Object.values(parsed).some(v=>v>0)) { toast(t('Enter at least one InBody value')); return }
+    setSaving(true)
+    try {
+      change(s => { s.inbody = upsertBodyRecord(s.inbody, {...editing?.record,id:editing?.record.id || draftId.current,d:date,...parsed,image}, editing?.index ?? -1) })
+      await useStore.getState().flushPersistence()
+      setAdding(false); setValues({}); setImage(''); toast(t('InBody result saved'))
+    } catch { toast(t('Could not save. Check available storage and try again.')) }
+    finally { setSaving(false) }
   }
-  if (adding) return <><div className="row between inbody-header"><div><div className="eyebrow">TGym · {t('Progress')}</div><h3>{t('Add InBody result')}</h3></div><Button size="sm" onClick={() => setAdding(false)}>{t('Cancel')}</Button></div>
-    <div className="inbody-date card"><Icon name="calendar" /><label><span>{t('Measurement date')}</span><input className="input" type="date" value={date} onChange={e => setDate(e.target.value)} /></label></div>
-    <div className="inbody-import card"><div className="inbody-import-copy"><b>{t('InBody report')}</b><span>{t('Attach a photo to keep the original report with this measurement.')}</span></div><Button icon="photo" disabled={scanning} onClick={() => document.getElementById('inbody-image')?.click()}>{scanning ? t('Reading image…') : t('Attach report')}</Button></div><input id="inbody-image" type="file" accept="image/*" capture="environment" hidden onChange={e => scan(e.target.files?.[0])} />
+  if (adding) return <><div className="row between inbody-header"><div><div className="eyebrow">TGym · {t('Progress')}</div><h3>{t(editing ? 'Edit InBody result' : 'Add InBody result')}</h3></div><Button size="sm" disabled={scanning || saving} onClick={() => setAdding(false)}>{t('Cancel')}</Button></div>
+    <div className="inbody-date card"><Icon name="calendar" /><label><span>{t('Measurement date')}</span><input className="input" type="date" max={todayISO()} value={date} onChange={e => setDate(e.target.value)} /></label></div>
+    <div className="inbody-import card"><div className="inbody-import-copy"><b>{t('InBody report')}</b><span>{t('Attach a photo to keep the original report with this measurement.')}</span></div><Button icon="photo" disabled={scanning} onClick={() => document.getElementById('inbody-image')?.click()}>{scanning ? t('Reading image…') : t('Attach report')}</Button></div><input id="inbody-image" type="file" accept="image/*" capture="environment" hidden onChange={e => { void scan(e.target.files?.[0]); e.target.value='' }} />
     {image && <img className="inbody-preview" src={image} alt="InBody" />}
-    <div className="inbody-section-title"><span>{t('Measurements')}</span><small>{t('Enter the values shown on your report.')}</small></div><div className="inbody-form">{INBODY_FIELDS.map(([key, label, unit]) => <label key={key}><span>{t(label)}{unit ? ` (${unit})` : ''}</span><NumberField value={values[key] ?? ''} nullable onChange={v => setValues(x => ({ ...x, [key]: v }))} /></label>)}</div><div style={{ height: 12 }} /><Button variant="primary" onClick={save}>{t('Save InBody result')}</Button></>
-  return <><div className="row between inbody-header"><div><div className="eyebrow">TGym · {t('Stats')}</div><h3>{t('InBody history')}</h3></div><Button size="sm" icon="plus" onClick={() => setAdding(true)}>{t('Add')}</Button></div>
+    <div className="inbody-section-title"><span>{t('Measurements')}</span><small>{t('Enter the values shown on your report.')}</small></div><MetricFields values={values} onChange={setValues} groups={[
+      ['Body composition', INBODY_FIELDS.slice(0,4)], ['Metabolism', [INBODY_FIELDS[4],INBODY_FIELDS[5],INBODY_FIELDS[9],INBODY_FIELDS[10]]], ['Water and nutrients',INBODY_FIELDS.slice(6,9)],
+    ]} /><div style={{ height: 12 }} /><Button variant="primary" disabled={scanning || saving} onClick={save}>{t('Save InBody result')}</Button></>
+  return <><div className="row between inbody-header"><div><div className="eyebrow">TGym · {t('Stats')}</div><h3>{t('InBody history')}</h3></div><Button size="sm" icon="plus" onClick={() => { setEditing(null); draftId.current=uid(); setDate(todayISO()); setValues({}); setImage(''); setAdding(true) }}>{t('Add')}</Button></div>
     <Segmented value={range} onChange={setRange} options={[{ value: 30, label: '30d' }, { value: 90, label: '90d' }, { value: 180, label: '6m' }, { value: 0, label: t('All') }]} />
     {first && last && first !== last && <div className="card inbody-compare"><div className="small dim">{fmtDate(first.d, true)} → {fmtDate(last.d, true)}</div>{INBODY_FIELDS.filter(([key]) => first[key] != null && last[key] != null).map(([key, label, unit]) => { const delta = Math.round((last[key] - first[key]) * 10) / 10, trend = trendClass(key, first[key], last[key]); return <div className="row between" key={key}><span>{t(label)}</span><b className={trend}>{delta > 0 ? '+' : ''}{fmtNum(delta)} {unit}{trend && <small> · {t(trend === 'better' ? 'Improved' : 'Moved away from target')}</small>}</b></div> })}</div>}
-    {shown.length ? <div className="list inbody-list">{[...shown].reverse().map(r => <div className="item" key={r.id || r.d} onClick={() => { setDate(r.d); setValues(Object.fromEntries(INBODY_FIELDS.map(([k]) => [k, r[k]]))); setImage(r.image || ''); setAdding(true) }}><span className="lrow-i"><Icon name="person" /></span><div className="grow"><div className="tt">{fmtDate(r.d, true)}</div><div className="ss">{[r.weight && `${r.weight} kg`, r.skeletalMuscle && `${t('Muscle')} ${r.skeletalMuscle} kg`, r.bodyFatPct && `${t('Body fat')} ${r.bodyFatPct}%`].filter(Boolean).join(' · ')}</div></div><Icon name="chevronRight" /></div>)}</div> : <div className="empty">{t('No InBody results in this period')}</div>}
+    {shown.length ? <div className="list inbody-list">{[...shown].reverse().map(r => <button type="button" className="item" key={r.id || st.inbody.indexOf(r)} onClick={() => { setEditing({record:r,index:st.inbody.indexOf(r)}); draftId.current=uid(); setDate(r.d); setValues(Object.fromEntries(INBODY_FIELDS.map(([k]) => [k, r[k]]))); setImage(r.image || ''); setAdding(true) }}><span className="lrow-i"><Icon name="person" /></span><div className="grow"><div className="tt">{fmtDate(r.d, true)}</div><div className="ss">{[r.weight && `${fmtNum(r.weight)} kg`, r.skeletalMuscle && `${t('Muscle')} ${fmtNum(r.skeletalMuscle)} kg`, r.bodyFatPct && `${t('Body fat')} ${fmtNum(r.bodyFatPct)}%`].filter(Boolean).join(' · ')}</div></div><Icon name="chevronRight" /></button>)}</div> : <div className="empty">{t('No InBody results in this period')}</div>}
     <div className="small dim" style={{ marginTop: 10 }}>{t('Changes are descriptive. InBody conditions such as hydration and meal timing can affect each reading.')}</div></>
 }
 export const inBodySheet = () => ui().openSheet(() => <InBodyHistory />)

@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useLayoutEffect } from 'react'
 import { HashRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import { useStore } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
@@ -50,6 +50,24 @@ function applyPrefs(theme, accent, reduceMotion = false) {
   if (meta) meta.content = de.dataset.theme === 'light' ? '#f2f2f7' : '#000000'
 }
 
+export function ThemePreferences() {
+  const S = useStore(s => s.S)
+  useLayoutEffect(() => { applyPrefs(S.theme, S.accent, S.reduceMotion) }, [S.theme, S.accent, S.reduceMotion])
+  // 'system' needs to react live if the OS theme flips while the app is open, not just on
+  // the next mount — a fixed 'dark'/'light' choice never re-fires this since matchMedia
+  // isn't consulted for those.
+  useEffect(() => {
+    if (S.theme !== 'system' || !window.matchMedia) return
+    const mql = window.matchMedia('(prefers-color-scheme: dark)')
+    const onChange = () => applyPrefs(S.theme, S.accent, S.reduceMotion)
+    mql.addEventListener('change', onChange)
+    return () => mql.removeEventListener('change', onChange)
+  }, [S.theme, S.accent, S.reduceMotion])
+  useEffect(() => { setLang(S.lang || 'en') }, [S.lang])
+  useEffect(() => { document.documentElement.lang = S.lang || 'en' }, [S.lang])
+  return null
+}
+
 function Shell() {
   const navigate = useNavigate()
   const loc = useLocation()
@@ -60,7 +78,7 @@ function Shell() {
   const restEndsAt=useUI(s=>s.timer?.endsAt)
   useEffect(()=>{
     if(ready) void syncWorkoutNotification(S.active,restEndsAt?{endsAt:restEndsAt}:null)
-  },[ready,S.active,restEndsAt,langV])
+  },[ready,S.active,restEndsAt,langV,S.accent,S.theme])
   useEffect(()=>{
     if(!MOBILE || !ready)return
     const refresh=()=>{
@@ -130,19 +148,6 @@ function Shell() {
     return () => { clearInterval(timer); document.removeEventListener('visibilitychange',sync) }
   }, [ready])
   useEffect(() => { setNav(navigate) }, [navigate])
-  useEffect(() => { applyPrefs(S.theme, S.accent, S.reduceMotion) }, [S.theme, S.accent, S.reduceMotion])
-  // 'system' needs to react live if the OS theme flips while the app is open, not just on
-  // the next mount — a fixed 'dark'/'light' choice never re-fires this since matchMedia
-  // isn't consulted for those.
-  useEffect(() => {
-    if (S.theme !== 'system' || !window.matchMedia) return
-    const mql = window.matchMedia('(prefers-color-scheme: dark)')
-    const onChange = () => applyPrefs(S.theme, S.accent, S.reduceMotion)
-    mql.addEventListener('change', onChange)
-    return () => mql.removeEventListener('change', onChange)
-  }, [S.theme, S.accent, S.reduceMotion])
-  useEffect(() => { setLang(S.lang || 'en') }, [S.lang])
-  useEffect(() => { document.documentElement.lang = S.lang || 'en' }, [langV, S.lang])
   // every tab/route change starts at the top of the page
   useEffect(() => { window.scrollTo(0, 0) }, [loc.pathname])
   // bound to the workout, not to the route — checking Stats mid-session keeps the screen on
@@ -224,5 +229,5 @@ export default function App() {
     initBackButton().then(fn => { if (gone) fn(); else stop = fn })
     return () => { gone = true; stop?.() }
   }, [])
-  return <HashRouter><AppLock><Shell /></AppLock></HashRouter>
+  return <HashRouter><ThemePreferences /><AppLock><Shell /></AppLock></HashRouter>
 }

@@ -50,7 +50,7 @@ function loadState() {
   return clone(DEF)
 }
 
-const hasData = st => !!((st.workouts || []).length || (st.routines || []).length || (st.bodyweight || []).length)
+const hasData = st => !!((st.workouts || []).length || (st.routines || []).length || (st.bodyweight || []).length || (st.measurements || []).length || (st.inbody || []).length)
 
 export const useStore = create((set, get) => {
   let pushTm = null
@@ -125,6 +125,13 @@ export const useStore = create((set, get) => {
     user: (() => { try { return JSON.parse(localStorage.getItem('gym_user')) || null } catch { return null } })(),
     ready: false,
     needsMobileOnboarding: false,   // mobile build only — set true by boot() on a genuine first launch
+    async flushPersistence() {
+      if (!MOBILE) return
+      clearTimeout(saveTm)
+      saveTm = null
+      if (await nativeSave(get().S) === false) throw new Error('Native storage unavailable')
+      void syncReminder(get().S)
+    },
     async completeOnboarding() {
       localStorage.setItem('framegym_onboarded_v1', '1')
       // Do not leave the final language/unit choice waiting in the debounce queue. A user can

@@ -10,7 +10,7 @@
 // Like the demo build, MOBILE is replaced at build time, so all of this folds away in
 // web bundles; the Capacitor plugins are only ever imported behind it.
 import { t } from './i18n-core.js'
-import { todayISO } from './format.js'
+import { todayISO, ACCENTS } from './format.js'
 import { measurementNotificationPlan, MEASUREMENT_NOTIFICATION_IDS } from './measurement-reminders.js'
 import { workoutNotificationPlan, WORKOUT_NOTIFICATION_IDS, deloadNotificationPlan, DELOAD_NOTIFICATION_IDS } from './workout-reminders.js'
 import { lastWorkoutActivity, INACTIVITY_WARNING_MINUTES } from './workout-time.js'
@@ -35,7 +35,8 @@ export function nativeSave(state) {
     try {
       const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem')
       await Filesystem.writeFile({ path: FILE, directory: Directory.Data, data, encoding: Encoding.UTF8 })
-    } catch (e) { /* keep the localStorage copy */ }
+      return true
+    } catch (e) { return false /* keep the localStorage copy */ }
   })
   return nativeSaveQueue
 }
@@ -83,17 +84,18 @@ async function syncReminderNow(S, interactive = false) {
     let perm = await LocalNotifications.checkPermissions()
     if (perm.display !== 'granted' && interactive) perm = await LocalNotifications.requestPermissions()
     if (perm.display !== 'granted') return false
+    const decorate = notices => notices.map(n=>({...n,smallIcon:'ic_workout_notification',iconColor:ACCENTS[S.accent] || ACCENTS.red}))
     const deloadNotices = deloadNotificationPlan(S).map(n => ({id:n.id, title:t('Deload week'), body:t('Deload: {0} – {1}. Follow your reduced training targets.',n.start,n.end), schedule:{at:n.at,allowWhileIdle:true},extra:{type:'deload'}}))
-    if (deloadNotices.length) await LocalNotifications.schedule({notifications:deloadNotices})
+    if (deloadNotices.length) await LocalNotifications.schedule({notifications:decorate(deloadNotices)})
     if (S.active && S.active.timerPausedAt == null) {
       const at = new Date(lastWorkoutActivity(S.active) + INACTIVITY_WARNING_MINUTES * 60000)
-      if (at > new Date()) await LocalNotifications.schedule({notifications:[{id:3000,title:t('Still training?'),body:t('No activity has been recorded for a while.'),schedule:{at,allowWhileIdle:true},extra:{type:'workout',routineId:S.active.routineId,date:S.active.d}}]})
+      if (at > new Date()) await LocalNotifications.schedule({notifications:[{id:3000,smallIcon:'ic_workout_notification',iconColor:ACCENTS[S.accent] || ACCENTS.red,title:t('Still training?'),body:t('No activity has been recorded for a while.'),schedule:{at,allowWhileIdle:true},extra:{type:'workout',routineId:S.active.routineId,date:S.active.d}}]})
     }
     const measurementNotices = measurementNotificationPlan(S).map(group => ({
       id: group.id, title: t('Time to update your measurements'), body: group.labels.map(label => t(label)).join(', '),
       schedule: { at: group.at, allowWhileIdle: true }, extra: { type: 'measurement', metrics: group.metrics },
     }))
-    if (measurementNotices.length) await LocalNotifications.schedule({ notifications: measurementNotices })
+    if (measurementNotices.length) await LocalNotifications.schedule({ notifications: decorate(measurementNotices) })
     if (!r?.on) return true
     const notifications = workoutNotificationPlan(S).map(notice => ({
       id: notice.id,
@@ -102,7 +104,7 @@ async function syncReminderNow(S, interactive = false) {
       schedule: {at:notice.at,allowWhileIdle:true},
       extra: {type:'workout',routineId:notice.routineId,date:notice.date},
     }))
-    if (notifications.length) await LocalNotifications.schedule({ notifications })
+    if (notifications.length) await LocalNotifications.schedule({ notifications: decorate(notifications) })
     return true
   } catch (e) { return false }
 }

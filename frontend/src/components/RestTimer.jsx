@@ -41,7 +41,7 @@ export default function RestTimer() {
   return (
     <div id="timer" className="rest">
       <div className="head">
-        <div className="t">{clock(timer.left)}</div>
+        <div><div className="lbl">{t('Rest')}</div><div className="t" aria-label={t('Rest')+': '+clock(timer.left)}>{clock(timer.left)}</div></div>
         <div className="bar"><i style={{ width: pct + '%' }} /></div>
       </div>
       <div className="acts">

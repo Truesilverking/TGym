@@ -43,11 +43,15 @@ public class WorkoutNotificationTest {
             assertNotNull("Workout remains visible in background",item);
             InstrumentationRegistry.getInstrumentation().runOnMainSync(()->{
                 View view=item.getNotification().contentView.apply(context,new FrameLayout(context));
-                assertEquals("Rest row hides when countdown finishes",View.GONE,view.findViewById(R.id.rest_row).getVisibility());
+                assertEquals("Rest completion stays visible",View.VISIBLE,view.findViewById(R.id.rest_row).getVisibility());
+                assertEquals(View.GONE,view.findViewById(R.id.rest_clock).getVisibility());
+                assertEquals("Rest · Done",((android.widget.TextView)view.findViewById(R.id.rest_label)).getText().toString());
+                assertEquals(android.graphics.Color.parseColor("#BF5AF2"),item.getNotification().color);
                 assertEquals(View.VISIBLE,view.findViewById(R.id.workout_clock).getVisibility());
                 View expanded=item.getNotification().bigContentView.apply(context,new FrameLayout(context));
                 assertEquals(View.VISIBLE,expanded.findViewById(R.id.workout_clock).getVisibility());
-                assertEquals(View.GONE,expanded.findViewById(R.id.rest_row).getVisibility());
+                assertEquals(View.VISIBLE,expanded.findViewById(R.id.rest_row).getVisibility());
+                assertEquals(View.GONE,expanded.findViewById(R.id.rest_clock).getVisibility());
             });
             item.getNotification().contentIntent.send();
             SystemClock.sleep(1000);

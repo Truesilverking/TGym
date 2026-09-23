@@ -70,7 +70,7 @@ export function sessionTimingSummary(workouts) {
   const longest = sessions.reduce((a, w) => !a || w.durationMs > a.durationMs ? w : a, null)
   let sin = 0, cos = 0
   sessions.forEach(w => {
-    const d = new Date(w.start), mins = d.getHours() * 60 + d.getMinutes()
+    const d = new Date(Number(w.start)), mins = d.getHours() * 60 + d.getMinutes()
     const angle = mins / 1440 * Math.PI * 2
     sin += Math.sin(angle); cos += Math.cos(angle)
   })
