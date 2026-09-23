@@ -19,7 +19,7 @@ import { parseTGymJson } from '../lib/json-import.js'
 import { createBackup } from '../lib/backup.js'
 import { convertMeasurementState, convertWeightState } from '../lib/unit-conversion.js'
 import { openRestoreSheet } from '../components/RestoreSheet.jsx'
-import { manualUpdateCheck } from '../components/AppUpdate.jsx'
+import { UpdateCheckButton } from '../components/AppUpdate.jsx'
 import { APP_REPOSITORY, ORIGINAL_OPENGYM_REPOSITORY } from '../lib/app-meta.js'
 
 function BackupSheet({ onExport, onImport }) {
@@ -353,7 +353,8 @@ export default function Settings() {
         are running, or whether an update actually installed. */}
     <div className="dim small" style={{ textAlign: 'center', marginTop: 4, lineHeight: 1.6 }}>
       TGym v{__APP_VERSION__} · {t('free & open source (AGPL v3)')}<br />
-      <button className="linkbtn" onClick={() => manualUpdateCheck().catch(() => toast(t('Update check unavailable.')))}>{t('Check for updates')}</button>{APP_REPOSITORY && <> · <a href={APP_REPOSITORY} target="_blank" rel="noopener">GitHub</a></>}<br />
+      <UpdateCheckButton />
+      {APP_REPOSITORY && <><a href={APP_REPOSITORY} target="_blank" rel="noopener">GitHub</a><br /></>}
       {t('Based on openGym')} · <a href={ORIGINAL_OPENGYM_REPOSITORY} target="_blank" rel="noopener">{t('original source')}</a> · exercise data: hasaneyldrm/exercises-dataset (MIT)<br />
       exercise images and animations © <a href="https://gymvisual.com/" target="_blank" rel="noopener">Gym visual</a>
     </div>

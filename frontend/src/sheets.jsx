@@ -73,6 +73,7 @@ export function loadStarterPlan() {
   update(st => {
     st.routines.push(push, pull, legs)
     st.week[1] = push.id; st.week[3] = pull.id; st.week[5] = legs.id
+    st.scheduleStarted = todayISO()
   })
   toast(t('Starter plan loaded — Mon Push · Wed Pull · Fri Legs'))
 }

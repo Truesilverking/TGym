@@ -41,7 +41,7 @@ export function updateUrlFor(manifest, distribution = APP_DISTRIBUTION) {
   if (distribution === 'ios') return manifest.ios.appStore
   return distribution === 'github' ? manifest.android.apk : null
 }
-export async function checkForAppUpdate({ currentVersion = __APP_VERSION__, force = false, fetcher = fetch, now = Date.now(), manifestUrl = UPDATE_MANIFEST_URL, distribution = APP_DISTRIBUTION } = {}) {
+export async function checkForAppUpdate({ currentVersion = __APP_VERSION__, force = false, fetcher = fetch, now = Date.now(), manifestUrl = UPDATE_MANIFEST_URL, distribution = APP_DISTRIBUTION, timeoutMs = 15000 } = {}) {
   const pwa = distribution === 'pwa'
   // Web checks only its own deployed build, never an Android release manifest.
   if (pwa) manifestUrl = new URL('build.json', document.baseURI).href
@@ -56,12 +56,59 @@ export async function checkForAppUpdate({ currentVersion = __APP_VERSION__, forc
   // request nonce as well as no-store so a newly published version is seen on
   // the first foreground check instead of waiting for the CDN cache to expire.
   const separator = manifestUrl.includes('?') ? '&' : '?'
-  const response = await fetcher(`${manifestUrl}${separator}check=${now}`, { cache: 'no-store' })
-  if (!response.ok) throw new Error('update_check_failed')
-  const raw = await response.json()
+  const controller = new AbortController()
+  let timer
+  const request = async () => {
+    const response = await fetcher(`${manifestUrl}${separator}check=${now}`, { cache: 'no-store', signal: controller.signal })
+    if (!response.ok) throw new Error('update_check_failed')
+    return response.json()
+  }
+  let raw
+  try {
+    raw = await Promise.race([request(), new Promise((_, reject) => {
+      timer = setTimeout(() => { reject(new Error('update_check_timeout')); controller.abort() }, timeoutMs)
+    })])
+  } finally { clearTimeout(timer) }
   const manifest = pwa ? parseUpdateManifest({version:raw.version, versionCode:0}) : parseUpdateManifest(raw)
   localStorage.setItem(checkedKey, String(now))
   const dismissed = localStorage.getItem(dismissedKey)
   return { throttled: false, manifest, update: updateAvailable(currentVersion, manifest) && (force || dismissed !== manifest.version) ? manifest : null }
 }
 export const dismissUpdate = (version, distribution = APP_DISTRIBUTION) => localStorage.setItem(distribution === 'pwa' ? 'tgym_pwa_update_dismissed' : 'tgym_update_dismissed', version)
+
+// update() can resolve while the new worker is still installing. Never reload into
+// the old cache; wait for installation and then for the new controller to take over.
+export async function activatePwaUpdate(registration, serviceWorker, reload) {
+  if (!registration) { reload(); return }
+  let timer, installing, onState, onController, expired = false
+  try {
+    await Promise.race([(async () => {
+      await registration.update()
+      if (expired) return
+      installing = registration.installing
+      if (installing && installing.state !== 'installed' && installing.state !== 'activated') {
+        await new Promise((resolve, reject) => {
+          onState = () => {
+            if (['installed', 'activated'].includes(installing.state)) resolve()
+            else if (installing.state === 'redundant') reject(new Error('update_install_failed'))
+          }
+          installing.addEventListener('statechange', onState)
+          onState()
+        })
+      }
+      if (expired) return
+      if (registration.waiting) {
+        await new Promise(resolve => {
+          onController = resolve
+          serviceWorker.addEventListener('controllerchange', onController)
+          registration.waiting.postMessage({type:'SKIP_WAITING'})
+        })
+      }
+    })(), new Promise((_, reject) => { timer = setTimeout(() => { expired = true; reject(new Error('update_activation_timeout')) }, 30000) })])
+    reload()
+  } finally {
+    clearTimeout(timer)
+    if (onState) installing.removeEventListener('statechange', onState)
+    if (onController) serviceWorker.removeEventListener('controllerchange', onController)
+  }
+}

@@ -4,7 +4,9 @@ import { createRoot } from 'react-dom/client'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import Home from '../views/Home.jsx'
-import { ZoomCalendar, streakDetailSheet } from '../sheets.jsx'
+import MobileOnboarding from '../views/MobileOnboarding.jsx'
+import { ZoomCalendar, streakDetailSheet, loadStarterPlan } from '../sheets.jsx'
+import { routineConsistency } from '../lib/stats-insights.js'
 import { useStore, DEF } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { setLang } from '../lib/i18n.js'
@@ -19,6 +21,23 @@ beforeEach(async () => {
   host = document.createElement('div'); document.body.appendChild(host); root = createRoot(host)
 })
 afterEach(() => { act(() => { root.unmount(); useUI.getState().closeAll() }); host.remove(); vi.clearAllTimers(); vi.useRealTimers() })
+
+it('starts a new onboarding schedule today without counting earlier workouts as missed',()=>{
+  useStore.setState({S:{...structuredClone(DEF),lang:'en'}})
+  act(()=>root.render(<MobileOnboarding/>))
+  for(let step=0;step<3;step++) act(()=>button('Skip for now').click())
+  act(()=>host.querySelector('.item').click())
+  const state=useStore.getState().S
+  expect(state.scheduleStarted).toBe('2026-09-16')
+  expect(routineConsistency(state).missed).toBe(0)
+})
+
+it('starts the Settings starter plan today as well',()=>{
+  useStore.setState({S:{...structuredClone(DEF),lang:'en'}})
+  act(()=>loadStarterPlan())
+  expect(useStore.getState().S.scheduleStarted).toBe('2026-09-16')
+  expect(routineConsistency(useStore.getState().S).missed).toBe(0)
+})
 
 it('opens the shared calendar from Home with only Week/Month and allows schedule edits', () => {
   act(() => root.render(<MemoryRouter><Home /></MemoryRouter>))

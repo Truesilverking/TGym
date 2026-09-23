@@ -9,6 +9,7 @@ import { Button, Segmented } from '../components/ui.jsx'
 import Icon from '../components/Icon.jsx'
 import { parseTGymJson } from '../lib/json-import.js'
 import { mergePlan } from '../lib/plan-share.js'
+import { todayISO } from '../lib/format.js'
 
 const EQUIPMENT = ['body weight', 'dumbbell', 'barbell', 'cable', 'leverage machine']
 
@@ -35,7 +36,7 @@ export default function MobileOnboarding() {
     } catch { toast(t('Could not read that backup')) } }
     rd.readAsText(f)
   }
-  const installPlan = id => { const plan = createGuidedPlan(id, t); setPlanId(id); update(s => { s.routines.push(...plan.routines); Object.assign(s.week, plan.week) }); next() }
+  const installPlan = id => { const plan = createGuidedPlan(id, t); setPlanId(id); update(s => { s.routines.push(...plan.routines); Object.assign(s.week, plan.week); s.scheduleStarted = todayISO() }); next() }
   const saveEquipment = () => { if (equipment.size) update(s => { const id = 'onboarding-gym'; s.equipProfiles = [{ id, name: t('My gym'), equipment: [...equipment] }]; s.activeEquipId = id; s.equipFilterOn = true }); next() }
   const savePin = async () => { if (!pin) { next(); return }; if (!/^\d{4}$/.test(pin)) return toast(t('PIN must contain 4 digits')); if (pin !== again) return toast(t('PINs do not match')); setRecovery(await setDevicePin(pin)) }
   const chooseLanguage = value => {

@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Capacitor, registerPlugin } from '@capacitor/core'
 import { useUI } from '../store/useUI.js'
 import { useStore } from '../store/useStore.js'
 import { t } from '../lib/i18n.js'
 import { Button } from './ui.jsx'
-import { checkForAppUpdate, dismissUpdate, updateUrlFor } from '../lib/app-update.js'
+import { activatePwaUpdate, checkForAppUpdate, dismissUpdate, updateUrlFor } from '../lib/app-update.js'
 import { APP_DISTRIBUTION } from '../lib/app-meta.js'
 import { createBackup } from '../lib/backup.js'
 import { initializeUpdatePush } from '../lib/update-push.js'
@@ -38,11 +38,7 @@ function UpdateDialog({manifest, close}) {
         if (result.installerOpened) close()
       } else if (distribution === 'pwa') {
         const reg = await navigator.serviceWorker?.getRegistration()
-        await reg?.update()
-        if (reg?.waiting) {
-          navigator.serviceWorker.addEventListener('controllerchange', () => location.reload(), {once:true})
-          reg.waiting.postMessage({type:'SKIP_WAITING'})
-        } else location.reload()
+        await activatePwaUpdate(reg, navigator.serviceWorker, () => location.reload())
       } else {
         const url = updateUrlFor(manifest, distribution)
         if (!url) throw new Error('Update unavailable')
@@ -71,6 +67,25 @@ export async function manualUpdateCheck() {
   const result = await checkForAppUpdate({force:true, distribution})
   if (result.update) showUpdateSheet(result.update)
   else useUI.getState().toast(t('TGym is up to date.'))
+  return result
+}
+export function UpdateCheckButton() {
+  const running = useRef(false)
+  const [busy, setBusy] = useState(false), [message, setMessage] = useState('')
+  const check = async () => {
+    if (running.current) return
+    running.current = true; setBusy(true); setMessage('')
+    try {
+      const result = await manualUpdateCheck()
+      setMessage(result.update ? t('TGym {0} is available.', result.update.version) : t('TGym is up to date.'))
+    } catch {
+      setMessage(t('Could not check for updates. Check your connection and try again.'))
+    } finally { running.current = false; setBusy(false) }
+  }
+  return <div style={{margin:'12px 0'}}>
+    <Button disabled={busy} aria-busy={busy} onClick={check}>{t(busy ? 'Checking for updates…' : 'Check for updates')}</Button>
+    <div role="status" aria-live="polite">{message}</div>
+  </div>
 }
 export default function AppUpdate() {
   useEffect(() => {

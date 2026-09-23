@@ -1,5 +1,9 @@
 // Explicit source-language fallback. Entries in language packs override these values.
 export default {
+  'Year': 'Year',
+  'Export': 'Export',
+  'Checking for updates…': 'Checking for updates…',
+  'Could not check for updates. Check your connection and try again.': 'Could not check for updates. Check your connection and try again.',
 "Month": "Month",
 "No scheduled workout": "No scheduled workout",
 "Consistency Report": "Consistency Report",

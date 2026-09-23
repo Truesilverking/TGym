@@ -1126,6 +1126,7 @@ body.framegym-private::after{
 .hdr-centered { grid-template-columns:64px minmax(0,1fr) 64px; gap:6px; }
 .hdr-centered .hdr-center { min-width:0; }
 .hdr-centered h1 { font-size:clamp(26px,8vw,34px); }
+.hdr-centered:has(.header-streak) h1 { font-size:clamp(16px,5vw,28px); overflow-wrap:anywhere; }
 .hdr-centered .sub { font-size:clamp(11px,3.2vw,15px); }
 .week-expand { display:flex; align-items:center; gap:6px; font-size:15px; font-weight:600; min-height:36px; }
 .week-expand .icn { font-size:12px; }

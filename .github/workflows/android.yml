@@ -35,7 +35,7 @@ jobs:
         run: printf '%s' "$CONFIG" | base64 --decode > frontend/android/app/google-services.json
       - run: pnpm run build:mobile
         working-directory: frontend
-      - run: ./gradlew assembleDebug
+      - run: ./gradlew assembleDebug :app:lintDebug
         working-directory: frontend/android
       - name: Test background workout notification on Android emulator
         shell: bash
