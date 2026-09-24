@@ -22,8 +22,10 @@ public class UpdatePushPlugin extends Plugin {
                     manager.createNotificationChannel(new NotificationChannel(CHANNEL_ID, "TGym updates", NotificationManager.IMPORTANCE_HIGH));
                 }
             }
-            FirebaseMessaging.getInstance().subscribeToTopic("tgym_updates")
-                .addOnSuccessListener(unused -> call.resolve())
+            FirebaseMessaging.getInstance().subscribeToTopic("tgym_updates_v2")
+                .addOnSuccessListener(unused -> FirebaseMessaging.getInstance().unsubscribeFromTopic("tgym_updates")
+                    .addOnSuccessListener(removed -> call.resolve())
+                    .addOnFailureListener(error -> call.reject("Update subscription migration incomplete", error)))
                 .addOnFailureListener(error -> call.reject("Update notifications unavailable", error));
         } catch (Exception error) {
             call.reject("Update notifications unavailable", error);

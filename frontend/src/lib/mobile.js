@@ -15,6 +15,7 @@ import { todayISO, ACCENTS } from './format.js'
 import { measurementNotificationPlan, MEASUREMENT_NOTIFICATION_IDS } from './measurement-reminders.js'
 import { workoutNotificationPlan, WORKOUT_NOTIFICATION_IDS, deloadNotificationPlan, DELOAD_NOTIFICATION_IDS } from './workout-reminders.js'
 import { lastWorkoutActivity, INACTIVITY_WARNING_MINUTES } from './workout-time.js'
+import { syncNativeSounds, finishNativeSoundSync } from './native-sound.js'
 
 export const MOBILE = import.meta.env.VITE_MOBILE === '1'
 
@@ -76,28 +77,29 @@ export function syncReminder(S, interactive = false) {
 async function syncReminderNow(S, interactive = false) {
   try {
     const { LocalNotifications } = await import('@capacitor/local-notifications')
+    const soundSettings = await syncNativeSounds(S)
     await LocalNotifications.cancel({ notifications: WORKOUT_NOTIFICATION_IDS.map(id => ({ id })) })
     await LocalNotifications.cancel({ notifications: MEASUREMENT_NOTIFICATION_IDS.map(id => ({id})) })
     await LocalNotifications.cancel({ notifications: [{id:3000}] })
     await LocalNotifications.cancel({ notifications: DELOAD_NOTIFICATION_IDS.map(id => ({id})) })
     const r = S.reminder
-    if (!r?.on && !S.measurementReminders?.notifications && !S.active && !(S.deload?.on && S.deload?.notifications)) return true
+    if (!r?.on && !S.measurementReminders?.notifications && !S.active && !(S.deload?.on && S.deload?.notifications)) { await finishNativeSoundSync(soundSettings); return true }
     let perm = await LocalNotifications.checkPermissions()
     if (perm.display !== 'granted' && interactive) perm = await LocalNotifications.requestPermissions()
-    if (perm.display !== 'granted') return false
-    const decorate = notices => notices.map(n=>({...n,smallIcon:'ic_workout_notification',iconColor:ACCENTS[S.accent] || ACCENTS.red}))
+    if (perm.display !== 'granted') { await finishNativeSoundSync(soundSettings); return false }
+    const decorate = notices => notices.map(n=>({...n,...notificationSoundOptions(S,soundSettings,n.schedule?.at),smallIcon:'ic_workout_notification',iconColor:ACCENTS[S.accent] || ACCENTS.red}))
     const deloadNotices = deloadNotificationPlan(S).map(n => ({id:n.id, title:t('Deload week'), body:t('Deload: {0} – {1}. Follow your reduced training targets.',n.start,n.end), schedule:{at:n.at,allowWhileIdle:true},extra:{type:'deload'}}))
     if (deloadNotices.length) await LocalNotifications.schedule({notifications:decorate(deloadNotices)})
     if (S.active && S.active.timerPausedAt == null) {
       const at = new Date(lastWorkoutActivity(S.active) + INACTIVITY_WARNING_MINUTES * 60000)
-      if (at > new Date()) await LocalNotifications.schedule({notifications:[{id:3000,smallIcon:'ic_workout_notification',iconColor:ACCENTS[S.accent] || ACCENTS.red,title:t('Still training?'),body:t('No activity has been recorded for a while.'),schedule:{at,allowWhileIdle:true},extra:{type:'workout',routineId:S.active.routineId,date:S.active.d}}]})
+      if (at > new Date()) await LocalNotifications.schedule({notifications:decorate([{id:3000,title:t('Still training?'),body:t('No activity has been recorded for a while.'),schedule:{at,allowWhileIdle:true},extra:{type:'workout',routineId:S.active.routineId,date:S.active.d}}])})
     }
     const measurementNotices = measurementNotificationPlan(S).map(group => ({
       id: group.id, title: t('Time to update your measurements'), body: group.labels.map(label => t(label)).join(', '),
       schedule: { at: group.at, allowWhileIdle: true }, extra: { type: 'measurement', metrics: group.metrics },
     }))
     if (measurementNotices.length) await LocalNotifications.schedule({ notifications: decorate(measurementNotices) })
-    if (!r?.on) return true
+    if (!r?.on) { await finishNativeSoundSync(soundSettings); return true }
     const notifications = workoutNotificationPlan(S).map(notice => ({
       id: notice.id,
       title: t(notice.kind === 'today' ? 'Workout reminder' : 'Next workout reminder'),
@@ -106,8 +108,19 @@ async function syncReminderNow(S, interactive = false) {
       extra: {type:'workout',routineId:notice.routineId,date:notice.date},
     }))
     if (notifications.length) await LocalNotifications.schedule({ notifications: decorate(notifications) })
+    await finishNativeSoundSync(soundSettings)
     return true
   } catch (e) { return false }
+}
+
+export function notificationSoundOptions(S, native, at = new Date()) {
+  if (!native?.channels || !native.notificationSoundsSupported) return {}
+  const r = S.reminder || {}, date = new Date(at)
+  const time = `${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`
+  const start = /^([01]\d|2[0-3]):[0-5]\d$/.test(r.quietStart || '') ? r.quietStart : '22:00'
+  const end = /^([01]\d|2[0-3]):[0-5]\d$/.test(r.quietEnd || '') ? r.quietEnd : '07:00'
+  const quiet = r.quietOn && (start < end ? time >= start && time < end : start !== end && (time >= start || time < end))
+  return {channelId:native.channels[quiet ? 'silent' : S.sound === false ? 'muted' : 'audible']}
 }
 
 // WKWebView can't do blob-URL downloads, so the backup goes out through the OS share sheet

@@ -24,7 +24,7 @@ import { t } from '../lib/i18n.js'
 // 0). Keeps a local string draft while focused so partial input like "33," survives.
 // `nullable` is for fields where "nothing entered" and 0 mean different things (RIR: a
 // logged 0 is a set taken to failure). Those clear back to null instead of snapping to 0.
-export function NumberField({ value, onChange, decimal = true, nullable = false, className = '', ...rest }) {
+export function NumberField({ value, onChange, decimal = true, nullable = false, displayValue, className = '', ...rest }) {
   const [draft, setDraft] = useState(null)
   const committed = useRef(null)
   // null and undefined are the same "empty" here — a nullable field's key is dropped once cleared.
@@ -43,8 +43,16 @@ export function NumberField({ value, onChange, decimal = true, nullable = false,
       type="text"
       inputMode={decimal ? 'decimal' : 'numeric'}
       className={'num ' + className}
-      value={draft ?? (value ?? '')}
-      onFocus={e => e.target.select()}
+      value={draft ?? displayValue ?? (value ?? '')}
+      onFocus={e => {
+        if (displayValue != null) {
+          committed.current = value
+          const numeric = String(value ?? '')
+          setDraft(numeric)
+          e.target.value = numeric
+        }
+        e.target.select()
+      }}
       onChange={e => commit(e.target.value)}
       onBlur={() => { setDraft(null); committed.current = null }}
       {...rest}
@@ -117,13 +125,13 @@ export function Segmented({ options, value, onChange, className = '' }) {
 
 /* ============================ stepper ============================ */
 
-export function Stepper({ value, step = 1, onChange, decimal = true, className = '', label, unit }) {
+export function Stepper({ value, step = 1, onChange, decimal = true, displayValue, className = '', label, unit }) {
   const set = v => onChange(Math.max(0, Math.round((v || 0) * 100) / 100))
   const inner = (
     <div className={'stp ' + className}>
       <button onClick={() => set((+value || 0) - step)} aria-label="Decrease"><Icon name="minus" /></button>
       <span className="val">
-        <NumberField value={value} decimal={decimal} onChange={onChange} />
+        <NumberField value={value} displayValue={displayValue} decimal={decimal} onChange={onChange} aria-label={label} />
         {unit && <i>{unit}</i>}
       </span>
       <button onClick={() => set((+value || 0) + step)} aria-label="Increase"><Icon name="plus" /></button>

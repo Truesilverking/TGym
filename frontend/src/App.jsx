@@ -2,6 +2,8 @@ import { useEffect, useLayoutEffect } from 'react'
 import { HashRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import { useStore } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
+import { primeAudio } from './lib/sound.js'
+import { syncNativeSounds } from './lib/native-sound.js'
 import { bindUI } from './components/ui.jsx'
 import { ACCENTS } from './lib/format.js'
 import { setLang, useLang } from './lib/i18n.js'
@@ -75,6 +77,14 @@ function Shell() {
   const isGuest = useStore(s => s.isGuest())
   const needsMobileOnboarding = useStore(s => s.needsMobileOnboarding)
   const langV = useLang()   // re-renders the whole shell when the language (pack) changes
+  useEffect(() => {
+    if (ready) void syncNativeSounds(S).catch(() => {})
+  }, [ready, S.sound, S.sounds, S.customSounds, S.vibration, S.reminder, S.accent, langV])
+  useEffect(() => {
+    document.addEventListener('pointerdown', primeAudio)
+    document.addEventListener('keydown', primeAudio)
+    return () => { document.removeEventListener('pointerdown', primeAudio); document.removeEventListener('keydown', primeAudio) }
+  }, [])
   const restEndsAt=useUI(s=>s.timer?.endsAt)
   useEffect(()=>{
     if(ready) void syncWorkoutNotification(S.active,restEndsAt?{endsAt:restEndsAt}:null)

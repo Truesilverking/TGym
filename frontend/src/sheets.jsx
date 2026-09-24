@@ -12,7 +12,7 @@ import { EXDB, EXIDX, BODYPARTS, isCardio, isBodyweightEq, allExercises, equipme
 import { activeProfile, exAvailable, ALL_EQUIPMENT, newProfile } from './lib/equipment.js'
 import { fmtDate, fmtNum, fmtVol, fmtDur, durPart, todayISO, isoOf, uid, exCount, DAYN, MONTHS_LONG, ACCENTS } from './lib/format.js'
 import { lastEntryFor, bestWeightFor, buildSets, effectiveRoutineId, workoutVolume, setsDone, setsDoneActive, lastBW, supersetUnits, unitOf, setLabel, defaultConfig, cleanupSg, modeOf, effortOf, isBw, isPerSide, sideReps, workSetsDone, applyIntensifierPlan, MAX_PLANNED_WARMUPS, NOTE_MAX } from './lib/history.js'
-import { beep, vibrate } from './lib/sound.js'
+import { playAppSound, vibrate } from './lib/sound.js'
 import { t, instrFor, exerciseNameFor, getLang, INSTR_LANGS, dateLocale } from './lib/i18n.js'
 import { nav } from './lib/nav.js'
 import { starterRoutines } from './lib/starter.js'
@@ -45,12 +45,12 @@ import LineChart from './components/LineChart.jsx'
 import { pauseWorkoutClock, resumeWorkoutClock, workoutElapsedMs } from './lib/workout-time.js'
 import { effectiveWorkoutComplete, resumeAutoFinished } from './lib/workout-lifecycle.js'
 import { routineMuscleSheet } from './components/RoutineMusclePreview.jsx'
+import { effortValue } from './lib/history.js'
 
 const S = () => useStore.getState().S
 const update = (...a) => useStore.getState().update(...a)
 const ui = () => useUI.getState()
 const toast = m => ui().toast(m)
-const snd = () => S().sound
 const pauseActiveWorkoutClock = () => update(s => { if (s.active) s.active = pauseWorkoutClock(s.active) }, true)
 const resumeActiveWorkoutClock = () => update(s => { if (s.active) s.active = resumeWorkoutClock(s.active) }, true)
 
@@ -732,11 +732,11 @@ function RirRangeFields({ c, setC, role = null, label }) {
   const prefix = role === 'top' ? 'top' : role === 'backoff' ? 'backoff' : 'target'
   const minKey = `${prefix}RirMin`, maxKey = `${prefix}RirMax`
   return <div className="row cfgrow rir-range-fields" style={{ marginBottom: 8 }}>
-    <Stepper label={t(label || 'Minimum RIR')} value={range.min} step={0.5} onChange={v => setC(x => {
+    <Stepper label={t(label || 'Minimum RIR')} value={range.min} displayValue={effortValue('rir', range.min)} step={0.5} onChange={v => setC(x => {
       const min = Math.max(0, Math.min(10, Math.round(v * 2) / 2)); const old = targetRirRangeFor(x, role) || range
       return { ...x, [minKey]: min, [maxKey]: Math.max(min, old.max) }
     })} />
-    <Stepper label={t('Maximum RIR')} value={range.max} step={0.5} onChange={v => setC(x => {
+    <Stepper label={t('Maximum RIR')} value={range.max} displayValue={effortValue('rir', range.max)} step={0.5} onChange={v => setC(x => {
       const max = Math.max(0, Math.min(10, Math.round(v * 2) / 2)); const old = targetRirRangeFor(x, role) || range
       return { ...x, [minKey]: Math.min(old.min, max), [maxKey]: max }
     })} />
@@ -1803,6 +1803,6 @@ export function doFinishWorkout(options = {}) {
   }
   useStore.getState().autoBackupNow()
   useUI.getState().stopRest()
-  beep(snd(), 880, 0.15); beep(snd(), 1100, 0.15, 0.18); beep(snd(), 1320, 0.3, 0.36)
+  void playAppSound(S(), 'completion')
   ui().openSheet(close => <><FinishSummary w={w} prs={prs} e1prs={e1prs} milestone={milestone} close={close} />{w.finishReason==='inactivity' && <Button onClick={()=>{update(s=>resumeAutoFinished(s,w.id));close();nav('/workout')}}>{t('Resume workout')}</Button>}</>, { kind: 'center', locked: true })
 }

@@ -196,6 +196,17 @@ describe('Workout set completion flow', () => {
 })
 
 describe('Top and back-off targets', () => {
+  it('names zero effort and targets Failure while storing and stepping numeric RIR', async () => {
+    await mount([{ id: 'squat', target: { mode: 'reps', reps: 6, targetRirMin: 0, targetRirMax: 0 }, sets: [{ w: 50, r: 6, rir: 0, done: false }] }], 0, S => { S.effort = 'rir' })
+    const input = container.querySelector('.stp.eff input')
+    expect(input.value).toBe('Failure')
+    expect(input.getAttribute('aria-label')).toBe('RIR')
+    expect(container.querySelector('.sethead .eff-sp').textContent).toContain('Failure')
+    expect(mocks.S.active.entries[0].sets[0].rir).toBe(0)
+    await act(async () => { container.querySelector('.stp.eff button[aria-label="Increase"]').click() })
+    expect(mocks.S.active.entries[0].sets[0].rir).toBe(0.5)
+  })
+
   it('shows the full target range even when a legacy profile has effort disabled', async () => {
     await mount([{ id: 'squat', target: { mode: 'reps', reps: 6, targetRirMin: 1, targetRirMax: 2 }, sets: [{ w: 50, r: 6, rir: 2, done: true }] }], 0, S => { S.effort = 'none' })
     expect(container.querySelector('.sethead .eff-sp').textContent).toContain('1–2')

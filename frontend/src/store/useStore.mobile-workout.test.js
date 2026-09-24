@@ -2,6 +2,7 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { useStore, DEF } from './useStore.js'
 import { workoutElapsedMs, resumeWorkoutClock } from '../lib/workout-time.js'
+import { encodeSound, soundChoice } from '../lib/sound-preferences.js'
 
 const native = vi.hoisted(() => ({ load: vi.fn(), save: vi.fn(), reminder: vi.fn() }))
 vi.mock('../lib/mobile.js', () => ({
@@ -95,4 +96,19 @@ it('restores confirmed training history and estimates from the native mirror',as
  await useStore.getState().boot()
  expect(useStore.getState().S.trainingStartDate).toBe('2025-01-01')
  expect(useStore.getState().S.trainingHistory).toEqual(trainingHistory)
+})
+
+it('restores imported sound bytes and all sound choices after closing and losing WebView storage', async () => {
+  const clip = { id: 'custom_saved', name: 'My chime', data: encodeSound(new Float32Array([.1, -.1, 0])), duration: 3 / 16000 }
+  native.save.mockResolvedValue(true)
+  useStore.getState().update(s => { s.customSounds = [clip]; s.sounds.rest = clip.id; s.sounds.notification = clip.id; s.sounds.countdown = 'silent' })
+  await useStore.getState().flushPersistence()
+  const disk = JSON.parse(JSON.stringify(native.save.mock.calls.at(-1)[0]))
+  localStorage.clear(); useStore.setState({ S: structuredClone(DEF), ready: false }); native.load.mockResolvedValue(disk)
+  await useStore.getState().boot()
+  const restored = useStore.getState().S
+  expect(soundChoice(restored, 'rest')).toEqual(clip)
+  expect(soundChoice(restored, 'notification')).toEqual(clip)
+  expect(restored.sounds.countdown).toBe('silent')
+  expect(JSON.parse(localStorage.getItem('gym_state_v1')).customSounds).toEqual([clip])
 })

@@ -68,6 +68,7 @@ public class WorkoutNotificationService extends Service {
         Intent open=new Intent(this,MainActivity.class).setData(Uri.parse("tgym://workout")).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP|Intent.FLAG_ACTIVITY_CLEAR_TOP);
         PendingIntent tap=PendingIntent.getActivity(this,3100,open,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
         long rest=state.optLong("restEndsAt")-now;
+        if(state.optLong("restEndsAt")>0 && rest<=0) SoundPreferences.play(this,"rest",false,state.optLong("restEndsAt"));
         RemoteViews content=timerView(R.layout.workout_notification,elapsed,rest);
         Notification notice=new NotificationCompat.Builder(this,CHANNEL)
             .setSmallIcon(R.drawable.ic_workout_notification).setContentTitle("TGym · "+state.optString("name","Workout"))

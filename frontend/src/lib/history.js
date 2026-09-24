@@ -74,6 +74,13 @@ export const EFFORT = {
   rir: { f: 'rir', hd: 'RIR', step: 0.5, min: 0, max: 10 },
   rpe: { f: 'rpe', hd: 'RPE', step: 0.5, min: 6, max: 10 }
 }
+// Display-only names: keep zero numeric in workouts, targets, exports and calculations.
+export const effortValue = (kind, value) =>
+  value == null || value === '' ? '—' : kind === 'rir' && Number(value) === 0 ? t('Failure') : fmtNum(value)
+export const effortLabel = (kind, value) =>
+  value == null || value === '' ? '—' : kind === 'rir' && Number(value) === 0 ? t('Failure') : `${EFFORT[kind]?.hd || kind} ${fmtNum(value)}`
+export const rirRangeLabel = range => range
+  ? effortValue('rir', range.min) + (range.max !== range.min ? `–${effortValue('rir', range.max)}` : '') : ''
 // One tap of an effort stepper. Empty is not 0 — an unlogged effort must not become "went to
 // failure" from one stray tap — so − on an empty cell leaves it empty, and + starts at the
 // bottom of the scale and walks up from there in even steps. Stepping back off the bottom
@@ -103,7 +110,7 @@ export const effortOf = S => {
 // The "(RIR 2)" / "(RPE 8)" tail on a set summary, empty when nothing was logged.
 const effortTail = s => {
   const k = s.rir != null ? 'rir' : s.rpe != null ? 'rpe' : null
-  return k ? ` (${EFFORT[k].hd} ${fmtNum(s[k])})` : ''
+  return k ? ` (${effortLabel(k, s[k])})` : ''
 }
 
 // One-line summary of a logged set. `cfg` carries the mode when the caller has it (a routine

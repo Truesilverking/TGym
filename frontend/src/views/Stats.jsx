@@ -29,6 +29,7 @@ import { MOBILE, shareExport } from '../lib/mobile.js'
 import { bmiBand, bmiFor, MEASURE_FIELDS, measurementValue, routineConsistency } from '../lib/stats-insights.js'
 import { trainingStreak } from '../lib/training-plan.js'
 import { workoutElapsedMs } from '../lib/workout-time.js'
+import { effortLabel } from '../lib/history.js'
 
 async function exportStatsReport(S) {
   const history = historySummary(S)
@@ -270,7 +271,7 @@ function EffortCard({ S }) {
     {sum.rated === 0 ? <div className="muted small">{t('No rated sets in this period.')}</div> : <>
       <div className="row between" style={{ alignItems: 'flex-end', gap: 12 }}>
         <div>
-          <div className="stat-v">{sum.avg == null ? '—' : fmtNum(toScale(kind, sum.avg)) + ' ' + hd}</div>
+          <div className="stat-v">{effortLabel(kind, toScale(kind, sum.avg))}</div>
           <div className="small dim">{t('average effort')}</div>
         </div>
         <div style={{ textAlign: 'right' }}>
@@ -284,11 +285,11 @@ function EffortCard({ S }) {
       </div>}
       {pts.length > 1 && <>
         <h4 className="sec" style={{ marginTop: 12 }}>{t('Week by week')}</h4>
-        <div className="chart"><LineChart points={pts} h={140} unit={hd} color="var(--yellow)" invert={kind === 'rir'} /></div>
+        <div className="chart"><LineChart points={pts} h={140} unit={hd} color="var(--yellow)" invert={kind === 'rir'} formatValue={v => effortLabel(kind, v)} /></div>
       </>}
       <h4 className="sec" style={{ marginTop: 12 }}>{t('Where the sets land')}</h4>
       {hist.map(b => <div key={b.rir} className="mrow">
-        <span className="nm">{hd} {binLabel(b)}</span>
+        <span className="nm">{kind === 'rir' && b.rir === 0 ? effortLabel(kind, 0) : `${hd} ${binLabel(b)}`}</span>
         <span className="bar"><i style={{ width: Math.round(b.n / maxBin * 100) + '%', background: b.rir <= HARD_RIR ? 'var(--yellow)' : 'var(--label-3)' }} /></span>
         <span className="v">{b.n ? b.n + ' · ' + Math.round(b.pct * 100) + '%' : '—'}</span>
       </div>)}
@@ -420,7 +421,7 @@ export default function Stats() {
     t: p.t, y: p.y, d: p.d,
     // 0 RIR (nothing left) is a full dot, 4+ a faint one; unrated sessions keep the plain line.
     m: exRir[i] == null ? null : 1 - Math.min(4, Math.max(0, exRir[i])) / 4,
-    note: exRir[i] == null ? undefined : hd + ' ' + fmtNum(toScale(kind, exRir[i]))
+    note: exRir[i] == null ? undefined : effortLabel(kind, toScale(kind, exRir[i]))
   }))
   const exOpts = [{ value: 'top', label: t('Top set') }]
   if (showE1) exOpts.push({ value: 'e1rm', label: t('Est. 1RM') })
@@ -491,7 +492,7 @@ export default function Stats() {
           {exOpts.length > 1 && <Segmented className="seg-range" value={onEff ? 'effort' : onE1 ? 'e1rm' : 'top'} onChange={setExMetric} options={exOpts} />}
           <div className="chart">
             {onEff
-              ? <LineChart points={effPts} h={150} unit={hd} color="var(--yellow)" invert={kind === 'rir'} />
+              ? <LineChart points={effPts} h={150} unit={hd} color="var(--yellow)" invert={kind === 'rir'} formatValue={v => effortLabel(kind, v)} />
               : <LineChart points={onE1 ? e1ChartPts : topPts} h={150} unit={exUnit} color="var(--blue)" />}
           </div>
           <ExerciseSessions name={nameOf(curEx)} exerciseId={curEx} sessions={exList} />

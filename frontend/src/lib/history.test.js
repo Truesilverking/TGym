@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { modeOf, isTimed, fmtSec, setLabel, defaultConfig, buildSets, freestyleConfig, exLine, workoutVolume, bestWeightFor, bestWeightForEntry, effortOf, stepEffort, capEffort, isBw, isPerSide, sideReps, repStep, cascadeWeight, cascadeTopBackWeight, cascadeTopBackReps, insertWarmupRow, removeRowAt, workSetsDone, pairAdjacent, unpairSuperset, supersetUnits, applyIntensifierPlan, pinnedNoteFor, exNoteFor } from './history.js'
 import { EXDB } from './exercises.js'
+import { effortValue, effortLabel, rirRangeLabel } from './history.js'
+import { _setLangState } from './i18n-core.js'
 
 // Real ids out of the shipped catalogue, so the body-part fallback is exercised for real.
 const CARDIO = EXDB.find(e => e.bp === 'cardio').id
@@ -70,7 +72,7 @@ describe('setLabel', () => {
   it('appends RIR when present, including a valid 0', () => {
     expect(setLabel(LIFT, { w: 60, r: 10, rir: 2 })).toBe('60×10 (RIR 2)')
     expect(setLabel(LIFT, { w: 60, r: 10, rir: 1.5 })).toBe('60×10 (RIR 1.5)')
-    expect(setLabel(LIFT, { w: 60, r: 10, rir: 0 })).toBe('60×10 (RIR 0)')
+    expect(setLabel(LIFT, { w: 60, r: 10, rir: 0 })).toBe('60×10 (Failure)')
   })
 
   it('says nothing about RIR on a set that never logged one', () => {
@@ -90,6 +92,31 @@ describe('setLabel', () => {
     expect(setLabel(LIFT, { w: 60, r: 10, rir: 2 })).toBe('60×10 (RIR 2)')
     // and a set that somehow carries both is described once, by the one it was logged with
     expect(setLabel(LIFT, { w: 60, r: 10, rir: 2, rpe: 8 })).toBe('60×10 (RIR 2)')
+  })
+})
+
+describe('failure display labels', () => {
+  it('distinguishes failure from unrated effort without changing persisted zero', () => {
+    const set = { w: 60, r: 10, rir: 0 }
+    expect(effortValue('rir', 0)).toBe('Failure')
+    expect(effortLabel('rir', '0')).toBe('Failure')
+    expect(effortLabel('rir', 0.5)).toBe('RIR 0.5')
+    expect(effortLabel('rpe', 10)).toBe('RPE 10')
+    expect(effortValue('rir', null)).toBe('—')
+    expect(effortValue('rir', '')).toBe('—')
+    expect(rirRangeLabel({ min: 0, max: 2 })).toBe('Failure–2')
+    expect(rirRangeLabel({ min: 0, max: 0 })).toBe('Failure')
+    expect(setLabel(LIFT, JSON.parse(JSON.stringify(set)))).toBe('60×10 (Failure)')
+    expect(set.rir).toBe(0)
+  })
+
+  it('translates failure when reading existing zero-RIR history and targets', () => {
+    _setLangState('es', { Failure: 'Fallo' })
+    try {
+      expect(setLabel(LIFT, { w: 60, r: 10, rir: 0 })).toBe('60×10 (Fallo)')
+      expect(effortValue('rir', 0)).toBe('Fallo')
+      expect(rirRangeLabel({ min: 0, max: 0 })).toBe('Fallo')
+    } finally { _setLangState('en') }
   })
 })
 
@@ -230,7 +257,7 @@ describe('logging effort across a session', () => {
   it('a set taken to failure is logged, not left blank', () => {
     const v = stepEffort('rir', null, 1)      // one + on an RIR profile
     expect(v).toBe(0)
-    expect(setLabel(LIFT, { w: 100, r: 3, rir: v })).toBe('100×3 (RIR 0)')
+    expect(setLabel(LIFT, { w: 100, r: 3, rir: v })).toBe('100×3 (Failure)')
   })
 
   it('switching the setting mid-history rewrites nothing', () => {

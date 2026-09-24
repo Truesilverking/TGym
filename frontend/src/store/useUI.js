@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { uid } from '../lib/format.js'
-import { beep, vibrate } from '../lib/sound.js'
+import { playAppSound, vibrate } from '../lib/sound.js'
 import { api } from '../lib/api.js'
 import { t } from '../lib/i18n.js'
 import { useStore } from './useStore.js'
@@ -47,10 +47,10 @@ const maybeRestNotification = async () => {
     // service-worker registration path is the one that actually pops there.
     const reg = await navigator.serviceWorker?.getRegistration?.()
     if (reg?.showNotification) {
-      reg.showNotification(t('Rest over — next set!'), { body: t('Rest over — next set!') })
+      reg.showNotification(t('Rest over — next set!'), { body: t('Rest over — next set!'), silent: true })
       return
     }
-    new Notification(t('Rest over — next set!'), { body: t('Rest over — next set!') })
+    new Notification(t('Rest over — next set!'), { body: t('Rest over — next set!'), silent: true })
   } catch {
     // Intentionally ignore: notification APIs vary by browser and policy in edge cases.
   }
@@ -106,12 +106,12 @@ export const useUI = create((set, get) => ({
       if (!tm) return
       const left = Math.max(0, Math.round((tm.endsAt - Date.now()) / 1000))
       if (left === tm.left) return
-      const prefs = useStore.getState().S, snd = prefs.sound && !quietNow()
+      const prefs = useStore.getState().S
       if (left <= 0) {
-        beep(snd, 880, 0.15); beep(snd, 880, 0.15, 0.25); beep(snd, 1320, 0.4, 0.5)
-        if (prefs.vibration !== false && !quietNow()) vibrate([200, 100, 200]); maybeRestNotification(); get().toast(t('Rest over — next set!')); get().stopRest(); return
+        void playAppSound(prefs, 'rest', { occurrence: tm.endsAt })
+        maybeRestNotification(); get().toast(t('Rest over — next set!')); get().stopRest(); return
       }
-      if (left <= 3) beep(snd, 660, 0.1)
+      if (left <= 3) void playAppSound(prefs, 'countdown')
       set({ timer: { ...tm, left } })
     }
     timerInt = setInterval(timerTick, 1000)
@@ -139,9 +139,10 @@ export const useUI = create((set, get) => ({
      purpose: the two mean opposite things, they must never run together, and a work set is
      something you are watching — so it gets no server push (that endpoint says "rest over",
      and a plank does not need a notification you are staring at anyway).
-     `onDone(elapsedSec)` is called both when the countdown reaches zero and on an early
+     `onDone(elapsedSec, { timedOut })` is called both at zero and on an early
      finish; the elapsed time is what actually gets logged, so stopping at 0:38 of a 0:45
-     hold records 0:38 rather than crediting the full target. */
+     hold records 0:38 rather than crediting the full target. A natural finish already
+     plays its work alert; callers must not replace it with the set-completed cue. */
   startWork(sec, label, onDone) {
     get().stopWork()
     get().stopRest()
@@ -155,16 +156,15 @@ export const useUI = create((set, get) => ({
       if (!wk) return
       const left = Math.max(0, Math.round((wk.endsAt - Date.now()) / 1000))
       if (left === wk.left) return
-      const prefs = useStore.getState().S, snd = prefs.sound && !quietNow()
+      const prefs = useStore.getState().S
       if (left <= 0) {
-        beep(snd, 880, 0.15); beep(snd, 880, 0.15, 0.25); beep(snd, 1320, 0.4, 0.5)
-        if (prefs.vibration !== false && !quietNow()) vibrate([200, 100, 200])
+        void playAppSound(prefs, 'work')
         const done = workDone
         get().stopWork()
-        if (done) done(wk.total)
+        if (done) done(wk.total, { timedOut: true })
         return
       }
-      if (left <= 3) beep(snd, 660, 0.1)
+      if (left <= 3) void playAppSound(prefs, 'countdown')
       set({ work: { ...wk, left } })
     }
     workInt = setInterval(workTick, 1000)
@@ -178,7 +178,7 @@ export const useUI = create((set, get) => ({
     const done = workDone
     vibrate(30)
     get().stopWork()
-    if (done) done(elapsed)
+    if (done) done(elapsed, { timedOut: false })
   },
   // Abandon without logging anything.
   stopWork() {

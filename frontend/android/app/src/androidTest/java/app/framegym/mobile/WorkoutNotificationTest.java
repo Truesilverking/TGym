@@ -37,10 +37,12 @@ public class WorkoutNotificationTest {
             assertNotNull(notification());
             assertNotNull(notification().getNotification().contentView);
             assertNotNull(notification().getNotification().bigContentView);
+            long restDeadline=new org.json.JSONObject(context.getSharedPreferences("tgym_workout_live",0).getString("state","{}")).getLong("restEndsAt");
             shell("input keyevent KEYCODE_HOME");
             SystemClock.sleep(6000);
             StatusBarNotification item=notification();
             assertNotNull("Workout remains visible in background",item);
+            assertEquals("Rest signal is claimed once even with the WebView closed",restDeadline,context.getSharedPreferences(SoundPreferences.PREFS,0).getLong("lastRest",0));
             InstrumentationRegistry.getInstrumentation().runOnMainSync(()->{
                 View view=item.getNotification().contentView.apply(context,new FrameLayout(context));
                 assertEquals("Rest completion stays visible",View.VISIBLE,view.findViewById(R.id.rest_row).getVisibility());

@@ -7,7 +7,7 @@ import { useUI } from '../store/useUI.js'
 import { exOr } from '../lib/exercises.js'
 import { effectiveRoutine, lastEntryFor, bestWeightFor, buildSets, freestyleConfig, defaultConfig, setsDoneActive, supersetUnits, unitOf, setLabel, modeOf, isBw, isPerSide, sideReps, repStep, fmtSec, EFFORT, effortOf, stepEffort, capEffort, cascadeWeight, cascadeTopBackWeight, cascadeTopBackReps, insertWarmupRow, removeRowAt, pairAdjacent, unpairSuperset, cleanupSg, applyIntensifierPlan, pinnedNoteFor, exNoteFor, rerampWarmups } from '../lib/history.js'
 import { fmtNum, fmtDate, todayISO, exCount, DAYN } from '../lib/format.js'
-import { beep, vibrate } from '../lib/sound.js'
+import { playAppSound, vibrate } from '../lib/sound.js'
 import { t, exerciseNameFor } from '../lib/i18n.js'
 import { api } from '../lib/api.js'
 import { setProgressHighWater, supersetFlowStep, restAfterSet, restOnRecheck } from '../lib/supersetFlow.js'
@@ -22,6 +22,7 @@ import { restSeconds } from '../lib/rest-policy.js'
 import { seedPlannedRir, applyTrainingPlan, clampReps, deloadStatus, deloadTargetFor, repBounds, repRangeEnabled, rirAdvice, targetRirFor, targetRirRangeFor } from '../lib/training-plan.js'
 import { pauseWorkoutClock, resumeWorkoutClock, workoutElapsedMs } from '../lib/workout-time.js'
 import { effectiveWorkoutComplete } from '../lib/workout-lifecycle.js'
+import { effortValue, rirRangeLabel } from '../lib/history.js'
 
 /* ---------- start chooser (no active workout) ---------- */
 function StartChooser() {
@@ -148,10 +149,11 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
   // Uses the shared stepper markup so a set row picks up the same control styling
   // as every other +/- field in the app.
   const cell = (s, i, col, cls) => (
-    <div className={'stp ' + cls}>
+    <div className={'stp ' + cls + (col.eff === 'rir' && s[col.f] != null && s[col.f] !== '' && Number(s[col.f]) === 0 ? ' effort-failure' : '')}>
       <button aria-label="Decrease" onClick={() => bump(s, i, col, -1)}><Icon name="minus" /></button>
       {/* a typed effort is capped — there is no RPE 12, and 12 reps in reserve is a warm-up */}
       <span className="val"><NumberField decimal={col.dec} nullable={col.opt} value={s[col.f] ?? ''}
+        displayValue={col.eff && s[col.f] != null && s[col.f] !== '' ? effortValue(col.eff, s[col.f]) : undefined} aria-label={col.hd}
         onChange={v => onField(i, col.f, col.eff ? capEffort(col.eff, v) : col.f === 'r' ? clampReps(S, cfg, s, v) : v)} /></span>
       <button aria-label="Increase" onClick={() => bump(s, i, col, 1)}><Icon name="plus" /></button>
     </div>
@@ -209,7 +211,7 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
     {!cardio && !timed && (() => {
       const targetRir = targetRirRangeFor(cfg, null)
       return <div className="row" style={{ gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
-        {targetRir && cfg.setScheme !== 'topback' && <span className="tag nocap">{t('Target RIR')}: {fmtNum(targetRir.min)}{targetRir.max !== targetRir.min ? `–${fmtNum(targetRir.max)}` : ''}</span>}
+        {targetRir && cfg.setScheme !== 'topback' && <span className="tag nocap">{t('Target RIR')}: {rirRangeLabel(targetRir)}</span>}
       </div>
     })()}
     {S.exerciseGoals?.[entry.id] && <div className="small row" style={{ color: 'var(--yellow)', gap: 5, marginBottom: 8 }}><Icon name="target" />{t('Goal')}: {S.exerciseGoals[entry.id].weight > 0 ? fmtNum(S.exerciseGoals[entry.id].weight) + ' ' + S.unit : ''}{S.exerciseGoals[entry.id].weight > 0 && S.exerciseGoals[entry.id].reps > 0 ? ' × ' : ''}{S.exerciseGoals[entry.id].reps > 0 ? S.exerciseGoals[entry.id].reps + ' ' + t('reps') : ''}</div>}
@@ -218,7 +220,7 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
       <div className={'sethead' + (col3 ? ' eff3' : '')}><span className="n-sp" />
         <span className={'w-sp' + (col1.hd === t('Reps') ? ' sethead-range' : '')}><span>{col1.hd}</span>{mode === 'reps' && cfg.setScheme !== 'topback' && col1.hd === t('Reps') && repRangeEnabled(cfg) && <small>{repBounds(cfg).min}-{repBounds(cfg).max}</small>}</span>
         {col2 && <span className={'r-sp' + (col2.hd === t('Reps') ? ' sethead-range' : '')}><span>{col2.hd}</span>{mode === 'reps' && cfg.setScheme !== 'topback' && col2.hd === t('Reps') && repRangeEnabled(cfg) && <small>{repBounds(cfg).min}-{repBounds(cfg).max}</small>}</span>}
-        {col3 && <span className="eff-sp sethead-range"><span>{col3.hd}</span>{cfg.setScheme !== 'topback' && col3.eff === 'rir' && targetRirRangeFor(cfg) && <small>{fmtNum(targetRirRangeFor(cfg).min)}{targetRirRangeFor(cfg).max !== targetRirRangeFor(cfg).min ? `–${fmtNum(targetRirRangeFor(cfg).max)}` : ''}</small>}</span>}{(timed || cardio) && <span className="ck-sp" />}<span className="ck-sp" /></div>
+        {col3 && <span className="eff-sp sethead-range"><span>{col3.hd}</span>{cfg.setScheme !== 'topback' && col3.eff === 'rir' && targetRirRangeFor(cfg) && <small>{rirRangeLabel(targetRirRangeFor(cfg))}</small>}</span>}{(timed || cardio) && <span className="ck-sp" />}<span className="ck-sp" /></div>
       {entry.sets.map((s, i) => {
         const warm = isWarmupRow(s)
         const warmBefore = i > 0 && isWarmupRow(entry.sets[i - 1])
@@ -234,7 +236,7 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
             <span className="n-sp" />
             <span className="w-sp">{col1.f === 'r' && repRangeEnabled(cfg) && <b>{repBounds(cfg, s.role).min}-{repBounds(cfg, s.role).max}</b>}</span>
             {col2 && <span className="r-sp">{col2.f === 'r' && repRangeEnabled(cfg) && <b>{repBounds(cfg, s.role).min}-{repBounds(cfg, s.role).max}</b>}</span>}
-            {col3 && (() => { const rr = targetRirRangeFor(cfg, s.role); const label = rr ? `${fmtNum(rr.min)}${rr.max !== rr.min ? `–${fmtNum(rr.max)}` : ''}` : ''; return <span className="eff-sp" aria-label={rr ? `RIR ${label}` : undefined}>{rr && <b>{label}</b>}</span> })()}
+            {col3 && (() => { const rr = targetRirRangeFor(cfg, s.role); const label = rirRangeLabel(rr); return <span className="eff-sp" aria-label={rr ? `RIR ${label}` : undefined}>{rr && <b>{label}</b>}</span> })()}
             <span className="ck-sp" />
           </div>}
           <div className={'setrow' + (s.done ? ' done' : '') + (col3 ? ' eff3' : '')}>
@@ -438,17 +440,17 @@ function ActiveWorkout() {
         setTimeout(() => {
           const live = useStore.getState().S.active?.entries?.[idx]?.sets?.[i]
           if (!live || live.done) return
-          useUI.getState().startWork(seconds, `${name} · ${t('Right side')}`, rightSec => {
+          useUI.getState().startWork(seconds, `${name} · ${t('Right side')}`, (rightSec, { timedOut = false } = {}) => {
             mutEntry(idx, en => { en.sets[i].rightSec = rightSec; en.sets[i].side = true })
-            if (!useStore.getState().S.active.entries[idx].sets[i].done) toggle(idx, i)
+            if (!useStore.getState().S.active.entries[idx].sets[i].done) toggle(idx, i, { playSound: !timedOut })
           })
         }, 700)
       })
       return
     }
-    useUI.getState().startWork(seconds, name, elapsed => {
+    useUI.getState().startWork(seconds, name, (elapsed, { timedOut = false } = {}) => {
       mutEntry(idx, en => { if (cardio) en.sets[i].min = Math.round(elapsed / 6) / 10; else en.sets[i].sec = elapsed })
-      if (!useStore.getState().S.active.entries[idx].sets[i].done) toggle(idx, i)
+      if (!useStore.getState().S.active.entries[idx].sets[i].done) toggle(idx, i, { playSound: !timedOut })
     })
   }
 
@@ -476,7 +478,7 @@ function ActiveWorkout() {
     else choose()
   }
 
-  const toggle = (idx, i) => {
+  const toggle = (idx, i, { playSound = true } = {}) => {
     const m = modeAt(idx)
     const cardioEntry = m === 'cardio'
     let askTop = false, exJustDone = false, workoutDone = false, checked = false
@@ -485,7 +487,7 @@ function ActiveWorkout() {
       checked = e.sets[i].done
       if (e.sets[i].done) {
         e.sets[i].doneAt = Date.now()
-        beep(S.sound, 1040, 0.12); vibrate(30)
+        if (playSound) void playAppSound(S, 'set')
         workoutDone = effectiveWorkoutComplete({...A,entries:A.entries.map((entry,ui)=>ui===idx?e:entry)})
         // Only loaded reps training has a "working weight" worth confirming — a bodyweight
         // plank has nothing to put in that slider, and neither does a set of push-ups

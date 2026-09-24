@@ -21,6 +21,7 @@ import { createBackup } from '../lib/backup.js'
 import { convertMeasurementState, convertWeightState } from '../lib/unit-conversion.js'
 import { openRestoreSheet } from '../components/RestoreSheet.jsx'
 import { UpdateCheckButton } from '../components/AppUpdate.jsx'
+import { openSoundSettings } from '../components/SoundSettings.jsx'
 import { APP_REPOSITORY, ORIGINAL_OPENGYM_REPOSITORY } from '../lib/app-meta.js'
 
 function BackupSheet({ onExport, onImport }) {
@@ -242,6 +243,7 @@ export default function Settings() {
       <Row icon="bell" iconTint="var(--pink)" title={t('Sounds')}>
         <Switch checked={!!S.sound} onChange={v => update(s => { s.sound = v })} />
       </Row>
+      <Row icon="bell" iconTint="var(--acc)" title={t('Sound preferences')} subtitle={t('Alert tones and your own short sounds')} accessory="chevron" onClick={openSoundSettings} />
       <Row icon="bolt" iconTint="var(--orange)" title={t('Vibration')}><Switch checked={S.vibration !== false} onChange={v => update(s => { s.vibration = v })} /></Row>
       <Row icon="sparkles" iconTint="var(--yellow)" title={t('Reduce animations')} subtitle={t('Use simpler movement effects throughout the app.')}><Switch checked={!!S.reduceMotion} onChange={v => update(s => { s.reduceMotion = v })} /></Row>
       <Row icon="target" iconTint="var(--teal)" title={t('Strict reps')} subtitle={t('Keep repetition controls inside each exercise range.')}>
@@ -387,7 +389,7 @@ function effortHelpSheet() {
       <div className="r hd"><span className="n">{t('RIR')}</span><span className="n">{t('RPE')}</span><span className="f">{t('How it felt')}</span></div>
       {EFFORT_ROWS.map(([rir, rpe, feel], i) => (
         <div key={rir} className={'r' + (i === EFFORT_TYPICAL ? ' on' : '')}>
-          <span className="n">{rir}</span><span className="n">{rpe}</span><span className="f">{t(feel)}</span>
+          <span className="n">{rir === '0' ? t('Failure') : rir}</span><span className="n">{rpe}</span><span className="f">{t(feel)}</span>
         </div>
       ))}
     </div>

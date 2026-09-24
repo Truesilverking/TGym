@@ -1,4 +1,4 @@
-const localOnlyRoots = new Set(['lang', 'theme', 'accent', 'sound', 'vibration', 'reduceMotion', 'keepAwake', 'reminder', 'cloudSync'])
+const localOnlyRoots = new Set(['lang', 'theme', 'accent', 'sound', 'sounds', 'customSounds', 'vibration', 'reduceMotion', 'keepAwake', 'reminder', 'cloudSync'])
 const identity = value => value?.id ?? value?.uuid ?? value?.date ?? value?.at ?? value?.ts ?? value?.createdAt ?? null
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b)
 

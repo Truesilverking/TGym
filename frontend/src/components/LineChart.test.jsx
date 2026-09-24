@@ -48,6 +48,14 @@ function hoverAt(clientX) {
 }
 
 describe('LineChart hover date', () => {
+  it('uses a display formatter for effort without altering numeric chart points', () => {
+    const first = point(2026, 1, 15, 0)
+    act(() => root.render(<LineChart points={[first, point(2026, 2, 15, 2)]} unit="RIR" formatValue={v => v === 0 ? 'Failure' : `RIR ${v}`} />))
+    expect(hoverAt(0)).toBe(`${fmtDate(first.d, true)} · Failure`)
+    expect(hoverAt(340)).toBe(`${fmtDate('2026-02-15', true)} · RIR 2`)
+    expect(first.y).toBe(0)
+  })
+
   it('keeps same-year points in the compact format', () => {
     const first = point(2026, 1, 15, 70)
     renderChart([first, point(2026, 2, 15, 71)])

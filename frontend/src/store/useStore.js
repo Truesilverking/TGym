@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { DEFAULT_SOUNDS } from '../lib/sound-preferences.js'
 import { api, setRemoteAuth } from '../lib/api.js'
 import { localTZ } from '../lib/format.js'
 import { registerCustom } from '../lib/exercises.js'
@@ -13,6 +14,7 @@ import { reconcileWorkoutEdit, ensureWorkoutCompletionPaused } from '../lib/work
 const KEY = 'gym_state_v1'
 export const DEF = {
   unit: 'kg', restSec: 90, restPauseSec: 15, restAdvanced: { warmup: 45, supersetMove: 0, supersetRound: 120 }, sound: true, vibration: true, reduceMotion: false, keepAwake: true, lang: 'es',
+  sounds: { ...DEFAULT_SOUNDS }, customSounds: [],
   theme: 'dark', accent: 'red', body: 'male', targetW: null, heightCm: null,
   bodyweight: [], measurements: [], inbody: [], measurementUnit: 'cm', measurementReminders: { time: '08:00', notifications: false, items: {} }, routines: [], week: {}, dayPlan: {}, scheduleStarted: null, trainingPauses: [], trainingStartDate: null, trainingHistory: null,
   exWeights: {}, workouts: [], active: null, customEx: [], gifSize: 'full',
