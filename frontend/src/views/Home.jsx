@@ -1,6 +1,6 @@
 import { statisticsState, isUntracked } from '../lib/training-history.js'
 import TrainingHistory from '../components/TrainingHistory.jsx'
-import TrainingPauseCard from '../components/TrainingPauseCard.jsx'
+import { TrainingPauseAction } from '../components/TrainingPauseCard.jsx'
 import { isTrainingPaused } from '../lib/training-pause.js'
 import ConsistencyCard from '../components/ConsistencyCard.jsx'
 import { useState } from 'react'
@@ -69,7 +69,7 @@ export default function Home() {
 
     {S.deload?.on && (deload.active || (deload.daysUntil != null && deload.daysUntil <= 7)) && <div className="card" style={{ border: '1px solid color-mix(in srgb,var(--orange) 55%,transparent)' }}><div className="row" style={{ gap: 9 }}><Icon name="arrowDown" style={{ color: 'var(--orange)' }} /><div><b>{deload.active ? t('Deload week') : t('Deload week starts soon')}</b><div className="small dim">{deload.active ? t('Load {0}% · Working sets {1}% · RIR {2}', deload.config.loadPct, deload.config.setPct, effortValue('rir', deload.config.targetRir)) : t('Starts in {0} days.', deload.daysUntil) + ' · ' + deload.start + ' – ' + deload.end}</div></div></div></div>}
 
-    <div className="card">
+    <div className="card" data-tour="calendar">
       <div className="row between" style={{ marginBottom: 8 }}>
         <button className="iconbtn" style={{ width: 30, height: 30, fontSize: 15 }} onClick={() => setWeekOffset(w => w - 1)} aria-label="Previous week"><Icon name="chevronLeft" /></button>
         <button className="week-expand" onClick={() => homeCalendarSheet(monday)} aria-label={t('Expand calendar')}>{wkLabel}<Icon name="chevronRight" /></button>
@@ -103,7 +103,7 @@ export default function Home() {
     </div>
 
     <TrainingHistory promptOnly />
-    <TrainingPauseCard />
+    <TrainingPauseAction onlyPaused />
 
     <ConsistencyCard S={S} onTimes={sessionTimingSheet} />
 

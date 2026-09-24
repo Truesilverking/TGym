@@ -1,3 +1,5 @@
+import { openActivityEditor } from '../components/Activities.jsx'
+import { TrainingPauseAction } from '../components/TrainingPauseCard.jsx'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { DAYN, uid, exCount } from '../lib/format.js'
@@ -99,6 +101,7 @@ export default function Plan() {
       <button className="iconbtn" onClick={planToolsSheet} aria-label={t('Share your plan')} title={t('Share your plan')}><Icon name="upload" /></button>
     </div>
     <div className="cols"><div>
+      <TrainingPauseAction /><Button onClick={()=>openActivityEditor({planning:true})}>{t('Plan activity')}</Button>
       <h4 className="sec week-schedule-title">{t('Week schedule')}</h4>
       <div className="list week-schedule" style={{ display: 'flex', flexDirection: 'column' }}>
         {[1, 2, 3, 4, 5, 6, 0].map(d => {
@@ -111,7 +114,7 @@ export default function Plan() {
         })}
       </div>
     </div><div>
-      <div className="row between" style={{ marginTop: 22, marginBottom: 10 }}>
+      <div className="row between" data-tour="routine" style={{ marginTop: 22, marginBottom: 10 }}>
         <h4 className="sec" style={{ margin: 0 }}>{t('Routines')}</h4>
         <div className="row" style={{ gap: 6 }}><Button size="sm" variant="tinted" icon="sparkles" onClick={guidedPlansSheet}>{t('Guided')}</Button><Button size="sm" variant="tinted" icon="plus" onClick={addRoutine}>{t('New')}</Button></div>
       </div>

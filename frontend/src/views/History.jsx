@@ -13,14 +13,14 @@ import { workoutElapsedMs } from '../lib/workout-time.js'
 
 const csvCell = value => `"${String(value ?? '').replaceAll('"', '""')}"`
 export function historyCsv(S) {
-  const rows = [[t('Date'), t('Start time'), t('End time'), t('Workout duration (min)'), t('Routine'), t('Exercise'), t('Alias'), t('Set'), t('Weight'), t('Unit'), t('Reps'), t('Set duration (s)'), t('Notes')]]
+  const rows = [[t('Date'), t('Start time'), t('End time'), t('Workout duration (min)'), t('Routine'), t('Exercise'), t('Alias'), t('Set'), t('Weight'), t('Unit'), t('Reps'), t('Set duration (s)'), t('Notes'), t('Activity type'), t('Source'), t('Distance (km)'), t('Average heart rate (bpm)'), t('Energy (kcal)'), t('Steps'), t('Elevation gain (m)'), t('Perceived effort (1–10)')]]
   for (const w of S.workouts || []) for (const e of w.entries || []) {
     const ex = exOr(e.id)
     const sets = e.sets?.length ? e.sets : [{}]
     const start = Number.isFinite(Number(w.start)) ? new Date(w.start).toLocaleTimeString(dateLocale(), { hour: '2-digit', minute: '2-digit' }) : ''
     const end = Number(w.end) > Number(w.start) ? new Date(w.end).toLocaleTimeString(dateLocale(), { hour: '2-digit', minute: '2-digit' }) : ''
     const duration = Number(w.end) > Number(w.start) ? Math.round(workoutElapsedMs(w) / 60000) : ''
-    sets.forEach((s, i) => rows.push([w.d, start, end, duration, w.name, exerciseNameFor(ex), S.exerciseAliases?.[e.id] || '', i + 1, s.w ?? '', s.unit || S.unit, s.r ?? '', s.sec ?? '', w.note || '']))
+    sets.forEach((s, i) => rows.push([w.d, start, end, duration, w.name, exerciseNameFor(ex), S.exerciseAliases?.[e.id] || '', i + 1, s.w ?? '', s.unit || S.unit, s.r ?? '', s.sec ?? '', w.note || '', w.activity?.type || e.target?.activityType || '', w.activity?.source || '', w.activity?.distanceKm ?? s.distanceKm ?? '', w.activity?.averageHeartRate ?? '', w.activity?.calories ?? '', w.activity?.steps ?? '', w.activity?.elevationM ?? '', w.activity?.rpe ?? '']))
   }
   return '\ufeff' + rows.map(row => row.map(csvCell).join(',')).join('\r\n')
 }

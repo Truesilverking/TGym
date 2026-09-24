@@ -10,7 +10,9 @@ const effectiveRoutineId = (S, iso) => {
   const ov = (S.dayPlan || {})[iso]
   if (ov === 'rest') return null
   if (ov && (S.routines || []).some(r => r.id === ov)) return ov
-  return (S.week || {})[atNoon(iso).getDay()] || null
+  const id = (S.week || {})[atNoon(iso).getDay()]
+  const from = (S.routines || []).find(r=>r.id===id)?.scheduledFrom
+  return from && iso < from ? null : id || null
 }
 const matchWorkout = (S, iso, routineId) => {
   const routine = (S.routines || []).find(r => r.id === routineId)

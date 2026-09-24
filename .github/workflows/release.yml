@@ -90,47 +90,13 @@ jobs:
           jarsigner -verify "frontend/release/TGym-Android-v${VERSION}.aab"
           OWNER="${GITHUB_REPOSITORY%%/*}"
           NAME="${GITHUB_REPOSITORY#*/}"
-          jq -n --arg version "$VERSION" --argjson code "$CODE" --arg sha "$APK_SHA" --arg cert "$CERT_SHA" --arg commit "$GITHUB_SHA" --arg owner "$OWNER" --arg name "$NAME" --arg pwaVersion "$(jq -er '.pwa.version // .version' "$RUNNER_TEMP/tgym-previous.json")" --arg pwaCommit "$(jq -er '.pwa.sourceCommit // .commit' "$RUNNER_TEMP/tgym-previous.json")" --arg at "$(date -u +%FT%TZ)" '{version:$version,commit:$commit,versionCode:$code,publishedAt:$at,pwa:{version:$pwaVersion,sourceCommit:$pwaCommit},minimumVersion:null,mandatory:false,title:("TGym "+$version),notes:[],android:{apk:("https://github.com/"+$owner+"/"+$name+"/releases/download/v"+$version+"/TGym-Android-v"+$version+".apk"),playStore:null,sha256:$sha,certificateSha256:$cert},ios:{appStore:null}}' > frontend/updates/latest.json
-      # Independent PWA migration: retain its published source/version and patch only
-      # update discovery. The Android release must not ship the new native UI to PWA.
-      - name: Build isolated PWA updater migration
-        shell: bash
+          jq -n --arg version "$VERSION" --argjson code "$CODE" --arg sha "$APK_SHA" --arg cert "$CERT_SHA" --arg commit "$GITHUB_SHA" --arg owner "$OWNER" --arg name "$NAME" --arg pwaVersion "$VERSION" --arg pwaCommit "$GITHUB_SHA" --arg at "$(date -u +%FT%TZ)" '{version:$version,commit:$commit,versionCode:$code,publishedAt:$at,pwa:{version:$pwaVersion,sourceCommit:$pwaCommit},minimumVersion:null,mandatory:false,title:("TGym "+$version),notes:[],android:{apk:("https://github.com/"+$owner+"/"+$name+"/releases/download/v"+$version+"/TGym-Android-v"+$version+".apk"),playStore:null,sha256:$sha,certificateSha256:$cert},ios:{appStore:null}}' > frontend/updates/latest.json
+      - name: Build current PWA
+        working-directory: frontend
         run: |
-          PREVIOUS_COMMIT="$(jq -er '.pwa.sourceCommit // .commit' "$RUNNER_TEMP/tgym-previous.json")"
-          test "$(git rev-parse "${PREVIOUS_COMMIT}^{commit}")" = "$PREVIOUS_COMMIT"
-          git worktree add --detach "$RUNNER_TEMP/tgym-pwa" "$PREVIOUS_COMMIT"
-          cp frontend/src/lib/app-update.js "$RUNNER_TEMP/tgym-pwa/frontend/src/lib/app-update.js"
-          cp frontend/src/components/AppUpdate.jsx "$RUNNER_TEMP/tgym-pwa/frontend/src/components/AppUpdate.jsx"
-          cp frontend/public/sw.js "$RUNNER_TEMP/tgym-pwa/frontend/public/sw.js"
-          cd "$RUNNER_TEMP/tgym-pwa/frontend"
-          pnpm install --frozen-lockfile
-          VITE_GITHUB_OWNER="${GITHUB_REPOSITORY%%/*}" VITE_GITHUB_REPO="${GITHUB_REPOSITORY#*/}" VITE_APP_DISTRIBUTION=pwa pnpm run build:pwa
+          VITE_GITHUB_OWNER=${{ github.repository_owner }} VITE_GITHUB_REPO=${{ github.event.repository.name }} VITE_APP_DISTRIBUTION=pwa pnpm run build:pwa
           mkdir -p dist/updates dist/downloads
-          cp "$RUNNER_TEMP/tgym-previous.json" dist/updates/latest.json
-          curl --fail --location --silent --show-error "$(jq -er '.android.apk' "$RUNNER_TEMP/tgym-previous.json")" -o dist/downloads/TGym-latest.apk
-          echo "PWA_SITE=$RUNNER_TEMP/tgym-pwa/frontend/dist" >> "$GITHUB_ENV"
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          name: pwa-migration
-          path: ${{ env.PWA_SITE }}
-      - uses: actions/deploy-pages@v4
-        with: { artifact_name: pwa-migration }
-      - name: Verify independent PWA migration
-        shell: bash
-        run: |
-          OWNER="${GITHUB_REPOSITORY%%/*}"
-          NAME="${GITHUB_REPOSITORY#*/}"
-          VERIFIED=false
-          for ATTEMPT in {1..12}; do
-            if curl --fail --silent --show-error "https://${OWNER,,}.github.io/${NAME}/build.json?check=${GITHUB_RUN_ID}-${ATTEMPT}" -o "$RUNNER_TEMP/tgym-pwa-build.json" &&
-               test "$(jq -er '.version' "$RUNNER_TEMP/tgym-pwa-build.json")" = "$(jq -er '.pwa.version // .version' "$RUNNER_TEMP/tgym-previous.json")" &&
-               test "$(jq -er '.commit' "$RUNNER_TEMP/tgym-pwa-build.json")" = "$GITHUB_SHA"; then
-              VERIFIED=true
-              break
-            fi
-            sleep 5
-          done
-          test "$VERIFIED" = true
+          echo "PWA_SITE=$GITHUB_WORKSPACE/frontend/dist" >> "$GITHUB_ENV"
       - uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
@@ -139,7 +105,7 @@ jobs:
             frontend/release/TGym-Android-v*.aab
             frontend/release/checksums.txt
             frontend/updates/latest.json
-      - name: Publish native metadata without rebuilding the PWA
+      - name: Publish matching Android and PWA metadata
         run: |
           cp updates/latest.json "$PWA_SITE/updates/latest.json"
           cp release/TGym-Android-v*.apk "$PWA_SITE/downloads/TGym-latest.apk"

@@ -35,3 +35,9 @@ export default function TrainingPauseCard({ onSaved }) {
     <Button variant={pause?'primary':undefined} disabled={busy || (!pause && !!S.active)} onClick={save}>{t(pendingSave?'Retry saving':pause?'Resume training':'Pause training')}</Button>
   </section>
 }
+
+export function TrainingPauseAction({ onlyPaused = false }) {
+  const S = useStore(s => s.S), pause = openTrainingPause(S)
+  if (onlyPaused && !pause) return null
+  return <button data-tour="pause" className={'training-pause-action' + (pause ? ' paused' : '')} onClick={() => useUI.getState().openSheet(close => <TrainingPauseCard onSaved={close} />)}><span className="pause-action-symbol" aria-hidden="true">{pause ? '▶' : 'Ⅱ'}</span><span><b>{t(pause ? 'Training paused' : 'Pause training')}</b><small>{t(pause ? 'Resume when you are ready' : 'Protect your streak during a break')}</small></span><span aria-hidden="true">›</span></button>
+}

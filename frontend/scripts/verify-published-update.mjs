@@ -7,6 +7,7 @@ export function validatePublishedManifest(actual, expected) {
   for (const key of ['version', 'versionCode', 'commit']) {
     if (actual?.[key] !== expected[key]) throw new Error(`Published ${key} differs from built release`)
   }
+  if (expected.pwa && (actual.pwa?.version !== expected.pwa.version || actual.pwa?.sourceCommit !== expected.pwa.sourceCommit)) throw new Error('Published PWA metadata differs from built release')
   for (const key of ['apk', 'sha256', 'certificateSha256']) {
     if (!expected.android?.[key] || actual.android?.[key] !== expected.android[key]) throw new Error(`Published android.${key} differs from built release`)
   }
@@ -41,6 +42,8 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   for (let attempt=0; attempt<12; attempt++) {
     try {
       await verifyPublishedRelease({expected, manifestUrl:`https://${owner.toLowerCase()}.github.io/${repo}/updates/latest.json`, assets})
+      const build = await (await fetch(`https://${owner.toLowerCase()}.github.io/${repo}/build.json?verify=${Date.now()}`, {cache:'no-store'})).json()
+      if (build.version !== expected.pwa.version || build.commit !== expected.pwa.sourceCommit) throw new Error('Published PWA build differs from release')
       console.log(`Verified published ${version}: commit, versionCode, certificate metadata and identical APK/AAB/checksums/manifest bytes`)
       error = null; break
     } catch (e) { error=e; console.log(e.message); if(attempt<11) await new Promise(resolve=>setTimeout(resolve,10000)) }

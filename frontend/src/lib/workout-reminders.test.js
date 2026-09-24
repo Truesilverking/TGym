@@ -12,7 +12,7 @@ describe('state-aware workout reminders',()=>{
     expect(notices[1].at.getHours()).toBe(19)
   })
   it('drops the pending notice after completion and does not immediately send the next',()=>{
-    const S=state(); S.workouts.push({id:'done',d:'2026-09-10',entries:[]})
+    const S=state(); S.workouts.push({id:'done',routineId:'a',d:'2026-09-10',entries:[]})
     const notices=workoutNotificationPlan(S,now)
     expect(notices.map(n=>n.kind)).toEqual(['tomorrow'])
     expect(notices[0].at.getHours()).toBe(19)

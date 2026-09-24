@@ -6,7 +6,7 @@ import { primeAudio } from './lib/sound.js'
 import { syncNativeSounds } from './lib/native-sound.js'
 import { bindUI } from './components/ui.jsx'
 import { ACCENTS } from './lib/format.js'
-import { setLang, useLang } from './lib/i18n.js'
+import { setLang, useLang, t } from './lib/i18n.js'
 import { setNav } from './lib/nav.js'
 import { initBackButton } from './lib/back.js'
 import { useWakeLock } from './lib/wakelock.js'
@@ -30,6 +30,7 @@ import Settings from './views/Settings.jsx'
 import Admin from './views/Admin.jsx'
 import AppLock from './components/AppLock.jsx'
 import AppUpdate from './components/AppUpdate.jsx'
+import AppTour from './components/AppTour.jsx'
 import { backupToGoogleDrive, cloudBackupDue } from './lib/cloud-sync.js'
 import { MOBILE, syncReminder } from './lib/mobile.js'
 import { inactivityState, lastWorkoutActivity } from './lib/workout-time.js'
@@ -73,7 +74,7 @@ export function ThemePreferences() {
 function Shell() {
   const navigate = useNavigate()
   const loc = useLocation()
-  const { S, user, ready } = useStore()
+  const { S, user, ready, storageError } = useStore()
   const isGuest = useStore(s => s.isGuest())
   const needsMobileOnboarding = useStore(s => s.needsMobileOnboarding)
   const langV = useLang()   // re-renders the whole shell when the language (pack) changes
@@ -190,6 +191,7 @@ function Shell() {
     return () => { gone = true; clearInterval(timer); window.removeEventListener('online', syncIfDue); document.removeEventListener('visibilitychange', visible) }
   }, [ready])
 
+  if (storageError) return <main className="narrow card"><h1>{t('Saved data needs attention')}</h1><p>{t('Your saved profile has not been overwritten. Export it before restoring a backup or opening a newer app version.')}</p><button className="btn" onClick={() => { const raw = localStorage.getItem('gym_state_v1'); const url = URL.createObjectURL(new Blob([raw || '{}'], { type: 'application/json' })); const a = document.createElement('a'); a.href = url; a.download = 'tgym-recovery.json'; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000) }}>{t('Export saved data')}</button></main>
   const authed = user || isGuest
   if (!ready && !authed) return (
     <div id="app">
@@ -226,6 +228,7 @@ function Shell() {
       <AppUpdate />
       <Modals />
       <Toast />
+      {ready && authed && !needsMobileOnboarding && <AppTour />}
     </>
   )
 }

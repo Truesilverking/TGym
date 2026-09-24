@@ -3,7 +3,7 @@ const CACHE = '__TGYM_CACHE__'
 const PRECACHE = ['__TGYM_PRECACHE__']
 self.addEventListener('install', e => e.waitUntil(caches.open(CACHE).then(c=>c.addAll(PRECACHE))))
 self.addEventListener('message', e => { if(e.data?.type==='SKIP_WAITING') self.skipWaiting() })
-self.addEventListener('activate', e => e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('tgym-') && k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())))
+self.addEventListener('activate', e => e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>/^tgym-(?:app-)?[0-9]+\.[0-9]+\.[0-9]+-/.test(k) && k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())))
 self.addEventListener('push',e=>{
  const data=e.data?e.data.json():{}
  e.waitUntil(self.registration.showNotification(data.title||'TGym',{body:data.body||'',icon:'icon-512.png',tag:data.tag||'tgym'}))

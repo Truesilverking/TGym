@@ -1,4 +1,6 @@
 import { create } from 'zustand'
+import { migrateState, STATE_SCHEMA } from '../lib/state-migrations.js'
+import { loadWebState, saveWebState } from '../lib/web-state.js'
 import { DEFAULT_SOUNDS } from '../lib/sound-preferences.js'
 import { api, setRemoteAuth } from '../lib/api.js'
 import { localTZ } from '../lib/format.js'
@@ -13,6 +15,7 @@ import { reconcileWorkoutEdit, ensureWorkoutCompletionPaused } from '../lib/work
 
 const KEY = 'gym_state_v1'
 export const DEF = {
+  storageVersion: STATE_SCHEMA, hasCompletedOnboarding: false, hasCompletedAppTour: false, healthConnection: {},
   unit: 'kg', restSec: 90, restPauseSec: 15, restAdvanced: { warmup: 45, supersetMove: 0, supersetRound: 120 }, sound: true, vibration: true, reduceMotion: false, keepAwake: true, lang: 'es',
   sounds: { ...DEFAULT_SOUNDS }, customSounds: [],
   theme: 'dark', accent: 'red', body: 'male', targetW: null, heightCm: null,
@@ -35,11 +38,12 @@ export const DEF = {
 }
 const clone = o => JSON.parse(JSON.stringify(o))
 
+let storageError = null
 function loadState() {
   try {
     const raw = localStorage.getItem(KEY)
     if (raw) {
-      const S = Object.assign(clone(DEF), JSON.parse(raw))
+      const S = Object.assign(clone(DEF), migrateState(JSON.parse(raw), { onboarded: localStorage.getItem('framegym_onboarded_v1') === '1' }))
       const active = ensureWorkoutCompletionPaused(S.active)
       if (active !== S.active) {
         S.active = active
@@ -48,7 +52,7 @@ function loadState() {
       }
       return S
     }
-  } catch (e) { /* ignore */ }
+  } catch (e) { storageError = e.message }
   return clone(DEF)
 }
 
@@ -66,6 +70,8 @@ export const useStore = create((set, get) => {
   }
 
   const persist = (S, push = true) => {
+    if (storageError) throw new Error(storageError)
+    S = migrateState(S, { onboarded: !!get().S.hasCompletedOnboarding, toured: !!get().S.hasCompletedAppTour })
     S.active = ensureWorkoutCompletionPaused(S.active)
     const clockChanged = S.active?.timerPausedAt !== get().S.active?.timerPausedAt || S.active?.timerContinuedAt !== get().S.active?.timerContinuedAt
     if (S.cloudSync?.on && backupChecksum(portableState(S)) !== backupChecksum(portableState(get().S))) {
@@ -75,6 +81,7 @@ export const useStore = create((set, get) => {
     registerCustom(S.customEx)
     localStorage.setItem(KEY, JSON.stringify(S))
     set({ S })
+    if (STANDALONE) void saveWebState(S).catch(() => {})
     if (MOBILE) {
       if (clockChanged) {
         clearTimeout(saveTm)
@@ -125,24 +132,21 @@ export const useStore = create((set, get) => {
   return {
     S: (() => { const s = loadState(); registerCustom(s.customEx); return s })(),
     user: (() => { try { return JSON.parse(localStorage.getItem('gym_user')) || null } catch { return null } })(),
+    storageError,
     ready: false,
     needsMobileOnboarding: false,   // mobile build only — set true by boot() on a genuine first launch
     async flushPersistence() {
-      if (!MOBILE) return
+      if (!MOBILE) { if (STANDALONE) await saveWebState(get().S); return }
       clearTimeout(saveTm)
       saveTm = null
       if (await nativeSave(get().S) === false) throw new Error('Native storage unavailable')
       void syncReminder(get().S)
     },
     async completeOnboarding() {
+      get().update(s => { s.hasCompletedOnboarding = true }, false)
       localStorage.setItem('framegym_onboarded_v1', '1')
-      // Do not leave the final language/unit choice waiting in the debounce queue. A user can
-      // close the app immediately after this button and the private mirror must already agree.
-      if (MOBILE) {
-        clearTimeout(saveTm)
-        saveTm = null
-        await nativeSave(get().S)
-      }
+      await get().flushPersistence()
+      try { await navigator.storage?.persist?.() } catch { /* optional browser permission */ }
       set({ needsMobileOnboarding: false })
     },
 
@@ -253,6 +257,7 @@ export const useStore = create((set, get) => {
 
     // Boot: ask the server who we are, then pull.
     async boot() {
+      if (storageError) { set({ ready: true, storageError }); return }
       // Mobile build: no backend by default — restore from the file mirror (the durable copy;
       // localStorage may have been evicted since the last run) and go straight in. Unless this
       // device was paired to a server ("connect to my server" mode, lib/remote.js), in which
@@ -276,7 +281,7 @@ export const useStore = create((set, get) => {
         const saved = await nativeLoad()
         const S = get().S
         if (shouldRestoreNative(S, saved)) {
-          persist(Object.assign(clone(DEF), saved), false)
+          try { persist(Object.assign(clone(DEF), saved), false) } catch (error) { set({ready:true,storageError:error.message});return }
         } else if (S._ts || hasData(S)) {
           nativeSave(S)   // first run after an update from a file-less version: seed the mirror
         }
@@ -285,14 +290,19 @@ export const useStore = create((set, get) => {
         // Only a genuinely first launch — nothing chosen yet and nothing to lose either — offers
         // the choice. Picking local (even with no data yet) persists that choice below and this
         // never asks again.
-        set({ ready: true, needsMobileOnboarding: !localStorage.getItem('framegym_onboarded_v1') && !hasData(get().S) })
+        set({ ready: true, needsMobileOnboarding: !get().S.hasCompletedOnboarding && !localStorage.getItem('framegym_onboarded_v1') && !hasData(get().S) })
         return
       }
       // TGym's free PWA build has no backend: each installation is a private local profile
       // and JSON files are the explicit transfer mechanism.
       if (STANDALONE) {
+        const saved = await loadWebState()
+        try {
+          if (saved && (!get().S._ts || (saved._ts || 0) > get().S._ts)) persist(Object.assign(clone(DEF), saved), false)
+          else if (get().S._ts) await saveWebState(get().S).catch(() => false)
+        } catch (error) { set({ ready: true, storageError: error.message }); return }
         get().setGuest(true)
-        set({ ready: true, needsMobileOnboarding: !localStorage.getItem('framegym_onboarded_v1') && !hasData(get().S) })
+        set({ ready: true, needsMobileOnboarding: !get().S.hasCompletedOnboarding && !localStorage.getItem('framegym_onboarded_v1') && !hasData(get().S) })
         return
       }
       // Demo build (GitHub Pages): no backend at all — seed once, stay in guest mode.

@@ -1,3 +1,5 @@
+import { openHealthActivities } from '../components/Activities.jsx'
+import { replayAppTour } from '../components/AppTour.jsx'
 import { openTrainingHistory } from '../components/TrainingHistory.jsx'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -286,10 +288,11 @@ export default function Settings() {
 
     {(user || MOBILE) && <NotificationsCard S={S} update={update} toast={toast} />}
 
-    <Section title={t('Health')}>
+    <Section title={t('Help')}><Row icon="sparkles" title={t('Replay App Tour')} accessory="chevron" onClick={replayAppTour} /></Section>
+    <div data-tour="health"><Section title={t('Health')}>
       <Row icon="history" title={t('Measurement reminders')} accessory="chevron" onClick={() => measurementRemindersSheet()} />
-      <Row icon="figureRun" iconTint="var(--red)" title={t('Health & wearables')} subtitle={t('Coming soon · Not connected')} accessory="chevron" onClick={healthWearablesSheet} />
-    </Section>
+      <Row icon="figureRun" iconTint="var(--red)" title={t('Health & wearables')} subtitle={t('Activities and health data')} accessory="chevron" onClick={openHealthActivities} />
+    </Section></div>
 
     {/* ---------- equipment ---------- */}
     <EquipmentCard S={S} update={update} />
@@ -398,19 +401,6 @@ function effortHelpSheet() {
       <div>{t('The highlighted row is where most working sets land. Sets you have already logged keep their own scale, and nothing else reads the value — progression and estimated 1RM are unaffected.')}</div>
     </div>
     <div style={{ height: 8 }} />
-  </>)
-}
-
-function healthWearablesSheet() {
-  useUI.getState().openSheet(() => <>
-    <h3>{t('Health & wearables')}</h3>
-    <div className="muted" style={{ lineHeight: 1.5, marginBottom: 14 }}>{t('Not connected. TGym does not currently read or display health data.')}</div>
-    <div className="card" style={{ display: 'grid', gap: 8 }}>
-      <b>{t('Planned system connections')}</b>
-      <div className="small dim">Android · Health Connect</div>
-      <div className="small dim">iPhone · Apple Health / HealthKit</div>
-    </div>
-    <div className="small dim" style={{ lineHeight: 1.5, marginTop: 14 }}>{t('When available, every connection will require your explicit permission and missing measurements will remain unavailable instead of being shown as zero.')}</div>
   </>)
 }
 

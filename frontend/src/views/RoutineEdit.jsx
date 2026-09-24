@@ -1,3 +1,4 @@
+import { openActivityEditor } from '../components/Activities.jsx'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useEffect } from 'react'
 import { useStore } from '../store/useStore.js'
@@ -51,6 +52,7 @@ export default function RoutineEdit() {
   const missingCount = profile ? r.ex.filter(e => !exAvailable(S, exOr(e.id))).length : 0
 
   return <div className="narrow">
+    <Button size="sm" onClick={()=>openActivityEditor({routineId:id})}>{t('Add activity')}</Button>
     <div className="hdr">
       <button className="iconbtn" onClick={() => nav('/plan')} aria-label={t('Routine')}><Icon name="chevronLeft" /></button>
       <div style={{ flex: 1, margin: '0 12px' }}>

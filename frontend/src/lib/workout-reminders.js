@@ -1,3 +1,4 @@
+import { loggedWorkouts, matchesScheduled } from './consistency.js'
 import { isTrainingPaused, openTrainingPause } from './training-pause.js'
 import { effectiveRoutine } from './history.js'
 import { isoOf } from './format.js'
@@ -33,8 +34,8 @@ export function workoutNotificationPlan(state, now = new Date()) {
   const today = isoOf(now), settings = S.reminder
   const pending = date => {
     const routine = effectiveRoutine(S,date)
-    // The current calendar model treats any saved session as completing that day.
-    return routine && !S.workouts.some(w=>w.d === date) ? routine : null
+    // An extra activity must not suppress the planned strength/routine reminder.
+    return routine && !loggedWorkouts(S).some(w=>w.d === date && matchesScheduled(w,routine.id,S.routines)) ? routine : null
   }
   const atTime = (date, time) => {
     const at = new Date(`${date}T${time}:00`)

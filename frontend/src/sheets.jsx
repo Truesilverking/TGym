@@ -1,3 +1,4 @@
+import { ActivityMetrics, openActivityEditor } from './components/Activities.jsx'
 import { statisticsState, isUntracked } from './lib/training-history.js'
 import { fmtScheduledDate } from './lib/format.js'
 import TrainingPauseCard from './components/TrainingPauseCard.jsx'
@@ -1340,9 +1341,10 @@ function WorkoutDetail({ w, close }) {
   } })
   return <>
     <h3>{w.name}</h3>
+    <ActivityMetrics workout={st.workouts.find(row=>row.id===w.id) || w} />
     {w.finishReason==='inactivity' && w.resumeSnapshot && !st.active && <Button onClick={()=>{update(s=>resumeAutoFinished(s,w.id));close();nav('/workout')}}>{t('Resume workout')}</Button>}
-    <div className="muted small" style={{ marginBottom: 12 }}>{[fmtDate(w.d, true), ...(Number(w.end) > Number(w.start) ? [clockAt(w.start) + '–' + clockAt(w.end)] : []), ...durPart(workoutElapsedMs(w)), fmtVol(w.vol, st.unit), ...(w.bw ? [fmtNum(w.bw) + ' ' + st.unit] : [])].join(' · ')}</div>
-    {(editing ? draftEntries : w.entries).map((e, i) => {
+    <div className="muted small" style={{ marginBottom: 12 }}>{[fmtDate(w.d, true), ...(Number(w.end) > Number(w.start) ? [clockAt(w.start) + '–' + clockAt(w.end)] : []), ...durPart(workoutElapsedMs(w)), ...(!w.activity || w.activity.preservesWorkout ? [fmtVol(w.vol, st.unit)] : []), ...(w.bw ? [fmtNum(w.bw) + ' ' + st.unit] : [])].join(' · ')}</div>
+    {(w.activity && !w.activity.preservesWorkout ? [] : editing ? draftEntries : w.entries).map((e, i) => {
       const ex = EXIDX[e.id]
       return <div key={i} className="row" style={{ marginBottom: 12, alignItems: 'flex-start' }}>
         {ex && <Thumb ex={ex} />}
@@ -1362,7 +1364,7 @@ function WorkoutDetail({ w, close }) {
       placeholder={t('How the session went as a whole.')}
       onChange={e => setNote(e.target.value)} />
     <div style={{ height: 10 }} />
-    {editing ? <div className="row" style={{ gap: 8 }}><Button variant="primary" style={{ flex: 1 }} onClick={saveEdits}>{t('Save changes')}</Button><Button style={{ flex: 1 }} onClick={() => { setDraftEntries(JSON.parse(JSON.stringify(w.entries || []))); setNote(w.note || ''); setEditing(false) }}>{t('Cancel')}</Button></div> : <Button icon="pencil" onClick={() => setEditing(true)}>{t('Edit workout')}</Button>}
+    {editing ? <div className="row" style={{ gap: 8 }}><Button variant="primary" style={{ flex: 1 }} onClick={saveEdits}>{t('Save changes')}</Button><Button style={{ flex: 1 }} onClick={() => { setDraftEntries(JSON.parse(JSON.stringify(w.entries || []))); setNote(w.note || ''); setEditing(false) }}>{t('Cancel')}</Button></div> : <Button icon="pencil" onClick={() => w.activity?.source === 'manual' ? (close(), openActivityEditor({existing:w})) : setEditing(true)}>{t('Edit workout')}</Button>}
     <div style={{ height: 14 }} />
     <Button variant="danger" onClick={() => confirmSheet({ title: t('Delete workout?'), message: t('This removes it from your history for good.'), confirmText: t('Delete'), danger: true, onConfirm: () => { update(s => { s.workouts = s.workouts.filter(x => x.id !== w.id) }); close(); toast(t('Workout deleted')) } })}>{t('Delete workout')}</Button>
   </>
@@ -1522,7 +1524,7 @@ export function WorkoutRow({ w, onClick }) {
   return <div className="item" onClick={onClick}>
     <span className="lrow-i" style={{ width: 34, height: 34, borderRadius: 8, fontSize: 19 }}><Icon name={glyph} /></span>
     <div className="grow"><div className="tt">{w.name}</div>
-      <div className="ss">{[fmtDate(w.d, true), ...durPart(workoutElapsedMs(w)), t('{0} sets', setsDone(w)), fmtVol(w.vol, st.unit)].join(' · ')}</div></div>
+      <div className="ss">{[fmtDate(w.d, true), ...durPart(workoutElapsedMs(w)), ...(w.activity && !w.activity.preservesWorkout ? [w.activity.distanceKm!=null ? fmtNum(w.activity.distanceKm)+' km' : null, w.activity.source==='manual'?t('Manual'):'Health Connect'].filter(Boolean) : [t('{0} sets', setsDone(w)), fmtVol(w.vol, st.unit)])].join(' · ')}</div></div>
     {w.prs && w.prs.length > 0 && <span className="pr"><Icon name="trophy" />{w.prs.length} PR</span>}
     <Icon name="chevronRight" className="chev" />
   </div>
