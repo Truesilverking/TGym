@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { DEFAULT_SOUNDS, SOUND_EVENTS, SOUND_PRESETS, SOUND_RATE, encodeSound, soundBytes, soundChoice, nativeSoundConfig, removeCustomSound, importCustomSound, isSoundQuiet } from './sound-preferences.js'
+import { DEFAULT_SOUNDS, SOUND_EVENTS, SOUND_PRESETS, SOUND_RATE, encodeSound, soundBytes, soundChoice, soundVolume, soundEnabled, scaledSoundData, nativeSoundConfig, removeCustomSound, importCustomSound, isSoundQuiet } from './sound-preferences.js'
 import { createBackup, readBackup } from './backup.js'
 import { mergeTGymStates } from './state-merge.js'
 
@@ -14,6 +14,10 @@ describe('portable sound preferences', () => {
       const sound = soundChoice({ sounds: { [event.id]: preset.id } }, event.id)
       expect(soundBytes(sound.data).length).toBeGreaterThan(44)
       expect(sound.duration).toBeLessThanOrEqual(5)
+      const bytes=soundBytes(sound.data),pcm=new Int16Array(bytes.buffer,44)
+      expect((bytes.length-44)/32000).toBeCloseTo(sound.duration,3)
+      expect(Math.max(...pcm.map(Math.abs))).toBeGreaterThan(3000)
+      expect(Math.sqrt(pcm.reduce((n,x)=>n+x*x,0)/pcm.length)/32768).toBeGreaterThan(.02)
     }
     expect(soundChoice({ sounds: { rest: 'silent' } }, 'rest').data).toBeUndefined()
   })
@@ -77,4 +81,18 @@ describe('custom audio import', () => {
     vi.stubGlobal('AudioContext', class { decodeAudioData = async () => { throw Error('bad file') }; close = async () => {} })
     await expect(importCustomSound({ size: 100, arrayBuffer: async () => new ArrayBuffer(100) })).rejects.toMatchObject({ code: 'invalid_audio' })
   })
+})
+
+it('persists volume/mute and scales native WAV without modifying originals',()=>{
+ const S={sound:true,soundVolume:.25,soundMuted:true,sounds:{rest:'pulse'},customSounds:[],routines:[],workouts:[]}
+ const restored=readBackup(JSON.parse(JSON.stringify(createBackup(S))))
+ expect(restored.soundVolume).toBe(.25);expect(restored.soundMuted).toBe(true)
+ expect(mergeTGymStates(S,{...S,soundVolume:1,soundMuted:false}).merged).toMatchObject({soundVolume:.25,soundMuted:true})
+ const original=soundChoice(S,'rest'),scaled=nativeSoundConfig(S)
+ const a=new DataView(soundBytes(original.data).buffer),b=new DataView(soundBytes(scaled.sounds.rest.data).buffer)
+ for(let i=44;i<a.byteLength;i+=2)expect(b.getInt16(i,true)).toBe(Math.round(a.getInt16(i,true)*.25) || 0)
+ expect(scaled.enabled).toBe(false);expect(soundChoice(S,'rest')).toEqual(original)
+ expect(soundEnabled({...S,soundMuted:false})).toBe(true)
+ expect(soundVolume({soundVolume:NaN})).toBe(1);expect(soundVolume({soundVolume:-1})).toBe(0)
+ expect(scaledSoundData(original.data,1)).toBe(original.data)
 })

@@ -13,6 +13,7 @@ import android.os.Build;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.util.Base64;
+import android.util.Log;
 import android.util.AtomicFile;
 import androidx.core.content.FileProvider;
 import org.json.JSONObject;
@@ -189,7 +190,7 @@ final class SoundPreferences {
                 else vibrator.vibrate(pattern, -1, attributes());
             }
         }
-        if ((!preview && !config.optBoolean("enabled", true)) || audio.getRingerMode() != AudioManager.RINGER_MODE_NORMAL) return false;
+        if (!config.optBoolean("enabled", true) || audio.getRingerMode() != AudioManager.RINGER_MODE_NORMAL) return false;
         Uri uri = soundUri(context, config, event);
         if (uri == null) return false;
         stop();
@@ -199,9 +200,9 @@ final class SoundPreferences {
             next.setAudioAttributes(attributes());
             next.setDataSource(context, uri);
             next.setOnCompletionListener(done -> { synchronized (SoundPreferences.class) { if (player == done) player = null; done.release(); } });
-            next.setOnErrorListener((failed, what, extra) -> { synchronized (SoundPreferences.class) { if (player == failed) player = null; failed.release(); } return true; });
+            next.setOnErrorListener((failed, what, extra) -> { Log.e("TGymAudio", "MediaPlayer event=" + event + " what=" + what + " extra=" + extra); synchronized (SoundPreferences.class) { if (player == failed) player = null; failed.release(); } return true; });
             next.prepare(); next.start(); return true;
-        } catch (Exception ignored) { stop(); return false; }
+        } catch (Exception error) { Log.e("TGymAudio", "Cannot play " + event, error); stop(); return false; }
     }
 
     static synchronized void stop() {

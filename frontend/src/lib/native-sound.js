@@ -28,14 +28,14 @@ export async function playNativeSound(S, event, options = {}) {
     await syncNativeSounds(S)
     if (generation !== playbackGeneration) return {handled:true,played:false}
     return await native.play({event,preview:!!options.preview,occurrence:options.occurrence || 0})
-  } catch { return {handled:false,played:false} }
+  } catch (error) { console.warn('[TGym audio] native playback failed; trying Web Audio', error?.message); return {handled:false,played:false} }
 }
 
 export async function stopNativeSound() {
   playbackGeneration++
-  if (android()) { try { await native.stop() } catch {} }
+  if (android()) { try { await native.stop() } catch (error) { console.warn('[TGym audio] native stop failed', error?.message) } }
 }
 
 export async function finishNativeSoundSync(settings) {
-  if (android() && settings?.channels) { try { await native.prune({channels:settings.channels}) } catch {} }
+  if (android() && settings?.channels) { try { await native.prune({channels:settings.channels}) } catch (error) { console.warn('[TGym audio] native cleanup failed', error?.message) } }
 }

@@ -1,13 +1,13 @@
 {
   "name": "tgym",
   "private": true,
-  "version": "1.15.26",
+  "version": "1.15.27",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "build:pwa": "vite build --mode standalone",
-    "build:mobile": "vite build --mode mobile && cap sync",
+    "build:mobile": "vite build --mode mobile && node scripts/check-sounds.mjs --android-fixture && cap sync",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",

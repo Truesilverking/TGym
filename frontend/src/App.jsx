@@ -1,8 +1,9 @@
+import { syncWebAudioPreferences } from './lib/web-audio-preferences.js'
 import { useEffect, useLayoutEffect } from 'react'
 import { HashRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import { useStore } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
-import { primeAudio } from './lib/sound.js'
+import { primeAudio, stopSound, reportSoundError } from './lib/sound.js'
 import { syncNativeSounds } from './lib/native-sound.js'
 import { bindUI } from './components/ui.jsx'
 import { ACCENTS } from './lib/format.js'
@@ -79,13 +80,17 @@ function Shell() {
   const needsMobileOnboarding = useStore(s => s.needsMobileOnboarding)
   const langV = useLang()   // re-renders the whole shell when the language (pack) changes
   useEffect(() => {
-    if (ready) void syncNativeSounds(S).catch(() => {})
-  }, [ready, S.sound, S.sounds, S.customSounds, S.vibration, S.reminder, S.accent, langV])
+    if (ready && !MOBILE) syncWebAudioPreferences(S)
+    if (ready) void syncNativeSounds(S).catch(error => reportSoundError('native-configure', error))
+  }, [ready, S.sound, S.soundMuted, S.soundVolume, S.sounds, S.customSounds, S.vibration, S.reminder, S.accent, langV])
   useEffect(() => {
-    document.addEventListener('pointerdown', primeAudio)
-    document.addEventListener('keydown', primeAudio)
-    return () => { document.removeEventListener('pointerdown', primeAudio); document.removeEventListener('keydown', primeAudio) }
+    const unlock = event => { if (event.isTrusted) primeAudio() }
+    // touchend/click cover mobile user activation; capture works inside nested dialogs.
+    const events = ['click', 'touchend', 'keydown']
+    events.forEach(type => document.addEventListener(type, unlock, true))
+    return () => events.forEach(type => document.removeEventListener(type, unlock, true))
   }, [])
+  useEffect(() => { stopSound() }, [S.sound, S.soundMuted, S.soundVolume])
   const restEndsAt=useUI(s=>s.timer?.endsAt)
   useEffect(()=>{
     if(ready) void syncWorkoutNotification(S.active,restEndsAt?{endsAt:restEndsAt}:null)

@@ -47,7 +47,7 @@ const maybeRestNotification = async () => {
     // service-worker registration path is the one that actually pops there.
     const reg = await navigator.serviceWorker?.getRegistration?.()
     if (reg?.showNotification) {
-      reg.showNotification(t('Rest over — next set!'), { body: t('Rest over — next set!'), silent: true })
+      await reg.showNotification(t('Rest over — next set!'), { body: t('Rest over — next set!'), silent: true })
       return
     }
     new Notification(t('Rest over — next set!'), { body: t('Rest over — next set!'), silent: true })

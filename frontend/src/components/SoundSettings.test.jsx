@@ -14,32 +14,35 @@ vi.mock('../store/useStore.js', async () => {
 })
 vi.mock('../store/useUI.js', () => ({ useUI: { getState: () => ({ openSheet: vi.fn() }) } }))
 vi.mock('../lib/i18n.js', () => ({ t: (s, ...args) => s.replace(/\{(\d+)\}/g, (_, i) => args[i]) }))
-vi.mock('../lib/sound.js', () => ({ playAppSound: vi.fn(), stopSound: vi.fn() }))
+const audioState=vi.hoisted(()=>({value:{status:'idle'},listeners:new Set()}))
+vi.mock('../lib/sound.js', () => ({ playAppSound: vi.fn(), stopSound: vi.fn(), reportSoundError:vi.fn(), getSoundPlayback:()=>audioState.value, subscribeSound:fn=>{audioState.listeners.add(fn);return ()=>audioState.listeners.delete(fn)} }))
 vi.mock('../lib/native-sound.js', () => ({ syncNativeSounds: vi.fn() }))
 vi.mock('../lib/sound-preferences.js', async importOriginal => ({ ...(await importOriginal()), importCustomSound: vi.fn() }))
 vi.mock('./ui.jsx', () => ({
   Button: ({ children, icon, ...props }) => <button {...props}>{children}</button>,
-  SelectRow: ({ title, value, options, onChange }) => <label>{title}<select aria-label={title} value={value} onChange={e => onChange(e.target.value)}>
-    {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-  </select></label>,
+  Row: ({title,children})=><div>{title}{children}</div>,
+  Switch: ({checked,onChange})=><button role="switch" aria-checked={checked} onClick={()=>onChange(!checked)} />,
 }))
 
 let container, root
 const clip = (suffix = 'one') => ({ id: `custom_${suffix}`, name: `${suffix}.wav`, duration: 1, data: encodeSound(new Float32Array(SOUND_RATE)) })
 const button = label => [...container.querySelectorAll('button')].find(el => el.textContent === label || el.getAttribute('aria-label') === label)
-const select = label => container.querySelector(`select[aria-label="${label}"]`)
+const eventRow = label => [...container.querySelectorAll('.sound-event')].find(el => el.querySelector('.lrow-t').textContent === label)
 const importFile = async () => {
   const input = container.querySelector('input[type=file]')
   Object.defineProperty(input, 'files', { configurable: true, value: [new File(['audio'], 'my-tone.wav', { type: 'audio/wav' })] })
   await act(async () => { input.dispatchEvent(new Event('change', { bubbles: true })) })
 }
 const choose = async (label, value) => {
-  await act(() => { select(label).value = value; select(label).dispatchEvent(new Event('change', { bubbles: true })) })
+ const row=eventRow(label)
+ if(!row.querySelector('.sound-options'))await act(()=>row.querySelector('.lrow').click())
+ const names={chime:'Chime',silent:'Silent',custom_one:'one.wav'}
+ await act(()=>[...row.querySelectorAll('.sound-choice')].find(el=>el.textContent===names[value]).click())
 }
 
 beforeEach(async () => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true
-  vi.clearAllMocks()
+  vi.clearAllMocks();audioState.value={status:'idle'}
   syncNativeSounds.mockResolvedValue(null)
   useStore.setState({ S: { sound: true, sounds: {}, customSounds: [] } })
   container = document.createElement('div'); document.body.append(container); root = createRoot(container)
@@ -54,19 +57,33 @@ describe('sound preferences', () => {
     expect(useStore.getState().S.sounds).toEqual({ rest: 'chime', set: 'silent' })
     expect(button('Preview Set completed').disabled).toBe(true)
     await act(() => button('Preview Rest finished').click())
-    expect(playAppSound).toHaveBeenLastCalledWith(useStore.getState().S, 'rest', { preview: true })
+    expect(playAppSound).toHaveBeenLastCalledWith(useStore.getState().S, 'rest', { preview: true, soundId:'chime' })
     stopSound.mockClear()
     await act(() => root.unmount()); root = null
     expect(stopSound).toHaveBeenCalledOnce()
   })
 
-  it('allows previews while global sound is disabled without changing the toggle', async () => {
-    await act(() => useStore.setState({ S: { ...useStore.getState().S, sound: false } }))
-    expect(container.textContent).toContain('Sounds are off.')
-    await act(() => button('Preview Rest finished').click())
-    expect(playAppSound).toHaveBeenCalledWith(expect.objectContaining({ sound: false }), 'rest', { preview: true })
-    expect(useStore.getState().S.sound).toBe(false)
-  })
+  it('respects global mute without changing the setting',async()=>{
+ await act(()=>useStore.setState({S:{...useStore.getState().S,sound:false}}))
+ expect(container.textContent).toContain('Audio is muted.')
+ expect(button('Preview Rest finished').disabled).toBe(true)
+ await act(()=>button('Preview Rest finished').click());expect(playAppSound).not.toHaveBeenCalled()
+ })
+ it('previews candidates independently of the saved selection',async()=>{
+ await act(()=>eventRow('Rest finished').querySelector('.lrow').click())
+ await act(()=>button('Preview Rest finished: Pulse').click())
+ expect(playAppSound).toHaveBeenLastCalledWith(useStore.getState().S,'rest',{preview:true,soundId:'pulse'})
+ expect(useStore.getState().S.sounds).toEqual({})
+ })
+ it('shows playing feedback and stops or mutes without changing selections',async()=>{
+ await act(()=>{audioState.value={status:'playing',preview:true,event:'rest',soundId:'classic'};audioState.listeners.forEach(fn=>fn())})
+ expect(button('Stop Rest finished').getAttribute('aria-pressed')).toBe('true')
+ await act(()=>button('Stop Rest finished').click());expect(stopSound).toHaveBeenCalled()
+ await act(()=>container.querySelectorAll('[role=switch]')[1].click());expect(useStore.getState().S.soundMuted).toBe(true)
+ const range=container.querySelector('input[type=range]')
+ await act(()=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(range,'25');range.dispatchEvent(new Event('change',{bubbles:true}))})
+ expect(useStore.getState().S.soundVolume).toBe(.25)
+ })
 
   it('explains the notification limitation only on unsupported Android versions', async () => {
     expect(container.textContent).not.toContain('On Android 7 or earlier')
@@ -88,7 +105,7 @@ describe('sound preferences', () => {
     expect(useStore.getState().S.customSounds).toEqual([])
     expect(useStore.getState().S.sounds.rest).toBe('classic')
     expect(useStore.getState().S.sounds.notification).toBe('classic')
-    expect(select('Rest finished').value).toBe('classic')
+    expect(eventRow('Rest finished').querySelector('.lrow-s').textContent).toBe('Classic')
   })
 
   it.each([

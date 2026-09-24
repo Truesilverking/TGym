@@ -1508,4 +1508,13 @@ export default {
   ,"Set {0}": "Set {0}"
   ,"Close": "Close"
   ,"Clear": "Clear"
+  ,"Listen before choosing. Preview never changes your saved sound.": "Listen before choosing. Preview never changes your saved sound."
+  ,"Audio is muted. Enable Sounds, turn off Mute and raise the volume to preview.": "Audio is muted. Enable Sounds, turn off Mute and raise the volume to preview."
+  ,"Audio is blocked. Tap Play again to enable it.": "Audio is blocked. Tap Play again to enable it."
+  ,"Could not play this sound. Check device volume and try again.": "Could not play this sound. Check device volume and try again."
+  ,"Could not sync alert sounds. Try again.": "Could not sync alert sounds. Try again."
+  ,"Stop {0}": "Stop {0}"
+  ,"Playing: {0}": "Playing: {0}"
+  ,"Loading: {0}": "Loading: {0}"
+  ,"Mute": "Mute"
 }

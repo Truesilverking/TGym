@@ -1450,4 +1450,13 @@ export default {
   ,"Set {0}": "Serie {0}"
   ,"Close": "Cerrar"
   ,"Clear": "Limpiar"
+  ,"Listen before choosing. Preview never changes your saved sound.": "Escucha antes de elegir. La vista previa no cambia el sonido guardado."
+  ,"Audio is muted. Enable Sounds, turn off Mute and raise the volume to preview.": "El audio está silenciado. Activa Sonidos, desactiva Silencio y sube el volumen para escuchar."
+  ,"Audio is blocked. Tap Play again to enable it.": "El audio está bloqueado. Pulsa Reproducir de nuevo para activarlo."
+  ,"Could not play this sound. Check device volume and try again.": "No se pudo reproducir. Revisa el volumen del dispositivo e inténtalo de nuevo."
+  ,"Could not sync alert sounds. Try again.": "No se pudieron sincronizar los sonidos de alerta. Inténtalo de nuevo."
+  ,"Stop {0}": "Detener {0}"
+  ,"Playing: {0}": "Reproduciendo: {0}"
+  ,"Loading: {0}": "Cargando: {0}"
+  ,"Mute": "Silencio"
 }

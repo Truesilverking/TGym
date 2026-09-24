@@ -95,8 +95,25 @@ export function isSoundQuiet(S, now = new Date()) {
   const start = minutes(r.quietStart, '22:00'), end = minutes(r.quietEnd, '07:00'), cur = now.getHours() * 60 + now.getMinutes()
   return start <= end ? cur >= start && cur < end : cur >= start || cur < end
 }
+export function soundVolume(S) {
+  const value = S?.soundVolume
+  return typeof value === 'number' && Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : 1
+}
+export const soundEnabled = S => S?.sound !== false && !S?.soundMuted && soundVolume(S) > 0
+// Bake gain into native WAVs because Android notification channels have no per-app gain.
+// Originals stay untouched in backups; content hashes version the derived files/channels.
+const scaledClips = new Map()
+export function scaledSoundData(data, volume) {
+  if (volume === 1) return data
+  const key = `${volume}:${data}`
+  if (scaledClips.has(key)) return scaledClips.get(key)
+  const bytes = soundBytes(data), view = new DataView(bytes.buffer)
+  for (let i = 44; i < bytes.length; i += 2) view.setInt16(i, Math.round(view.getInt16(i, true) * volume), true)
+  if (scaledClips.size >= 24) scaledClips.clear()
+  const result = base64(bytes); scaledClips.set(key, result); return result
+}
 export function nativeSoundConfig(S) {
-  return { sounds: Object.fromEntries(SOUND_EVENTS.map(({ id }) => [id, soundChoice(S, id)])), enabled: S?.sound !== false,
+  return { sounds: Object.fromEntries(SOUND_EVENTS.map(({ id }) => { const choice = soundChoice(S, id); return [id, choice.data ? {...choice, data:scaledSoundData(choice.data, soundVolume(S))} : choice] })), enabled: soundEnabled(S),
     vibration: S?.vibration !== false, quietOn: !!S?.reminder?.quietOn, quietStart: S?.reminder?.quietStart || '22:00', quietEnd: S?.reminder?.quietEnd || '07:00' }
 }
 export async function importCustomSound(file) {

@@ -97,4 +97,34 @@ public class SoundPreferencesTest {
         assertFalse(UpdateMessagingService.newerVersion("1.15.24", "1.15.24"));
         assertFalse(UpdateMessagingService.newerVersion("1.9.99", "1.15.24"));
     }
+    @Test public void everyBundledPresetDecodesAndCompletesInAndroidMediaPlayer() throws Exception {
+        String json;
+        try (java.io.InputStream stream = InstrumentationRegistry.getInstrumentation().getContext().getAssets().open("audio-audit.json")) {
+            java.io.ByteArrayOutputStream bytes = new java.io.ByteArrayOutputStream();
+            byte[] chunk = new byte[8192]; int count;
+            while ((count = stream.read(chunk)) != -1) bytes.write(chunk, 0, count);
+            json = bytes.toString("UTF-8");
+        }
+        org.json.JSONArray clips = new org.json.JSONArray(json);
+        assertEquals(24, clips.length());
+        for (int i = 0; i < clips.length(); i++) {
+            JSONObject clip = clips.getJSONObject(i);
+            String event = clip.getString("event"), label = clip.getString("id") + "/" + event;
+            SoundPreferences.configure(context, new JSONObject().put("sounds", new JSONObject().put(event, clip)));
+            Uri uri = SoundPreferences.soundUri(context, SoundPreferences.config(context), event);
+            assertNotNull(label, uri);
+            java.util.concurrent.CountDownLatch ended = new java.util.concurrent.CountDownLatch(1);
+            java.util.concurrent.atomic.AtomicBoolean failed = new java.util.concurrent.atomic.AtomicBoolean(false);
+            android.media.MediaPlayer media = new android.media.MediaPlayer();
+            try {
+                media.setAudioAttributes(SoundPreferences.attributes()); media.setDataSource(context, uri);
+                media.setOnCompletionListener(done -> ended.countDown());
+                media.setOnErrorListener((player, what, extra) -> { failed.set(true); ended.countDown(); return true; });
+                media.prepare(); assertTrue(label + " duration", media.getDuration() > 0);
+                media.start(); assertTrue(label + " completes", ended.await(5, java.util.concurrent.TimeUnit.SECONDS));
+                assertFalse(label + " has no decoder error", failed.get());
+            } finally { media.release(); }
+        }
+    }
+
 }

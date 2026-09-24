@@ -6,3 +6,13 @@ function worker({offline=false,failInstall=false}={}) {const handlers={}, data=n
 it('updates only versioned app caches, never user data or other origins',async()=>{const w=worker();let done;w.handlers.activate({waitUntil:p=>done=p});await done;expect(w.caches.delete.mock.calls.flat()).toEqual(['tgym-1.15.18-old','tgym-app-1.15.24-old']);expect(w.self.clients.claim).toHaveBeenCalledOnce()})
 it('serves the installed shell offline and bypasses update manifests',async()=>{const w=worker({offline:true});let response;w.handlers.fetch({request:{method:'GET',url:'https://app.test/plan',mode:'navigate'},respondWith:p=>response=p});expect(await response).toEqual({body:'offline shell'});const respondWith=vi.fn();w.handlers.fetch({request:{method:'GET',url:'https://app.test/updates/latest.json'},respondWith});expect(respondWith).not.toHaveBeenCalled()})
 it('rejects incomplete installs without activating or clearing previous caches',async()=>{const w=worker({failInstall:true});let done;w.handlers.install({waitUntil:p=>done=p});await expect(done).rejects.toThrow();expect(w.caches.delete).not.toHaveBeenCalled();expect(w.self.skipWaiting).not.toHaveBeenCalled()})
+
+it('persists notification mute across worker recreation and applies it to push',async()=>{
+ const make=store=>{const handlers={},cache={match:async key=>store.get(key),put:async(key,value)=>store.set(key,value)},self={location:{origin:'https://app.test'},clients:{matchAll:async()=>[]},registration:{showNotification:vi.fn(async()=>{})},addEventListener:(name,fn)=>{(handlers[name]||=[]).push(fn)}};vm.runInNewContext(source,{self,caches:{open:async()=>cache},Response,URL,console,Date});return{handlers,self}}
+ const store=new Map(),first=make(store);let write
+ for(const handler of first.handlers.message)handler({data:{type:'AUDIO_PREFERENCES',settings:{enabled:false}},waitUntil:p=>write=p})
+ await write
+ const second=make(store);let pushed
+ second.handlers.push[0]({data:{json:()=>({title:'Alert'})},waitUntil:p=>pushed=p});await pushed
+ expect(second.self.registration.showNotification).toHaveBeenCalledWith('Alert',expect.objectContaining({silent:true}))
+})

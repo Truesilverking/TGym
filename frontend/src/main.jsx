@@ -9,6 +9,6 @@ createRoot(document.getElementById('root')).render(
 )
 
 // Not in the mobile build: the native shell already serves everything from disk.
-if (!MOBILE && 'serviceWorker' in navigator && location.protocol === 'https:') {
+if (!import.meta.env.DEV && !MOBILE && 'serviceWorker' in navigator && window.isSecureContext) {
   navigator.serviceWorker.register('sw.js').catch(() => {})
 }

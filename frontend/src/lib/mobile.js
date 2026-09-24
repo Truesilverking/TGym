@@ -1,3 +1,4 @@
+import { soundEnabled } from './sound-preferences.js'
 import { fmtScheduledDate } from './format.js'
 // Mobile build (VITE_MOBILE=1) — the standalone app-store version (Capacitor native shell).
 //
@@ -120,7 +121,7 @@ export function notificationSoundOptions(S, native, at = new Date()) {
   const start = /^([01]\d|2[0-3]):[0-5]\d$/.test(r.quietStart || '') ? r.quietStart : '22:00'
   const end = /^([01]\d|2[0-3]):[0-5]\d$/.test(r.quietEnd || '') ? r.quietEnd : '07:00'
   const quiet = r.quietOn && (start < end ? time >= start && time < end : start !== end && (time >= start || time < end))
-  return {channelId:native.channels[quiet ? 'silent' : S.sound === false ? 'muted' : 'audible']}
+  return {channelId:native.channels[quiet ? 'silent' : !soundEnabled(S) ? 'muted' : 'audible']}
 }
 
 // WKWebView can't do blob-URL downloads, so the backup goes out through the OS share sheet
