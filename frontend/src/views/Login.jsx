@@ -6,7 +6,7 @@ import { t } from '../lib/i18n.js'
 import { DEMO, REPO } from '../lib/demo.js'
 import { guestAllowed } from '../lib/guest.js'
 import { useState, useRef, useEffect } from 'react'
-import Icon from '../components/Icon.jsx'
+import AuthIdentity from '../components/AuthIdentity.jsx'
 import { Button } from '../components/ui.jsx'
 
 function RegisterSheet({ close }) {
@@ -54,10 +54,7 @@ export default function Login() {
     try { const u = await passkeyLogin(); setUser(u); await pullState(); useUI.getState().toast(t('Welcome back, {0}', u.name)) }
     catch (e) { if (e.name !== 'NotAllowedError' && e.name !== 'AbortError') useUI.getState().toast(e.message || t('Sign-in failed')) }
   }
-  const head = <>
-    <div className="auth-mark"><Icon name="dumbbell" /></div>
-    <h1 style={{ fontSize: 34, fontWeight: 700, letterSpacing: '-.028em', margin: '10px 0 4px' }}>TGym</h1>
-  </>
+  const head = <AuthIdentity />
 
   // Demo build: no backend to sign in against — the only way in is the local guest profile.
   if (DEMO) return (

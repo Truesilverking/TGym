@@ -178,3 +178,13 @@ export function modeForEntry(entry, fallback = null) {
   if (targetMode) return targetMode
   return fallback == null ? modeForSet(source, target) : normalizeMode(fallback)
 }
+
+// Legacy completed rows imply both sides. Partial confirmations never alter reps/load.
+export function setSideState(row) {
+  return {left:row.leftDone ?? !!row.done, right:row.rightDone ?? !!row.done}
+}
+export function toggleSetSide(row, side) {
+  const sides=setSideState(row)
+  sides[side]=!sides[side]
+  return {...row,leftDone:sides.left,rightDone:sides.right,done:sides.left && sides.right}
+}

@@ -201,7 +201,7 @@ describe('Top and back-off targets', () => {
     const input = container.querySelector('.stp.eff input')
     expect(input.value).toBe('Failure')
     expect(input.getAttribute('aria-label')).toBe('RIR')
-    expect(container.querySelector('.sethead .eff-sp').textContent).toContain('Failure')
+    expect(container.querySelector('.set-metric.eff label').textContent).toContain('Failure')
     expect(mocks.S.active.entries[0].sets[0].rir).toBe(0)
     await act(async () => { container.querySelector('.stp.eff button[aria-label="Increase"]').click() })
     expect(mocks.S.active.entries[0].sets[0].rir).toBe(0.5)
@@ -209,8 +209,8 @@ describe('Top and back-off targets', () => {
 
   it('shows the full target range even when a legacy profile has effort disabled', async () => {
     await mount([{ id: 'squat', target: { mode: 'reps', reps: 6, targetRirMin: 1, targetRirMax: 2 }, sets: [{ w: 50, r: 6, rir: 2, done: true }] }], 0, S => { S.effort = 'none' })
-    expect(container.querySelector('.sethead .eff-sp').textContent).toContain('1–2')
-    expect(container.querySelector('.sethead .eff-sp').textContent).toContain('RIR')
+    expect(container.querySelector('.set-metric.eff label').textContent).toContain('1–2')
+    expect(container.querySelector('.set-metric.eff label').textContent).toContain('RIR')
   })
   it('aligns each rep range and RIR value below its matching column heading', async () => {
     const target = { mode: 'reps', sets: 3, repsMin: 4, reps: 6, backoffRepsMin: 6, backoffRepsMax: 8,
@@ -221,14 +221,11 @@ describe('Top and back-off targets', () => {
       { role: 'backoff', w: 90, r: 8, rir: null, done: false },
     ] }], 0, S => { S.effort = 'rir' })
 
-    const headings = [...container.querySelectorAll('.sethead > span')].map(x => x.textContent.trim())
-    expect(headings).toEqual(['', 'Weight (kg)', 'Reps', 'RIR', ''])
-    const targets = [...container.querySelectorAll('.settargets')]
-    expect(targets.map(row => row.querySelector('.phase-label').textContent.trim())).toEqual(['Top set', 'Back-off sets'])
-    expect(targets.map(row => [
-      row.querySelector('.w-sp').textContent.trim(), row.querySelector('.r-sp').textContent.trim(),
-      row.querySelector('.eff-sp').textContent.trim(),
-    ])).toEqual([['', '4-6', '1'], ['', '6-8', '3']])
+    const rows = [...container.querySelectorAll('.set-console')]
+    expect([...container.querySelectorAll('.set-phase')].map(x=>x.textContent)).toEqual(['Top set','Back-off sets'])
+    expect(rows.map(row=>[row.querySelector('.set-metric.r label').textContent,row.querySelector('.set-metric.eff label').textContent])).toEqual([['Reps4–6','RIR1'],['Reps6–8','RIR3'],['Reps6–8','RIR3']])
+    expect(rows[0].querySelector('.set-metric.w label').textContent).toBe('Weight (kg)')
+
   })
 })
 
@@ -262,5 +259,22 @@ describe('superset flow survives an exercise being removed mid-session', () => {
     // Partner closes the round (each still has a second set), which is what starts the rest.
     await toggleSet(2)
     expect(mocks.startRest).toHaveBeenCalledWith(90)
+  })
+})
+
+describe('independent per-side confirmations',()=>{
+  it('retains 10 reps and only completes after both sides; undo preserves the other side',async()=>{
+    await mount([{id:'one-arm',target:{mode:'reps',side:true,repsPerSide:true,reps:10},sets:[{w:20,r:10,done:false}]}])
+    const buttons=()=>[...container.querySelectorAll('.set-sides button')]
+    await act(async()=>buttons()[0].click())
+    expect(mocks.S.active.entries[0].sets[0]).toMatchObject({r:10,leftDone:true,rightDone:false,done:false})
+    expect(mocks.startRest).not.toHaveBeenCalled()
+    // The mocked store mutates in place; explicitly rerender to reflect the saved state.
+    await act(async()=>root.render(<Workout />))
+    await act(async()=>buttons()[1].click())
+    expect(mocks.S.active.entries[0].sets[0]).toMatchObject({r:10,leftDone:true,rightDone:true,done:true})
+    await act(async()=>root.render(<Workout />))
+    await act(async()=>buttons()[0].click())
+    expect(mocks.S.active.entries[0].sets[0]).toMatchObject({r:10,leftDone:false,rightDone:true,done:false})
   })
 })

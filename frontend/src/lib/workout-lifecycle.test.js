@@ -56,23 +56,25 @@ describe('persistent workout activity lifecycle',()=>{
     expect(lastWorkoutActivity(a)).toBe(10*min)
     expect(inactivityState(JSON.parse(JSON.stringify(a)),55*min)).toBe('finish')
   })
-  it('resets after edits at minute 19 but not navigation, preferences or rest',()=>{
+  it('resets after edits and navigation but not automatic rest timers',()=>{
     const before=active(), after=structuredClone(before);after.entries[0].sets[0].rir=2
     const next=reconcileWorkoutEdit(before,after,19*min)
     expect(inactivityState(next,30*min)).toBe('none')
-    expect(reconcileWorkoutEdit(next,{...next,cur:1,restEndsAt:40*min},35*min).lastMeaningfulWorkoutActivityAt).toBe(19*min)
+    expect(reconcileWorkoutEdit(next,{...next,cur:1,restEndsAt:40*min},35*min).lastMeaningfulWorkoutActivityAt).toBe(35*min)
+    expect(reconcileWorkoutEdit(next,{...next,restEndsAt:40*min},35*min).lastMeaningfulWorkoutActivityAt).toBe(19*min)
   })
-  it('suppresses inactivity during explicitly timed work and starts grace at its end',()=>{
+  it('internal timers do not extend the inactivity deadline',()=>{
     const a={...active(),workEndsAt:60*min}
-    expect(inactivityState(a,45*min)).toBe('none')
-    expect(inactivityState(a,80*min)).toBe('warning')
+    expect(inactivityState(a,45*min)).toBe('finish')
+    expect(inactivityState(a,80*min)).toBe('finish')
   })
-  it('resumes an auto-saved session with the same ID once and removes the history duplicate',()=>{
+  it('explicit continuation starts a new session while retaining auto-finished history',()=>{
     const snapshot=active(),state={active:null,workouts:[{id:snapshot.id,end:10*min,finishReason:'inactivity',resumeSnapshot:snapshot}]}
     expect(resumeAutoFinished(state,snapshot.id,50*min)).toBe(true)
-    expect(state.active.id).toBe(snapshot.id)
-    expect(workoutElapsedMs(state.active,51*min)).toBe(11*min)
-    expect(state.workouts).toEqual([])
+    expect(state.active.id).not.toBe(snapshot.id)
+    expect(state.active.continuedFrom).toBe(snapshot.id)
+    expect(workoutElapsedMs(state.active,51*min)).toBe(1*min)
+    expect(state.workouts).toHaveLength(1)
     expect(resumeAutoFinished(state,snapshot.id,52*min)).toBe(false)
   })
   it('does not mistake a warmup-only plan for completion and handles legacy starts',()=>{

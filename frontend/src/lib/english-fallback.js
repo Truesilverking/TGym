@@ -1,5 +1,29 @@
 // Explicit source-language fallback. Entries in language packs override these values.
 export default {
+"Session ended after inactivity":"Session ended after inactivity",
+"Saved at the 30-minute inactivity limit. Your logged sets are preserved.":"Saved at the 30-minute inactivity limit. Your logged sets are preserved.",
+
+  "Continue in a new session": "Continue in a new session",
+  "Previous week": "Previous week",
+  "Next week": "Next week",
+  "Move up": "Move up",
+  "Move down": "Move down",
+  "revoke": "revoke",
+  "clear log": "clear log",
+  "refresh": "refresh",
+  "push enabled": "push enabled",
+
+  "Your private training space": "Your private training space",
+  "Built around your progress": "Built around your progress",
+  "Both sides": "Both sides",
+  "Left": "Left",
+  "Right": "Right",
+  "Current": "Current",
+  "Decrease": "Decrease",
+  "Increase": "Increase",
+  "Reps stay the same for each side. Confirm both sides to complete the set.": "Reps stay the same for each side. Confirm both sides to complete the set.",
+
+  'Pause': 'Pause',
 "Activities and health data": "Activities and health data",
 
 "Active days": "Active days",

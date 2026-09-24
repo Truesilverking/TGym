@@ -2,6 +2,32 @@ import english from '../lib/english-fallback.js'
 // Spanish UI strings. Keys are the English source strings (see lib/i18n.js).
 export default {
   ...english,
+"Session ended after inactivity":"Sesión finalizada por inactividad",
+"Saved at the 30-minute inactivity limit. Your logged sets are preserved.":"Guardada al cumplirse 30 minutos sin actividad. Se conservan las series registradas.",
+
+  "Continue in a new session": "Continuar en una sesión nueva",
+  "Previous week": "Semana anterior",
+  "Next week": "Semana siguiente",
+  "Move up": "Subir",
+  "Move down": "Bajar",
+  "revoke": "Revocar",
+  "clear log": "Borrar registro",
+  "refresh": "Actualizar",
+  "push enabled": "Notificaciones activadas",
+  "Invalid activity import": "Importación de actividad no válida",
+
+  "Your private training space": "Tu espacio privado de entrenamiento",
+  "Built around your progress": "Diseñado para tu progreso",
+  "Both sides": "Ambos lados",
+  "Left": "Izquierdo",
+  "Right": "Derecho",
+  "Current": "Actual",
+  "Pending": "Pendiente",
+  "Decrease": "Reducir",
+  "Increase": "Aumentar",
+  "Reps stay the same for each side. Confirm both sides to complete the set.": "Las repeticiones se mantienen por lado. Confirma ambos lados para completar la serie.",
+
+  'Pause': 'Pausa',
 "Help": "Ayuda",
 "On Android 7 or earlier, scheduled reminders use the device notification sound.": "En Android 7 o anterior, los recordatorios programados usan el sonido de notificación del dispositivo.",
 "Failure": "Fallo",

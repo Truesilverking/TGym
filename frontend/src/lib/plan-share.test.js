@@ -49,3 +49,5 @@ describe('what survives a shared plan', () => {
     expect(parsePlan(bundle).routines[0].ex[0].intensifier).toEqual({ type: 'dropset', count: 1, pct: 20 })
   })
 })
+
+it('preserves per-side targets without doubling prescribed repetitions',()=>{expect(roundTrip({side:true,repsPerSide:true,reps:10})).toMatchObject({side:true,repsPerSide:true,reps:10})})

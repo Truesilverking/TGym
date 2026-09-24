@@ -1,9 +1,9 @@
 // The persisted boundary for a finished session. Keep this pure so compatibility tests can
 // exercise the exact shape the UI writes without mounting React or mutating store state.
-import { finishWorkoutClock } from './workout-time.js'
+import { finishWorkoutClock, sessionTiming } from './workout-time.js'
 
-export function buildCompletedWorkout(active, { end = Date.now(), prs = [], snapshotFor } = {}) {
-  const timing = finishWorkoutClock(active, end)
+export function buildCompletedWorkout(active, { end = Date.now(), prs = [], reason = 'manual', snapshotFor } = {}) {
+  const timing = sessionTiming({...finishWorkoutClock(active, end),finishReason:reason},end)
   const entries = (active?.entries || []).map(entry => {
     const completed = {
       id: entry.id,
@@ -24,7 +24,7 @@ export function buildCompletedWorkout(active, { end = Date.now(), prs = [], snap
       if (entry.notePin) completed.notePin = true
     }
     return completed
-  }).filter(entry => entry.sets.some(set => set.done))
+  }).filter(entry => reason === 'inactivity' || entry.sets.some(set => set.done || set.leftDone || set.rightDone))
 
   const sessionNote = (active?.note || '').trim()
 
@@ -33,6 +33,8 @@ export function buildCompletedWorkout(active, { end = Date.now(), prs = [], snap
     d: active.d,
     start: active.start,
     end: timing.end,
+    sessionStartedAt: timing.sessionStartedAt, lastActivityAt: timing.lastActivityAt, accumulatedActiveDuration: timing.accumulatedActiveDuration,
+    sessionStatus: timing.sessionStatus, endedAt: timing.endedAt, finishReason: reason,
     ...(timing.pausedDurationMs ? { pausedDurationMs: timing.pausedDurationMs } : {}),
     routineId: active.routineId,
     name: active.name,

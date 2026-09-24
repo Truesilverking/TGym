@@ -36,8 +36,9 @@ function cleanEx(e) {
   // How the exercise is logged travels too (issues #31/#32) — the bodyweight flag only when
   // it disagrees with the catalogue, since agreeing is what the other end already assumes.
   if (e.bodyweight != null && e.bodyweight !== isBodyweightEq(e.id)) o.bodyweight = e.bodyweight
-  // In reps this means total reps are split; in time it means the duration applies per side.
+  // Carry explicit per-side rep semantics; older totals and timed per-side durations remain compatible.
   if (e.side && mode !== 'cardio') o.side = true
+  if (e.side && e.repsPerSide && mode === 'reps') o.repsPerSide = true
   // Progression settings travel with the plan — a shared Greyskull routine that arrives
   // without its rule is just a list of weights.
   if (e.prog) o.prog = e.prog
@@ -203,7 +204,7 @@ function scheme(e, unit) {
   let s = mode === 'time' ? `${sets} × ${fmtSec(e.sec || 45)}` : `${sets} × ${e.reps ?? 10}`
   if (e.weight) s += ` · ${isBw(e) ? '+' : ''}${fmtNum(e.weight)} ${unit}`
   // A printed plan is read at the rack, so the split earns its four characters.
-  if (mode !== 'time' && isPerSide(e)) s += ` · ${t('{0}/side', fmtNum(sideReps(e.reps ?? 10)))}`
+  if (mode !== 'time' && isPerSide(e)) s += ` · ${t('{0}/side', fmtNum(sideReps(e.reps ?? 10, e)))}`
   return s
 }
 

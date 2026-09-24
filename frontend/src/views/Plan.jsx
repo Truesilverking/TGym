@@ -95,14 +95,16 @@ export default function Plan() {
   }
 
   return <>
-    <div className="hdr hdr-centered">
-      <span className="hdr-slot" aria-hidden="true" />
+    <div className="hdr hdr-centered plan-header">
+      <TrainingPauseAction compact />
       <div className="hdr-center"><h1>{t('Routine')}</h1></div>
       <button className="iconbtn" onClick={planToolsSheet} aria-label={t('Share your plan')} title={t('Share your plan')}><Icon name="upload" /></button>
     </div>
     <div className="cols"><div>
-      <TrainingPauseAction /><Button onClick={()=>openActivityEditor({planning:true})}>{t('Plan activity')}</Button>
-      <h4 className="sec week-schedule-title">{t('Week schedule')}</h4>
+      <div className="week-schedule-header">
+        <h4 className="sec week-schedule-title">{t('Week schedule')}</h4>
+        <Button size="sm" onClick={()=>openActivityEditor({planning:true})}>{t('Plan activity')}</Button>
+      </div>
       <div className="list week-schedule" style={{ display: 'flex', flexDirection: 'column' }}>
         {[1, 2, 3, 4, 5, 6, 0].map(d => {
           const r = S.routines.find(x => x.id === S.week[d])

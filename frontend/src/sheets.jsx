@@ -767,7 +767,7 @@ function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial }) {
     // Written only when it differs from what the dataset already says, so a barbell config
     // stays exactly the shape it was before these flags existed.
     // Bodyweight and unilateral execution are mode-independent flags. For timed work `sec`
-    // means seconds per side, while reps keeps its legacy total-reps convention.
+    // means seconds per side; repsPerSide distinguishes new targets from legacy totals.
     const flags = {}
     if (bw !== isBodyweightEq(ex.id)) flags.bodyweight = bw
     // Free text, e.g. a pyramid's per-set loading ("bar only, +1 plate/side each set") — the
@@ -783,13 +783,12 @@ function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial }) {
     // warm-up and after-exercise overrides disappear when this exercise is saved.
     const restCfg = c.restSec === undefined ? {} : { restSec: Math.max(0, Math.round(c.restSec) || 0) }
     if (cardio) onSave({ sets, min: Math.max(1, Math.round(c.min) || 20), speed: Math.max(0, c.speed || 8), ...withNote, ...restCfg })
-    else if (mode === 'time') onSave({ sets, mode: 'time', sec: Math.max(1, Math.round(c.sec) || 45), weight: Math.max(0, c.weight || 0), ...flags, ...(perSide ? { side: true } : {}), ...prog, ...withNote, ...withWarmups, ...restCfg })
+    else if (mode === 'time') onSave({ sets, mode: 'time', sec: Math.max(1, Math.round(c.sec) || 45), weight: Math.max(0, c.weight || 0), ...flags, ...(perSide ? { side: true, ...(c.repsPerSide ? {repsPerSide:true} : {}) } : {}), ...prog, ...withNote, ...withWarmups, ...restCfg })
     else {
-      // A unilateral target is stored even: the split has to divide, and a typed 15 would
-      // otherwise plan seven reps on one side and eight on the other, every session.
+      // Preserve legacy total-rep targets; explicit per-side targets keep the entered count.
       const typed = Math.max(1, Math.round(c.reps) || 10)
-      const reps = perSide ? Math.ceil(typed / 2) * 2 : typed
-      const out = { sets, mode: 'reps', reps, weight: Math.max(0, c.weight || 0), ...flags, ...(perSide ? { side: true } : {}), ...prog, ...withNote, ...withWarmups, ...restCfg }
+      const reps = perSide && !c.repsPerSide ? Math.ceil(typed / 2) * 2 : typed
+      const out = { sets, mode: 'reps', reps, weight: Math.max(0, c.weight || 0), ...flags, ...(perSide ? { side: true, ...(c.repsPerSide ? {repsPerSide:true} : {}) } : {}), ...prog, ...withNote, ...withWarmups, ...restCfg }
       out.repRange = repRangeEnabled(c)
       out.repsMin = out.repRange ? Math.min(reps, Math.max(1, Math.round(c.repsMin) || reps)) : reps
       if (out.repRange && (c.strictReps === true || c.strictReps === false)) out.strictReps = c.strictReps
@@ -851,7 +850,7 @@ function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial }) {
             rest-pause work set — so "Sets" has nothing left to mean and only invites a mismatch. */}
         {c.intensifier?.type !== 'restpause' && c.setScheme !== 'topback' &&
           <Stepper label={t('Sets')} value={c.sets} step={1} decimal={false} onChange={v => setC(x => ({ ...x, sets: v }))} />}
-        <Stepper label={t('Reps')} value={c.reps} step={perSide ? 2 : 1} decimal={false} onChange={v => setC(x => ({ ...x, reps: v }))} />
+        <Stepper label={t('Reps')} value={c.reps} step={perSide && !c.repsPerSide ? 2 : 1} decimal={false} onChange={v => setC(x => ({ ...x, reps: v }))} />
         {/* On bodyweight work the weight stepper is the click #32 is about, so it is not here
             until there is a belt to describe — see the added-weight row below. */}
         {!bw && <Stepper label={t('Weight ({0})', st.unit)} value={c.weight} step={defaultIncrement(ex.id, st.unit)} onChange={v => setC(x => ({ ...x, weight: v }))} />}
@@ -884,10 +883,9 @@ function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial }) {
         <Switch checked={bw} onChange={v => setC(x => ({ ...x, bodyweight: v, weight: v ? 0 : x.weight }))} />
       </Row>
       {(mode === 'reps' || mode === 'time') && <Row icon="shuffle" iconTint="var(--blue)" title={t(mode === 'time' ? 'Time per side' : 'Reps per side')}
-        subtitle={mode === 'time' ? t('{0} seconds on the left, then {0} seconds on the right.', c.sec || 0) : perSide ? t('You still log the total: {0} is {1} per side.', c.reps || 0, fmtNum(sideReps(c.reps))) : t('For lunges, single-arm rows and the like.')}>
-        {/* Turning it on rounds the target up to an even number, since half of an odd
-            total is a rep one side does not get. */}
-        <Switch checked={perSide} onChange={v => setC(x => ({ ...x, side: v || undefined, reps: mode === 'reps' && v ? Math.ceil((x.reps || 0) / 2) * 2 : x.reps }))} />
+        subtitle={mode === 'time' ? t('{0} seconds on the left, then {0} seconds on the right.', c.sec || 0) : perSide && c.repsPerSide ? t('Reps stay the same for each side. Confirm both sides to complete the set.') : perSide ? t('You still log the total: {0} is {1} per side.', c.reps || 0, fmtNum(sideReps(c.reps))) : t('For lunges, single-arm rows and the like.')}>
+        {/* New per-side targets retain the entered prescription and mark its semantics. */}
+        <Switch checked={perSide} onChange={v => setC(x => ({ ...x, side: v || undefined, repsPerSide: v ? true : undefined }))} />
       </Row>}
     </div>}
     {/* A stepper is too wide to sit in a list row next to a label — it squeezes the text to
@@ -968,15 +966,15 @@ function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial }) {
       <div className="sect-b" style={{ marginBottom: repRangeEnabled(c) ? 8 : 18 }}>
         <Row icon="target" iconTint="var(--blue)" title={t('Use rep range')} subtitle={t('Show a minimum and maximum instead of one exact target.')}>
           <Switch checked={repRangeEnabled(c)} onChange={enabled => setC(x => enabled
-            ? { ...x, repRange: true, repsMin: Math.min(x.reps || 10, x.repsMin || Math.max(1, (x.reps || 10) - (perSide ? 4 : 2))) }
+            ? { ...x, repRange: true, repsMin: Math.min(x.reps || 10, x.repsMin || Math.max(1, (x.reps || 10) - (perSide && !c.repsPerSide ? 4 : 2))) }
             : { ...x, repRange: false, repsMin: x.reps, strictReps: undefined })} />
         </Row>
       </div>
       {repRangeEnabled(c) && <>
         <div className="row cfgrow" style={{ marginBottom: 8 }}>
-          <Stepper label={t('Minimum reps')} value={c.repsMin || c.reps || 1} step={perSide ? 2 : 1} decimal={false}
+          <Stepper label={t('Minimum reps')} value={c.repsMin || c.reps || 1} step={perSide && !c.repsPerSide ? 2 : 1} decimal={false}
             onChange={v => setC(x => ({ ...x, repRange: true, repsMin: Math.min(x.reps || v, Math.max(1, v)) }))} />
-          <Stepper label={t('Maximum reps')} value={c.reps || 10} step={perSide ? 2 : 1} decimal={false}
+          <Stepper label={t('Maximum reps')} value={c.reps || 10} step={perSide && !c.repsPerSide ? 2 : 1} decimal={false}
             onChange={v => setC(x => ({ ...x, repRange: true, reps: Math.max(x.repsMin || 1, v) }))} />
         </div>
         <div className="sect-b" style={{ marginBottom: 18 }}>
@@ -1342,7 +1340,7 @@ function WorkoutDetail({ w, close }) {
   return <>
     <h3>{w.name}</h3>
     <ActivityMetrics workout={st.workouts.find(row=>row.id===w.id) || w} />
-    {w.finishReason==='inactivity' && w.resumeSnapshot && !st.active && <Button onClick={()=>{update(s=>resumeAutoFinished(s,w.id));close();nav('/workout')}}>{t('Resume workout')}</Button>}
+    {w.finishReason==='inactivity' && w.resumeSnapshot && !st.active && <Button onClick={()=>{update(s=>resumeAutoFinished(s,w.id));close();nav('/workout')}}>{t('Continue in a new session')}</Button>}
     <div className="muted small" style={{ marginBottom: 12 }}>{[fmtDate(w.d, true), ...(Number(w.end) > Number(w.start) ? [clockAt(w.start) + '–' + clockAt(w.end)] : []), ...durPart(workoutElapsedMs(w)), ...(!w.activity || w.activity.preservesWorkout ? [fmtVol(w.vol, st.unit)] : []), ...(w.bw ? [fmtNum(w.bw) + ' ' + st.unit] : [])].join(' · ')}</div>
     {(w.activity && !w.activity.preservesWorkout ? [] : editing ? draftEntries : w.entries).map((e, i) => {
       const ex = EXIDX[e.id]
@@ -1728,7 +1726,7 @@ export const workoutCompleteSheet = () => {
   return completionDecision
 }
 export function inactivityWarningSheet() {
-  return ui().openSheet(close=><><h3>{t('Still training?')}</h3><p>{t('No activity has been recorded for a while.')}</p><Button onClick={()=>{update(s=>{if(s.active)s.active.lastMeaningfulWorkoutActivityAt=Date.now()});close()}}>{t('Continue workout')}</Button><Button onClick={()=>{close();finishWorkout()}}>{t('Finish workout')}</Button></>)
+  return ui().openSheet(close=><><h3>{t('Still training?')}</h3><p>{t('No activity has been recorded for a while.')}</p><Button onClick={()=>{update(s=>{if(s.active)s.active.lastActivityAt=s.active.lastMeaningfulWorkoutActivityAt=Date.now()});close()}}>{t('Continue workout')}</Button><Button onClick={()=>{close();finishWorkout()}}>{t('Finish workout')}</Button></>)
 }
 
 function FinishSummary({ w, prs, e1prs = [], milestone = null, close }) {
@@ -1739,7 +1737,8 @@ function FinishSummary({ w, prs, e1prs = [], milestone = null, close }) {
       <div><b>{t('{0}-workout streak!', milestone)}</b><span>{t('Your consistency is paying off. Keep the flame alive!')}</span></div>
     </div>}
     <div style={{ fontSize: 44, display: 'flex', justifyContent: 'center', color: 'var(--acc)' }}><Icon name="trophy" /></div>
-    <h3 style={{ margin: '8px 0' }}>{t('Workout complete!')}</h3>
+    <h3 style={{ margin: '8px 0' }}>{t(w.finishReason === 'inactivity' ? 'Session ended after inactivity' : 'Workout complete!')}</h3>
+    {w.finishReason === 'inactivity' && <p className="small muted">{t('Saved at the 30-minute inactivity limit. Your logged sets are preserved.')}</p>}
     <div className="tiles" style={{ textAlign: 'left' }}>
       <div className="tile"><div className="l">{t('Duration')}</div><div className="v" style={{ fontSize: '1.1rem' }}>{fmtDur(workoutElapsedMs(w))}</div></div>
       <div className="tile"><div className="l">{t('Volume')}</div><div className="v" style={{ fontSize: '1.1rem' }}>{fmtVol(w.vol, st.unit)}</div></div>
@@ -1781,6 +1780,7 @@ export function doFinishWorkout(options = {}) {
   })
   const w = buildCompletedWorkout(A, {
     end: options.end ?? Date.now(),
+    reason: options.reason || (effectiveWorkoutComplete(A) ? 'completed' : 'manual'),
     prs,
     snapshotFor: e => EXIDX[e.id]?.custom ? exerciseMuscleSnapshot(EXIDX[e.id]) : null,
   })
@@ -1805,6 +1805,8 @@ export function doFinishWorkout(options = {}) {
   }
   useStore.getState().autoBackupNow()
   useUI.getState().stopRest()
+  useUI.getState().stopWork()
+  void useStore.getState().flushPersistence().catch(()=>useUI.getState().toast(t('Could not save. Check available storage and try again.')))
   void playAppSound(S(), 'completion')
-  ui().openSheet(close => <><FinishSummary w={w} prs={prs} e1prs={e1prs} milestone={milestone} close={close} />{w.finishReason==='inactivity' && <Button onClick={()=>{update(s=>resumeAutoFinished(s,w.id));close();nav('/workout')}}>{t('Resume workout')}</Button>}</>, { kind: 'center', locked: true })
+  ui().openSheet(close => <><FinishSummary w={w} prs={prs} e1prs={e1prs} milestone={milestone} close={close} />{w.finishReason==='inactivity' && <Button onClick={()=>{update(s=>resumeAutoFinished(s,w.id));close();nav('/workout')}}>{t('Continue in a new session')}</Button>}</>, { kind: 'center', locked: true })
 }

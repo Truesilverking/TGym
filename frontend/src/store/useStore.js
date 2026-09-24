@@ -11,6 +11,7 @@ import { MOBILE, nativeLoad, nativeSave, syncReminder, writeAutoBackup } from '.
 import { loadRemote, chooseLocal, forgetRemote, connect } from '../lib/remote.js'
 import { shouldRestoreNative } from '../lib/native-state.js'
 import { portableState, backupChecksum } from '../lib/backup.js'
+import { sessionTiming } from '../lib/workout-time.js'
 import { reconcileWorkoutEdit, ensureWorkoutCompletionPaused } from '../lib/workout-lifecycle.js'
 
 const KEY = 'gym_state_v1'
@@ -44,7 +45,7 @@ function loadState() {
     const raw = localStorage.getItem(KEY)
     if (raw) {
       const S = Object.assign(clone(DEF), migrateState(JSON.parse(raw), { onboarded: localStorage.getItem('framegym_onboarded_v1') === '1' }))
-      const active = ensureWorkoutCompletionPaused(S.active)
+      const active = sessionTiming(ensureWorkoutCompletionPaused(S.active))
       if (active !== S.active) {
         S.active = active
         // Preserve freshness until boot has compared the native mirror.
@@ -72,7 +73,7 @@ export const useStore = create((set, get) => {
   const persist = (S, push = true) => {
     if (storageError) throw new Error(storageError)
     S = migrateState(S, { onboarded: !!get().S.hasCompletedOnboarding, toured: !!get().S.hasCompletedAppTour })
-    S.active = ensureWorkoutCompletionPaused(S.active)
+    S.active = sessionTiming(ensureWorkoutCompletionPaused(S.active))
     const clockChanged = S.active?.timerPausedAt !== get().S.active?.timerPausedAt || S.active?.timerContinuedAt !== get().S.active?.timerContinuedAt
     if (S.cloudSync?.on && backupChecksum(portableState(S)) !== backupChecksum(portableState(get().S))) {
       S.cloudSync = { ...S.cloudSync, dirtyAt: Date.now() }
@@ -102,7 +103,7 @@ export const useStore = create((set, get) => {
   // kills the app.
   const flushOnBackground = () => {
     const S = get().S
-    const active = ensureWorkoutCompletionPaused(S.active)
+    const active = sessionTiming(ensureWorkoutCompletionPaused(S.active))
     if (active !== S.active) persist({ ...S, active })
     if (MOBILE && saveTm) {
       clearTimeout(saveTm)
@@ -151,10 +152,10 @@ export const useStore = create((set, get) => {
     },
 
     // Mutate a draft of S via producer fn, then persist + schedule sync.
-    update(mut, push = true) {
+    update(mut, push = true, userActivity = true) {
       const S = clone(get().S)
       mut(S)
-      if (S.unit === get().S.unit) S.active = reconcileWorkoutEdit(get().S.active, S.active)
+      if (S.unit === get().S.unit) S.active = reconcileWorkoutEdit(get().S.active, S.active, Date.now(), userActivity)
       persist(S, push)
     },
     replaceState(S, push = false) { persist(clone(S), push) },

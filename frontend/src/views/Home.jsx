@@ -71,9 +71,9 @@ export default function Home() {
 
     <div className="card" data-tour="calendar">
       <div className="row between" style={{ marginBottom: 8 }}>
-        <button className="iconbtn" style={{ width: 30, height: 30, fontSize: 15 }} onClick={() => setWeekOffset(w => w - 1)} aria-label="Previous week"><Icon name="chevronLeft" /></button>
+        <button className="iconbtn" style={{ width: 30, height: 30, fontSize: 15 }} onClick={() => setWeekOffset(w => w - 1)} aria-label={t('Previous week')}><Icon name="chevronLeft" /></button>
         <button className="week-expand" onClick={() => homeCalendarSheet(monday)} aria-label={t('Expand calendar')}>{wkLabel}<Icon name="chevronRight" /></button>
-        <button className="iconbtn" style={{ width: 30, height: 30, fontSize: 15 }} onClick={() => setWeekOffset(w => w + 1)} aria-label="Next week"><Icon name="chevronRight" /></button>
+        <button className="iconbtn" style={{ width: 30, height: 30, fontSize: 15 }} onClick={() => setWeekOffset(w => w + 1)} aria-label={t('Next week')}><Icon name="chevronRight" /></button>
       </div>
       <div className="week">{strip}</div>
       {routine && <button className="btn sm" onClick={()=>routineMuscleSheet(routine.id)}>{t('Muscles trained')}</button>}
@@ -103,7 +103,6 @@ export default function Home() {
     </div>
 
     <TrainingHistory promptOnly />
-    <TrainingPauseAction onlyPaused />
 
     <ConsistencyCard S={S} onTimes={sessionTimingSheet} />
 
@@ -150,5 +149,6 @@ export default function Home() {
       </> : <div className="muted small">{t("No entries yet — log your weight to start the curve. It's also asked before every workout.")}</div>}
     </div>
 
+    <TrainingPauseAction onlyPaused />
   </div>
 }

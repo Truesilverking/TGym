@@ -33,7 +33,7 @@ import AppUpdate from './components/AppUpdate.jsx'
 import AppTour from './components/AppTour.jsx'
 import { backupToGoogleDrive, cloudBackupDue } from './lib/cloud-sync.js'
 import { MOBILE, syncReminder } from './lib/mobile.js'
-import { inactivityState, lastWorkoutActivity } from './lib/workout-time.js'
+import { inactivityState, lastWorkoutActivity, inactivityDeadline, recordWorkoutActivity } from './lib/workout-time.js'
 import { doFinishWorkout, inactivityWarningSheet } from './sheets.jsx'
 import { syncWorkoutNotification } from './lib/workout-notification.js'
 
@@ -117,16 +117,25 @@ function Shell() {
       const status=inactivityState(active)
       if (status==='finish') {
         warning?.close(); warning=null
-        doFinishWorkout({reason:'inactivity',end:lastWorkoutActivity(active)})
+        doFinishWorkout({reason:'inactivity',end:inactivityDeadline(active)})
       } else if (status==='warning' && document.visibilityState!=='hidden') {
         const key=`${active.id}:${lastWorkoutActivity(active)}`
         if(warned!==key){warning?.close();warned=key;warning=inactivityWarningSheet()}
       } else if(status==='none'){warning?.close();warning=null}
     }
+    const interact = event => {
+      if (!event.isTrusted || document.visibilityState === 'hidden' || !event.target?.closest?.('#app, [role="dialog"], #tabbar')) return
+      const active = useStore.getState().S.active
+      if (!active) return
+      if (inactivityState(active) === 'finish') { event.preventDefault(); event.stopImmediatePropagation(); check(); return }
+      useStore.getState().update(s => { s.active = recordWorkoutActivity(s.active) }, false, false)
+    }
     check()
+    const events = ['pointerdown','keydown','input']
+    events.forEach(type => document.addEventListener(type, interact, true))
     const timer=setInterval(check,10000)
     document.addEventListener('visibilitychange',check)
-    return ()=>{clearInterval(timer);document.removeEventListener('visibilitychange',check);warning?.close()}
+    return ()=>{clearInterval(timer);events.forEach(type => document.removeEventListener(type,interact,true));document.removeEventListener('visibilitychange',check);warning?.close()}
   },[ready])
   useEffect(() => {
     if (!MOBILE) return

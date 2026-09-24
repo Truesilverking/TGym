@@ -41,21 +41,17 @@ export const isTimed = cfg => modeOf(cfg) === 'time'
 //                asked for only once you say there is some. Seeded from the equipment field.
 //                Spelled out rather than `bw`, which a workout already uses for the weigh-in
 //                it was logged at — two different things one letter apart is a bug waiting.
-//   side       — the exercise is unilateral. You still log what you did: 16, the total across
-//                both sides. The split is derived for planning ("8 per side"), never entered
-//                — a number that sometimes means one side and sometimes both is the thing
-//                that made this ambiguous in the first place, and one rep count that always
-//                means the same thing beats two that need a legend.
+//   side       — the exercise is unilateral. Legacy targets store the total across sides;
+//                new targets mark repsPerSide so the entered count applies to each side.
+//                Confirmations never rewrite the saved rep count or multiply volume.
 // Both are absent on every plan, workout and backup written before they existed, and absent
 // reads as false, so nothing needs migrating.
 export const isBw = cfg => (cfg && cfg.bodyweight != null ? !!cfg.bodyweight : isBodyweightEq(cfg && cfg.id))
 export const isPerSide = cfg => !!(cfg && cfg.side)
-// What one side did, for display only. Half of an odd total is shown as it falls (8.5) rather
-// than rounded away: it means the sides were not even, which is worth seeing.
-export const sideReps = reps => (reps || 0) / 2
-// Unilateral work moves in pairs, so its rep target steps by two — 16, 18, 20 — and a total
-// that stayed odd would put a rep on one side and not the other.
-export const repStep = cfg => (isPerSide(cfg) ? 2 : 1)
+// Preserve legacy total-rep display; explicit per-side targets display their entered count.
+export const sideReps = (reps, cfg) => (reps || 0) / (cfg?.repsPerSide ? 1 : 2)
+// Legacy totals move in pairs; explicit per-side counts move one rep at a time.
+export const repStep = cfg => (isPerSide(cfg) && !cfg.repsPerSide ? 2 : 1)
 
 // mm:ss for a work duration — seconds alone read badly past a minute ("90 s" vs "1:30").
 export function fmtSec(sec) {
@@ -126,9 +122,8 @@ export function setLabel(id, s, cfg) {
   }
   // Bodyweight reads as what you did — "12", or "+10 × 12" once there is a belt involved —
   // rather than "0×12", which says a set was performed with no weight and means nothing.
-  // A per-side set needs no mark here: the number logged is the total, the same as every
-  // other set in the app.
-  const reps = s.r || 0
+  // Only explicit per-side counts need a label; legacy totals keep their original display.
+  const reps = (s.r || 0) + (isPerSide(c) && c.repsPerSide ? ` ${t('/ side')}` : '')
   if (isBw({ ...c, id: c.id ?? id })) {
     const load = s.w > 0 ? `+${fmtNum(s.w)} × ` : ''
     return `${load}${reps}` + effortTail(s)
@@ -155,7 +150,7 @@ export function exLine(cfg, unit) {
   if (mode === 'cardio') return `${n} × ${cfg.min || 20} min @ ${fmtNum(cfg.speed ?? 8)} km/h`
   if (mode === 'time') return `${n} × ${fmtSec(cfg.sec || 45)}${isPerSide(cfg) ? ` ${t('/ side')}` : ''}${load}`
   // This is the line with room for it, so the split is spelled out: "3 × 16 · 8/side".
-  const split = isPerSide(cfg) ? ' · ' + t('{0}/side', fmtNum(sideReps(cfg.reps))) : ''
+  const split = isPerSide(cfg) ? ' · ' + t('{0}/side', fmtNum(sideReps(cfg.reps, cfg))) : ''
   const range = cfg.repRange !== false && cfg.repsMin > 0 && cfg.repsMin < cfg.reps ? `${cfg.repsMin}–${cfg.reps}` : cfg.reps
   if (cfg.setScheme === 'topback') return `${cfg.topSets || 1} Top + ${cfg.backoffSets || 2} Back-off · ${range} reps${load}`
   return `${n} × ${range}${load}${split}`
@@ -404,9 +399,9 @@ export function applyIntensifierPlan(sets, cfg) {
 }
 export function workoutVolume(w) {
   let v = 0
-  // No special case for unilateral work: a per-side set logs its total, so both sides are
-  // already in the rep count that arrives here. Drop-set drops and rest-pause bursts add their
-  // own weight x reps on top of the row's main/activation set (see extraVolumeOf).
+  // Count each saved row once; side confirmations never multiply recorded reps or volume.
+  // Drop-set drops and rest-pause bursts add their own weight x reps on top of the
+  // row's main/activation set (see extraVolumeOf).
   // Warm-ups are excluded here as everywhere else. The config sheet promises it in so many
   // words ("left out of volume, records and progression") and every other consumer already
   // does it; this line was the one that did not, which only stopped being harmless when a

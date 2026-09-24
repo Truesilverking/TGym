@@ -36,8 +36,8 @@ export default function TrainingPauseCard({ onSaved }) {
   </section>
 }
 
-export function TrainingPauseAction({ onlyPaused = false }) {
+export function TrainingPauseAction({ onlyPaused = false, compact = false }) {
   const S = useStore(s => s.S), pause = openTrainingPause(S)
   if (onlyPaused && !pause) return null
-  return <button data-tour="pause" className={'training-pause-action' + (pause ? ' paused' : '')} onClick={() => useUI.getState().openSheet(close => <TrainingPauseCard onSaved={close} />)}><span className="pause-action-symbol" aria-hidden="true">{pause ? '▶' : 'Ⅱ'}</span><span><b>{t(pause ? 'Training paused' : 'Pause training')}</b><small>{t(pause ? 'Resume when you are ready' : 'Protect your streak during a break')}</small></span><span aria-hidden="true">›</span></button>
+  return <button data-tour="pause" className={'training-pause-action' + (pause ? ' paused' : '') + (compact ? ' compact' : '')} aria-label={compact ? t(pause ? 'Resume training' : 'Pause training') : undefined} onClick={() => useUI.getState().openSheet(close => <TrainingPauseCard onSaved={close} />)}><span className="pause-action-symbol" aria-hidden="true">{pause ? '▶' : 'Ⅱ'}</span><span><b>{t(compact ? (pause ? 'Resume' : 'Pause') : (pause ? 'Training paused' : 'Pause training'))}</b>{!compact && <small>{t(pause ? 'Resume when you are ready' : 'Protect your streak during a break')}</small>}</span>{!compact && <span aria-hidden="true">›</span>}</button>
 }

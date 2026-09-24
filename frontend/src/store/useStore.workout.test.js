@@ -37,4 +37,16 @@ describe('persisted workout clock boundaries', () => {
     useStore.getState().replaceState({...structuredClone(DEF),active:a})
     expect(workoutElapsedMs(useStore.getState().S.active)).toBe(72*min)
   })
+  it('persists explicit session metadata and ignores automatic timer edits as activity',()=>{
+    const a=session();a.lastActivityAt=400*min;a.lastMeaningfulWorkoutActivityAt=400*min
+    useStore.setState({S:{...structuredClone(DEF),active:a}})
+    useStore.getState().update(s=>{s.active.entries[0].sets[0].sec=30},false,false)
+    let saved=JSON.parse(localStorage.getItem('gym_state_v1')).active
+    expect(saved).toMatchObject({sessionStartedAt:360*min,lastActivityAt:400*min,sessionStatus:'active',endedAt:null})
+    useStore.getState().update(s=>{s.active.note='A real note'})
+    saved=JSON.parse(localStorage.getItem('gym_state_v1')).active
+    expect(saved.lastActivityAt).toBe(432*min)
+    expect(saved.accumulatedActiveDuration).toBe(72*min)
+  })
+
 })
