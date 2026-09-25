@@ -15,3 +15,9 @@ it('restores sound choices, custom PCM, gain and mute after offline reopen/updat
  expect(useStore.getState().S).toMatchObject({sound:false,soundMuted:true,soundVolume:.4,sounds:{rest:'custom_saved',set:'silent'},customSounds:[{id:'custom_saved',data:'preserved'}]})
  expect(JSON.parse(localStorage.getItem('gym_state_v1')).soundVolume).toBe(.4)
 })
+
+it('recovers active manual values and edit protection from the offline PWA mirror',async()=>{
+ const active={id:'live',cur:0,start:Date.now(),entries:[{id:'ex',logAddedWeight:true,note:'Keep',target:{reps:10},sets:[{w:42.5,r:8,rir:0,done:true,doneAt:Date.now(),manualFields:{w:true,r:true}},{w:50,r:12,done:false}]}]};
+ disk.value={...structuredClone(DEF),_ts:Date.now(),active};await useStore.getState().boot();
+ expect(useStore.getState().S.active.entries).toEqual(active.entries);expect(JSON.parse(localStorage.getItem('gym_state_v1')).active.entries).toEqual(active.entries)
+})

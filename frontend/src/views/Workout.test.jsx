@@ -22,6 +22,7 @@ const mocks = vi.hoisted(() => {
     startRest: state.startRest,
     stopRest: state.stopRest,
     startWork: vi.fn(),
+    stopWork: vi.fn(),
     toast: vi.fn(),
   })
   return state
@@ -198,12 +199,12 @@ describe('Workout set completion flow', () => {
 describe('Top and back-off targets', () => {
   it('names zero effort and targets Failure while storing and stepping numeric RIR', async () => {
     await mount([{ id: 'squat', target: { mode: 'reps', reps: 6, targetRirMin: 0, targetRirMax: 0 }, sets: [{ w: 50, r: 6, rir: 0, done: false }] }], 0, S => { S.effort = 'rir' })
-    const input = container.querySelector('.stp.eff input')
+    const input = container.querySelector('.set-metric.eff input')
     expect(input.value).toBe('Failure')
     expect(input.getAttribute('aria-label')).toBe('RIR')
     expect(container.querySelector('.set-metric.eff label').textContent).toContain('Failure')
     expect(mocks.S.active.entries[0].sets[0].rir).toBe(0)
-    await act(async () => { container.querySelector('.stp.eff button[aria-label="Increase"]').click() })
+    await act(async () => { container.querySelector('.set-metric.eff button[aria-label="Increase"]').click() })
     expect(mocks.S.active.entries[0].sets[0].rir).toBe(0.5)
   })
 
@@ -223,7 +224,8 @@ describe('Top and back-off targets', () => {
 
     const rows = [...container.querySelectorAll('.set-console')]
     expect([...container.querySelectorAll('.set-phase')].map(x=>x.textContent)).toEqual(['Top set','Back-off sets'])
-    expect(rows.map(row=>[row.querySelector('.set-metric.r label').textContent,row.querySelector('.set-metric.eff label').textContent])).toEqual([['Reps4–6','RIR1'],['Reps6–8','RIR3'],['Reps6–8','RIR3']])
+    expect(rows.map(row=>[row.querySelector('.set-metric.r label').textContent,row.querySelector('.set-metric.eff label').textContent])).toEqual([['Actual reps','RIR1'],['Actual reps','RIR3'],['Actual reps','RIR3']])
+    expect(rows.map(row=>row.querySelector('.set-target strong').textContent)).toEqual(['4–6','6–8','6–8'])
     expect(rows[0].querySelector('.set-metric.w label').textContent).toBe('Weight (kg)')
 
   })

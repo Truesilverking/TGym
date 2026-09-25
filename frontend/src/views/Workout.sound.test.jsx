@@ -73,3 +73,14 @@ describe('timed-set sound ownership', () => {
     expect(saved()).toMatchObject({ done: true, leftSec: 2, rightSec: 2 })
   })
 })
+
+it('cancels timed work before inserting a warmup changes row indexes',()=>{
+ renderTimed({seconds:5});act(()=>container.querySelector('button[aria-label="Add set"]').click());
+ act(()=>[...container.querySelectorAll('button')].find(b=>b.textContent==='Add warm-up set').click());
+ act(()=>vi.advanceTimersByTime(6000));expect(useUI.getState().work).toBe(null);expect(useStore.getState().S.active.entries[0].sets.every(s=>!s.done)).toBe(true)
+})
+it('cancels the delayed right-side callback when the row structure changes',()=>{
+ renderTimed({side:true});act(()=>vi.advanceTimersByTime(2000));
+ act(()=>[...container.querySelectorAll('button')].find(b=>b.textContent==='Add warm-up set').click());
+ act(()=>vi.advanceTimersByTime(3000));expect(useUI.getState().work).toBe(null);expect(useStore.getState().S.active.entries[0].sets.every(s=>!s.done)).toBe(true)
+})

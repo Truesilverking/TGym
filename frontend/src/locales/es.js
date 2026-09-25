@@ -1459,4 +1459,11 @@ export default {
   ,"Playing: {0}": "Reproduciendo: {0}"
   ,"Loading: {0}": "Cargando: {0}"
   ,"Mute": "Silencio"
+  ,"Actual reps": "Reps realizadas"
+  ,"Actual reps per side": "Reps realizadas por lado"
+  ,"Target reps": "Reps objetivo"
+  ,"Free reps": "Reps libres"
+  ,"Log added weight": "Registrar peso añadido"
+  ,"Tap a value to type your result. Targets are a guide.": "Toca un valor para escribir tu resultado. Los objetivos son una guía."
+  ,"Enter a valid number": "Introduce un número válido"
 }

@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { exOr } from '../lib/exercises.js'
-import { effectiveRoutine, lastEntryFor, bestWeightFor, buildSets, freestyleConfig, defaultConfig, setsDoneActive, supersetUnits, unitOf, setLabel, modeOf, isBw, isPerSide, sideReps, repStep, fmtSec, EFFORT, effortOf, stepEffort, capEffort, cascadeWeight, cascadeTopBackWeight, cascadeTopBackReps, insertWarmupRow, removeRowAt, pairAdjacent, unpairSuperset, cleanupSg, applyIntensifierPlan, pinnedNoteFor, exNoteFor, rerampWarmups } from '../lib/history.js'
+import { effectiveRoutine, lastEntryFor, bestWeightFor, buildSets, freestyleConfig, defaultConfig, setsDoneActive, supersetUnits, unitOf, setLabel, modeOf, isBw, isPerSide, sideReps, repStep, fmtSec, EFFORT, effortOf, stepEffort, cascadeWeight, cascadeTopBackWeight, cascadeTopBackReps, insertWarmupRow, removeRowAt, pairAdjacent, unpairSuperset, cleanupSg, applyIntensifierPlan, pinnedNoteFor, exNoteFor, rerampWarmups } from '../lib/history.js'
 import { fmtNum, fmtDate, todayISO, exCount, DAYN } from '../lib/format.js'
 import { playAppSound, vibrate } from '../lib/sound.js'
 import { t, exerciseNameFor } from '../lib/i18n.js'
@@ -19,7 +19,7 @@ import { nextPrescription, applyPrescription, defaultIncrement } from '../lib/pr
 import { glyphOf } from '../lib/glyphs.js'
 import { setSideState, toggleSetSide, isWarmupRow, isDropSet, isRestPauseSet, dropsOf, clustersOf, addDrop, addCluster, removeDropAt, removeClusterAt, setDropAt, setClusterAt, nextDropWeight, nextBurstReps } from '../lib/workout-model.js'
 import { restSeconds } from '../lib/rest-policy.js'
-import { seedPlannedRir, applyTrainingPlan, clampReps, deloadStatus, deloadTargetFor, repBounds, repRangeEnabled, rirAdvice, targetRirFor, targetRirRangeFor } from '../lib/training-plan.js'
+import { seedPlannedRir, applyTrainingPlan, clampReps, deloadStatus, deloadTargetFor, repBounds, rirAdvice, targetRirFor, targetRirRangeFor } from '../lib/training-plan.js'
 import { pauseWorkoutClock, resumeWorkoutClock, workoutElapsedMs } from '../lib/workout-time.js'
 import { effectiveWorkoutComplete } from '../lib/workout-lifecycle.js'
 import { effortValue, rirRangeLabel } from '../lib/history.js'
@@ -119,12 +119,12 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
   // config brings it back, now labelled as the addition it is.
   const cfg = { ...(entry.target || {}), id: entry.id }
   const bw = !cardio && isBw(cfg)
-  const added = bw && entry.sets.some(s => s.w > 0)
+  const added = bw && (entry.logAddedWeight || entry.sets.some(s => s.w > 0))
   const loadStep = cfg.inc > 0 ? cfg.inc : defaultIncrement(entry.id, S.unit)
   const loadCol = { f: 'w', step: loadStep, dec: true, hd: bw ? t('Added ({0})', S.unit) : t('Weight ({0})', S.unit) }
   // Legacy unilateral totals step in pairs; new per-side prescriptions retain their count.
-  const repCol = { f: 'r', step: repStep(cfg), dec: false, hd: isPerSide(cfg) && cfg.repsPerSide ? t('Reps per side') : t('Reps') }
-  const col1 = cardio ? { f: 'min', step: 1, dec: false, hd: t('Duration (min)') }
+  const repCol = { f: 'r', step: repStep(cfg), dec: false, hd: isPerSide(cfg) && cfg.repsPerSide ? t('Actual reps per side') : t('Actual reps') }
+  const col1 = cardio ? { f: 'min', step: 1, dec: true, hd: t('Duration (min)') }
     : timed ? { f: 'sec', step: 5, dec: false, hd: t('Seconds') }
       : (bw && !added) ? repCol : loadCol
   const col2 = cardio ? { f: 'speed', step: 0.5, dec: true, hd: t('Speed (km/h)') }
@@ -142,27 +142,28 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
   // with no ceiling, as they always did.
   const bump = (s, i, col, dir) => {
     if (col.eff) return onField(i, col.f, stepEffort(col.eff, s[col.f], dir))
-    const value = Math.max(0, Math.round(((s[col.f] || 0) + dir * col.step) * 100) / 100)
-    onField(i, col.f, col.f === 'r' ? clampReps(S, cfg, s, value) : value)
+    const value = Math.max(['min','sec'].includes(col.f) ? 1 : 0, Math.round(((s[col.f] || 0) + dir * col.step) * 100) / 100)
+    const bounds = repBounds(cfg, s.role), withinTarget = s.r >= bounds.min && s.r <= bounds.max
+    onField(i, col.f, col.f === 'r' && withinTarget && !s.amrap && !cfg.amrap && entry.plan?.policy !== 'greyskull' ? clampReps(S, cfg, s, value) : value)
   }
   // Uses the shared stepper markup so a set row picks up the same control styling
   // as every other +/- field in the app.
   const cell = (s, i, col, cls) => (
-    <div className={'set-metric ' + cls}><label>{col.hd}{col.f === 'r' && repRangeEnabled(cfg) && <small>{repBounds(cfg,s.role).min}–{repBounds(cfg,s.role).max}</small>}{col.eff === 'rir' && targetRirRangeFor(cfg,s.role) && <small>{rirRangeLabel(targetRirRangeFor(cfg,s.role))}</small>}</label><div className={'stp ' + cls + (col.eff === 'rir' && s[col.f] != null && s[col.f] !== '' && Number(s[col.f]) === 0 ? ' effort-failure' : '')}>
-      <button aria-label={t('Decrease')} onClick={() => bump(s, i, col, -1)}><Icon name="minus" /></button>
-      {/* a typed effort is capped — there is no RPE 12, and 12 reps in reserve is a warm-up */}
-      <span className="val"><NumberField decimal={col.dec} nullable={col.opt} value={s[col.f] ?? ''}
+    <div className={'set-metric ' + cls}><label htmlFor={`workout-${entryIdx}-${i}-${col.f}`}>{col.hd}{col.eff === 'rir' && targetRirRangeFor(cfg,s.role) && <small>{rirRangeLabel(targetRirRangeFor(cfg,s.role))}</small>}</label><div className={'stp' + (col.eff === 'rir' && s[col.f] != null && s[col.f] !== '' && Number(s[col.f]) === 0 ? ' effort-failure' : '')}>
+      <button type="button" aria-label={t('Decrease')} onClick={() => bump(s, i, col, -1)}><Icon name="minus" /></button>
+      <span className="val"><NumberField key={`${entryIdx}-${i}-${col.f}`} id={`workout-${entryIdx}-${i}-${col.f}`} data-nodrag validation={col.eff ? {max: col.max, step: col.step} : ['min','sec'].includes(col.f) ? {min: 1} : {}} decimal={col.dec} nullable={col.opt} value={s[col.f] ?? ''}
         displayValue={col.eff && s[col.f] != null && s[col.f] !== '' ? effortValue(col.eff, s[col.f]) : undefined} aria-label={col.hd}
-        onChange={v => onField(i, col.f, col.eff ? capEffort(col.eff, v) : col.f === 'r' ? clampReps(S, cfg, s, v) : v)} /></span>
-      <button aria-label={t('Increase')} onClick={() => bump(s, i, col, 1)}><Icon name="plus" /></button>
+        onChange={v => onField(i, col.f, v)} /></span>
+      <button type="button" aria-label={t('Increase')} onClick={() => bump(s, i, col, 1)}><Icon name="plus" /></button>
     </div></div>
   )
+
   // A smaller stepper for a drop's weight/reps or a burst's reps — editing what the plan (or a
   // live "+ Drop"/"+ Burst" tap) already put on the row, not typing into a fresh field.
   const miniStepper = (value, step, dec, onChange, label) => (
     <div className="mini-metric"><label>{label}</label><div className="stp mini">
       <button aria-label={t('Decrease')} onClick={() => onChange(Math.max(0, Math.round(((value || 0) - step) * 100) / 100))}><Icon name="minus" /></button>
-      <span className="val"><NumberField decimal={dec} value={value ?? ''} aria-label={label} onChange={onChange} /></span>
+      <span className="val"><NumberField validation={{}} data-nodrag decimal={dec} value={value ?? ''} aria-label={label} onChange={onChange} /></span>
       <button aria-label={t('Increase')} onClick={() => onChange(Math.max(0, Math.round(((value || 0) + step) * 100) / 100))}><Icon name="plus" /></button>
     </div></div>
   )
@@ -213,6 +214,8 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
       </div>
     })()}
     {S.exerciseGoals?.[entry.id] && <div className="small row" style={{ color: 'var(--yellow)', gap: 5, marginBottom: 8 }}><Icon name="target" />{t('Goal')}: {S.exerciseGoals[entry.id].weight > 0 ? fmtNum(S.exerciseGoals[entry.id].weight) + ' ' + S.unit : ''}{S.exerciseGoals[entry.id].weight > 0 && S.exerciseGoals[entry.id].reps > 0 ? ' × ' : ''}{S.exerciseGoals[entry.id].reps > 0 ? S.exerciseGoals[entry.id].reps + ' ' + t('reps') : ''}</div>}
+    {bw && !added && <Button size="sm" variant="tinted" icon="plus" onClick={() => update(s => { s.active.entries[entryIdx].logAddedWeight = true })}>{t('Log added weight')}</Button>}
+    <p className="workout-entry-hint">{t('Tap a value to type your result. Targets are a guide.')}</p>
     <div className="card sets-card" style={{ marginTop: 10, marginBottom: 0 }}>
       {entry.sets.map((s, i) => {
         const warm = isWarmupRow(s)
@@ -221,6 +224,10 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
         // Numbering restarts per phase: with two warm-ups the first work set reads 1, not 3.
         const phaseNum = entry.sets.slice(0, i + 1).filter(x => isWarmupRow(x) === warm).length
         const roleBefore = i > 0 ? entry.sets[i - 1].role : null
+        const hasRepTarget = [cfg.reps, cfg.topRepsMax, cfg.backoffRepsMax].some(v => Number(v) > 0)
+        const target = repBounds(cfg, s.role)
+        const amrap = s.amrap || cfg.amrap || /^amrap$/i.test(String(cfg.reps).trim()) || (entry.plan?.policy === 'greyskull' && i === entry.sets.findLastIndex(row => !isWarmupRow(row)))
+        const targetText = amrap ? 'AMRAP' : hasRepTarget ? (target.min === target.max ? String(target.max) : `${target.min}–${target.max}`) : t('Free reps')
         return <div key={i}>
           {isFirstWarmup && <div className="setph">{t('Warm-up')}</div>}
           {!warm && warmBefore && <div className="setsep" />}
@@ -234,9 +241,10 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
                 {warm && <button className="iconbtn" aria-label={t('Remove set')} disabled={entry.sets.length <= 1} onClick={() => onRemoveSetAt(i)}><Icon name="xmark" /></button>}
                 {isPerSide(cfg) && !cardio ? <div className="set-sides" role="group" aria-label={t('Both sides')}>
                   {['left','right'].map(side=><button key={side} type="button" aria-pressed={setSideState(s)[side]} onClick={()=>onToggle(i,{side})}><span>{t(side === 'left' ? 'Left' : 'Right')}</span><Icon name={setSideState(s)[side] ? 'checkCircle' : 'minus'} /></button>)}
-                </div> : <Check checked={s.done} onChange={() => onToggle(i)} />}
+                </div> : <Check aria-label={`${t('Set')} ${phaseNum}`} checked={s.done} onChange={() => onToggle(i)} />}
               </div>
             </div>
+            {mode === 'reps' && !warm && <div className="set-target"><span>{t('Target reps')}{isPerSide(cfg) && cfg.repsPerSide ? ` ${t('/ side')}` : ''}</span><strong>{targetText}</strong></div>}
             {cell(s, i, col1, 'w')}
             {col2 && cell(s, i, col2, 'r')}
             {col3 && (warm ? <div className="set-metric eff"><label>{col3.hd}</label><div className="stp disabled" aria-label={t('RIR is not rated for warm-up sets')}>—</div></div> : cell(s, i, col3, 'eff'))}
@@ -306,6 +314,8 @@ function ActiveWorkout() {
   const update = useStore(s => s.update)
   const { startRest, stopRest, work } = useUI()
   const A = S.active
+  const timedGeneration = useRef(0)
+  const entryCount = useRef(A.entries.length)
   // A restored paused workout needs the same finish decision as a newly checked final set.
   const restoredDecision = useRef(false)
   useEffect(() => {
@@ -329,6 +339,7 @@ function ActiveWorkout() {
   // (removeActiveExercise splices). Re-baseline whenever the list length changes, otherwise a
   // shifted exercise inherits its predecessor's mark and its real progress reads as a re-check.
   useEffect(() => {
+    if (entryCount.current !== A.entries.length) { timedGeneration.current++; useUI.getState().stopWork(); entryCount.current = A.entries.length }
     progressHighWater.current = A.entries.map(e => e.sets.filter(s => s.done).length)
   }, [A.entries.length])
   useEffect(() => {
@@ -344,8 +355,10 @@ function ActiveWorkout() {
   // Clearing an optional field drops the key rather than storing null, so a set only carries
   // what was actually logged — in the session, in history and in a backup.
   const setField = (idx, i, field, v) => mutEntry(idx, e => {
+    if (!e.sets[i] || (v != null && (!Number.isFinite(v) || v < 0 || v > Number.MAX_SAFE_INTEGER))) return
     const warm = isWarmupRow(e.sets[i])
     const safe = field === 'r' && warm ? Math.max(0, Math.round(Number(v) || 0)) : v
+    e.sets[i].manualFields = {...e.sets[i].manualFields, [field]: true}
     if (safe == null) delete e.sets[i][field]; else e.sets[i][field] = safe
     // Changing a weight cascades to the following sets of the same phase, so a
     // heavier bar carries through the set instead of retyping every row.
@@ -366,12 +379,12 @@ function ActiveWorkout() {
     else if (m === 'time') e.sets.push({ sec: l ? l.sec : (e.target.sec || 45), w: l ? (l.w || 0) : (e.target.weight || 0), done: false })
     else e.sets.push(seedPlannedRir({ w: l ? l.w : 0, r: l ? l.r : e.target.reps, role: l?.role, done: false }, e.target || {}))
   })
-  const removeSet = idx => mutEntry(idx, e => { if (e.sets.length > 1) e.sets.pop() })
-  const addWarmup = idx => mutEntry(idx, e => {
+  const removeSet = idx => { timedGeneration.current++; useUI.getState().stopWork(); mutEntry(idx, e => { if (e.sets.length > 1) e.sets.pop() }) }
+  const addWarmup = idx => { timedGeneration.current++; useUI.getState().stopWork(); mutEntry(idx, e => {
     const m = modeOf({ ...(e.target || {}), id: e.id })
     e.sets = insertWarmupRow(e.sets, m, e.target || {}, defaultIncrement(e.id, S.unit))
-  })
-  const removeSetAt = (idx, i) => mutEntry(idx, e => { e.sets = removeRowAt(e.sets, i) })
+  }) }
+  const removeSetAt = (idx, i) => { timedGeneration.current++; useUI.getState().stopWork(); mutEntry(idx, e => { e.sets = removeRowAt(e.sets, i) }) }
   const pairAt = (first, second) => update(s => {
     s.active.entries = pairAdjacent(s.active.entries, first, second)
   })
@@ -418,20 +431,21 @@ function ActiveWorkout() {
   // checks the set off through the normal path, so rest, supersets and the finish prompt all
   // behave exactly as they do for a reps set.
   const startTimed = (idx, i) => {
+    const generation = ++timedGeneration.current
     const e = A.entries[idx]
     const cardio = modeAt(idx) === 'cardio'
     const seconds = cardio ? Math.max(60, Math.round((e.sets[i].min || 20) * 60)) : (e.sets[i].sec || 45)
     const name = exerciseNameFor(exOr(e.id))
     if (!cardio && isPerSide(e.target)) {
       useUI.getState().startWork(seconds, `${name} · ${t('Left side')}`, (leftSec, {timedOut=false}={}) => {
-        if(useStore.getState().S.active?.id !== A.id) return
+        if(generation !== timedGeneration.current || useStore.getState().S.active?.id !== A.id) return
         mutEntry(idx, en => { en.sets[i].leftSec = leftSec; en.sets[i].leftDone=true; en.sets[i].side = true }, !timedOut)
         useUI.getState().toast(t('Switch sides'))
         setTimeout(() => {
           const live = useStore.getState().S.active?.entries?.[idx]?.sets?.[i]
-          if (useStore.getState().S.active?.id !== A.id || !live || live.done) return
+          if (generation !== timedGeneration.current || useStore.getState().S.active?.id !== A.id || !live || live.done) return
           useUI.getState().startWork(seconds, `${name} · ${t('Right side')}`, (rightSec, { timedOut = false, completedAt } = {}) => {
-            if(useStore.getState().S.active?.id !== A.id) return
+            if(generation !== timedGeneration.current || useStore.getState().S.active?.id !== A.id) return
             mutEntry(idx, en => { en.sets[i].rightSec = rightSec; en.sets[i].side = true }, !timedOut)
             if (!useStore.getState().S.active.entries[idx].sets[i].done) toggle(idx, i, { playSound: !timedOut, userActivity: !timedOut, completedAt })
           }, false)
@@ -440,7 +454,7 @@ function ActiveWorkout() {
       return
     }
     useUI.getState().startWork(seconds, name, (elapsed, { timedOut = false, completedAt } = {}) => {
-      if(useStore.getState().S.active?.id !== A.id) return
+      if(generation !== timedGeneration.current || useStore.getState().S.active?.id !== A.id) return
       mutEntry(idx, en => { if (cardio) en.sets[i].min = Math.round(elapsed / 6) / 10; else en.sets[i].sec = elapsed }, !timedOut)
       if (!useStore.getState().S.active.entries[idx].sets[i].done) toggle(idx, i, { playSound: !timedOut, userActivity: !timedOut, completedAt })
     })
@@ -450,6 +464,7 @@ function ActiveWorkout() {
     const originalEntry = A.entries[idx]
     const original = exOr(originalEntry.id)
     const choose = () => exercisePicker(ex => exConfigSheet(ex, null, cfg => {
+      timedGeneration.current++; useUI.getState().stopWork()
       const target = { id: ex.id, ...cfg }
       const plan = nextPrescription(S, target, null)
       const step = defaultIncrement(ex.id, S.unit)

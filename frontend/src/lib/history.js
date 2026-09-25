@@ -455,11 +455,12 @@ export function streakWeeks(S) {
  * Cascade a weight change forward: following sets of the same warm-up flag that are still
  * undone take the new value (null deletes the key). Done sets are never rewritten.
  */
+const preservesInput = (row, field) => row.done || row.leftDone || row.rightDone || row.manualFields?.[field]
 export function cascadeWeight(rows, from, value) {
   const warm = isWarmupRow(rows[from])
   const next = rows.map(row => ({ ...row }))
   for (let j = from + 1; j < next.length; j++) {
-    if (isWarmupRow(next[j]) === warm && !next[j].done) {
+    if (isWarmupRow(next[j]) === warm && !preservesInput(next[j], 'w')) {
       if (value == null) delete next[j].w
       else next[j].w = value
     }
@@ -481,7 +482,7 @@ export function cascadeTopBackWeight(rows, from, value, cfg, step = 2.5) {
     const increment = Number(step) > 0 ? Number(step) : 2.5
     const backoff = Number.isFinite(raw) ? Math.round(raw / increment) * increment : null
     next.forEach((row, index) => {
-      if (index === from || row.done || isWarmupRow(row)) return
+      if (index === from || preservesInput(row, 'w') || isWarmupRow(row)) return
       if (row.role === 'top') {
         if (value == null) delete row.w; else row.w = value
       } else if (row.role === 'backoff') {
@@ -491,7 +492,7 @@ export function cascadeTopBackWeight(rows, from, value, cfg, step = 2.5) {
   } else if (edited.role === 'backoff') {
     for (let j = from + 1; j < next.length; j++) {
       const row = next[j]
-      if (row.role !== 'backoff' || row.done || isWarmupRow(row)) continue
+      if (row.role !== 'backoff' || preservesInput(row, 'w') || isWarmupRow(row)) continue
       if (value == null) delete row.w; else row.w = value
     }
   }
@@ -508,8 +509,8 @@ export function cascadeTopBackReps(rows, from, value, cfg) {
   const derived = Number(cfg.backoffRepOffset) - 0
   const legacy = Number(cfg.backoffRepsMax) - Number(cfg.topRepsMax)
   const offset = Number.isFinite(derived) && cfg.backoffRepOffset != null ? Math.max(0, Math.min(5, Math.round(derived))) : Number.isFinite(legacy) && legacy >= 0 && legacy <= 5 ? Math.round(legacy) : 2
-  if (edited.role === 'top') next.forEach((row, index) => { if (index !== from && row.role === 'backoff' && !row.done) row.r = edited.r + offset })
-  else if (edited.role === 'backoff') for (let i = from + 1; i < next.length; i++) if (next[i].role === 'backoff' && !next[i].done) next[i].r = edited.r
+  if (edited.role === 'top') next.forEach((row, index) => { if (index !== from && row.role === 'backoff' && !preservesInput(row, 'r')) row.r = edited.r + offset })
+  else if (edited.role === 'backoff') for (let i = from + 1; i < next.length; i++) if (next[i].role === 'backoff' && !preservesInput(next[i], 'r')) next[i].r = edited.r
   return next
 }
 

@@ -24,7 +24,9 @@ export default function TabBar({ onStart }) {
     }
     nav('/workout')
   }
-  const Tab = ({ k, icon, to, label }) => (
+  // Render buttons directly: an inline component type remounts during the activity
+  // capture handler, removing the pointer target before its click can navigate.
+  const tab = (k, icon, to, label) => (
     <button aria-current={cur === k ? 'page' : undefined} className={on(k) ? 'on' : ''} onClick={() => nav(to)}>
       <Icon name={icon} /><span>{label}</span>
     </button>
@@ -32,14 +34,14 @@ export default function TabBar({ onStart }) {
 
   return (
     <nav id="tabbar">
-      <Tab k="home" icon="house" to="/home" label={t('Home')} />
-      <Tab k="plan" icon="calendar" to="/plan" label={t('Routine')} />
+      {tab('home', 'house', '/home', t('Home'))}
+      {tab('plan', 'calendar', '/plan', t('Routine'))}
       <button data-tour="start" className={'start' + (S.active ? ' rec' : '')} onClick={startWorkout}>
         <span className="cir"><Icon name={S.active ? 'play' : 'dumbbell'} /></span>
         <span>{S.active ? t('Resume') : t('Start')}</span>
       </button>
-      <Tab k="stats" icon="chart" to="/stats" label={t('Stats')} />
-      <Tab k="library" icon="list" to="/library" label={t('Exercises')} />
+      {tab('stats', 'chart', '/stats', t('Stats'))}
+      {tab('library', 'list', '/library', t('Exercises'))}
     </nav>
   )
 }

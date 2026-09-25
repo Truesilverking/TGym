@@ -159,3 +159,9 @@ it('retains recorded deload status after cycle settings change',()=>{
  expect(calendarDeload({deload:{on:false},workouts:[{d:'2026-09-02',deload:true}]},'2026-09-02')).toBe(true)
  expect(calendarDeload({deload:{on:true,startDate:'2026-08-03'},workouts:[{d:'2026-09-02'}]},'2026-09-02')).toBe(false)
 })
+
+it('does not invent a strict target for free reps or cap AMRAP',()=>{
+ expect(clampReps({strictReps:true},{},{},17)).toBe(17)
+ expect(clampReps({strictReps:true},{reps:'AMRAP'},{},23)).toBe(23)
+ expect(clampReps({strictReps:true},{reps:5,amrap:true},{},18)).toBe(18)
+})

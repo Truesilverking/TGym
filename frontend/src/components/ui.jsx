@@ -24,12 +24,21 @@ import { t } from '../lib/i18n.js'
 // 0). Keeps a local string draft while focused so partial input like "33," survives.
 // `nullable` is for fields where "nothing entered" and 0 mean different things (RIR: a
 // logged 0 is a set taken to failure). Those clear back to null instead of snapping to 0.
-export function NumberField({ value, onChange, decimal = true, nullable = false, displayValue, className = '', ...rest }) {
+export function NumberField({ value, onChange, decimal = true, nullable = false, displayValue, validation, className = '', ...rest }) {
   const [draft, setDraft] = useState(null)
+  const [invalid, setInvalid] = useState(false)
   const committed = useRef(null)
   // null and undefined are the same "empty" here — a nullable field's key is dropped once cleared.
-  if (draft !== null && (committed.current ?? null) !== (value ?? null)) { setDraft(null); committed.current = null }
+  if (draft !== null && (committed.current ?? null) !== (value ?? null)) { setDraft(null); setInvalid(false); committed.current = null }
   const commit = raw => {
+    if (validation) {
+      const text = raw.replace(/,/g, '.')
+      const number = text === '' || text === '.' ? (nullable ? null : 0) : Number(text)
+      const syntax = decimal ? /^\d*(?:\.\d*)?$/.test(text) : /^\d*$/.test(text)
+      const valid = syntax && (number == null || (Number.isFinite(number) && number >= (validation.min ?? 0) && number <= (validation.max ?? Number.MAX_SAFE_INTEGER) && (!validation.step || Math.abs(number / validation.step - Math.round(number / validation.step)) < 1e-8)))
+      if (!valid) { committed.current = value; setDraft(raw); setInvalid(true); return }
+    }
+    setInvalid(false)
     let s = raw.replace(/,/g, '.').replace(/[^0-9.]/g, '')
     const i = s.indexOf('.')
     if (i !== -1) s = decimal ? s.slice(0, i + 1) + s.slice(i + 1).replace(/\./g, '') : s.slice(0, i)
@@ -54,7 +63,10 @@ export function NumberField({ value, onChange, decimal = true, nullable = false,
         e.target.select()
       }}
       onChange={e => commit(e.target.value)}
-      onBlur={() => { setDraft(null); committed.current = null }}
+      aria-invalid={invalid || undefined}
+      title={invalid ? t('Enter a valid number') : undefined}
+      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur() } }}
+      onBlur={() => { setDraft(null); setInvalid(false); committed.current = null }}
       {...rest}
     />
   )
@@ -206,9 +218,11 @@ export function Slider({ value, min = 0, max = 100, step = 1, onChange, classNam
 
 /* ============================ checkbox ============================ */
 
-export function Check({ checked, onChange, className = '', size }) {
+export function Check({ checked, onChange, className = '', size, ...rest }) {
   return (
     <button
+      {...rest}
+      type="button"
       role="checkbox"
       aria-checked={!!checked}
       className={'chk' + (checked ? ' on' : '') + ' ' + className}

@@ -1391,3 +1391,16 @@ button:focus-visible,[role="button"]:focus-visible,summary:focus-visible,a:focus
 @media(max-width:480px){.lrow:has(>.seg-inline){display:grid;grid-template-columns:28px minmax(0,1fr);gap:10px}.lrow:has(>.seg-inline)>.seg-inline{grid-column:1/-1;width:100%;max-width:100%}.lrow:has(>.seg-inline) .lrow-t{overflow-wrap:normal}}
 
 .set-console .set-metric .stp button,.sets-card .subrow .stp.mini button{min-height:44px}.set-console .set-metric .stp .num,.sets-card .subrow .stp.mini .num{min-height:44px}
+
+/* Active logging: targets remain separate from editable results. */
+.workout-entry-hint{font-size:12px;line-height:1.5;color:var(--label-2);margin:10px 0 0}
+.set-target{grid-column:1/-1;display:flex;align-items:baseline;gap:8px;justify-content:space-between;padding:6px 0;border-top:1px solid var(--sep);font-size:12px;color:var(--label-2)}
+.set-target strong{color:var(--acc);font-weight:600;flex-shrink:0}
+.set-console .set-metric .stp:focus-within,.sets-card .subrow .stp:focus-within{border-color:var(--acc);box-shadow:0 0 0 2px var(--acc-soft)}
+.set-console .set-metric .stp .num,.sets-card .subrow .stp .num{cursor:text;caret-color:var(--acc);-webkit-user-select:text;user-select:text;border-radius:6px}
+.set-console .set-metric .stp .num[aria-invalid=true],.sets-card .subrow .stp .num[aria-invalid=true]{box-shadow:inset 0 0 0 2px var(--red);color:var(--red)}
+.set-console .set-metric>label{justify-content:space-between;gap:6px;align-items:flex-start}
+.set-console .set-metric>label small{color:var(--acc);white-space:nowrap}
+.set-console .set-metric .stp button:disabled{opacity:.35}
+.sets-card .set-console.done{box-shadow:none}
+@media(max-width:480px){.set-console.eff3 .set-metric.eff{display:grid;grid-template-columns:minmax(60px,.6fr) minmax(0,1fr);align-items:center;gap:8px}.set-console.eff3 .set-metric.eff>label{margin:0;min-height:0;flex-wrap:wrap}.set-console.eff3 .set-metric.eff .stp .val{padding:0 2px}.set-console .set-metric>label{min-height:30px}.set-target{font-size:11px}}

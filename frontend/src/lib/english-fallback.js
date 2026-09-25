@@ -1517,4 +1517,11 @@ export default {
   ,"Playing: {0}": "Playing: {0}"
   ,"Loading: {0}": "Loading: {0}"
   ,"Mute": "Mute"
+  ,"Actual reps": "Actual reps"
+  ,"Actual reps per side": "Actual reps per side"
+  ,"Target reps": "Target reps"
+  ,"Free reps": "Free reps"
+  ,"Log added weight": "Log added weight"
+  ,"Tap a value to type your result. Targets are a guide.": "Tap a value to type your result. Targets are a guide."
+  ,"Enter a valid number": "Enter a valid number"
 }

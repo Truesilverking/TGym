@@ -209,7 +209,7 @@ export const strictRepsFor = (S, cfg) => cfg.strictReps == null ? !!S.strictReps
 export function clampReps(S, cfg, set, value) {
   const n = Math.max(0, Math.round(Number(value) || 0))
   if (isWarmupRow(set)) return n
-  if (!strictRepsFor(S, cfg)) return n
+  if (!strictRepsFor(S, cfg) || cfg.amrap || set?.amrap || ![cfg.reps, cfg.topRepsMax, cfg.backoffRepsMax].some(v => Number(v) > 0)) return n
   const b = repBounds(cfg, set?.role)
   return clamp(n, b.min, b.max)
 }

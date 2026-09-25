@@ -915,3 +915,10 @@ describe('exNoteFor', () => {
     expect(exNoteFor({}, '0025')).toBeNull()
   })
 })
+
+it('preserves manually edited and partially completed back-off loads and reps',()=>{
+ const rows=[{role:'top',w:100,r:6},{role:'backoff',w:80,r:7,manualFields:{w:true,r:true}},{role:'backoff',w:90,r:8,leftDone:true},{role:'backoff',w:90,r:8}];
+ const cfg={setScheme:'topback',backoffPct:10,backoffRepOffset:2};
+ expect(cascadeTopBackWeight(rows,0,120,cfg,2.5).map(s=>s.w)).toEqual([120,80,90,107.5]);
+ expect(cascadeTopBackReps(rows,0,10,cfg).map(s=>s.r)).toEqual([10,7,8,12])
+})
