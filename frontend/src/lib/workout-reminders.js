@@ -1,6 +1,5 @@
-import { loggedWorkouts, matchesScheduled } from './consistency.js'
+import { dailyPlan } from './daily-plan.js'
 import { isTrainingPaused, openTrainingPause } from './training-pause.js'
-import { effectiveRoutine } from './history.js'
 import { isoOf } from './format.js'
 import { deloadStatus } from './training-plan.js'
 
@@ -33,9 +32,8 @@ export function workoutNotificationPlan(state, now = new Date()) {
   const S = {week:{},dayPlan:{},routines:[],workouts:[],...state}
   const today = isoOf(now), settings = S.reminder
   const pending = date => {
-    const routine = effectiveRoutine(S,date)
-    // An extra activity must not suppress the planned strength/routine reminder.
-    return routine && !loggedWorkouts(S).some(w=>w.d === date && matchesScheduled(w,routine.id,S.routines)) ? routine : null
+    const plan = dailyPlan(S,date), routine = plan.pending[0]?.routine
+    return routine ? {...routine,remaining:plan.pending.length} : null
   }
   const atTime = (date, time) => {
     const at = new Date(`${date}T${time}:00`)
@@ -48,14 +46,14 @@ export function workoutNotificationPlan(state, now = new Date()) {
   }
   const notices = [], routine = pending(today)
   const at = atTime(today,timeOf(settings.dayTimes?.[now.getDay()] || settings.time,'08:00'))
-  if (routine && at) notices.push({id:100,kind:'today',routineId:routine.id,name:routine.name,date:today,at})
+  if (routine && at) notices.push({id:100,kind:'today',routineId:routine.id,name:routine.name,remaining:routine.remaining,date:today,at})
   const nextAt = atTime(today,timeOf(settings.nextTime,'19:00'))
   if (nextAt) {
     const day = new Date(`${today}T12:00:00`)
     for (let offset=1;offset<=366;offset++) {
       day.setDate(day.getDate()+1)
       const date = isoOf(day), next = pending(date)
-      if (next) { notices.push({id:101,kind:offset===1?'tomorrow':'next',routineId:next.id,name:next.name,date,at:nextAt}); break }
+      if (next) { notices.push({id:101,kind:offset===1?'tomorrow':'next',routineId:next.id,name:next.name,remaining:next.remaining,date,at:nextAt}); break }
     }
   }
   return notices

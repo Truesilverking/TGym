@@ -47,10 +47,10 @@ const maybeRestNotification = async () => {
     // service-worker registration path is the one that actually pops there.
     const reg = await navigator.serviceWorker?.getRegistration?.()
     if (reg?.showNotification) {
-      await reg.showNotification(t('Rest over — next set!'), { body: t('Rest over — next set!'), silent: true })
+      await reg.showNotification(t('Rest over — next set!'), { body: useStore.getState().S.active?.name || t('Return to your workout'), tag:'rest-timer', silent: true })
       return
     }
-    new Notification(t('Rest over — next set!'), { body: t('Rest over — next set!'), silent: true })
+    new Notification(t('Rest over — next set!'), { body: useStore.getState().S.active?.name || t('Return to your workout'), tag:'rest-timer', silent: true })
   } catch {
     // Intentionally ignore: notification APIs vary by browser and policy in edge cases.
   }

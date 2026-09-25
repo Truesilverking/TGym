@@ -12,6 +12,11 @@ export function mergeTGymStates(local, remote) {
     // use the earliest date, never silently extending an excused period.
     if(path[0] === 'trainingPauses' && path.at(-1) === 'end' && typeof a === 'string' && typeof b === 'string') return a < b ? a : b
     if (path.length === 1 && localOnlyRoots.has(path[0])) return structuredClone(a)
+    // A day's ordered plan is atomic: union would resurrect removed routines or erase a rest override.
+    if (path.length === 2 && ['week','dayPlan','daySkipped'].includes(path[0])) {
+      conflicts.push({path:path.join('.'),local:structuredClone(a),remote:structuredClone(b)})
+      return structuredClone(a)
+    }
     if (Array.isArray(a) && Array.isArray(b)) {
       if (![...a, ...b].some(value => value && typeof value === 'object')) return [...new Set([...a, ...b])]
       const keyed = [...a, ...b].every(value => identity(value) != null)

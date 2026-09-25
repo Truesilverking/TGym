@@ -1,3 +1,4 @@
+import { removeRoutineAssignments } from '../lib/daily-plan.js'
 import { openActivityEditor } from '../components/Activities.jsx'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useEffect } from 'react'
@@ -143,8 +144,7 @@ export default function RoutineEdit() {
       onConfirm: () => {
         update(s => {
           s.routines = s.routines.filter(x => x.id !== id)
-          Object.keys(s.week).forEach(k => { if (s.week[k] === id) delete s.week[k] })
-          Object.keys(s.dayPlan).forEach(k => { if (s.dayPlan[k] === id) delete s.dayPlan[k] })
+          removeRoutineAssignments(s,id)
         })
         nav('/plan')
       }

@@ -1,3 +1,6 @@
+import { publishWorkoutCompletion } from './lib/workout-notification.js'
+import DailyPlan, { ScheduleEditor } from './components/DailyPlan.jsx'
+import { dailyPlan, nextDailyRoutine, routineIds } from './lib/daily-plan.js'
 import { ActivityMetrics, openActivityEditor } from './components/Activities.jsx'
 import { statisticsState, isUntracked } from './lib/training-history.js'
 import { fmtScheduledDate } from './lib/format.js'
@@ -1148,46 +1151,9 @@ function PlanImport({ bundle, close }) {
 }
 
 /* ============================ day override / assign ============================ */
-function DayOverride({ iso, close }) {
-  const st = useStore(s => s.S)
-  const wd = new Date(iso + 'T12:00:00').getDay()
-  const weeklyR = st.routines.find(r => r.id === st.week[wd])
-  const hasOvr = st.dayPlan[iso] !== undefined
-  const effId = effectiveRoutineId(st, iso)
-  const set = v => {
-    update(s => { if (!v) delete s.dayPlan[iso]; else s.dayPlan[iso] = v })
-    close()
-    toast(v === '' ? t('Back to weekly plan') : v === 'rest' ? t('{0} set to rest', fmtDate(iso)) : t('{0} planned for {1}', (st.routines.find(r => r.id === v) || {}).name, fmtDate(iso)))
-  }
-  return <>
-    <h3>{fmtDate(iso, true)}</h3>
-    <div className="muted small" style={{ marginBottom: 12 }}>{t('Weekly plan:')} {weeklyR ? weeklyR.name : t('Rest')}{hasOvr && <span style={{ color: 'var(--orange)' }}> · {t('changed for this day')}</span>}<br />{t('Sick, missed a day or want a different session? Pick what to train instead.')}</div>
-    <div className="list">
-      {st.routines.map(r => <div key={r.id} className="item" onClick={() => set(r.id)}>
-        <span className="lrow-i"><Icon name={glyphOf(r.emoji)} /></span>
-        <div className="grow"><div className="tt">{r.name}</div><div className="ss">{exCount(r.ex.length)}</div></div>
-        {effId === r.id && <Icon name="check" className="accent" />}</div>)}
-      <div className="item" onClick={() => set('rest')}><span className="lrow-i" style={{ background: 'var(--surface-3)' }}><Icon name="moon" /></span><div className="grow"><div className="tt">{t('Rest / skip this day')}</div></div>{effId === null && <Icon name="check" className="accent" />}</div>
-      {hasOvr && <div className="item" onClick={() => set('')}><span className="lrow-i" style={{ background: 'var(--surface-3)' }}><Icon name="reset" /></span><div className="grow"><div className="tt">{t('Back to weekly plan')}</div></div></div>}
-    </div>
-  </>
-}
+function DayOverride({ iso, close }) { return <ScheduleEditor iso={iso} close={close}/> }
 export const dayOverrideSheet = iso => ui().openSheet(close => <DayOverride iso={iso} close={close} />)
-
-function DayAssign({ day, close }) {
-  const st = useStore(s => s.S)
-  const set = v => { update(s => { if (v) { s.week[day] = v; s.scheduleStarted = s.scheduleStarted || todayISO() } else delete s.week[day] }); close() }
-  return <>
-    <h3>{t(DAYN[day])}</h3>
-    <div className="list">
-      <div className="item" onClick={() => set('')}><span className="lrow-i" style={{ background: 'var(--surface-3)' }}><Icon name="moon" /></span><div className="grow"><div className="tt">{t('Rest day')}</div></div>{!st.week[day] && <Icon name="check" className="accent" />}</div>
-      {st.routines.map(r => <div key={r.id} className="item" onClick={() => set(r.id)}>
-        <span className="lrow-i"><Icon name={glyphOf(r.emoji)} /></span>
-        <div className="grow"><div className="tt">{r.name}</div><div className="ss">{exCount(r.ex.length)}</div></div>
-        {st.week[day] === r.id && <Icon name="check" className="accent" />}</div>)}
-    </div>
-  </>
-}
+function DayAssign({ day, close }) { return <ScheduleEditor day={day} close={close}/> }
 export const dayAssignSheet = day => ui().openSheet(close => <DayAssign day={day} close={close} />)
 
 function StreakDetail() {
@@ -1410,7 +1376,8 @@ export function ZoomCalendar({ S: st, onDay, initialLevel = 'week', initialAncho
       <span><i className="untracked" />{t('Not tracking yet')}</span><span><i className="pending" />{t('Pending')}</span><span><i className="paused" />{t('Training paused')}</span>
     </div>
     {!exporting && (level === 'week' || level === 'month') && <div className={`zoomcal-selection ${selectedState.status}`}><div><b>{fmtDate(selected, true)}</b><span>{selectedState.status === 'untracked' ? t('Not tracking yet') : selectedWorkout?.name || st.routines.find(r => r.id === effectiveRoutineId(st, selected))?.name || t(selectedState.status === 'completed' ? 'Completed' : selectedState.status === 'missed' ? 'Not completed' : selectedState.status === 'pending' ? 'Pending' : selectedState.status === 'paused' ? 'Training paused' : selectedState.status === 'untracked' ? 'Not tracking yet' : 'Rest day')}</span></div>{selectedWorkout && <Icon name="chevronRight" />}</div>}
-    {!exporting && editable && <div className="zoomcal-schedule-actions"><Button size="sm" onClick={() => dayOverrideSheet(selected)}>{t('Edit schedule')}</Button>{selectedState.planned && <Button size="sm" onClick={() => startFlow(effectiveRoutineId(st, selected))}>{t('Start workout')}</Button>}</div>}
+    {!exporting && <DailyPlan date={selected} compact onStart={selected===todayISO()?startFlow:undefined}/>}
+    {!exporting && editable && <div className="zoomcal-schedule-actions"><Button size="sm" onClick={() => dayOverrideSheet(selected)}>{t('Edit schedule')}</Button>{nextDailyRoutine(st,selected) && <Button size="sm" onClick={() => startFlow(nextDailyRoutine(st,selected).id)}>{t('Start workout')}</Button>}</div>}
     {!exporting && <div className="zoomcal-actions-row">
       {includeMeasurements && selectedState.measurements.map(reminder => <Button key={reminder.id} size="sm" onClick={() => openMeasurementEntry(reminder.metric)}>{t(reminder.label)}</Button>)}
       {selectedState.planned && <Button size="sm" onClick={()=>routineMuscleSheet(effectiveRoutineId(st,selected))}>{t('Muscles trained')}</Button>}
@@ -1530,11 +1497,14 @@ export function WorkoutRow({ w, onClick }) {
 
 /* ============================ workout lifecycle ============================ */
 export function startFlow(routineId) {
+  if (S().active) {nav('/workout');return}
+  if (routineId === undefined) routineId = nextDailyRoutine(S(),todayISO())?.id || null
   if(isTrainingPaused(S(),todayISO())) return ui().openSheet(close=><TrainingPauseCard onSaved={close} />)
   bwSheet({ required: true, onDone: bw => beginWorkout(routineId, bw) })
 }
 export function beginWorkout(routineId, bw) {
   const st = S()
+  if (st.active) {nav('/workout');return}
   if(isTrainingPaused(st,todayISO())) return ui().openSheet(close=><TrainingPauseCard onSaved={close} />)
   const r = routineId ? st.routines.find(x => x.id === routineId) : null
   // The prescription is applied as the session is built, so you walk up to the bar with the
@@ -1550,8 +1520,10 @@ export function beginWorkout(routineId, bw) {
     const shownPlan = deload.active ? { kind: 'deload', why: ['Deload session — load, working sets and effort are reduced for recovery.'] } : plan
     return { id: cfg.id, sg: cfg.sg, target, plan: shownPlan, sets }
   })
+  const daily = dailyPlan(st,todayISO()), dailyIndex = daily.items.findIndex(item=>item.id===routineId)
   update(s => {
-    s.active = { id: uid(), d: todayISO(), start: Date.now(), routineId, name: r ? r.name : t('Freestyle'), bw: bw || null, unit: st.unit, bwUnit: st.unit, cur: 0, deload: deload.active, entries }
+    if (s.daySkipped?.[todayISO()]) s.daySkipped[todayISO()] = routineIds(s.daySkipped[todayISO()]).filter(id=>id!==routineId)
+    s.active = { dailyPlanIndex:dailyIndex, dailyPlanTotal:daily.total, id: uid(), d: todayISO(), start: Date.now(), routineId, name: r ? r.name : t('Freestyle'), bw: bw || null, unit: st.unit, bwUnit: st.unit, cur: 0, deload: deload.active, entries }
   })
   useUI.getState().stopRest()
   nav('/workout')
@@ -1731,6 +1703,7 @@ export function inactivityWarningSheet() {
 
 function FinishSummary({ w, prs, e1prs = [], milestone = null, close }) {
   const st = useStore(s => s.S)
+  const next = w.d === todayISO() ? nextDailyRoutine(st,w.d) : null
   return <div style={{ textAlign: 'center', padding: '8px 0' }}>
     {milestone && <div className={'streak-celebration streak-' + streakTier(milestone)}>
       <StreakFlame value={milestone} />
@@ -1752,7 +1725,8 @@ function FinishSummary({ w, prs, e1prs = [], milestone = null, close }) {
     <h4 className="sec" style={{ textAlign: 'left' }}>{t('What you just trained')}</h4>
     <BodyMap load={loadOfWorkouts([w])} body={st.body} />
     <div style={{ height: 14 }} />
-    <Button variant="primary" onClick={() => { close(); nav('/home') }}>{t('Nice!')}</Button>
+    {next && <div className="daily-next"><small>{t('Next workout')}</small><h3>{next.name}</h3><Button variant="primary" onClick={()=>{close();startFlow(next.id)}}>{t('Continue')}</Button></div>}
+    <Button variant={next?'ghost':'primary'} onClick={() => { close(); nav('/home') }}>{t(next?'Later':'Nice!')}</Button>
   </div>
 }
 export function finishWorkout() {
@@ -1808,5 +1782,6 @@ export function doFinishWorkout(options = {}) {
   useUI.getState().stopWork()
   void useStore.getState().flushPersistence().catch(()=>useUI.getState().toast(t('Could not save. Check available storage and try again.')))
   void playAppSound(S(), 'completion')
+  void publishWorkoutCompletion(w)
   ui().openSheet(close => <><FinishSummary w={w} prs={prs} e1prs={e1prs} milestone={milestone} close={close} />{w.finishReason==='inactivity' && <Button onClick={()=>{update(s=>resumeAutoFinished(s,w.id));close();nav('/workout')}}>{t('Continue in a new session')}</Button>}</>, { kind: 'center', locked: true })
 }

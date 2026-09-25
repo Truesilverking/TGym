@@ -1,5 +1,5 @@
+import { routineIds, dailyPlan } from './daily-plan.js'
 import { dayNumber } from './training-pause.js'
-import { effectiveRoutineId } from './history.js'
 import { loggedWorkouts } from './consistency.js'
 import { isoOf, uid } from './format.js'
 import { workoutElapsedMs } from './workout-time.js'
@@ -53,7 +53,7 @@ export function createActivityWorkout(S, input, now = Date.now()) {
     steps:type.steps ? numeric(input.steps,0,300000) : null,elevationM:type.elevation ? numeric(input.elevationM,0,20000) : null,
     hrZone:numeric(input.hrZone,1,5),rpe:numeric(input.rpe,1,10),sourceUpdatedAt:input.sourceUpdatedAt || null}
   const id = ensureActivityExercise(S,type.id,input.name), cfg = activityConfig(type.id,minutes), end = start + minutes * 60000
-  const scheduled = input.routineId || effectiveRoutineId(S, isoOf(new Date(start)))
+  const scheduled = input.routineId || dailyPlan(S,isoOf(new Date(start))).pending.find(item=>item.routine.ex.length===1 && item.routine.ex[0].activityType===type.id)?.id
   const routine = S.routines.find(r => r.id === scheduled && r.ex.length === 1 && r.ex[0].activityType === type.id)
   return {id:input.id || uid(),d:isoOf(new Date(start)),name:input.name || type.label,start,end,entries:[{id,target:cfg,exercise:S.customEx.find(e=>e.id===id),sets:[{done:true,doneAt:end,min:minutes,sec:minutes*60,speed:metrics.distanceKm ? metrics.distanceKm/minutes*60 : 0,distanceKm:metrics.distanceKm}]}],routineId:routine?.id || null,unit:S.unit,vol:0,kind:'activity',activity:metrics,note:String(input.note || '').slice(0,2000)}
 }
@@ -107,12 +107,10 @@ export function planActivity(S, {type, minutes, routineId, date, weekdays = [], 
   if (!date && !weekdays.length) throw new Error('Choose a date or weekdays')
   if (date && (!Number.isFinite(dayNumber(date)) || date < isoOf(now))) throw new Error('Choose a date or weekdays')
   if (weekdays.some(d=>!Number.isInteger(d) || d<0 || d>6)) throw new Error('Choose a date or weekdays')
-  const planned = S.dayPlan?.[date] ?? S.week?.[new Date(date+'T12:00:00').getDay()]
-  if (date ? (S.dayPlan?.[date] && S.dayPlan[date] !== 'rest') || (planned && planned!=='rest') : weekdays.some(d => S.week?.[d])) throw new Error('This day already has a routine. Add the activity to that routine instead.')
   const id = addActivityRoutine(S,type,Number(minutes),name)
   S.routines.find(r=>r.id===id).scheduledFrom=isoOf(now)
-  if (date) { S.dayPlan ||= {}; S.dayPlan[date]=id }
-  else { S.week ||= {}; weekdays.forEach(d=>{S.week[d]=id}) }
+  if (date) { S.dayPlan ||= {}; S.dayPlan[date]=[...routineIds(S.dayPlan[date] ?? S.week?.[new Date(date+'T12:00:00').getDay()]),id] }
+  else { S.week ||= {}; weekdays.forEach(d=>{S.week[d]=[...routineIds(S.week[d]),id]}) }
   S.scheduleStarted ||= isoOf(now)
   return id
 }

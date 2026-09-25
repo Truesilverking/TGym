@@ -13,3 +13,13 @@ describe('native workout notification clock payload',()=>{
     expect(workoutNotificationState({...a,end:6000},null)).toEqual({active:false})
   })
 })
+
+it('separates work progress, current set and daily routine order across paused/rest states',()=>{
+ const now=50000,a={start:1000,name:'Upper',dailyPlanIndex:1,dailyPlanTotal:3,entries:[{id:'0025',sets:[{warmup:true,done:true},{done:true},{done:false}]}]}
+ const running=workoutNotificationState(a,{endsAt:70000},now)
+ expect(running).toMatchObject({completedSets:1,totalSets:2,dailyLabel:'Workout 2 of 3',restEndsAt:70000,openLabel:'Open workout'})
+ expect(running.context).toContain('Set 3 of 3')
+ expect(workoutNotificationState({...a,timerPausedAt:40000},null,now)).toMatchObject({paused:true,elapsedMs:39000,workoutLabel:'Workout paused',openLabel:'Resume',autoFinishAt:0})
+ a.entries[0].sets[2].done=true
+ expect(workoutNotificationState({...a,timerPausedAt:40000},null,now)).toMatchObject({completedSets:2,totalSets:2,workoutLabel:'Workout complete!'})
+})

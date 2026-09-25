@@ -3,7 +3,7 @@ import { calendarPeriod, calendarFilename } from './calendar-data.js'
 import { MONTHS_LONG, isoOf } from './format.js'
 
 // A dedicated export layout; data and completion calculations remain shared with the app.
-export const REPORT_COLORS = { completed: '#2878d0', missed: '#c93e4e', pending: '#747b87', rest: '#edf0f4', paused: '#77619b', untracked: '#f4f4f4' }
+export const REPORT_COLORS = { partial: '#8662b8', completed: '#2878d0', missed: '#c93e4e', pending: '#747b87', rest: '#edf0f4', paused: '#77619b', untracked: '#f4f4f4' }
 const escape = value => String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[c]))
 const text = (x, y, value, size = 22, weight = 400, anchor = 'start', fill = '#202733') => `<text x="${x}" y="${y}" font-size="${size}" font-weight="${weight}" text-anchor="${anchor}" fill="${fill}">${escape(value)}</text>`
 const rect = (x, y, w, h, fill, radius = 6) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${radius}" fill="${fill}"/>`
@@ -19,7 +19,7 @@ function grid(S, date, period, x, y, width, t, now) {
   data.days.forEach((day, i) => {
     const col = (offset + i) % 7, row = Math.floor((offset + i) / 7)
     const cx = x + col * (cell + gap), cy = y + 44 + row * (cell + gap)
-    svg += `<g data-date="${day.iso}" data-status="${day.status}"><title>${escape(day.iso)}</title>`
+    svg += `<g data-date="${day.iso}" data-status="${day.status}"><title>${escape(day.iso+(day.plan?.total>1 ? ' '+day.plan.completed+'/'+day.plan.total : ''))}</title>`
     svg += rect(cx, cy, cell, cell, REPORT_COLORS[day.status])
     svg += text(cx + cell / 2, cy + cell / 2 + (width < 400 ? 5 : 7), Number(day.iso.slice(-2)), width < 400 ? 15 : 21, 600, 'middle', ['rest','untracked'].includes(day.status) ? '#576172' : '#ffffff') + '</g>'
   })
@@ -43,7 +43,7 @@ function page(S, anchor, period, months, overview, t, now, pageNumber, pageCount
     months.forEach((month, i) => { svg += grid(S, new Date(anchor.getFullYear(), month, 1), 'month', 48 + (i % cols) * stride, 358 + Math.floor(i / cols) * rowHeight, width, t, now) })
   } else svg += grid(S, anchor, period, 48, 370, 904, t, now)
   const legendY = height - 125
-  ;[['completed', 'Completed'], ['missed', 'Not completed'], ['pending', 'Pending'], ['paused', 'Training paused'], ['untracked', 'Not tracking yet']].forEach(([status, label], i) => {
+  ;[['completed', 'Completed'], ['partial','Partially completed'], ['missed', 'Not completed'], ['pending', 'Pending'], ['paused', 'Training paused'], ['untracked', 'Not tracking yet']].forEach(([status, label], i) => {
     const x = 48 + (i % 2) * 478, y = legendY + Math.floor(i / 2) * 30
     svg += rect(x, y - 18, 18, 18, REPORT_COLORS[status], 3) + text(x + 29, y - 2, t(label), 18)
   })

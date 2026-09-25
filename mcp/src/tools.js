@@ -1,3 +1,4 @@
+import { routineIds, dailyPlan } from '../../frontend/src/lib/daily-plan.js'
 import { isTrainingPaused } from '../../frontend/src/lib/training-pause.js'
 /* The eight read-only tools. Each handler returns JSON; labels.js pre-substitutes any
    {0}/{1} template the lib returns so the LLM gets final text, not template strings.
@@ -148,7 +149,8 @@ export const getWeekPlan = {
       today: isoToday,
       today_training_paused: isTrainingPaused(S,isoToday),
       weekdays: [0, 1, 2, 3, 4, 5, 6].map(d => {
-        const rid = S.week?.[d] || null
+        const ids = routineIds(S.week?.[d])
+        const rid = ids[0] || null
         const r = rid ? (S.routines || []).find(x => x.id === rid) : null
         // Surface today's override only (not the whole dayPlan dict — usually empty, but might
         // have grown from repeated "move this day" actions).
@@ -156,12 +158,14 @@ export const getWeekPlan = {
         return {
           weekday: d,
           weekday_name: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][d],
+          routines: ids.map(id=>({id,name:(S.routines || []).find(r=>r.id===id)?.name || null})),
           routine_id: rid,
           routine_name: r?.name || null,
           routine_emoji: r?.emoji || null,
           override_for_today_or_null: overrideForToday
         }
       }),
+      today_plan: dailyPlan(S,isoToday).items.map(i=>({routine_id:i.id,name:i.routine.name,status:i.status})),
       today_routine_id: effectiveRoutineId(S, isoToday),
       today_routine_name: effectiveRoutine(S, isoToday)?.name || null
     }

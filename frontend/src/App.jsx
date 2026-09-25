@@ -1,3 +1,5 @@
+import { todayISO } from './lib/format.js'
+import { dailyPlan } from './lib/daily-plan.js'
 import { syncWebAudioPreferences } from './lib/web-audio-preferences.js'
 import { useEffect, useLayoutEffect } from 'react'
 import { HashRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
@@ -136,7 +138,7 @@ function Shell() {
       useStore.getState().update(s => { s.active = recordWorkoutActivity(s.active) }, false, false)
     }
     check()
-    const events = ['pointerdown','keydown','input']
+    const events = ['pointerdown','keydown']
     events.forEach(type => document.addEventListener(type, interact, true))
     const timer=setInterval(check,10000)
     document.addEventListener('visibilitychange',check)
@@ -152,7 +154,7 @@ function Shell() {
         if (extra?.type === 'workout') {
           const state = useStore.getState().S
           if (state.active) navigate('/workout')
-          else if (state.routines.some(r=>r.id===extra.routineId) && !state.workouts.some(w=>w.d===extra.date)) startFlow(extra.routineId)
+          else if (extra.date === todayISO() && dailyPlan(state,extra.date).pending.some(item=>item.id===extra.routineId)) startFlow(extra.routineId)
           else navigate('/home')
           return
         }

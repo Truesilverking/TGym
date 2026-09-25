@@ -1,3 +1,6 @@
+import { actualRepValidation } from '../lib/workout-input.js'
+import { nextDailyRoutine } from '../lib/daily-plan.js'
+import DailyPlan from '../components/DailyPlan.jsx'
 import TrainingPauseCard from '../components/TrainingPauseCard.jsx'
 import { isTrainingPaused } from '../lib/training-pause.js'
 import { useEffect, useRef, useState } from 'react'
@@ -5,7 +8,7 @@ import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { exOr } from '../lib/exercises.js'
-import { effectiveRoutine, lastEntryFor, bestWeightFor, buildSets, freestyleConfig, defaultConfig, setsDoneActive, supersetUnits, unitOf, setLabel, modeOf, isBw, isPerSide, sideReps, repStep, fmtSec, EFFORT, effortOf, stepEffort, cascadeWeight, cascadeTopBackWeight, cascadeTopBackReps, insertWarmupRow, removeRowAt, pairAdjacent, unpairSuperset, cleanupSg, applyIntensifierPlan, pinnedNoteFor, exNoteFor, rerampWarmups } from '../lib/history.js'
+import { lastEntryFor, bestWeightFor, buildSets, freestyleConfig, defaultConfig, setsDoneActive, supersetUnits, unitOf, setLabel, modeOf, isBw, isPerSide, sideReps, repStep, fmtSec, EFFORT, effortOf, stepEffort, cascadeWeight, cascadeTopBackWeight, cascadeTopBackReps, insertWarmupRow, removeRowAt, pairAdjacent, unpairSuperset, cleanupSg, applyIntensifierPlan, pinnedNoteFor, exNoteFor, rerampWarmups } from '../lib/history.js'
 import { fmtNum, fmtDate, todayISO, exCount, DAYN } from '../lib/format.js'
 import { playAppSound, vibrate } from '../lib/sound.js'
 import { t, exerciseNameFor } from '../lib/i18n.js'
@@ -28,7 +31,7 @@ import { effortValue, rirRangeLabel } from '../lib/history.js'
 function StartChooser() {
   const nav = useNavigate()
   const S = useStore(s => s.S)
-  const todayR = effectiveRoutine(S, todayISO())
+  const todayR = nextDailyRoutine(S, todayISO())
   const todayOvr = S.dayPlan[todayISO()] !== undefined
   const others = S.routines.filter(r => r !== todayR)
   if(isTrainingPaused(S,todayISO())) return <div className="narrow"><TrainingPauseCard /></div>
@@ -42,6 +45,7 @@ function StartChooser() {
       </div>
       <Button variant="primary" icon="play" onClick={() => startFlow(todayR.id)}>{t('Start {0}', todayR.name)}</Button>
     </div>}
+    <DailyPlan compact onStart={startFlow}/>
     {others.length > 0 && <><h4 className="sec">{t('Other routines')}</h4>
       <div className="list">{others.map(r => <div key={r.id} className="item" onClick={() => startFlow(r.id)}>
         <span className="lrow-i"><Icon name={glyphOf(r.emoji)} /></span>
@@ -143,15 +147,15 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
   const bump = (s, i, col, dir) => {
     if (col.eff) return onField(i, col.f, stepEffort(col.eff, s[col.f], dir))
     const value = Math.max(['min','sec'].includes(col.f) ? 1 : 0, Math.round(((s[col.f] || 0) + dir * col.step) * 100) / 100)
-    const bounds = repBounds(cfg, s.role), withinTarget = s.r >= bounds.min && s.r <= bounds.max
-    onField(i, col.f, col.f === 'r' && withinTarget && !s.amrap && !cfg.amrap && entry.plan?.policy !== 'greyskull' ? clampReps(S, cfg, s, value) : value)
+    const bounds = actualRepValidation(entry,s,i)
+    onField(i, col.f, col.f === 'r' ? Math.max(bounds.min ?? 0,Math.min(bounds.max ?? Number.MAX_SAFE_INTEGER,value)) : value)
   }
   // Uses the shared stepper markup so a set row picks up the same control styling
   // as every other +/- field in the app.
   const cell = (s, i, col, cls) => (
     <div className={'set-metric ' + cls}><label htmlFor={`workout-${entryIdx}-${i}-${col.f}`}>{col.hd}{col.eff === 'rir' && targetRirRangeFor(cfg,s.role) && <small>{rirRangeLabel(targetRirRangeFor(cfg,s.role))}</small>}</label><div className={'stp' + (col.eff === 'rir' && s[col.f] != null && s[col.f] !== '' && Number(s[col.f]) === 0 ? ' effort-failure' : '')}>
       <button type="button" aria-label={t('Decrease')} onClick={() => bump(s, i, col, -1)}><Icon name="minus" /></button>
-      <span className="val"><NumberField key={`${entryIdx}-${i}-${col.f}`} id={`workout-${entryIdx}-${i}-${col.f}`} data-nodrag validation={col.eff ? {max: col.max, step: col.step} : ['min','sec'].includes(col.f) ? {min: 1} : {}} decimal={col.dec} nullable={col.opt} value={s[col.f] ?? ''}
+      <span className="val"><NumberField key={`${entryIdx}-${i}-${col.f}`} id={`workout-${entryIdx}-${i}-${col.f}`} data-nodrag validation={col.f === 'r' ? actualRepValidation(entry,s,i) : col.eff ? {max: col.max, step: col.step} : ['min','sec'].includes(col.f) ? {min: 1} : {}} decimal={col.dec} nullable={col.opt} value={s[col.f] ?? ''}
         displayValue={col.eff && s[col.f] != null && s[col.f] !== '' ? effortValue(col.eff, s[col.f]) : undefined} aria-label={col.hd}
         onChange={v => onField(i, col.f, v)} /></span>
       <button type="button" aria-label={t('Increase')} onClick={() => bump(s, i, col, 1)}><Icon name="plus" /></button>
@@ -215,7 +219,7 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
     })()}
     {S.exerciseGoals?.[entry.id] && <div className="small row" style={{ color: 'var(--yellow)', gap: 5, marginBottom: 8 }}><Icon name="target" />{t('Goal')}: {S.exerciseGoals[entry.id].weight > 0 ? fmtNum(S.exerciseGoals[entry.id].weight) + ' ' + S.unit : ''}{S.exerciseGoals[entry.id].weight > 0 && S.exerciseGoals[entry.id].reps > 0 ? ' × ' : ''}{S.exerciseGoals[entry.id].reps > 0 ? S.exerciseGoals[entry.id].reps + ' ' + t('reps') : ''}</div>}
     {bw && !added && <Button size="sm" variant="tinted" icon="plus" onClick={() => update(s => { s.active.entries[entryIdx].logAddedWeight = true })}>{t('Log added weight')}</Button>}
-    <p className="workout-entry-hint">{t('Tap a value to type your result. Targets are a guide.')}</p>
+    <p className="workout-entry-hint">{t('Tap a number to edit. Reps follow the target range.')}</p>
     <div className="card sets-card" style={{ marginTop: 10, marginBottom: 0 }}>
       {entry.sets.map((s, i) => {
         const warm = isWarmupRow(s)
@@ -247,7 +251,7 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
             {mode === 'reps' && !warm && <div className="set-target"><span>{t('Target reps')}{isPerSide(cfg) && cfg.repsPerSide ? ` ${t('/ side')}` : ''}</span><strong>{targetText}</strong></div>}
             {cell(s, i, col1, 'w')}
             {col2 && cell(s, i, col2, 'r')}
-            {col3 && (warm ? <div className="set-metric eff"><label>{col3.hd}</label><div className="stp disabled" aria-label={t('RIR is not rated for warm-up sets')}>—</div></div> : cell(s, i, col3, 'eff'))}
+            {col3 && cell(s, i, col3, 'eff')}
           </div>
           {/* Drop-sets and rest-pause bursts extend this same row — no long rest, no new set.
               A planned exercise arrives with these already filled in (applyIntensifierPlan);
@@ -598,7 +602,7 @@ function ActiveWorkout() {
   return <div className="narrow">
     <div className="hdr workout-header">
       <button className="iconbtn" aria-label={t('Discard')} onClick={() => confirmSheet({ title: t('Discard workout?'), message: t('The sets you logged in this session will be lost.'), confirmText: t('Discard'), danger: true, onConfirm: () => { update(s => { s.active = null }); stopRest(); nav('/home') } })}><Icon name="xmark" /></button>
-      <div style={{ textAlign: 'center' }}><div style={{ fontWeight: 600 }}>{A.name}</div><div className="sub"><Elapsed workout={A} /> · {t('{0} sets', done + '/' + total)}</div></div>
+      <div style={{ textAlign: 'center' }}><div style={{ fontWeight: 600 }}>{A.name}</div>{A.dailyPlanTotal>1 && A.dailyPlanIndex>=0 && <div className="workout-day-position">{t('Workout {0} of {1}',A.dailyPlanIndex+1,A.dailyPlanTotal)}</div>}<div className="sub"><Elapsed workout={A} /> · {t('{0} sets', done + '/' + total)}</div></div>
       <button className="iconbtn" style={{ color: 'var(--acc)' }} aria-label={t('Finish')} onClick={finishWorkout}><Icon name="check" /></button>
     </div>
     <div className="wprog"><i style={{ width: (total ? done / total * 100 : 0) + '%' }} /></div>

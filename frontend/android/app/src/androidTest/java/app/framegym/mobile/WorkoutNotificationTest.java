@@ -54,6 +54,26 @@ public class WorkoutNotificationTest {
                 assertEquals(View.VISIBLE,expanded.findViewById(R.id.workout_clock).getVisibility());
                 assertEquals(View.VISIBLE,expanded.findViewById(R.id.rest_row).getVisibility());
                 assertEquals(View.GONE,expanded.findViewById(R.id.rest_clock).getVisibility());
+                assertEquals("QA Workout",((android.widget.TextView)expanded.findViewById(R.id.session_name)).getText().toString());
+                assertEquals("Bench press · Set 2 of 3",((android.widget.TextView)expanded.findViewById(R.id.exercise_context)).getText().toString());
+                assertEquals("1/3 sets · Workout 2 of 3",((android.widget.TextView)expanded.findViewById(R.id.progress_label)).getText().toString());
+                assertEquals(1,((android.widget.ProgressBar)expanded.findViewById(R.id.session_progress)).getProgress());
+                assertEquals(3,((android.widget.ProgressBar)expanded.findViewById(R.id.session_progress)).getMax());
+                assertEquals(View.GONE,view.findViewById(R.id.exercise_context).getVisibility());
+                assertEquals("Open workout",item.getNotification().actions[0].title.toString());
+            });
+
+            org.json.JSONObject paused=new org.json.JSONObject(context.getSharedPreferences("tgym_workout_live",0).getString("state","{}"));
+            paused.put("paused",true).put("elapsedMs",3723000).put("restEndsAt",0).put("autoFinishAt",0).put("workoutLabel","Workout paused").put("openLabel","Resume");
+            context.startService(new Intent(context,WorkoutNotificationService.class).putExtra("state",paused.toString()));
+            SystemClock.sleep(500);
+            StatusBarNotification frozen=notification();
+            InstrumentationRegistry.getInstrumentation().runOnMainSync(()->{
+                View view=frozen.getNotification().bigContentView.apply(context,new FrameLayout(context));
+                assertEquals(View.GONE,view.findViewById(R.id.workout_clock).getVisibility());
+                assertEquals("01:02:03",((android.widget.TextView)view.findViewById(R.id.workout_duration)).getText().toString());
+                assertEquals(View.GONE,view.findViewById(R.id.rest_row).getVisibility());
+                assertEquals("Resume",frozen.getNotification().actions[0].title.toString());
             });
             item.getNotification().contentIntent.send();
             SystemClock.sleep(1000);

@@ -1,3 +1,4 @@
+import { routineIds } from './daily-plan.js'
 // Share a weekly plan.
 //
 // Two jobs:
@@ -181,7 +182,8 @@ export function mergePlan(s, bundle, { schedule } = {}) {
   if (schedule) {
     WEEK_ORDER.forEach(d => { delete s.week[d] })
     Object.entries(bundle.week || {}).forEach(([d, oldId]) => {
-      if (ridMap[oldId]) s.week[d] = ridMap[oldId]
+      const ids = routineIds(oldId).map(id=>ridMap[id]).filter(Boolean)
+      if (ids.length) s.week[d] = ids
     })
     s.scheduleStarted = todayISO()
   }
@@ -241,7 +243,8 @@ function routineHTML(r, unit) {
 
 function weekHTML(S) {
   const rows = WEEK_ORDER.map(d => {
-    const r = S.routines.find(x => x.id === S.week?.[d])
+    const routines = routineIds(S.week?.[d]).map(id=>S.routines.find(x=>x.id===id)).filter(Boolean)
+    const r = routines.length ? {...routines[0],name:routines.map(r=>r.name).join(' → ')} : null
     const val = r ? esc(r.name) : `<span class="rest">${esc(t('Rest'))}</span>`
     return `<div class="w-row"><div class="w-day">${esc(t(DAYN[d]))}</div><div class="w-r">${val}</div></div>`
   }).join('')

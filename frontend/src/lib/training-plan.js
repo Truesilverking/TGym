@@ -1,3 +1,4 @@
+import { dailyPlan } from './daily-plan.js'
 import { isTrainingPaused, pausedDaysBetween, calendarDateForTrainingDay, dayNumber } from './training-pause.js'
 import { trackingStart, statisticsState, isUntracked } from './training-history.js'
 import { isoOf, todayISO } from './format.js'
@@ -5,20 +6,6 @@ import { isWarmupRow, modeForSet } from './workout-model.js'
 
 const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n))
 const atNoon = iso => new Date(iso + 'T12:00:00')
-const effectiveRoutineId = (S, iso) => {
-  if (isTrainingPaused(S, iso)) return null
-  const ov = (S.dayPlan || {})[iso]
-  if (ov === 'rest') return null
-  if (ov && (S.routines || []).some(r => r.id === ov)) return ov
-  const id = (S.week || {})[atNoon(iso).getDay()]
-  const from = (S.routines || []).find(r=>r.id===id)?.scheduledFrom
-  return from && iso < from ? null : id || null
-}
-const matchWorkout = (S, iso, routineId) => {
-  const routine = (S.routines || []).find(r => r.id === routineId)
-  return (S.workouts || []).some(w => w.d === iso && (w.routineId === routineId || (!w.routineId && routine && w.name === routine.name)))
-}
-
 /** A gym-safe streak: only scheduled training days advance it; rest days neither add nor break. */
 export function trainingStreak(S, now = new Date()) {
   S = statisticsState(S, isoOf(now))
@@ -30,13 +17,14 @@ export function trainingStreak(S, now = new Date()) {
     const d = new Date(now); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() - i)
     const iso = isoOf(d)
     if (iso < startIso) continue
-    const routineId = effectiveRoutineId(safe, iso)
+    const plan = dailyPlan(safe,iso)
+    const routineId = plan.items[0]?.id
     const workouts = safe.workouts.filter(w => w.d === iso)
     if (!routineId) {
       if (workouts.length) rows.push({ iso, status: 'extra', planned: false })
       continue
     }
-    const completed = matchWorkout(safe, iso, routineId)
+    const completed = plan.completed === plan.total
     // Today is still available to complete. It must not erase yesterday's streak at noon.
     const status = completed ? 'completed' : iso === endIso ? 'pending' : 'missed'
     rows.push({ iso, routineId, status, planned: true })

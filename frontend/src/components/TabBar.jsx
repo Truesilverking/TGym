@@ -1,7 +1,7 @@
+import { nextDailyRoutine } from '../lib/daily-plan.js'
 import { isTrainingPaused } from '../lib/training-pause.js'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
-import { effectiveRoutine } from '../lib/history.js'
 import { todayISO } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
 import Icon from './Icon.jsx'
@@ -19,7 +19,7 @@ export default function TabBar({ onStart }) {
   const startWorkout = () => {
     if (!S.active) {
       if(isTrainingPaused(S,todayISO())) { onStart(); return }
-      const r = effectiveRoutine(S, todayISO())
+      const r = nextDailyRoutine(S, todayISO())
       if (r && r.ex.length) { onStart(r.id); return }
     }
     nav('/workout')

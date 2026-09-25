@@ -35,12 +35,18 @@ public class WorkoutNotificationService extends Service {
     }
     private String duration(long millis){
         long seconds=Math.max(0,millis/1000);
-        return seconds>=3600?String.format(Locale.ROOT,"%dh %dm",seconds/3600,(seconds%3600)/60):String.format(Locale.ROOT,"%02d:%02d",seconds/60,seconds%60);
+        return seconds>=3600?String.format(Locale.ROOT,"%02d:%02d:%02d",seconds/3600,(seconds%3600)/60,seconds%60):String.format(Locale.ROOT,"%02d:%02d",seconds/60,seconds%60);
     }
     private RemoteViews timerView(int layout, long elapsed, long rest) {
         RemoteViews content=new RemoteViews(getPackageName(),layout);
         content.setInt(R.id.accent_rail,"setBackgroundColor",notificationColor());
         content.setTextViewText(R.id.workout_label,state.optString("workoutLabel","Workout"));
+        content.setTextViewText(R.id.session_name,state.optString("name","TGym"));
+        content.setTextViewText(R.id.exercise_context,state.optString("context",""));
+        content.setViewVisibility(R.id.exercise_context,layout==R.layout.workout_notification_expanded && !state.optString("context","").isEmpty()?View.VISIBLE:View.GONE);
+        content.setTextViewText(R.id.progress_label,state.optString("progressLabel","")+(state.optString("dailyLabel","").isEmpty()?"":" · "+state.optString("dailyLabel")));
+        content.setProgressBar(R.id.session_progress,Math.max(1,state.optInt("totalSets",1)),state.optInt("completedSets",0),false);
+        content.setViewVisibility(R.id.session_progress,layout==R.layout.workout_notification_expanded && state.optInt("totalSets",0)>0?View.VISIBLE:View.GONE);
         boolean live=!state.optBoolean("paused");
         content.setViewVisibility(R.id.workout_clock,live?View.VISIBLE:View.GONE);
         content.setViewVisibility(R.id.workout_duration,live?View.GONE:View.VISIBLE);
@@ -77,6 +83,7 @@ public class WorkoutNotificationService extends Service {
             .setCustomBigContentView(timerView(R.layout.workout_notification_expanded,elapsed,rest))
             .setColor(notificationColor()).setStyle(new NotificationCompat.DecoratedCustomViewStyle())
             .setContentIntent(tap).setOngoing(true).setOnlyAlertOnce(true).setSilent(true)
+            .addAction(R.drawable.ic_workout_notification,state.optString("openLabel","Open workout"),tap)
             .setPriority(NotificationCompat.PRIORITY_LOW).build();
         try {
             if(Build.VERSION.SDK_INT>=34)startForeground(ID,notice,ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);

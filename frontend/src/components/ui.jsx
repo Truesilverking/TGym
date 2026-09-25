@@ -63,6 +63,9 @@ export function NumberField({ value, onChange, decimal = true, nullable = false,
         e.target.select()
       }}
       onChange={e => commit(e.target.value)}
+      data-edit-state={invalid ? 'invalid' : draft !== null ? 'saved' : 'default'}
+      enterKeyHint="done"
+      autoComplete="off"
       aria-invalid={invalid || undefined}
       title={invalid ? t('Enter a valid number') : undefined}
       onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur() } }}

@@ -1394,7 +1394,7 @@ button:focus-visible,[role="button"]:focus-visible,summary:focus-visible,a:focus
 
 /* Active logging: targets remain separate from editable results. */
 .workout-entry-hint{font-size:12px;line-height:1.5;color:var(--label-2);margin:10px 0 0}
-.set-target{grid-column:1/-1;display:flex;align-items:baseline;gap:8px;justify-content:space-between;padding:6px 0;border-top:1px solid var(--sep);font-size:12px;color:var(--label-2)}
+.set-target{grid-column:1/-1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 0 10px;border-block:1px solid var(--sep);font-size:10px;color:var(--label-2);letter-spacing:.08em;text-transform:uppercase;text-align:center}
 .set-target strong{color:var(--acc);font-weight:600;flex-shrink:0}
 .set-console .set-metric .stp:focus-within,.sets-card .subrow .stp:focus-within{border-color:var(--acc);box-shadow:0 0 0 2px var(--acc-soft)}
 .set-console .set-metric .stp .num,.sets-card .subrow .stp .num{cursor:text;caret-color:var(--acc);-webkit-user-select:text;user-select:text;border-radius:6px}
@@ -1404,3 +1404,23 @@ button:focus-visible,[role="button"]:focus-visible,summary:focus-visible,a:focus
 .set-console .set-metric .stp button:disabled{opacity:.35}
 .sets-card .set-console.done{box-shadow:none}
 @media(max-width:480px){.set-console.eff3 .set-metric.eff{display:grid;grid-template-columns:minmax(60px,.6fr) minmax(0,1fr);align-items:center;gap:8px}.set-console.eff3 .set-metric.eff>label{margin:0;min-height:0;flex-wrap:wrap}.set-console.eff3 .set-metric.eff .stp .val{padding:0 2px}.set-console .set-metric>label{min-height:30px}.set-target{font-size:11px}}
+
+/* Workout logging: centered target, calm secondary controls, explicit editing state. */
+.set-target strong{font-size:26px;line-height:1.1;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.set-console .set-metric>label{justify-content:center;text-align:center;align-items:center;min-height:28px}
+.set-console .set-metric .stp .val{padding:0 2px}
+.set-console .set-metric .stp .num{font-size:20px;min-height:44px}
+.set-number{font-size:14px}.set-state{padding:3px 7px;border-radius:var(--r-sm);background:var(--surface-2)}
+.set-console.current .set-state{color:var(--acc);background:var(--acc-soft)}
+.set-console .num[data-edit-state=saved]:focus{box-shadow:inset 0 -2px var(--acc)}
+.workout-day-position{font-size:11px;color:var(--acc);margin-top:3px}
+.daily-plan-heading{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}.daily-plan-heading h2{margin:0}.daily-plan-heading>span{font-size:12px;color:var(--acc);font-variant-numeric:tabular-nums}
+.daily-plan-track{display:flex;gap:5px;margin:12px 0}.daily-plan-track i{height:4px;flex:1;background:var(--sep);border-radius:4px}.daily-plan-track i.completed{background:var(--acc)}.daily-plan-track i.skipped{background:var(--label-3)}
+.daily-plan-list{list-style:none;padding:0;margin:10px 0}.daily-plan-list li{display:flex;align-items:center;gap:9px;padding:10px 0;border-bottom:1px solid var(--sep)}.daily-plan-list li:last-child{border:0}
+.daily-plan-index{display:grid;place-items:center;width:26px;height:26px;flex:none;border-radius:50%;background:var(--surface-2);font-size:12px;color:var(--acc)}.daily-plan-name{flex:1;min-width:0;overflow-wrap:anywhere;text-align:left;font-size:14px;font-weight:600}.daily-plan-name small{display:block;font-size:11px;color:var(--label-2);font-weight:400;margin-top:3px}
+.daily-plan-controls{display:flex;flex:none;gap:2px;flex-wrap:wrap}.daily-plan-controls .iconbtn{width:44px;height:44px}.daily-plan-controls .iconbtn:disabled{opacity:.25}.daily-plan-list .completed .daily-plan-index{background:var(--acc-soft)}
+.schedule-add{display:grid;gap:6px;margin:16px 0}.schedule-add .btn{justify-content:flex-start;text-align:left;white-space:normal}.schedule-reminder{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:16px 0}.schedule-editor>.btn{margin-top:8px}.schedule-names{white-space:normal;overflow-wrap:anywhere;font-size:11px}.daily-next{padding:16px;background:var(--acc-soft);border-radius:var(--r-sm);margin:12px 0}.daily-next small{color:var(--acc)}
+.zoomcal-day.partial{background:linear-gradient(135deg,var(--acc-soft),var(--surface-2));box-shadow:inset 0 -3px var(--acc)}
+@media(max-width:380px){.schedule-editor .daily-plan-list li{flex-wrap:wrap}.schedule-editor .daily-plan-controls{width:100%;justify-content:flex-end}.set-target strong{font-size:24px}}
+
+.wday.partial .dot{background:var(--acc);opacity:.5}.zoomcal-selection.partial{border-color:var(--acc)}

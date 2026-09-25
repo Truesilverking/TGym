@@ -27,13 +27,13 @@ function mount(target={},sets=[{w:40,r:10,done:false},{w:40,r:10,done:false}],pl
  S.active={id:'input',d:'2026-09-25',name:'Session',start:Date.now(),unit:'kg',cur:0,entries:[{id:'0025',asked:true,target:{mode:'reps',bodyweight:false,...target},sets,plan}]};
  useStore.setState({S,user:null});act(()=>root.render(<MemoryRouter><Workout/></MemoryRouter>))
 }
-it.each([{reps:10,repRange:false},{reps:12,repsMin:8,repRange:true},{},{reps:'AMRAP'},{reps:5,amrap:true}])('records actual reps independently of prescription %j',target=>{
+it.each([{},{reps:'AMRAP'},{reps:5,amrap:true}])('records actual reps independently of prescription %j',target=>{
  mount(target);type(input('Actual reps'),'1');type(input('Actual reps'),'15');expect(rows()[0].r).toBe(15);expect(state().active.entries[0].target).toMatchObject(target)
  expect(JSON.parse(localStorage.getItem('gym_state_v1')).active.entries[0].sets[0].r).toBe(15)
 })
 it('labels Greyskull final work as AMRAP and allows results beyond target',()=>{mount({reps:5},undefined,{policy:'greyskull'});expect(container.textContent).toContain('AMRAP');type(input('Actual reps',1),'18');expect(rows()[1].r).toBe(18)})
 it('retains decimal load, edited pending rows, completed rows and refresh state',()=>{
- mount({reps:10});type(input('Weight (kg)',1),'52,5');type(input('Weight (kg)'),'42.75');expect(rows().map(s=>s.w)).toEqual([42.75,52.5]);
+ mount({reps:10,repsMin:8,repRange:true});type(input('Weight (kg)',1),'52,5');type(input('Weight (kg)'),'42.75');expect(rows().map(s=>s.w)).toEqual([42.75,52.5]);
  act(()=>container.querySelector('[role="checkbox"]').click());type(input('Weight (kg)'),'43,25');type(input('Actual reps'),'8');expect(rows()[0]).toMatchObject({done:true,w:43.25,r:8});
  const saved=JSON.parse(localStorage.getItem('gym_state_v1'));act(()=>{root.unmount();root=createRoot(container);useStore.getState().replaceState(saved);root.render(<MemoryRouter><Workout/></MemoryRouter>)});
  expect(input('Weight (kg)').value).toBe('43.25');expect(input('Actual reps').value).toBe('8');expect(rows()[1].manualFields.w).toBe(true)
@@ -50,7 +50,7 @@ it('unlocks added weight for bodyweight and persists the visible editor at zero'
  mount({bodyweight:true,reps:10},[{w:0,r:10,done:false}]);expect(input('Added (kg)')).toBeUndefined();act(()=>[...container.querySelectorAll('button')].find(b=>b.textContent==='Log added weight').click());expect(input('Added (kg)')).toBeTruthy();type(input('Added (kg)'),'5.5');expect(rows()[0].w).toBe(5.5);expect(JSON.parse(localStorage.getItem('gym_state_v1')).active.entries[0].logAddedWeight).toBe(true)
 })
 it('records each side once and preserves a partially performed load from an earlier cascade',()=>{
- mount({side:true,repsPerSide:true,reps:10},[{w:15,r:10,done:false},{w:15,r:10,done:false,leftDone:true}]);type(input('Weight (kg)'),'20');expect(rows()[1].w).toBe(15);type(input('Actual reps per side'),'8');act(()=>container.querySelectorAll('.set-sides button')[0].click());expect(rows()[0].done).toBe(false);act(()=>container.querySelectorAll('.set-sides button')[1].click());expect(rows()[0].done).toBe(true);expect(workoutVolume(state().active)).toBe(160);act(()=>container.querySelectorAll('.set-sides button')[1].click());expect(workoutVolume(state().active)).toBe(0)
+ mount({side:true,repsPerSide:true,reps:10,repsMin:8,repRange:true},[{w:15,r:10,done:false},{w:15,r:10,done:false,leftDone:true}]);type(input('Weight (kg)'),'20');expect(rows()[1].w).toBe(15);type(input('Actual reps per side'),'8');act(()=>container.querySelectorAll('.set-sides button')[0].click());expect(rows()[0].done).toBe(false);act(()=>container.querySelectorAll('.set-sides button')[1].click());expect(rows()[0].done).toBe(true);expect(workoutVolume(state().active)).toBe(160);act(()=>container.querySelectorAll('.set-sides button')[1].click());expect(workoutVolume(state().active)).toBe(0)
 })
 it('adds and removes sets without changing previously recorded values',()=>{mount({reps:10});type(input('Weight (kg)'),'45');click('Add set');expect(rows()).toHaveLength(3);expect(rows()[2]).toMatchObject({w:45,r:10,done:false});click('Remove set');expect(rows()).toHaveLength(2);expect(rows()[0].w).toBe(45)})
 
@@ -62,4 +62,13 @@ it('accepts typed RPE and preserves exercise/session notes in history',()=>{
 
 it('requires positive durations and accepts fractional cardio minutes',()=>{
  mount({mode:'cardio'},[{min:2,speed:8,done:false}]);type(input('Duration (min)'),'1,5');expect(rows()[0].min).toBe(1.5);type(input('Duration (min)'),'0');expect(rows()[0].min).toBe(1.5);expect(input('Duration (min)').getAttribute('aria-invalid')).toBe('true')
+})
+
+it('validates fixed and range reps without clamping intermediate typing or changing targets',()=>{
+ mount({reps:12,repsMin:8,repRange:true});type(input('Actual reps'),'1');expect(rows()[0].r).toBe(10);expect(input('Actual reps').value).toBe('1');type(input('Actual reps'),'12');expect(rows()[0].r).toBe(12);type(input('Actual reps'),'15');expect(rows()[0].r).toBe(12);expect(input('Actual reps').getAttribute('aria-invalid')).toBe('true');act(()=>input('Actual reps').blur());expect(input('Actual reps').value).toBe('12');
+ act(()=>useStore.getState().update(s=>{s.active.entries[0].target={reps:8,repRange:false}}));type(input('Actual reps'),'8');expect(rows()[0].r).toBe(8);type(input('Actual reps'),'9');expect(rows()[0].r).toBe(8)
+})
+it('allows manual RIR on warm-up, top and backoff rows and persists it',()=>{
+ mount({reps:8,setScheme:'topback',topRepsMax:5,backoffRepsMax:8},[{w:20,r:5,warmup:true,done:false},{w:50,r:5,role:'top',done:false},{w:40,r:8,role:'backoff',done:false}]);
+ for(let i=0;i<3;i++)type(input('RIR',i),'2,5');expect(rows().map(s=>s.rir)).toEqual([2.5,2.5,2.5]);expect(JSON.parse(localStorage.getItem('gym_state_v1')).active.entries[0].sets[0].rir).toBe(2.5)
 })

@@ -1,3 +1,6 @@
+import { calendarDay } from '../lib/calendar-data.js'
+import { nextDailyRoutine } from '../lib/daily-plan.js'
+import DailyPlan from '../components/DailyPlan.jsx'
 import { statisticsState, isUntracked } from '../lib/training-history.js'
 import TrainingHistory from '../components/TrainingHistory.jsx'
 import { TrainingPauseAction } from '../components/TrainingPauseCard.jsx'
@@ -6,7 +9,7 @@ import ConsistencyCard from '../components/ConsistencyCard.jsx'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
-import { effectiveRoutine, effectiveRoutineId, lastBW, setsDoneActive, effortValue } from '../lib/history.js'
+import { effectiveRoutineId, lastBW, setsDoneActive, effortValue } from '../lib/history.js'
 import { fmtNum, fmtDate, todayISO, isoOf, weekKey, DAYS } from '../lib/format.js'
 import { t, dateLocale } from '../lib/i18n.js'
 import { bwSheet, goalSheet, dayOverrideSheet, startFlow, guidedPlansSheet, bwDeltaColor, streakDetailSheet, sessionTimingSheet, homeCalendarSheet } from '../sheets.jsx'
@@ -27,7 +30,7 @@ export default function Home() {
   const [weekOffset, setWeekOffset] = useState(0)
 
   const today = new Date()
-  const routine = effectiveRoutine(S, todayISO())
+  const routine = nextDailyRoutine(S, todayISO())
   const todayOvr = S.dayPlan[todayISO()] !== undefined
   const bw = lastBW(statsState)
   const prevBW = statsState.bodyweight.length > 1 ? statsState.bodyweight[statsState.bodyweight.length - 2] : null
@@ -38,18 +41,17 @@ export default function Home() {
   const paused = isTrainingPaused(S,todayISO())
 
   const monday = new Date(today); monday.setDate(today.getDate() - ((today.getDay() + 6) % 7) + weekOffset * 7)
-  const doneDays = new Set(S.workouts.map(w => w.d))
   // The last session logged for today, if any — what the row below reports instead of asking
   // you to start the one you already did. Last wins, so a second session names itself.
-  const doneToday = S.workouts.filter(w => w.d === todayISO()).at(-1) || null
+  const doneToday = routine ? null : S.workouts.filter(w => w.d === todayISO()).at(-1) || null
   const strip = []
   for (let i = 0; i < 7; i++) {
     const d = new Date(monday); d.setDate(monday.getDate() + i)
     const iso = isoOf(d)
-    const eff = effectiveRoutineId(S, iso), ovr = S.dayPlan[iso] !== undefined, done = doneDays.has(iso)
+    const eff = effectiveRoutineId(S, iso), ovr = S.dayPlan[iso] !== undefined, status = calendarDay(S,iso,today).status, done = status === 'completed'
     const pausedDay = isTrainingPaused(S,iso)
     const dot = isUntracked(S,iso) ? '' : done ? ' done' : ovr && eff ? ' ovr' : eff ? ' plan' : ''
-    strip.push(<div key={i} className={'wday' + (pausedDay ? ' paused' : '') + (iso === todayISO() ? ' today' : '')} title={pausedDay ? t('Training paused') : undefined} onClick={() => dayOverrideSheet(iso)}>
+    strip.push(<div key={i} className={'wday' + (pausedDay ? ' paused' : status === 'partial' ? ' partial' : '') + (iso === todayISO() ? ' today' : '')} title={pausedDay ? t('Training paused') : undefined} onClick={() => dayOverrideSheet(iso)}>
       <div className="lbl">{t(DAYS[d.getDay()])}</div><div className="num">{d.getDate()}</div><div className={'dot' + dot} /></div>)
   }
   const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6)
@@ -102,6 +104,7 @@ export default function Home() {
       </div>
     </div>
 
+    <DailyPlan compact onStart={startFlow}/>
     <TrainingHistory promptOnly />
 
     <ConsistencyCard S={S} onTimes={sessionTimingSheet} />

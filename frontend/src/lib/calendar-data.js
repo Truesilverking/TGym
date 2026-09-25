@@ -1,3 +1,4 @@
+import { dailyPlan } from './daily-plan.js'
 import { isUntracked, trackingStart } from './training-history.js'
 import { loggedWorkouts } from './consistency.js'
 import { isTrainingPaused } from './training-pause.js'
@@ -11,9 +12,10 @@ export function calendarDay(state, iso, now = new Date(), context) {
   state = { ...state, routines:state.routines || [], week:state.week || {}, dayPlan:state.dayPlan || {} }
   const workouts = context ? context.workouts[iso] || [] : loggedWorkouts(state).filter(w => w.d === iso)
   const routine = (state.routines || []).find(r => r.id === effectiveRoutineId(state, iso))
-  const planned = !!routine
-  return { iso, workouts, planned, measurements: measurementEventsOn(state, iso), name: workouts.at(-1)?.name || routine?.name || '',
-    status: workouts.length ? 'completed' : isTrainingPaused(state, iso) ? 'paused' : planned ? (iso < isoOf(now) ? 'missed' : 'pending') : 'rest' }
+  const plan = dailyPlan(state,iso)
+  const planned = plan.total > 0
+  return { iso, workouts, planned, plan, measurements: measurementEventsOn(state, iso), name: plan.total > 1 ? `${plan.completed}/${plan.total} · ${plan.items.map(i=>i.routine.name).join(' · ')}` : workouts.at(-1)?.name || routine?.name || '',
+    status: planned && plan.completed > 0 && plan.completed < plan.total ? 'partial' : workouts.length && (!planned || plan.completed === plan.total) ? 'completed' : isTrainingPaused(state, iso) ? 'paused' : planned ? (iso < isoOf(now) ? 'missed' : 'pending') : 'rest' }
 }
 const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
 export function calendarPeriod(state, anchor, period, now = new Date()) {
@@ -28,7 +30,7 @@ export function calendarPeriod(state, anchor, period, now = new Date()) {
   for (const w of loggedWorkouts(state)) (context.workouts[w.d] ||= []).push(w)
   const days = []
   for (const d = new Date(start); d <= end; d.setDate(d.getDate()+1)) days.push(calendarDay(state, iso(d), now, context))
-  const counts = { scheduled: 0, completed: 0, missed: 0, pending: 0, rest: 0, paused: 0, untracked: 0 }
+  const counts = { scheduled: 0, completed: 0, missed: 0, pending: 0, partial: 0, rest: 0, paused: 0, untracked: 0 }
   for (const day of days) { counts[day.status]++; if (day.planned) counts.scheduled++ }
   const stats = consistencyStats(state, iso(start), iso(end), now)
   return { days, counts, stats, completion: stats.rate == null ? null : Math.round(stats.rate * 100), start: iso(start), end: iso(end) }

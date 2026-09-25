@@ -1,3 +1,4 @@
+import { routineIds, removeRoutineAssignments } from '../lib/daily-plan.js'
 import { openActivityEditor } from '../components/Activities.jsx'
 import { TrainingPauseAction } from '../components/TrainingPauseCard.jsx'
 import { useNavigate } from 'react-router-dom'
@@ -32,7 +33,7 @@ export default function Plan() {
     nav('/plan/r/' + r.id)
   }
   const deleteAll = () => {
-    const scheduled = Object.values(S.week || {}).filter(Boolean).length
+    const scheduled = Object.values(S.week || {}).filter(ids=>routineIds(ids).length).length
     confirmSheet({
       title: t('Delete all routines?'),
       message: t('{0} routines will be deleted. {1} scheduled days will be cleared. You can undo this during the current app session.', S.routines.length, scheduled),
@@ -55,8 +56,8 @@ export default function Plan() {
   }
   const deleteOne = r => {
     sessionStorage.removeItem('framegym_deleted_routines')
-    sessionStorage.setItem('framegym_deleted_single_routine', JSON.stringify({ routine: r, days: Object.entries(S.week || {}).filter(([, id]) => id === r.id), overrides: Object.entries(S.dayPlan || {}).filter(([, id]) => id === r.id) }))
-    update(s => { s.routines = s.routines.filter(x => x.id !== r.id); Object.keys(s.week).forEach(k => { if (s.week[k] === r.id) delete s.week[k] }); Object.keys(s.dayPlan).forEach(k => { if (s.dayPlan[k] === r.id) delete s.dayPlan[k] }) })
+    sessionStorage.setItem('framegym_deleted_single_routine', JSON.stringify({ routine: r, days: Object.entries(S.week || {}).filter(([, ids]) => routineIds(ids).includes(r.id)), overrides: Object.entries(S.dayPlan || {}).filter(([, ids]) => routineIds(ids).includes(r.id)) }))
+    update(s => { s.routines = s.routines.filter(x => x.id !== r.id); removeRoutineAssignments(s,r.id) })
     setDrag({ id: null, dx: 0, armed: false }); setUndoVisible(true)
   }
   const restoreDeleted = () => {
@@ -107,10 +108,11 @@ export default function Plan() {
       </div>
       <div className="list week-schedule" style={{ display: 'flex', flexDirection: 'column' }}>
         {[1, 2, 3, 4, 5, 6, 0].map(d => {
-          const r = S.routines.find(x => x.id === S.week[d])
+          const routines = routineIds(S.week[d]).map(id=>S.routines.find(x=>x.id===id)).filter(Boolean)
+          const r = routines[0]
           return <div key={d} className="item" onClick={() => dayAssignSheet(d)}>
-            <div className="grow"><div className="tt">{t(DAYN[d])}</div></div>
-            {r ? <span className="tag acc"><Icon name={glyphOf(r.emoji)} />{r.name}</span> : <span className="tag">{t('Rest')}</span>}
+            <div className="grow"><div className="tt">{t(DAYN[d])}</div>{routines.length>1 && <div className="ss schedule-names">{routines.map(r=>r.name).join(' · ')}</div>}</div>
+            {r ? <span className="tag acc"><Icon name={glyphOf(r.emoji)} />{routines.length>1 ? t('{0} activities',routines.length) : r.name}</span> : <span className="tag">{t('Rest')}</span>}
             {r && <button className="iconbtn" aria-label={t('Muscles trained')} onClick={e=>{e.stopPropagation();routineMuscleSheet(r.id)}}><Icon name="info" /></button>}
             <Icon name="chevronRight" className="chev" /></div>
         })}

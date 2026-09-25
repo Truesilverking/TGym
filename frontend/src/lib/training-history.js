@@ -1,3 +1,4 @@
+import { routineIds } from './daily-plan.js'
 import { dayNumber } from './training-pause.js'
 import { todayISO } from './format.js'
 
@@ -32,7 +33,7 @@ export function historySummary(S, today = todayISO()) {
   const historicalWorkouts = Math.max(0, Math.trunc(Number(S.trainingHistory?.historicalWorkouts) || 0))
   const total = trackedWorkouts + historicalWorkouts
   const weeks = Math.max(1, dayNumber(today) - dayNumber(start) + 1) / 7
-  const scheduledPerWeek = Object.values(S.week || {}).filter(id => (S.routines || []).some(r => r.id === id)).length
+  const scheduledPerWeek = Object.values(S.week || {}).flatMap(routineIds).filter(id => (S.routines || []).some(r => r.id === id)).length
   return { start, trackedWorkouts, historicalWorkouts, total, averagePerWeek: total / weeks, scheduledPerWeek }
 }
 export function validateTrainingHistory(start, history, today = todayISO()) {
