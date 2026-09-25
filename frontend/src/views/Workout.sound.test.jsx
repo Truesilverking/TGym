@@ -84,3 +84,10 @@ it('cancels the delayed right-side callback when the row structure changes',()=>
  act(()=>[...container.querySelectorAll('button')].find(b=>b.textContent==='Add warm-up set').click());
  act(()=>vi.advanceTimersByTime(3000));expect(useUI.getState().work).toBe(null);expect(useStore.getState().S.active.entries[0].sets.every(s=>!s.done)).toBe(true)
 })
+
+it('manual completion cancels the matching work timer and cannot overwrite the locked result',()=>{
+ renderTimed({seconds:5});act(()=>vi.advanceTimersByTime(1000));
+ act(()=>container.querySelector('[role="checkbox"]').click());
+ expect(saved()).toMatchObject({done:true,sec:5});expect(useUI.getState().work).toBeNull();
+ act(()=>vi.advanceTimersByTime(6000));expect(saved()).toMatchObject({done:true,sec:5});expect(alerts()).toEqual(['set']);expect(container.querySelector('.set-summary input')).toBeNull()
+})

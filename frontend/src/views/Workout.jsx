@@ -347,6 +347,7 @@ function ActiveWorkout() {
   const { startRest, stopRest, work } = useUI()
   const A = S.active
   const timedGeneration = useRef(0)
+  const timedTarget = useRef(null)
   const entryCount = useRef(A.entries.length)
   // A restored paused workout needs the same finish decision as a newly checked final set.
   const restoredDecision = useRef(false)
@@ -466,6 +467,7 @@ function ActiveWorkout() {
     const invalid = document.querySelector(`[data-workout-set="${idx}-${i}"] [aria-invalid="true"]`)
     if (invalid) { invalid.focus(); useUI.getState().toast(t('Enter a valid number')); return }
     const generation = ++timedGeneration.current
+    timedTarget.current = {idx,i}
     const e = A.entries[idx]
     const cardio = modeAt(idx) === 'cardio'
     const seconds = cardio ? Math.max(60, Math.round((e.sets[i].min || 20) * 60)) : (e.sets[i].sec || 45)
@@ -545,6 +547,11 @@ function ActiveWorkout() {
         if (e.sets.every(x => x.done)) { exJustDone = true; if (loaded && !e.asked) { e.asked = true; askTop = true } }
       } else delete e.sets[i].doneAt
     }, userActivity)
+    if (checked && timedTarget.current?.idx === idx && timedTarget.current?.i === i) {
+      timedGeneration.current++
+      timedTarget.current = null
+      useUI.getState().stopWork()
+    }
     if(side && wasDone === !!useStore.getState().S.active?.entries[idx]?.sets[i]?.done) return
     update(s => {
       if (!s.active) return
