@@ -692,5 +692,6 @@ export default {
   'Add session note': 'Notiz zum Training',
   'Edit session note': 'Notiz bearbeiten',
   'How the session went as a whole.': 'Wie das Training insgesamt lief.',
-  'Rest-pause always trains as one warm-up set at this rep count, then one rest-pause work set — "Sets" is not used.': 'Rest-Pause trainiert immer als ein Aufwärmsatz mit dieser Wiederholungszahl und ein Rest-Pause-Arbeitssatz — „Sätze“ wird nicht verwendet.'
+  'Rest-pause always trains as one warm-up set at this rep count, then one rest-pause work set — "Sets" is not used.': 'Rest-Pause trainiert immer als ein Aufwärmsatz mit dieser Wiederholungszahl und ein Rest-Pause-Arbeitssatz — „Sätze“ wird nicht verwendet.',
+  "Undo Completed": "Undo Completed",
 }

@@ -188,7 +188,7 @@ describe('Workout set completion flow', () => {
       exercise('superset-b', [true, true, false], { sg: group }),
       exercise('next-exercise', [false, false, false]),
     ], 1)
-    await toggleSet(5)
+    await toggleSet(0)
 
     expect(mocks.topWeightSheet).toHaveBeenCalledWith(1)
     expect(mocks.S.active.cur).toBe(1)
@@ -209,7 +209,7 @@ describe('Top and back-off targets', () => {
   })
 
   it('shows the full target range even when a legacy profile has effort disabled', async () => {
-    await mount([{ id: 'squat', target: { mode: 'reps', reps: 6, targetRirMin: 1, targetRirMax: 2 }, sets: [{ w: 50, r: 6, rir: 2, done: true }] }], 0, S => { S.effort = 'none' })
+    await mount([{ id: 'squat', target: { mode: 'reps', reps: 6, targetRirMin: 1, targetRirMax: 2 }, sets: [{ w: 50, r: 6, rir: 2, done: false }] }], 0, S => { S.effort = 'none' })
     expect(container.querySelector('.set-metric.eff label').textContent).toContain('1–2')
     expect(container.querySelector('.set-metric.eff label').textContent).toContain('RIR')
   })
@@ -265,7 +265,7 @@ describe('superset flow survives an exercise being removed mid-session', () => {
 })
 
 describe('independent per-side confirmations',()=>{
-  it('retains 10 reps and only completes after both sides; undo preserves the other side',async()=>{
+  it('retains 10 reps and only completes after both sides; explicit undo unlocks both sides and preserves actual values',async()=>{
     await mount([{id:'one-arm',target:{mode:'reps',side:true,repsPerSide:true,reps:10},sets:[{w:20,r:10,done:false}]}])
     const buttons=()=>[...container.querySelectorAll('.set-sides button')]
     await act(async()=>buttons()[0].click())
@@ -276,7 +276,7 @@ describe('independent per-side confirmations',()=>{
     await act(async()=>buttons()[1].click())
     expect(mocks.S.active.entries[0].sets[0]).toMatchObject({r:10,leftDone:true,rightDone:true,done:true})
     await act(async()=>root.render(<Workout />))
-    await act(async()=>buttons()[0].click())
-    expect(mocks.S.active.entries[0].sets[0]).toMatchObject({r:10,leftDone:false,rightDone:true,done:false})
+    await act(async()=>container.querySelector('.set-undo').click())
+    expect(mocks.S.active.entries[0].sets[0]).toMatchObject({w:20,r:10,leftDone:false,rightDone:false,done:false})
   })
 })

@@ -675,5 +675,6 @@ export default {
   'Add session note': 'Dodaj notatkę do sesji',
   'Edit session note': 'Edytuj notatkę do sesji',
   'How the session went as a whole.': 'Jak przebiegła cała sesja.',
-  'Rest-pause always trains as one warm-up set at this rep count, then one rest-pause work set — "Sets" is not used.': 'Rest-pause zawsze trenuje się jako jedna seria rozgrzewkowa o tej liczbie powtórzeń i jedna seria robocza rest-pause — „Serie” nie są używane.'
+  'Rest-pause always trains as one warm-up set at this rep count, then one rest-pause work set — "Sets" is not used.': 'Rest-pause zawsze trenuje się jako jedna seria rozgrzewkowa o tej liczbie powtórzeń i jedna seria robocza rest-pause — „Serie” nie są używane.',
+  "Undo Completed": "Undo Completed",
 }

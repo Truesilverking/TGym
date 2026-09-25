@@ -34,7 +34,7 @@ export function resumeAutoFinished(state, id, now=Date.now()) {
   if (!w) return false
   // Explicit continuation creates a new identity; the previous historical session is immutable.
   const snapshot = structuredClone(w.resumeSnapshot)
-  for (const key of ['end','endedAt','timerPausedAt','timerContinuedAt','completedAt','pausedDurationMs','finishReason','workEndsAt']) delete snapshot[key]
+  for (const key of ['end','endedAt','timerPausedAt','timerContinuedAt','completedAt','pausedDurationMs','finishReason','workEndsAt','restTimer']) delete snapshot[key]
   snapshot.entries = snapshot.entries.map(e => ({...e, asked:false, sets:e.sets.map(row => {
     const next = {...row,done:false}
     for(const key of ['doneAt','leftDone','rightDone','leftSec','rightSec']) delete next[key]

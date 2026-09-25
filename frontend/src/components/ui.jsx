@@ -24,7 +24,7 @@ import { t } from '../lib/i18n.js'
 // 0). Keeps a local string draft while focused so partial input like "33," survives.
 // `nullable` is for fields where "nothing entered" and 0 mean different things (RIR: a
 // logged 0 is a set taken to failure). Those clear back to null instead of snapping to 0.
-export function NumberField({ value, onChange, decimal = true, nullable = false, displayValue, validation, className = '', ...rest }) {
+export function NumberField({ value, onChange, decimal = true, nullable = false, displayValue, validation, retainInvalid = false, className = '', ...rest }) {
   const [draft, setDraft] = useState(null)
   const [invalid, setInvalid] = useState(false)
   const committed = useRef(null)
@@ -69,7 +69,7 @@ export function NumberField({ value, onChange, decimal = true, nullable = false,
       aria-invalid={invalid || undefined}
       title={invalid ? t('Enter a valid number') : undefined}
       onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur() } }}
-      onBlur={() => { setDraft(null); setInvalid(false); committed.current = null }}
+      onBlur={() => { if (retainInvalid && invalid) return; setDraft(null); setInvalid(false); committed.current = null }}
       {...rest}
     />
   )

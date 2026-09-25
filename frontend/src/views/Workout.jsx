@@ -11,7 +11,7 @@ import { exOr } from '../lib/exercises.js'
 import { lastEntryFor, bestWeightFor, buildSets, freestyleConfig, defaultConfig, setsDoneActive, supersetUnits, unitOf, setLabel, modeOf, isBw, isPerSide, sideReps, repStep, fmtSec, EFFORT, effortOf, stepEffort, cascadeWeight, cascadeTopBackWeight, cascadeTopBackReps, insertWarmupRow, removeRowAt, pairAdjacent, unpairSuperset, cleanupSg, applyIntensifierPlan, pinnedNoteFor, exNoteFor, rerampWarmups } from '../lib/history.js'
 import { fmtNum, fmtDate, todayISO, exCount, DAYN } from '../lib/format.js'
 import { playAppSound, vibrate } from '../lib/sound.js'
-import { t, exerciseNameFor } from '../lib/i18n.js'
+import { t, exerciseNameFor, dateLocale } from '../lib/i18n.js'
 import { api } from '../lib/api.js'
 import { setProgressHighWater, supersetFlowStep, restAfterSet, restOnRecheck } from '../lib/supersetFlow.js'
 import Media from '../components/Media.jsx'
@@ -73,10 +73,23 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
   const update = useStore(s => s.update)
   const working = useUI(s => s.work)
   const entry = S.active.entries[entryIdx]
+  const rowRefs = useRef({})
+  const currentSet = entry.sets.findIndex(row => !row.done)
+  const previousSet = useRef(currentSet)
+  useEffect(() => {
+    if (currentSet !== previousSet.current && currentSet >= 0 && (S.active.cur || 0) === entryIdx) {
+      const el = rowRefs.current[currentSet]
+      const bounds = el?.getBoundingClientRect()
+      if (bounds && (bounds.top < 80 || bounds.bottom > window.innerHeight - 100)) {
+        el.scrollIntoView?.({ block: 'nearest', behavior: S.reduceMotion || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' })
+      }
+    }
+    previousSet.current = currentSet
+  }, [currentSet])
   // Drops/bursts mutate the row in place — same card, not a new set with its own long rest.
   // A planned exercise (see the exercise's "Intensifier" config) arrives with these already
   // filled in by applyIntensifierPlan; these only add/edit/remove entries live from here on.
-  const mutSet = (i, fn) => update(s => { const row = s.active.entries[entryIdx].sets[i]; s.active.entries[entryIdx].sets[i] = fn(row) }, true)
+  const mutSet = (i, fn) => update(s => { const row = s.active?.entries[entryIdx]?.sets[i]; if (row && !row.done) s.active.entries[entryIdx].sets[i] = fn(row) }, true)
   const addDropRow = i => mutSet(i, row => {
     const drops = dropsOf(row)
     const base = drops.length ? drops[drops.length - 1].w : (row.w || 0)
@@ -155,7 +168,7 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
   const cell = (s, i, col, cls) => (
     <div className={'set-metric ' + cls}><label htmlFor={`workout-${entryIdx}-${i}-${col.f}`}>{col.hd}{col.eff === 'rir' && targetRirRangeFor(cfg,s.role) && <small>{rirRangeLabel(targetRirRangeFor(cfg,s.role))}</small>}</label><div className={'stp' + (col.eff === 'rir' && s[col.f] != null && s[col.f] !== '' && Number(s[col.f]) === 0 ? ' effort-failure' : '')}>
       <button type="button" aria-label={t('Decrease')} onClick={() => bump(s, i, col, -1)}><Icon name="minus" /></button>
-      <span className="val"><NumberField key={`${entryIdx}-${i}-${col.f}`} id={`workout-${entryIdx}-${i}-${col.f}`} data-nodrag validation={col.f === 'r' ? actualRepValidation(entry,s,i) : col.eff ? {max: col.max, step: col.step} : ['min','sec'].includes(col.f) ? {min: 1} : {}} decimal={col.dec} nullable={col.opt} value={s[col.f] ?? ''}
+      <span className="val"><NumberField retainInvalid key={`${entryIdx}-${i}-${col.f}`} id={`workout-${entryIdx}-${i}-${col.f}`} data-nodrag validation={col.f === 'r' ? actualRepValidation(entry,s,i) : col.eff ? {max: col.max, step: col.step} : ['min','sec'].includes(col.f) ? {min: 1} : {}} decimal={col.dec} nullable={col.opt} value={s[col.f] ?? ''}
         displayValue={col.eff && s[col.f] != null && s[col.f] !== '' ? effortValue(col.eff, s[col.f]) : undefined} aria-label={col.hd}
         onChange={v => onField(i, col.f, v)} /></span>
       <button type="button" aria-label={t('Increase')} onClick={() => bump(s, i, col, 1)}><Icon name="plus" /></button>
@@ -167,7 +180,7 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
   const miniStepper = (value, step, dec, onChange, label) => (
     <div className="mini-metric"><label>{label}</label><div className="stp mini">
       <button aria-label={t('Decrease')} onClick={() => onChange(Math.max(0, Math.round(((value || 0) - step) * 100) / 100))}><Icon name="minus" /></button>
-      <span className="val"><NumberField validation={{}} data-nodrag decimal={dec} value={value ?? ''} aria-label={label} onChange={onChange} /></span>
+      <span className="val"><NumberField retainInvalid validation={{}} data-nodrag decimal={dec} value={value ?? ''} aria-label={label} onChange={onChange} /></span>
       <button aria-label={t('Increase')} onClick={() => onChange(Math.max(0, Math.round(((value || 0) + step) * 100) / 100))}><Icon name="plus" /></button>
     </div></div>
   )
@@ -232,14 +245,29 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
         const target = repBounds(cfg, s.role)
         const amrap = s.amrap || cfg.amrap || /^amrap$/i.test(String(cfg.reps).trim()) || (entry.plan?.policy === 'greyskull' && i === entry.sets.findLastIndex(row => !isWarmupRow(row)))
         const targetText = amrap ? 'AMRAP' : hasRepTarget ? (target.min === target.max ? String(target.max) : `${target.min}–${target.max}`) : t('Free reps')
-        return <div key={i}>
+        return <div key={i} data-workout-set={`${entryIdx}-${i}`} ref={el => { rowRefs.current[i] = el }}>
           {isFirstWarmup && <div className="setph">{t('Warm-up')}</div>}
           {!warm && warmBefore && <div className="setsep" />}
           {!warm && s.role && s.role !== roleBefore && <div className="set-phase">{s.role === 'top' ? t('Top set') : t('Back-off sets')}</div>}
-          <div className={'setrow set-console' + (s.done ? ' done' : entry.sets.findIndex(row=>!row.done) === i ? ' current' : '') + (col3 ? ' eff3' : '')}>
+          {s.done ? <div className="setrow set-console done set-summary">
             <div className="set-console-head">
               <span className="set-number">{t('Set')} {phaseNum}</span>
-              <span className="set-state">{t(s.done ? 'Completed' : entry.sets.findIndex(row=>!row.done) === i ? 'Current' : 'Pending')}</span>
+              <span className="set-state"><Icon name="checkCircle" /> {t('Completed')}</span>
+              <button type="button" className="set-undo" aria-label={`${t('Undo Completed')} · ${t('Set')} ${phaseNum}`} onClick={() => onToggle(i)}>{t('Undo Completed')}</button>
+            </div>
+            <dl className="set-summary-values">
+              {[col1, col2].filter(Boolean).map(col => <div key={col.f}><dt>{col.hd}</dt><dd>{Number(s[col.f] ?? 0).toLocaleString(dateLocale(), {maximumFractionDigits: 10})}</dd></div>)}
+              {mode === 'reps' && ['rir','rpe'].filter(k => s[k] != null || (col3?.eff || 'rir') === k).map(k => <div key={k}><dt>{k.toUpperCase()}</dt><dd>{s[k] == null ? '—' : effortValue(k, s[k])}</dd></div>)}
+              {timed && isPerSide(cfg) && ['left','right'].map(side => <div key={side}><dt>{t(side === 'left' ? 'Left' : 'Right')}</dt><dd>{fmtSec(s[`${side}Sec`] ?? s.sec)}</dd></div>)}
+            </dl>
+            {(dropsOf(s).length > 0 || clustersOf(s).length > 0) && <div className="set-summary-details">
+              {dropsOf(s).map((d,di)=><span key={`d${di}`}>{t('Drop {0}',di+1)} · {Number(d.w).toLocaleString(dateLocale(), {maximumFractionDigits: 10})} {S.unit} × {d.r} {t('reps')}</span>)}
+              {clustersOf(s).map((c,ci)=><span key={`c${ci}`}>{t('Burst {0}',ci+1)} · {c.r} {t('reps')} · {c.restSec}s</span>)}
+            </div>}
+          </div> : <div className={'setrow set-console' + (currentSet === i ? ' current' : '') + (col3 ? ' eff3' : '')}>
+            <div className="set-console-head">
+              <span className="set-number">{t('Set')} {phaseNum}</span>
+              <span className="set-state">{t(currentSet === i ? 'Current' : 'Pending')}</span>
               <div className="set-console-actions">
                 {(timed || cardio) && <button className="setgo" aria-label={t(cardio ? 'Start cardio timer' : 'Start set')} disabled={s.done || !!working} onClick={() => onStartTimed(i)}><Icon name="play" /></button>}
                 {warm && <button className="iconbtn" aria-label={t('Remove set')} disabled={entry.sets.length <= 1} onClick={() => onRemoveSetAt(i)}><Icon name="xmark" /></button>}
@@ -252,11 +280,11 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
             {cell(s, i, col1, 'w')}
             {col2 && cell(s, i, col2, 'r')}
             {col3 && cell(s, i, col3, 'eff')}
-          </div>
+          </div>}
           {/* Drop-sets and rest-pause bursts extend this same row — no long rest, no new set.
               A planned exercise arrives with these already filled in (applyIntensifierPlan);
               every value here is just as editable as the main row's own weight/reps. */}
-          {!warm && mode === 'reps' && <>
+          {!s.done && !warm && mode === 'reps' && <>
             {dropsOf(s).map((d, di) => (
               <div className="subrow" key={'d' + di}>
                 <span className="subn">{t('Drop {0}', di + 1)}</span>
@@ -349,7 +377,7 @@ function ActiveWorkout() {
   useEffect(() => {
     if (!isSuperset) return
     const el = exRefs.current[cur]
-    if (el && typeof el.scrollIntoView === 'function') el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    if (el && typeof el.scrollIntoView === 'function') el.scrollIntoView({ behavior: S.reduceMotion || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'nearest' })
   }, [cur, isSuperset, A.entries.length])
 
   const total = A.entries.reduce((n, e) => n + e.sets.length, 0)
@@ -359,7 +387,7 @@ function ActiveWorkout() {
   // Clearing an optional field drops the key rather than storing null, so a set only carries
   // what was actually logged — in the session, in history and in a backup.
   const setField = (idx, i, field, v) => mutEntry(idx, e => {
-    if (!e.sets[i] || (v != null && (!Number.isFinite(v) || v < 0 || v > Number.MAX_SAFE_INTEGER))) return
+    if (!e.sets[i] || e.sets[i].done || (v != null && (!Number.isFinite(v) || v < 0 || v > Number.MAX_SAFE_INTEGER))) return
     const warm = isWarmupRow(e.sets[i])
     const safe = field === 'r' && warm ? Math.max(0, Math.round(Number(v) || 0)) : v
     e.sets[i].manualFields = {...e.sets[i].manualFields, [field]: true}
@@ -435,6 +463,8 @@ function ActiveWorkout() {
   // checks the set off through the normal path, so rest, supersets and the finish prompt all
   // behave exactly as they do for a reps set.
   const startTimed = (idx, i) => {
+    const invalid = document.querySelector(`[data-workout-set="${idx}-${i}"] [aria-invalid="true"]`)
+    if (invalid) { invalid.focus(); useUI.getState().toast(t('Enter a valid number')); return }
     const generation = ++timedGeneration.current
     const e = A.entries[idx]
     const cardio = modeAt(idx) === 'cardio'
@@ -491,6 +521,8 @@ function ActiveWorkout() {
 
   const toggle = (idx, i, { playSound = true, side, userActivity = true, completedAt } = {}) => {
     const wasDone = !!useStore.getState().S.active?.entries[idx]?.sets[i]?.done
+    const invalid = document.querySelector(`[data-workout-set="${idx}-${i}"] [aria-invalid="true"]`)
+    if (!wasDone && invalid) { invalid.focus(); useUI.getState().toast(t('Enter a valid number')); return }
     const m = modeAt(idx)
     const cardioEntry = m === 'cardio'
     let askTop = false, exJustDone = false, workoutDone = false, checked = false

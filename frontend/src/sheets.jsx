@@ -1,4 +1,4 @@
-import { publishWorkoutCompletion } from './lib/workout-notification.js'
+import { clearWorkoutNotification } from './lib/workout-notification.js'
 import DailyPlan, { ScheduleEditor } from './components/DailyPlan.jsx'
 import { dailyPlan, nextDailyRoutine, routineIds } from './lib/daily-plan.js'
 import { ActivityMetrics, openActivityEditor } from './components/Activities.jsx'
@@ -1758,6 +1758,7 @@ export function doFinishWorkout(options = {}) {
     prs,
     snapshotFor: e => EXIDX[e.id]?.custom ? exerciseMuscleSnapshot(EXIDX[e.id]) : null,
   })
+  delete w.restTimer
   w.vol = workoutVolume(w)
   if (options.reason === 'inactivity') { w.finishReason='inactivity'; w.resumeSnapshot=structuredClone(A) }
   update(s => {
@@ -1782,6 +1783,6 @@ export function doFinishWorkout(options = {}) {
   useUI.getState().stopWork()
   void useStore.getState().flushPersistence().catch(()=>useUI.getState().toast(t('Could not save. Check available storage and try again.')))
   void playAppSound(S(), 'completion')
-  void publishWorkoutCompletion(w)
+  void clearWorkoutNotification()
   ui().openSheet(close => <><FinishSummary w={w} prs={prs} e1prs={e1prs} milestone={milestone} close={close} />{w.finishReason==='inactivity' && <Button onClick={()=>{update(s=>resumeAutoFinished(s,w.id));close();nav('/workout')}}>{t('Continue in a new session')}</Button>}</>, { kind: 'center', locked: true })
 }

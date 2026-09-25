@@ -675,5 +675,6 @@ export default {
   'Add session note': 'सत्र का नोट जोड़ें',
   'Edit session note': 'सत्र का नोट बदलें',
   'How the session went as a whole.': 'पूरा सत्र कैसा रहा।',
-  'Rest-pause always trains as one warm-up set at this rep count, then one rest-pause work set — "Sets" is not used.': 'रेस्ट-पॉज़ हमेशा इसी रेप्स संख्या के एक वार्म-अप सेट और एक रेस्ट-पॉज़ वर्क सेट के रूप में किया जाता है — “सेट” का उपयोग नहीं होता।'
+  'Rest-pause always trains as one warm-up set at this rep count, then one rest-pause work set — "Sets" is not used.': 'रेस्ट-पॉज़ हमेशा इसी रेप्स संख्या के एक वार्म-अप सेट और एक रेस्ट-पॉज़ वर्क सेट के रूप में किया जाता है — “सेट” का उपयोग नहीं होता।',
+  "Undo Completed": "Undo Completed",
 }

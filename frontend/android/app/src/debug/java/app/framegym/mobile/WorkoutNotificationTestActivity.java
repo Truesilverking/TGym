@@ -14,7 +14,7 @@ public class WorkoutNotificationTestActivity extends Activity {
             long now=System.currentTimeMillis();
             JSONObject payload=new JSONObject().put("active",true).put("name","QA Workout")
                 .put("workoutLabel","Workout").put("restLabel","Rest").put("restDoneLabel","Done").put("accentColor","#BF5AF2").put("elapsedMs",3720000)
-                .put("context","Bench press · Set 2 of 3").put("completedSets",1).put("totalSets",3).put("progressLabel","1/3 sets").put("dailyLabel","Workout 2 of 3").put("openLabel","Open workout")
+                .put("setLabel","SET 2").put("setNumber",2)
                 .put("observedAt",now).put("paused",false).put("restEndsAt",now+5000).put("autoFinishAt",now+60000);
             ContextCompat.startForegroundService(this,new Intent(this,WorkoutNotificationService.class).putExtra("state",payload.toString()));
         } catch(Exception ignored) {}

@@ -678,4 +678,6 @@ export const PT_TRANSLATIONS = {
 }
 
 
-export default { ...english, ...PT_TRANSLATIONS }
+export default { ...english, ...PT_TRANSLATIONS,
+  "Undo Completed": "Undo Completed",
+}

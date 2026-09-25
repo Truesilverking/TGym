@@ -1424,3 +1424,17 @@ button:focus-visible,[role="button"]:focus-visible,summary:focus-visible,a:focus
 @media(max-width:380px){.schedule-editor .daily-plan-list li{flex-wrap:wrap}.schedule-editor .daily-plan-controls{width:100%;justify-content:flex-end}.set-target strong{font-size:24px}}
 
 .wday.partial .dot{background:var(--acc);opacity:.5}.zoomcal-selection.partial{border-color:var(--acc)}
+
+/* Completed rows retain their recorded values behind an explicit undo action. */
+.sets-card .set-console.set-summary{display:block;padding:10px 12px}
+.set-summary .set-console-head{gap:8px}
+.set-summary .set-state{display:inline-flex;align-items:center;gap:4px}
+.set-undo{margin-left:auto;min-height:44px;padding:6px 8px;color:var(--label-2);font-size:12px;border-radius:var(--r-sm)}
+.set-undo:hover,.set-undo:focus-visible{color:var(--acc);background:var(--acc-soft)}
+.set-undo:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.set-summary-values{display:flex;flex-wrap:wrap;gap:10px 24px;margin:6px 0 2px}
+.set-summary-values>div{min-width:0}
+.set-summary-values dt{font-size:10px;color:var(--label-3);margin-bottom:3px}
+.set-summary-values dd{overflow-wrap:anywhere;margin:0;font-size:15px;font-weight:650;font-variant-numeric:tabular-nums;color:var(--label)}
+.set-summary-details{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;padding-top:8px;border-top:1px solid var(--sep);font-size:11px;color:var(--label-2)}
+@media(max-width:380px){.set-summary-values{gap:8px 16px}.set-summary .set-state{font-size:10px}.set-undo{font-size:11px;padding-inline:4px}}

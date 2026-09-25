@@ -34,9 +34,9 @@ it.each([{},{reps:'AMRAP'},{reps:5,amrap:true}])('records actual reps independen
 it('labels Greyskull final work as AMRAP and allows results beyond target',()=>{mount({reps:5},undefined,{policy:'greyskull'});expect(container.textContent).toContain('AMRAP');type(input('Actual reps',1),'18');expect(rows()[1].r).toBe(18)})
 it('retains decimal load, edited pending rows, completed rows and refresh state',()=>{
  mount({reps:10,repsMin:8,repRange:true});type(input('Weight (kg)',1),'52,5');type(input('Weight (kg)'),'42.75');expect(rows().map(s=>s.w)).toEqual([42.75,52.5]);
- act(()=>container.querySelector('[role="checkbox"]').click());type(input('Weight (kg)'),'43,25');type(input('Actual reps'),'8');expect(rows()[0]).toMatchObject({done:true,w:43.25,r:8});
+ act(()=>container.querySelector('[role="checkbox"]').click());expect(container.querySelector('.set-summary input')).toBeNull();expect(container.querySelector('.set-summary').textContent).toContain('42.75');act(()=>container.querySelector('.set-undo').click());type(input('Weight (kg)'),'43,25');type(input('Actual reps'),'8');act(()=>container.querySelector('[role="checkbox"]').click());expect(rows()[0]).toMatchObject({done:true,w:43.25,r:8});
  const saved=JSON.parse(localStorage.getItem('gym_state_v1'));act(()=>{root.unmount();root=createRoot(container);useStore.getState().replaceState(saved);root.render(<MemoryRouter><Workout/></MemoryRouter>)});
- expect(input('Weight (kg)').value).toBe('43.25');expect(input('Actual reps').value).toBe('8');expect(rows()[1].manualFields.w).toBe(true)
+ expect(container.querySelector('.set-summary').textContent).toContain('43.25');expect(container.querySelector('.set-summary input')).toBeNull();expect(rows()[0].r).toBe(8);expect(rows()[1].manualFields.w).toBe(true)
  act(()=>doFinishWorkout());expect(state().active).toBe(null);expect(workoutVolume(state().workouts[0])).toBe(346);expect(state().workouts[0].entries[0].target.reps).toBe(10)
 })
 it('converts the actual and prescribed loads together while retaining manual protection',()=>{
@@ -50,7 +50,7 @@ it('unlocks added weight for bodyweight and persists the visible editor at zero'
  mount({bodyweight:true,reps:10},[{w:0,r:10,done:false}]);expect(input('Added (kg)')).toBeUndefined();act(()=>[...container.querySelectorAll('button')].find(b=>b.textContent==='Log added weight').click());expect(input('Added (kg)')).toBeTruthy();type(input('Added (kg)'),'5.5');expect(rows()[0].w).toBe(5.5);expect(JSON.parse(localStorage.getItem('gym_state_v1')).active.entries[0].logAddedWeight).toBe(true)
 })
 it('records each side once and preserves a partially performed load from an earlier cascade',()=>{
- mount({side:true,repsPerSide:true,reps:10,repsMin:8,repRange:true},[{w:15,r:10,done:false},{w:15,r:10,done:false,leftDone:true}]);type(input('Weight (kg)'),'20');expect(rows()[1].w).toBe(15);type(input('Actual reps per side'),'8');act(()=>container.querySelectorAll('.set-sides button')[0].click());expect(rows()[0].done).toBe(false);act(()=>container.querySelectorAll('.set-sides button')[1].click());expect(rows()[0].done).toBe(true);expect(workoutVolume(state().active)).toBe(160);act(()=>container.querySelectorAll('.set-sides button')[1].click());expect(workoutVolume(state().active)).toBe(0)
+ mount({side:true,repsPerSide:true,reps:10,repsMin:8,repRange:true},[{w:15,r:10,done:false},{w:15,r:10,done:false,leftDone:true}]);type(input('Weight (kg)'),'20');expect(rows()[1].w).toBe(15);type(input('Actual reps per side'),'8');act(()=>container.querySelectorAll('.set-sides button')[0].click());expect(rows()[0].done).toBe(false);act(()=>container.querySelectorAll('.set-sides button')[1].click());expect(rows()[0].done).toBe(true);expect(workoutVolume(state().active)).toBe(160);act(()=>container.querySelector('.set-undo').click());expect(workoutVolume(state().active)).toBe(0);expect(rows()[0]).toMatchObject({w:20,r:8,leftDone:false,rightDone:false})
 })
 it('adds and removes sets without changing previously recorded values',()=>{mount({reps:10});type(input('Weight (kg)'),'45');click('Add set');expect(rows()).toHaveLength(3);expect(rows()[2]).toMatchObject({w:45,r:10,done:false});click('Remove set');expect(rows()).toHaveLength(2);expect(rows()[0].w).toBe(45)})
 
@@ -65,10 +65,28 @@ it('requires positive durations and accepts fractional cardio minutes',()=>{
 })
 
 it('validates fixed and range reps without clamping intermediate typing or changing targets',()=>{
- mount({reps:12,repsMin:8,repRange:true});type(input('Actual reps'),'1');expect(rows()[0].r).toBe(10);expect(input('Actual reps').value).toBe('1');type(input('Actual reps'),'12');expect(rows()[0].r).toBe(12);type(input('Actual reps'),'15');expect(rows()[0].r).toBe(12);expect(input('Actual reps').getAttribute('aria-invalid')).toBe('true');act(()=>input('Actual reps').blur());expect(input('Actual reps').value).toBe('12');
+ mount({reps:12,repsMin:8,repRange:true});type(input('Actual reps'),'1');expect(rows()[0].r).toBe(10);expect(input('Actual reps').value).toBe('1');type(input('Actual reps'),'12');expect(rows()[0].r).toBe(12);type(input('Actual reps'),'15');expect(rows()[0].r).toBe(12);expect(input('Actual reps').getAttribute('aria-invalid')).toBe('true');act(()=>input('Actual reps').blur());expect(input('Actual reps').value).toBe('15');expect(input('Actual reps').getAttribute('aria-invalid')).toBe('true');type(input('Actual reps'),'12');
  act(()=>useStore.getState().update(s=>{s.active.entries[0].target={reps:8,repRange:false}}));type(input('Actual reps'),'8');expect(rows()[0].r).toBe(8);type(input('Actual reps'),'9');expect(rows()[0].r).toBe(8)
 })
 it('allows manual RIR on warm-up, top and backoff rows and persists it',()=>{
  mount({reps:8,setScheme:'topback',topRepsMax:5,backoffRepsMax:8},[{w:20,r:5,warmup:true,done:false},{w:50,r:5,role:'top',done:false},{w:40,r:8,role:'backoff',done:false}]);
  for(let i=0;i<3;i++)type(input('RIR',i),'2,5');expect(rows().map(s=>s.rir)).toEqual([2.5,2.5,2.5]);expect(JSON.parse(localStorage.getItem('gym_state_v1')).active.entries[0].sets[0].rir).toBe(2.5)
+})
+
+it('does not complete or collapse invalid drafts after blur and restores editing via explicit undo',()=>{
+ mount({reps:10});type(input('Weight (kg)'),'-1');act(()=>input('Weight (kg)').blur());act(()=>container.querySelector('[role="checkbox"]').click());expect(rows()[0].done).toBe(false);expect(container.querySelector('.set-summary')).toBeNull();
+ type(input('Weight (kg)'),'45.5');type(input('RIR'),'0');act(()=>container.querySelector('[role="checkbox"]').click());
+ const summary=container.querySelector('.set-summary');expect(summary.textContent).toContain('45.5');expect(summary.textContent).toContain('Failure');expect(summary.querySelectorAll('input,.stp,.setextra,.set-sides')).toHaveLength(0);expect(summary.querySelectorAll('button')).toHaveLength(1);expect(container.querySelector('.set-console.current input')).toBeTruthy();
+ act(()=>summary.querySelector('button').click());expect(rows()[0]).toMatchObject({done:false,w:45.5,r:10,rir:0});expect(input('Weight (kg)').value).toBe('45.5');expect(container.querySelector('.set-summary')).toBeNull();
+})
+it('collapses intensity extensions as read-only without changing their totals',()=>{
+ mount({},[{w:40,r:10,rir:2,done:true,drops:[{w:30,r:8}],clusters:[{r:3,restSec:15}]},{w:40,r:10,done:false}]);
+ expect(container.querySelector('.set-summary input')).toBeNull();expect(container.querySelector('.set-summary').textContent).toContain('40');expect(rows()[0].r).toBe(10)
+})
+
+it('renders Spanish completed results with decimal precision and an accessible undo action',async()=>{
+ const {setLang}=await import('../lib/i18n.js')
+ await act(async()=>{await setLang('es')})
+ try {mount({},[{w:42.75,r:8,rir:2,done:true}]);const row=container.querySelector('.set-summary');expect(row.textContent).toContain('42,75');expect(row.textContent).toContain('RIR');expect(row.querySelector('button').getAttribute('aria-label')).toContain('Deshacer completada');expect(row.querySelector('input')).toBeNull()}
+ finally {await act(async()=>{await setLang('en')})}
 })

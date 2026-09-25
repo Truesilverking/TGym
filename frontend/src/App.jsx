@@ -93,6 +93,7 @@ function Shell() {
     return () => events.forEach(type => document.removeEventListener(type, unlock, true))
   }, [])
   useEffect(() => { stopSound() }, [S.sound, S.soundMuted, S.soundVolume])
+  useEffect(()=>{ if(ready) useUI.getState().restoreRest() },[ready,S.active?.id])
   const restEndsAt=useUI(s=>s.timer?.endsAt)
   useEffect(()=>{
     if(ready) void syncWorkoutNotification(S.active,restEndsAt?{endsAt:restEndsAt}:null)

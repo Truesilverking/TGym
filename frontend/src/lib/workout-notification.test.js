@@ -14,12 +14,26 @@ describe('native workout notification clock payload',()=>{
   })
 })
 
-it('separates work progress, current set and daily routine order across paused/rest states',()=>{
- const now=50000,a={start:1000,name:'Upper',dailyPlanIndex:1,dailyPlanTotal:3,entries:[{id:'0025',sets:[{warmup:true,done:true},{done:true},{done:false}]}]}
+it('updates only the current phase set without resetting timers or exposing exercise data',()=>{
+ const now=50000,a={start:1000,name:'Private routine',dailyPlanIndex:1,dailyPlanTotal:3,entries:[{id:'0025',sets:[{warmup:true,done:true},{done:true},{done:false},{done:false}]}]}
  const running=workoutNotificationState(a,{endsAt:70000},now)
- expect(running).toMatchObject({completedSets:1,totalSets:2,dailyLabel:'Workout 2 of 3',restEndsAt:70000,openLabel:'Open workout'})
- expect(running.context).toContain('Set 3 of 3')
- expect(workoutNotificationState({...a,timerPausedAt:40000},null,now)).toMatchObject({paused:true,elapsedMs:39000,workoutLabel:'Workout paused',openLabel:'Resume',autoFinishAt:0})
+ expect(running).toMatchObject({setNumber:2,setLabel:'SET 2',restEndsAt:70000,elapsedMs:49000,workoutLabel:'WORKOUT'})
+ for(const key of ['name','exercise','context','progressLabel','dailyLabel','openLabel'])expect(running).not.toHaveProperty(key)
  a.entries[0].sets[2].done=true
- expect(workoutNotificationState({...a,timerPausedAt:40000},null,now)).toMatchObject({completedSets:2,totalSets:2,workoutLabel:'Workout complete!'})
+ expect(workoutNotificationState(a,{endsAt:70000},now+1000)).toMatchObject({setNumber:3,elapsedMs:50000,restEndsAt:70000})
+ expect(workoutNotificationState({...a,timerPausedAt:40000},null,now)).toMatchObject({paused:true,elapsedMs:39000,autoFinishAt:0})
+ a.entries[0].sets[3].done=true
+ expect(workoutNotificationState({...a,timerPausedAt:40000},null,now).setNumber).toBe(3)
+ expect(workoutNotificationState({...a,end:40000},null,now)).toEqual({active:false})
+})
+it('handles empty/restored and warmup sessions without inventing a set',()=>{
+ expect(workoutNotificationState({start:1000,entries:[]},null,2000).setLabel).toBe('')
+ expect(workoutNotificationState({start:1000,entries:[{sets:[{warmup:true},{warmup:true},{done:false}]}]},null,2000).setLabel).toBe('SET 1')
+})
+
+it('restores the persisted deadline and uses compact Spanish copy',async()=>{
+ const { _setLangState }=await import('./i18n-core.js')
+ _setLangState('es',{})
+ try {expect(workoutNotificationState({start:1000,restTimer:{endsAt:10000,total:90},entries:[{sets:[{done:false}]}]},null,5000)).toMatchObject({workoutLabel:'ENTRENO',restLabel:'DESCANSO',setLabel:'SERIE 1',restEndsAt:10000})}
+ finally {_setLangState('en',{})}
 })

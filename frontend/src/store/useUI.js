@@ -56,6 +56,13 @@ const maybeRestNotification = async () => {
   }
 }
 
+// Persist deadlines, not ticking seconds. This optional field is backward compatible.
+const saveRest = timer => {
+  const store=useStore.getState()
+  if (!store.S.active || (!timer && !store.S.active.restTimer)) return
+  store.update(s => { if(s.active) { if(timer) s.active.restTimer={endsAt:timer.endsAt,total:timer.total}; else delete s.active.restTimer } }, true, false)
+}
+
 let toastTm = null
 let timerInt = null
 let timerTick = null
@@ -92,19 +99,21 @@ export const useUI = create((set, get) => ({
     toastTm = setTimeout(() => set({ toastMsg: '' }), 2200)
   },
 
-  startRest(sec) {
+  startRest(sec, restored = null) {
     get().stopRest()
     // Rest timer set to Off. Stopping and returning rather than starting a zero-length timer
     // keeps every caller honest: the four places that start a rest do not each need to know.
     if (!(sec > 0)) return
-    const endsAt = Date.now() + sec * 1000
-    set({ timer: { left: sec, total: sec, endsAt } })
+    const endsAt = restored?.endsAt ?? Date.now() + sec * 1000
+    const timer = { left: sec, total: restored?.total ?? sec, endsAt }
+    saveRest(timer)
+    set({ timer })
     requestRestNotificationPermission()
     pushRestTimer(sec)
     timerTick = () => {
       const tm = get().timer
       if (!tm) return
-      const left = Math.max(0, Math.round((tm.endsAt - Date.now()) / 1000))
+      const left = Math.max(0, Math.ceil((tm.endsAt - Date.now()) / 1000))
       if (left === tm.left) return
       const prefs = useStore.getState().S
       if (left <= 0) {
@@ -120,18 +129,27 @@ export const useUI = create((set, get) => ({
   addRest(sec) {
     const tm = get().timer
     if (!tm) return
-    const left = tm.left + sec
+    const left = Math.ceil((tm.endsAt - Date.now()) / 1000) + sec
     // taking off more than is left means "I'm ready now" — same as skipping, and it keeps a
     // negative duration out of both the progress bar and the server-side push schedule
     if (left <= 0) { get().stopRest(); return }
     set({ timer: { ...tm, left, total: tm.total + sec, endsAt: tm.endsAt + sec * 1000 } })
+    saveRest(get().timer)
     pushRestTimer(left)
   },
   stopRest() {
     if (timerInt) clearInterval(timerInt); timerInt = null
     if (timerTick) document.removeEventListener('visibilitychange', timerTick); timerTick = null
     if (get().timer) cancelPushRestTimer()
+    saveRest(null)
     set({ timer: null })
+  },
+  restoreRest() {
+    if (get().timer) return
+    const saved=useStore.getState().S.active?.restTimer
+    if (!saved) return
+    if (!Number.isFinite(saved.endsAt) || saved.endsAt <= Date.now()) { saveRest(null); return }
+    get().startRest(Math.ceil((saved.endsAt-Date.now())/1000), saved)
   },
 
   /* ---- work timer (issue #16) ----

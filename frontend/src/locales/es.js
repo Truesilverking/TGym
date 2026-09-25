@@ -1483,5 +1483,6 @@ export default {
   ,"Next workout": "Siguiente entrenamiento"
   ,"Later": "Más tarde"
   ,"Return to your workout": "Vuelve a tu entrenamiento"
-  ,"Partially completed": "Completado parcialmente"
+  ,"Partially completed": "Completado parcialmente",
+  "Undo Completed": "Deshacer completada",
 }

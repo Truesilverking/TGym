@@ -41,19 +41,18 @@ public class WorkoutNotificationService extends Service {
         RemoteViews content=new RemoteViews(getPackageName(),layout);
         content.setInt(R.id.accent_rail,"setBackgroundColor",notificationColor());
         content.setTextViewText(R.id.workout_label,state.optString("workoutLabel","Workout"));
-        content.setTextViewText(R.id.session_name,state.optString("name","TGym"));
-        content.setTextViewText(R.id.exercise_context,state.optString("context",""));
-        content.setViewVisibility(R.id.exercise_context,layout==R.layout.workout_notification_expanded && !state.optString("context","").isEmpty()?View.VISIBLE:View.GONE);
-        content.setTextViewText(R.id.progress_label,state.optString("progressLabel","")+(state.optString("dailyLabel","").isEmpty()?"":" · "+state.optString("dailyLabel")));
-        content.setProgressBar(R.id.session_progress,Math.max(1,state.optInt("totalSets",1)),state.optInt("completedSets",0),false);
-        content.setViewVisibility(R.id.session_progress,layout==R.layout.workout_notification_expanded && state.optInt("totalSets",0)>0?View.VISIBLE:View.GONE);
+        content.setTextViewText(R.id.set_label,state.optString("setLabel",""));
+        boolean resting=rest>0;
+        int size=layout==R.layout.workout_notification_expanded ? 30 : 22;
+        content.setTextViewTextSize(R.id.workout_clock,android.util.TypedValue.COMPLEX_UNIT_SP,resting?14:size);
+        content.setTextViewTextSize(R.id.workout_duration,android.util.TypedValue.COMPLEX_UNIT_SP,resting?14:size);
         boolean live=!state.optBoolean("paused");
         content.setViewVisibility(R.id.workout_clock,live?View.VISIBLE:View.GONE);
         content.setViewVisibility(R.id.workout_duration,live?View.GONE:View.VISIBLE);
         content.setTextViewText(R.id.workout_duration,duration(elapsed));
         content.setChronometer(R.id.workout_clock,SystemClock.elapsedRealtime()-elapsed,null,live);
-        content.setViewVisibility(R.id.rest_row,state.optLong("restEndsAt")>0?View.VISIBLE:View.GONE);
-        content.setTextViewText(R.id.rest_label,state.optString("restLabel","Rest")+(rest<=0?" · "+state.optString("restDoneLabel","Done"):""));
+        content.setViewVisibility(R.id.rest_row,rest>0?View.VISIBLE:View.GONE);
+        content.setTextViewText(R.id.rest_label,state.optString("restLabel","REST"));
         content.setViewVisibility(R.id.rest_clock,rest>0?View.VISIBLE:View.GONE);
         if(rest>0){
             if(Build.VERSION.SDK_INT>=24){content.setChronometerCountDown(R.id.rest_clock,true);content.setChronometer(R.id.rest_clock,SystemClock.elapsedRealtime()+rest,null,true);}
@@ -77,19 +76,18 @@ public class WorkoutNotificationService extends Service {
         if(state.optLong("restEndsAt")>0 && rest<=0) SoundPreferences.play(this,"rest",false,state.optLong("restEndsAt"));
         RemoteViews content=timerView(R.layout.workout_notification,elapsed,rest);
         Notification notice=new NotificationCompat.Builder(this,CHANNEL)
-            .setSmallIcon(R.drawable.ic_workout_notification).setContentTitle("TGym · "+state.optString("name","Workout"))
-            .setContentText(state.optString("workoutLabel","Workout")+" "+duration(elapsed))
+            .setSmallIcon(R.drawable.ic_workout_notification).setContentTitle(state.optString(rest>0?"restLabel":"workoutLabel","WORKOUT"))
+            .setContentText((rest>0?duration(rest)+" · ":"")+state.optString("workoutLabel","WORKOUT")+" "+duration(elapsed)+" · "+state.optString("setLabel",""))
             .setCustomContentView(content)
             .setCustomBigContentView(timerView(R.layout.workout_notification_expanded,elapsed,rest))
             .setColor(notificationColor()).setStyle(new NotificationCompat.DecoratedCustomViewStyle())
             .setContentIntent(tap).setOngoing(true).setOnlyAlertOnce(true).setSilent(true)
-            .addAction(R.drawable.ic_workout_notification,state.optString("openLabel","Open workout"),tap)
             .setPriority(NotificationCompat.PRIORITY_LOW).build();
         try {
             if(Build.VERSION.SDK_INT>=34)startForeground(ID,notice,ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
             else startForeground(ID,notice);
         }catch(RuntimeException error){android.util.Log.e("TGymWorkoutNotification","Unable to start workout notification",error);stopSelf();return;}
-        long delay=state.optBoolean("paused")?Long.MAX_VALUE:60000-elapsed%60000;
+        long delay=Long.MAX_VALUE; // Native chronometers tick; refresh only at a phase boundary.
         if(rest>0)delay=Math.min(delay,Build.VERSION.SDK_INT>=24?rest:1000);
         if(autoAt>now)delay=Math.min(delay,autoAt-now);
         if(delay!=Long.MAX_VALUE)handler.postDelayed(refresh,Math.max(100,delay));

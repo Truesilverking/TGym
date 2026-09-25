@@ -307,4 +307,6 @@ export const PT_BR_OVERRIDES = {
 }
 
 export default {
-  ...english, ...pt, ...PT_BR_OVERRIDES }
+  ...english, ...pt, ...PT_BR_OVERRIDES,
+  "Undo Completed": "Undo Completed",
+}
