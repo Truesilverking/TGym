@@ -47,14 +47,21 @@ The first offline probe failed under Vite preview because its `Vary: Origin` hea
 - Store/DOM suites cover real App/router/store and restore dialogs with simulated API/cloud boundaries. They do not authenticate against a real account.
 - `build`, `build:pwa` and `build:mobile` passed, including final Capacitor synchronization and validation of all 24 sound clips. Twelve locale packs contain 1,542 synchronized keys; all 1,019 detected source strings are covered.
 - There are **no frontend lint or typecheck scripts**. Existing bundle-size and ineffective-dynamic-import warnings remain. iOS native compilation is not available on Windows.
-- API, MCP and fatigue calculation source did not change in this follow-up. Previously successful unchanged local baselines were not repeatedly rerun; exact candidate CI results are recorded separately.
+- API, MCP and fatigue calculation source did not change in this follow-up. Previously successful unchanged local baselines were not repeatedly rerun; fresh exact-candidate CI passed as recorded below.
 - Added/modified text was checked for private-key/token patterns without printing potential secret values; no matches. `git diff --check` passed.
 
 ## Native/publication checkpoint
 
 The configured User `ANDROID_HOME` and the previously supplied SDK path are still absent to this process; `adb` is unavailable. User `JAVA_HOME` and JDK21 exist. No failed Gradle attempt or new SDK installation was repeated. The published release's prior CI is historical evidence only.
 
-Candidate push and exact-SHA `Tests` / `Validate Android` verification are pending. These feature-branch workflows do not publish Pages, create a release or send FCM. Version remains 1.15.31/code66 until a distinct release is deliberately assigned.
+Candidate `1b189fdd0dbb68a4cefa7ad5226edb2a01b0d9a1` was committed and pushed to `feature/dashboard-visual-polish`; the remote branch SHA was verified. Both workflows completed successfully for that exact source SHA:
+
+- [Tests, run 36217292406](https://github.com/Truesilverking/TGym/actions/runs/36217292406): 1,032 frontend tests, 10 API tests, 37 MCP tests, plain-Node MCP loadability, web build, locale/source-string checks, 108,000 fatigue comparisons and 14,076 history-deletion comparisons.
+- [Validate Android, run 36217292398](https://github.com/Truesilverking/TGym/actions/runs/36217292398): mobile build/Capacitor sync, `assembleDebug`, `:app:lintDebug` and all 9 instrumented tests on Android 15/API 35. These tests cover package identity, the background workout notification service, sound/channel persistence and Health Connect metadata/type mapping. They do not establish live provider imports, real FCM delivery, installation over the user's signed release or full app-process recovery.
+
+These feature-branch workflows did not publish Pages, create a release or send FCM. Version remains 1.15.31/code66 until a distinct release is deliberately assigned. A documentation-only follow-up does not change the tested application source.
+
+The user subsequently connected a Pixel 10. Windows detects it as a healthy portable device, but USB file transfer alone does not provide app diagnostics. No reusable `adb.exe` was found in the configured SDK or common tool locations. USB-debugging authorization and permission to install only Google's Platform-Tools are pending; the earlier instruction against downloading another SDK remains respected. No phone files or app data were opened or erased.
 
 ## Remaining external acceptance
 
