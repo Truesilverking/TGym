@@ -94,7 +94,7 @@ export function buildProgressReport(S, options={}) {
         if(!s.done||isWarmupRow(s))continue
         const mode=modeForSet(s,cfg),type=setType(s),role=s.role||'work',side=!!cfg.side,bwMode=isBw(cfg)
         const key=JSON.stringify([e.id,mode,type,role,side,bwMode])
-        const weight=load(s.w,s.unit||w.unit||unit,unit),r=number(displayReps(s.r,cfg)),rir=number(rirOf(s))
+        const rawWeight=load(s.w,s.unit||w.unit||unit,unit),weight=rawWeight!=null&&rawWeight>=0?rawWeight:null,r=number(displayReps(s.r,cfg)),rir=number(rirOf(s))
         const row={w:weight,r,rir:rir!=null&&rir>=0&&rir<=10?rir:null,sec:positive(s.sec),min:positive(s.min),speed:number(s.speed),mode}
         row.est=mode==='reps'&&type==='straight'&&!bwMode?estimate1RM(weight,r):null
         const rawReps=number(s.r),validReps=mode==='reps'&&rawReps>0&&r>0,validTime=mode==='time'&&row.sec>0||mode==='cardio'&&row.min>0
@@ -137,7 +137,7 @@ export function buildProgressReport(S, options={}) {
     for(const [key,label,u] of [['sets','Sets',''],['reps','Total reps',''],['volume','Training volume',unit]])if(group.mode==='reps'||key==='sets')metrics.push(metric(key,label,u,recent.map(s=>({...s,y:s[key]}))))
     const recordChannels=new Map()
     for(const s of history) {
-      const repRecord=group.mode==='reps'&&s.best.est==null&&group.type==='straight'
+      const repRecord=group.mode==='reps'&&s.best.est==null&&group.type==='straight'&&(group.bwMode||s.best.w!=null)
       const value=group.mode==='reps'?(repRecord?s.best.r:s.best.est):group.mode==='time'?s.best.sec:s.best.min
       if(value==null)continue
       const channel=repRecord?'reps:'+s.best.w:'primary',bestRecord=recordChannels.get(channel)

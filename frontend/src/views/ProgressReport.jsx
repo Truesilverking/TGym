@@ -32,7 +32,7 @@ function Metric({metric:m}) {
 function Metrics({items}) {return items.length?<div className="progress-grid">{items.map(m=><Metric key={m.key} metric={m}/>)}</div>:<p className="empty">{t('No comparable history in this period.')}</p>}
 export default function ProgressReport() {
   const S=useStore(s=>s.S),nav=useNavigate(),[period,setPeriod]=useState('all'),[from,setFrom]=useState(S.trainingStartDate||todayISO()),[to,setTo]=useState(todayISO()),[error,setError]=useState('')
-  const today=todayISO(),report=useMemo(()=>buildProgressReport(S,{period,from,to,now:new Date(today+'T12:00:00')}),[S,period,from,to,today])
+  const today=todayISO(),report=useMemo(()=>buildProgressReport(S,{period,from,to,now:new Date()}),[S,period,from,to,today])
   const q=report.summary
   const exportReport=async()=>{try{setError('');const filename=`TGym-progress-${report.range.start}-${report.range.end}.html`,html=progressReportHTML(report,{t,exerciseNameFor,fmtNum,fmtDate});if(MOBILE)await shareExport(html,filename);else{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([html],{type:'text/html;charset=utf-8'}));a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}}catch{setError(t('Could not export. Try again.'))}}
   return <div className="progress-report">

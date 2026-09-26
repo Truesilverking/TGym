@@ -25,3 +25,9 @@ it('changes periods, renders sufficient/insufficient data and exports the select
 it('shows an empty state without invented metrics for a new user',()=>{
  mock.S={workouts:[],measurements:[]};mount();expect(host.textContent).toContain('No comparable history in this period.');expect(host.querySelector('.progress-summary')).toBeNull()
 })
+it('includes a workout completed this afternoon in current-day duration totals',()=>{
+ vi.setSystemTime(new Date('2026-09-26T18:00:00'))
+ mock.S={workouts:[{id:'afternoon',d:'2026-09-26',start:new Date('2026-09-26T16:00:00').getTime(),end:new Date('2026-09-26T17:00:00').getTime(),entries:[]}],measurements:[]}
+ mount();const tile=[...host.querySelectorAll('.progress-summary>div')].find(el=>el.textContent.includes('Total time (min)'))
+ expect(tile.querySelector('b').textContent).toBe('60')
+})

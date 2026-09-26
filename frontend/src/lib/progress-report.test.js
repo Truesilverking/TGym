@@ -57,6 +57,10 @@ describe('exercise comparison and training aggregation',()=>{
   const s=base(),a=workout('a','2026-09-01');a.entries[0].target={mode:'time'};a.entries[0].sets=[{done:true,w:0,sec:20},{done:true,w:0,sec:60}];s.workouts=[a]
   expect(report(s).exercises[0].metrics.find(m=>m.key==='sec').last.y).toBe(60)
  })
+ it('does not invent a same-load rep record from missing or invalid loads',()=>{
+  const s=base();s.workouts=[workout('a','2026-09-01',null,15),workout('b','2026-09-03',-10,20)]
+  const r=report(s);expect(r.records).toEqual([]);expect(r.exercises[0].metrics.some(m=>m.key==='w')).toBe(false);expect(r.exercises[0].status).toBe('Insufficient Data')
+ })
  it.each([[100,8,2,'Improved'],[80,8,3,'Improved'],[80,12,2,'Improved'],[90,6,2,'Changed'],[80,8,0,'Changed']])('compares load/reps/RIR jointly (%s,%s,%s)',(w,r,rir,status)=>{
   const s=base();s.workouts=[workout('a','2026-09-01'),workout('b','2026-09-03',w,r,rir)];const ex=report(s).exercises[0];expect(ex.status).toBe(status);expect(ex.metrics.find(m=>m.key==='est').last.y).toBeGreaterThan(0)
  })
