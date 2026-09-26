@@ -1,6 +1,6 @@
 # TGym architecture
 
-Current published source: `48dc3a1` (1.15.31), with corrections described in `docs/PRE-RELEASE-AUDIT-2026-09-25.md` and exact-commit CI/publication evidence in `docs/RELEASE-AUDIT-1.15.31.md`. The user authorized publication using automated verification; the full visual/device audit remains incomplete. Older release reports below are historical evidence.
+Current published source: `86807ae` (1.15.33/code 69), with exact-commit CI/publication evidence in `docs/RELEASE-AUDIT-1.15.33.md` and viewport/Pixel findings in `docs/VIEWPORT-AUDIT-2026-09-26.md`. Physical Android native checks passed; physical Android PWA and iOS remain unverified. Older release reports below are historical evidence.
 
 The subsequent request to validate every function is tracked in `docs/POST-RELEASE-AUDIT-1.15.31.md`. Follow-up fixes serialize API uploads, preserve active workouts and unsent edits at sign-out, recheck the reviewed cloud snapshot before upload, and allow skipping an incomplete optional PIN. Real-browser auditing also improves theme contrast, keyboard controls, zoom, accessible labels and reduced-motion media. These changes are not included in the published 1.15.31 artifact.
 
@@ -77,7 +77,7 @@ Google Drive backup uses app-data access, a backup file and bounded daily snapsh
 
 ## Android and notifications
 
-Native code is under `frontend/android/app/src/main/`. Application/namespace identity remains `app.framegym.mobile`; the product name is TGym. The current release is 1.15.31, versionCode 66; min SDK 23, compile/target SDK 35, Gradle 8.11.1 and CI JDK 21. Its exact source commit passed Android build/lint, nine emulator tests and signed-release validation in GitHub Actions.
+Native code is under `frontend/android/app/src/main/`. Application/namespace identity remains `app.framegym.mobile`; the product name is TGym. The current release is 1.15.33, versionCode 69; min SDK 23, compile/target SDK 35, Gradle 8.11.1 and CI JDK 21. Its exact source commit passed Android build/lint, emulator instrumentation and signed-release validation in GitHub Actions.
 
 `MainActivity` registers Google Drive authentication, update push, installer and workout notification bridges. The foreground workout service uses native chronometers and persisted notification state. Notification taps target the activity with `tgym://workout`; React handles that navigation. This is not proof of a general externally browsable deep-link manifest filter.
 
