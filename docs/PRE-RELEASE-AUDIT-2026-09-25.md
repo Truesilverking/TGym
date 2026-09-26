@@ -2,6 +2,8 @@
 
 ## Status and publication gate
 
+Publication follow-up: **1.15.31/code66 is published** from `48dc3a1`; exact-commit Tests, Android build/lint/emulator and release workflows passed, and FCM accepted both update-topic messages. See [RELEASE-AUDIT-1.15.31.md](RELEASE-AUDIT-1.15.31.md). The preparation evidence and acceptance gaps below are retained for traceability.
+
 **Automated audit complete; full visual/device audit incomplete.** After being informed that the fixes were still local and that visual/Android checks were blocked, the user explicitly instructed: "subelos a github y manda el update". This authorizes publishing the existing corrections with Android compilation and instrumentation validated by GitHub Actions. It does not turn the unperformed visual/device checks into passes. Neither complete visual pass has been performed.
 
 Existing checkout: `feature/dashboard-visual-polish`, starting clean at `31917fe282d6b01f67b69a1d2a034b0fcb44fc62`. Release candidate **1.15.31**, Android code **66**. The publication sequence is branch commit/push, successful Tests and Validate Android on that exact commit, then the existing tag-triggered release. That workflow checks signed APK/AAB, matching PWA and published metadata before notifying both native FCM topics. Publication evidence will be recorded separately after it finishes. No private user backup or credential file was read.
