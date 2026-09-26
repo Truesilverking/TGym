@@ -400,6 +400,7 @@ h4.sec{
   background:none;border:none;transition:background var(--fast);
 }
 .wday .lbl{font-size:11px;color:var(--label-3);font-weight:500;text-transform:uppercase;letter-spacing:.03em}
+.wday>span{display:block}
 .wday .num{font-size:17px;font-weight:400;margin:4px 0;letter-spacing:-.012em}
 .wday .dot{width:5px;height:5px;border-radius:50%;background:transparent;margin:0 auto}
 .wday .dot.plan{background:var(--label-3)}
@@ -428,6 +429,9 @@ h4.sec{
 .item .tt{font-size:16px;font-weight:500;overflow-wrap:anywhere;line-height:1.25;letter-spacing:-.009em}
 .item .ss{color:var(--label-2);font-size:13px;margin-top:2px}
 .item .grow{flex:1;min-width:0}
+.routine-exercise-open{display:flex;align-items:center;gap:12px;flex:1;min-width:0;text-align:left;min-height:44px}
+.routine-exercise-controls .iconbtn{min-width:44px;min-height:44px}
+.routine-exercise-controls .iconbtn:disabled{opacity:.35}
 .chev{color:var(--label);flex:none;font-size:15px;--icon-stroke:2.4}
 .tag{
   display:inline-flex;align-items:center;gap:3px;background:var(--surface-2);
@@ -562,6 +566,12 @@ h4.sec{
 .sync-conflicts{max-height:260px;overflow:auto;margin:12px 0 16px;border-radius:12px;background:var(--surface-2)}
 .sync-conflicts>div{padding:10px 12px;border-bottom:1px solid var(--sep);display:flex;flex-direction:column;gap:3px}
 .sync-conflicts span{font-size:12px;color:var(--label-2);overflow-wrap:anywhere}
+.sync-conflicts b{overflow-wrap:anywhere}
+.sync-conflict-values{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;font-size:13px;overflow-wrap:anywhere}
+.sync-conflict-values>div{min-width:0}.sync-conflict-values small{display:block;color:var(--label-2);margin-bottom:4px}
+.sync-conflict-values summary{cursor:pointer;min-height:44px;display:flex;align-items:center;color:var(--acc)}
+.sync-conflict-values pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;margin:0;max-height:240px;overflow:auto}
+@media(max-width:480px){.sync-conflict-values{grid-template-columns:minmax(0,1fr)}}
 
 /* --- stepper --- */
 .stp-w{display:flex;flex-direction:column;gap:6px;min-width:0}

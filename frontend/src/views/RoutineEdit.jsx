@@ -52,12 +52,12 @@ export default function RoutineEdit() {
   const profile = activeProfile(S)
   const missingCount = profile ? r.ex.filter(e => !exAvailable(S, exOr(e.id))).length : 0
 
-  return <div className="narrow">
+  return <div className="narrow routine-edit">
     <Button size="sm" onClick={()=>openActivityEditor({routineId:id})}>{t('Add activity')}</Button>
     <div className="hdr">
       <button className="iconbtn" onClick={() => nav('/plan')} aria-label={t('Routine')}><Icon name="chevronLeft" /></button>
-      <div style={{ flex: 1, margin: '0 12px' }}>
-        <input className="input" defaultValue={r.name} style={{ fontWeight: 600, fontSize: 20, letterSpacing: '-.021em' }}
+      <div style={{ flex: 1, minWidth: 0, margin: '0 12px' }}>
+        <input className="input" aria-label={t('Routine')} defaultValue={r.name} style={{ fontWeight: 600, fontSize: 20, letterSpacing: '-.021em' }}
           onChange={e => update(s => { s.routines.find(x => x.id === id).name = e.target.value.trim() || t('Routine') })} />
       </div>
       <button className="iconbtn" aria-label={t('Pick an icon')} onClick={() => glyphPicker(r.emoji, g => update(s => { s.routines.find(x => x.id === id).emoji = g }))}><Icon name={glyphOf(r.emoji)} /></button>
@@ -89,11 +89,11 @@ export default function RoutineEdit() {
     {!!r.guideSlots?.length && <div className="card" style={{ marginBottom: 16 }}>
       <h2>{t('Complete your routine')}</h2>
       <div className="small dim" style={{ marginBottom: 10 }}>{t('Choose the movement you prefer for each guided space.')}</div>
-      <div className="list">{r.guideSlots.map(slot => <div className="item" key={slot.id} onClick={() => fillSlot(slot)}>
+      <div className="list">{r.guideSlots.map(slot => <button type="button" className="item" key={slot.id} onClick={() => fillSlot(slot)}>
         <span className="lrow-i"><Icon name="plus" /></span>
         <div className="grow"><div className="tt">{t(slot.label)}</div><div className="ss">{t(slot.hint)}</div><div className="ss accent">{slot.sets} × {slot.repsMin}–{slot.reps} · {slot.restSec}s</div></div>
         <Icon name="chevronRight" className="chev" />
-      </div>)}</div>
+      </button>)}</div>
     </div>}
 
     {r.ex.length ? <div className="list">{r.ex.map((e, i) => {
@@ -104,18 +104,20 @@ export default function RoutineEdit() {
       const linkedPrev = i > 0 && e.sg && r.ex[i - 1].sg === e.sg
       return <div key={i}>
         {unitFirst.has(i) && <div className="ss-label"><Icon name="link" />{t('Superset')}</div>}
-        <div className={'item' + (inSS.has(i) ? ' in-ss' : '')} onClick={() => {
+        <div className={'item' + (inSS.has(i) ? ' in-ss' : '')}>
+        <button type="button" className="routine-exercise-open" onClick={() => {
           exConfigSheet(ex, e, cfg => edit(x => { x[i] = { id: x[i].id, sg: x[i].sg, ...cfg } }), () => edit(x => { x.splice(i, 1); cleanupSg(x) }), r)
         }}>
           <Thumb ex={ex} />
           <div className="grow"><div className="tt capitalize">{exerciseNameFor(ex)}</div>{S.exerciseAliases?.[ex.id] && <div className="ss">{t('Alias')}: {S.exerciseAliases[ex.id]}</div>}<div className="ss">{exLine(e, S.unit)}</div>
             {e.note && <div className="small dim" style={{ marginTop: 2 }}>{e.note}</div>}</div>
           {noEquip && <span className="tag" style={{ color: 'var(--orange)', borderColor: 'var(--orange)' }} title={t('Needs {0} — not in your active profile', t(ex.eq))}><Icon name="warning" /></span>}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 'none', alignItems: 'center' }}>
+        </button>
+          <div className="routine-exercise-controls" style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 'none', alignItems: 'center' }}>
             {i > 0 && <button className={'iconbtn' + (linkedPrev ? ' on-ss' : '')} title={t('Superset with exercise above')} style={{ width: 32, height: 28, borderRadius: 8, fontSize: 15 }} onClick={ev => { ev.stopPropagation(); toggleLink(i) }}><Icon name="link" /></button>}
             <div style={{ display: 'flex', gap: 2 }}>
-              <button className="iconbtn" aria-label={t('Move up')} style={{ width: 28, height: 24, borderRadius: 7, fontSize: 12 }} onClick={ev => { ev.stopPropagation(); move(i, -1) }}><Icon name="chevronUp" /></button>
-              <button className="iconbtn" aria-label={t('Move down')} style={{ width: 28, height: 24, borderRadius: 7, fontSize: 12 }} onClick={ev => { ev.stopPropagation(); move(i, 1) }}><Icon name="chevronDown" /></button>
+              <button className="iconbtn" disabled={i === 0} aria-label={t('Move up')} style={{ width: 28, height: 24, borderRadius: 7, fontSize: 12 }} onClick={ev => { ev.stopPropagation(); move(i, -1) }}><Icon name="chevronUp" /></button>
+              <button className="iconbtn" disabled={i === r.ex.length - 1} aria-label={t('Move down')} style={{ width: 28, height: 24, borderRadius: 7, fontSize: 12 }} onClick={ev => { ev.stopPropagation(); move(i, 1) }}><Icon name="chevronDown" /></button>
             </div>
           </div>
         </div>

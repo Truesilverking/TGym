@@ -39,6 +39,7 @@ export function attachActivity(S, routineId, type, minutes) {
 }
 const numeric = (value, min, max) => {
   if (value == null || value === '') return null
+  if (!['number', 'string'].includes(typeof value) || String(value).trim() === '') throw new Error('Invalid activity value')
   const n = Number(value)
   if (!Number.isFinite(n) || n < min || n > max) throw new Error('Invalid activity value')
   return n
@@ -85,7 +86,7 @@ export function mergeImportedActivities(S, records, source='health-connect', now
   if (!Array.isArray(records) || records.length>5000) throw new Error('Invalid activity import')
   let added=0,updated=0,skipped=0
   for (const record of records) {
-    if (!record.id || !Number.isFinite(Number(record.start)) || !Number.isFinite(Number(record.end)) || record.end<=record.start) {skipped++;continue}
+    if (!record || typeof record !== 'object' || Array.isArray(record) || !record.id || !Number.isFinite(Number(record.start)) || !Number.isFinite(Number(record.end)) || record.end<=record.start) {skipped++;continue}
     const key=`${source}:${record.origin || ''}:${record.id}`
     const exact=S.workouts.find(w=>w.activity?.sourceId===key || w.activity?.sourceIds?.includes(key))
     const minutes=(record.end-record.start)/60000

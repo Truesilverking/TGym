@@ -35,6 +35,23 @@ export function validateBackupState(data) {
   if (data.trainingPauses?.some(p=>!p.id || !Number.isFinite(dayNumber(p.start)) || (p.end != null && (!Number.isFinite(dayNumber(p.end)) || p.end < p.start)))) throw new Error('Invalid training pause')
   if (data.unit !== undefined && !['kg','lb'].includes(data.unit)) throw new Error('Invalid weight unit')
   if (data.active !== undefined && data.active !== null && (typeof data.active !== 'object' || Array.isArray(data.active))) throw new Error('Invalid active workout')
+  const object = value => value && typeof value === 'object' && !Array.isArray(value)
+  const records = (value, field) => {
+    if (value === undefined) return [] // Older backups may omit optional collections.
+    if (!Array.isArray(value) || value.some(row => !object(row))) throw new Error(`Invalid backup field: ${field}`)
+    return value
+  }
+  for (const routine of data.routines) records(routine.ex, 'routines.ex')
+  for (const workout of [...data.workouts, ...(data.active ? [data.active] : [])]) {
+    for (const entry of records(workout.entries, 'workouts.entries')) {
+      for (const set of records(entry.sets, 'workouts.entries.sets')) {
+        records(set.drops, 'sets.drops'); records(set.clusters, 'sets.clusters')
+      }
+    }
+  }
+  for (const key of ['week', 'dayPlan', 'daySkipped']) {
+    if (data[key] != null && (!object(data[key]) || Object.values(data[key]).some(value => value != null && typeof value !== 'string' && (!Array.isArray(value) || value.some(id => typeof id !== 'string'))))) throw new Error(`Invalid backup field: ${key}`)
+  }
   return clean(data)
 }
 export function createBackup(state, now = new Date()) {

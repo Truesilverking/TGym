@@ -193,7 +193,9 @@ export const useUI = create((set, get) => ({
   finishWorkEarly() {
     const wk = get().work
     if (!wk) return
-    const elapsed = Math.max(1, wk.total - wk.left)
+    // The WebView may suspend ticks. The deadline remains authoritative even if
+    // the user finishes before the first resumed render updates `left`.
+    const elapsed = Math.min(wk.total, Math.max(1, Math.round(wk.total - (wk.endsAt - Date.now()) / 1000)))
     const done = workDone
     vibrate(30)
     get().stopWork()

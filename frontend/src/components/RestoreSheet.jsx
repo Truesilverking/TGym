@@ -9,6 +9,17 @@ import { saveImportUndo } from '../lib/import-undo.js'
 import { backupChecksum, portableState } from '../lib/backup.js'
 import { confirmSheet } from '../sheets.jsx'
 
+// Conflicts can now contain complete records. Keep both snapshots inspectable;
+// String(object) hides the actual choice behind "[object Object]".
+export function ConflictValues({ local, remote }) {
+  const preview = value => value == null ? t('None') : typeof value !== 'object' ? String(value)
+    : <details><summary>{value.name || t('Details')}</summary><pre>{JSON.stringify(value, null, 2)}</pre></details>
+  return <div className="sync-conflict-values">
+    <div><small>{t('This device')}</small>{preview(local)}</div>
+    <div><small>{t('Other device')}</small>{preview(remote)}</div>
+  </div>
+}
+
 export default function RestoreSheet({ authorize = action => action() }) {
   const S = useStore(s => s.S)
   const { update, replaceState } = useStore()
@@ -45,7 +56,7 @@ export default function RestoreSheet({ authorize = action => action() }) {
     useUI.getState().openSheet(close => <>
       <h3>{t('Choose conflicting changes')}</h3>
       <p className="muted small">{t('{0} values were edited differently on both devices. Independent workouts and measurements have already been combined.', result.conflicts.length)}</p>
-      <div className="sync-conflicts">{result.conflicts.slice(0, 12).map(item => <div key={item.path}><b>{item.path}</b><span>{String(item.local)} ↔ {String(item.remote)}</span></div>)}</div>
+      <div className="sync-conflicts">{result.conflicts.map(item => <div key={JSON.stringify(item.segments || item.path)}><b>{item.path}</b><ConflictValues local={item.local} remote={item.remote} /></div>)}</div>
       <Button variant="primary" onClick={async () => { close(); await run(() => saveMerged(result.merged)) }}>{t('Keep changes from this device')}</Button>
       <div style={{ height: 8 }} /><Button onClick={async () => { close(); await run(() => saveMerged(applyRemoteConflicts(result.merged, result.conflicts))) }}>{t('Use changes from the other device')}</Button>
     </>)

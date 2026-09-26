@@ -34,7 +34,7 @@ export function ActivityEditor({close, existing, routineId: initialRoutine, plan
       if(index>=0) s.workouts[index]=w;else s.workouts.push(w)
     });setCommitted(true) }
     await useStore.getState().flushPersistence(); close()
-  } catch(e){setError(t(e.message))}finally{setBusy(false)}}
+  } catch(e){setError(t(['Invalid activity value','Invalid activity date or duration','Choose a date or weekdays','Routine no longer exists','Activity no longer exists','Activity already belongs to this routine'].includes(e.message) ? e.message : 'Could not save. Check available storage and try again.'))}finally{setBusy(false)}}
   return <form className="activity-form" onSubmit={e=>{if(e.nativeEvent.submitter?.dataset.activitySave==='true')void save(e);else e.preventDefault()}}><h3>{t(existing?'Edit activity':'Activities')}</h3>
     {!existing && !initialRoutine && <Segmented value={mode} onChange={setMode} options={[{value:'log',label:t('Log activity')},{value:'plan',label:t('Plan activity')}]} />}
     <fieldset disabled={busy || committed}><legend>{t('Activity details')}</legend><label>{t('Activity type')}<select className="field" value={type} onChange={e=>setType(e.target.value)}>{ACTIVITY_TYPES.map(a=><option key={a.id} value={a.id}>{t(a.label)}</option>)}</select></label>

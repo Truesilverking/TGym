@@ -2,6 +2,8 @@ import english from '../lib/english-fallback.js'
 // Spanish UI strings. Keys are the English source strings (see lib/i18n.js).
 export default {
   ...english,
+  "This device": "Este dispositivo",
+  "Other device": "Otro dispositivo",
 "Session ended after inactivity":"Sesión finalizada por inactividad",
 "Saved at the 30-minute inactivity limit. Your logged sets are preserved.":"Guardada al cumplirse 30 minutos sin actividad. Se conservan las series registradas.",
 

@@ -30,4 +30,12 @@ describe('portable full snapshots', () => {
     const data = parseTGymJson('{"workouts":[],"routines":[],"__proto__":{"polluted":true}}').data
     expect(Object.hasOwn(data,'__proto__')).toBe(false)
   })
+  it.each([
+    { routines: [{ id: 'r', ex: 'broken' }] },
+    { workouts: [{ id: 'w', entries: [{ id: 'e', sets: [null] }] }] },
+    { active: { id: 'a', entries: 'broken' } },
+    { dayPlan: [] },
+  ])('rejects malformed nested training data before it replaces a valid profile: %j', fields => {
+    expect(() => parseTGymJson({ ...state, ...fields })).toThrow()
+  })
 })

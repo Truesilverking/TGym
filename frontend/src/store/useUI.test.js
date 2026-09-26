@@ -58,3 +58,19 @@ it('edits rest against its deadline even if background rendering was suspended',
  try {useUI.getState().startRest(90);vi.setSystemTime(130000);useUI.getState().addRest(15);expect(useUI.getState().timer).toMatchObject({left:75,endsAt:205000});vi.setSystemTime(205100);useUI.getState().addRest(-15);expect(useUI.getState().timer).toBeNull()}
  finally {useUI.getState().stopRest();vi.useRealTimers()}
 })
+
+it.each([[38000,38],[120000,90]])('finishes suspended work after %i ms without exceeding its target',async(delay,expected)=>{
+ const {useStore,DEF}=await import('./useStore.js')
+ vi.useFakeTimers();vi.setSystemTime(100000)
+ useStore.setState({S:{...structuredClone(DEF),active:{id:'early-work',start:100000,entries:[]}},user:null})
+ const done=vi.fn()
+ try {
+   useUI.getState().startWork(90,'Hold',done)
+   vi.setSystemTime(100000+delay)
+   expect(useUI.getState().work.left).toBe(90)
+   useUI.getState().finishWorkEarly()
+   expect(done).toHaveBeenCalledWith(expected,{timedOut:false})
+   useUI.getState().finishWorkEarly()
+   expect(done).toHaveBeenCalledOnce()
+ } finally {useUI.getState().stopWork();vi.useRealTimers()}
+})

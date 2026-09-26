@@ -161,7 +161,7 @@ export function Stepper({ value, step = 1, onChange, decimal = true, displayValu
 // Pointer-driven so the fill, track and thumb are all ours — no ::-webkit-*
 // pseudo-elements, which is the only way the control looks identical on every
 // platform and can pick up the accent colour.
-export function Slider({ value, min = 0, max = 100, step = 1, onChange, className = '' }) {
+export function Slider({ value, min = 0, max = 100, step = 1, onChange, className = '', ...rest }) {
   const ref = useRef(null)
   const [drag, setDrag] = useState(false)
   const pct = Math.min(100, Math.max(0, ((value - min) / (max - min)) * 100))
@@ -195,6 +195,7 @@ export function Slider({ value, min = 0, max = 100, step = 1, onChange, classNam
   }, [drag, onChange, posToValue])
 
   const key = e => {
+    if (e.key === 'Home' || e.key === 'End') { e.preventDefault(); onChange(e.key === 'Home' ? min : max); return }
     const d = e.key === 'ArrowRight' || e.key === 'ArrowUp' ? step
       : e.key === 'ArrowLeft' || e.key === 'ArrowDown' ? -step : 0
     if (!d) return
@@ -209,6 +210,7 @@ export function Slider({ value, min = 0, max = 100, step = 1, onChange, classNam
       role="slider"
       tabIndex={0}
       aria-valuenow={value} aria-valuemin={min} aria-valuemax={max}
+      {...rest}
       data-nodrag                                  /* keeps the sheet from swipe-dismissing */
       onKeyDown={key}
       onPointerDown={e => { e.currentTarget.setPointerCapture?.(e.pointerId); setDrag(true); onChange(posToValue(e.clientX)) }}

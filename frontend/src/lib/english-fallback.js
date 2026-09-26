@@ -1,5 +1,7 @@
 // Explicit source-language fallback. Entries in language packs override these values.
 export default {
+  "This device": "This device",
+  "Other device": "Other device",
 "Session ended after inactivity":"Session ended after inactivity",
 "Saved at the 30-minute inactivity limit. Your logged sets are preserved.":"Saved at the 30-minute inactivity limit. Your logged sets are preserved.",
 
