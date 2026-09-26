@@ -12,6 +12,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(AppInstallerPlugin.class);
         registerPlugin(WorkoutNotificationPlugin.class);
         registerPlugin(SoundPreferencesPlugin.class);
+        registerPlugin(SystemAppearancePlugin.class);
         super.onCreate(savedInstanceState);
     }
 }

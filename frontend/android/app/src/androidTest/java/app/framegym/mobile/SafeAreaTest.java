@@ -2,6 +2,9 @@ package app.framegym.mobile;
 
 import android.os.Build;
 import android.os.SystemClock;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
 import android.view.View;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -17,6 +20,25 @@ import static org.junit.Assume.assumeTrue;
 /** Real window geometry: catches controls drawn underneath Android system bars. */
 @RunWith(AndroidJUnit4.class)
 public class SafeAreaTest {
+    @Test public void nativeReservedAreasFollowTheAppTheme() {
+        assumeTrue(Build.VERSION.SDK_INT >= 35);
+        try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
+            assertSafeBounds(scenario);
+            for (boolean light : new boolean[] { true, false }) {
+                scenario.onActivity(activity -> {
+                    SystemAppearancePlugin.applyTheme(activity, light);
+                    View surface = (View) activity.getBridge().getWebView().getParent();
+                    Bitmap bitmap = Bitmap.createBitmap(surface.getWidth(), surface.getHeight(), Bitmap.Config.ARGB_8888);
+                    surface.getBackground().setBounds(0, 0, surface.getWidth(), surface.getHeight());
+                    surface.getBackground().draw(new Canvas(bitmap));
+                    assertEquals("Status area must match app background", Color.parseColor(light ? "#f2f2f7" : "#000000"), bitmap.getPixel(bitmap.getWidth()/2, 0));
+                    Insets navigation = ViewCompat.getRootWindowInsets(surface).getInsets(WindowInsetsCompat.Type.navigationBars());
+                    if (navigation.bottom > 0) assertEquals("Navigation area must match tab bar", Color.parseColor(light ? "#f7f7fa" : "#0e0e10"), bitmap.getPixel(bitmap.getWidth()/2, bitmap.getHeight()-1));
+                    bitmap.recycle();
+                });
+            }
+        }
+    }
     @Test public void webViewStaysInsideSystemBarsAndCutoutAfterRecreation() {
         assumeTrue(Build.VERSION.SDK_INT >= 35);
         try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
@@ -49,6 +71,10 @@ public class SafeAreaTest {
                         position[1] + web.getHeight() <= origin[1] + decor.getHeight() - bars.bottom);
                     assertTrue("WebView overlaps right system inset",
                         position[0] + web.getWidth() <= origin[0] + decor.getWidth() - bars.right);
+                    assertEquals("Artificial top gap", origin[1] + bars.top, position[1]);
+                    assertEquals("Artificial left gap", origin[0] + bars.left, position[0]);
+                    assertEquals("Artificial bottom gap", origin[1] + decor.getHeight() - bars.bottom, position[1] + web.getHeight());
+                    assertEquals("Artificial right gap", origin[0] + decor.getWidth() - bars.right, position[0] + web.getWidth());
                 });
                 return;
             } catch (AssertionError failure) {

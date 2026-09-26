@@ -5,13 +5,22 @@ import android.app.NotificationManager;
 import android.content.Context;
 import android.os.Build;
 import com.getcapacitor.Plugin;
+import com.getcapacitor.JSObject;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import com.google.firebase.messaging.FirebaseMessaging;
+import com.google.firebase.FirebaseApp;
 
 @CapacitorPlugin(name = "UpdatePush")
 public class UpdatePushPlugin extends Plugin {
     private static final String CHANNEL_ID = "tgym_updates";
+
+    @com.getcapacitor.PluginMethod
+    public void availability(PluginCall call) {
+        JSObject result = new JSObject();
+        result.put("configured", !FirebaseApp.getApps(getContext()).isEmpty());
+        call.resolve(result);
+    }
 
     @com.getcapacitor.PluginMethod
     public void subscribe(PluginCall call) {

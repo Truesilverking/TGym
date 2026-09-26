@@ -87,6 +87,8 @@ Signing and Firebase files are optional local/CI configuration and must not be e
 
 ## PWA and update pipeline
 
+The mobile viewport correction is tracked in `docs/VIEWPORT-AUDIT-2026-09-26.md`. `lib/viewport.js` measures visual viewport and fixed-control clearance; CSS owns web safe areas, while Capacitor retains native Android inset margins. `lib/system-appearance.js` and Android `SystemAppearancePlugin` synchronize the native reserved surfaces with the current theme. Keyboard layout does not change persisted timer state. Physical Pixel native tests passed; physical Android PWA/iOS acceptance remains unverified. `UpdatePush.availability` prevents fatal registration in native builds lacking optional Firebase configuration.
+
 The PWA manifest and generated service worker support installation, asset precaching and navigation offline fallback. API, update and download traffic are excluded from ordinary asset caching. Service-worker registration requires a secure context and a production non-mobile build; development-mode browser rendering does not validate production offline behavior.
 
 The updater checks trusted release metadata, compares versions and supports foreground/manual/periodic checks. Android downloads enforce trusted HTTPS locations and redirects, size limits, SHA-256, package identity, newer versionCode and signer compatibility with the installed application before handing off to the system installer. The user may need to grant installation permission. PWA updates instead activate a waiting service worker and refresh. Backups precede update handoff where implemented. FCM prompts a fresh update check rather than bypassing validation.

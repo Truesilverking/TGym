@@ -7,6 +7,9 @@ export async function initializeUpdatePush(onUpdate) {
   const listeners = []
   const stop = () => { for (const listener of listeners.splice(0)) void Promise.resolve(listener.remove()).catch(() => {}) }
   try {
+    // The native push plugin throws before returning a JS rejection when the
+    // optional Firebase configuration is absent. Check before calling register.
+    if (!(await UpdatePush.availability()).configured) return stop
     const permission = await PushNotifications.checkPermissions()
     const granted = permission.receive === 'granted' ? permission : await PushNotifications.requestPermissions()
     if (granted.receive !== 'granted') return () => {}

@@ -716,7 +716,6 @@ function ActiveWorkout() {
         {allDone ? t('Finish workout') : t('Finish workout early · {0} exercises', exDone + '/' + A.entries.length)}
       </button>
     })()}
-    <div style={{ height: 40 }} />
   </div>
 }
 

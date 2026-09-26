@@ -39,6 +39,8 @@ import { MOBILE, syncReminder } from './lib/mobile.js'
 import { inactivityState, lastWorkoutActivity, inactivityDeadline, recordWorkoutActivity } from './lib/workout-time.js'
 import { doFinishWorkout, inactivityWarningSheet } from './sheets.jsx'
 import { syncWorkoutNotification } from './lib/workout-notification.js'
+import { installViewportLayout } from './lib/viewport.js'
+import { syncSystemAppearance } from './lib/system-appearance.js'
 
 bindUI(useUI)   // lets the shared controls open sheets without importing the store at module scope
 
@@ -54,10 +56,12 @@ function applyPrefs(theme, accent, reduceMotion = false) {
   de.dataset.reduceMotion = reduceMotion ? 'true' : 'false'
   const meta = document.querySelector('meta[name="theme-color"]')
   if (meta) meta.content = de.dataset.theme === 'light' ? '#f2f2f7' : '#000000'
+  syncSystemAppearance(de.dataset.theme)
 }
 
 export function ThemePreferences() {
   const S = useStore(s => s.S)
+  useLayoutEffect(() => installViewportLayout(), [])
   useLayoutEffect(() => { applyPrefs(S.theme, S.accent, S.reduceMotion) }, [S.theme, S.accent, S.reduceMotion])
   // 'system' needs to react live if the OS theme flips while the app is open, not just on
   // the next mount — a fixed 'dark'/'light' choice never re-fires this since matchMedia
@@ -212,7 +216,7 @@ function Shell() {
   const authed = user || isGuest
   if (!ready && !authed) return (
     <div id="app">
-      <div style={{ paddingTop: '44vh', display: 'flex', justifyContent: 'center', fontSize: 34, color: 'var(--label-3)' }}>
+      <div style={{ paddingTop: '44dvh', display: 'flex', justifyContent: 'center', fontSize: 34, color: 'var(--label-3)' }}>
         <Icon name="dumbbell" />
       </div>
     </div>
