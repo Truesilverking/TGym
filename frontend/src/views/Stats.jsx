@@ -2,6 +2,8 @@ import { hybridSummary } from '../lib/activities.js'
 import { HybridSummary } from '../components/Activities.jsx'
 import ExerciseSessions from '../components/ExerciseSessions.jsx'
 import TrainingHistory from '../components/TrainingHistory.jsx'
+import { buildProgressReport } from '../lib/progress-report.js'
+import { progressReportHTML } from '../lib/progress-export.js'
 import { statisticsState, historySummary } from '../lib/training-history.js'
 import ConsistencyCard from '../components/ConsistencyCard.jsx'
 import { useEffect, useMemo, useState } from 'react'
@@ -49,8 +51,9 @@ async function exportStatsReport(S) {
   const activityReport = `<h2>${esc(t('Training overview'))}</h2><section class="summary">${[['Strength sessions',activity.strength],['Runs',activity.running],['Other cardio',activity.cardio],['Recovery sessions',activity.recovery],['Active days',activity.days],['Total time (min)',Math.round(activity.minutes)],['Distance (km)',fmtNum(activity.distanceKm)]].map(([label,value])=>`<div class="box">${esc(t(label))}<b>${esc(value)}</b></div>`).join('')}</section>`
   const html = `<!doctype html><html lang="${esc(getLang())}"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>TGym Stats ${todayISO()}</title><style>body{font:15px system-ui;margin:32px;color:#171717}h1{color:#d82727}h2{margin-top:32px}section{break-inside:avoid}.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.box{padding:14px;border:1px solid #ddd;border-radius:10px}.box b{display:block;font-size:24px;margin-top:5px}table{border-collapse:collapse;width:100%;font-size:13px}th,td{border:1px solid #ddd;padding:7px;text-align:left;vertical-align:top}th{background:#f3f3f3}small{color:#666}.scroll{overflow-x:auto}@media print{body{margin:12mm}.scroll{overflow:visible}}</style><body><h1>TGym · ${esc(t('Stats'))}</h1><small>${esc(fmtDate(todayISO(), true))}</small><p>${esc(t('Training since {0}',history.start))} · ${esc(t('{0} recorded · {1} estimated before tracking',history.trackedWorkouts,history.historicalWorkouts))}</p><section class="summary"><div class="box">${esc(t('Total workouts'))}<b>${history.total}</b></div><div class="box">${esc(t('Training streak'))}<b>${streak.current}</b></div><div class="box">${esc(t('Completion'))}<b>${consistency.rate == null ? '—' : Math.round(consistency.rate * 100) + '%'}</b><small>${consistency.completed} / ${consistency.planned}</small></div><div class="box">${esc(t('Body weight'))}<b>${last ? esc(fmtNum(last.w) + ' ' + S.unit) : '—'}</b></div><div class="box">${esc(t('BMI'))}<b>${bmi || '—'}</b></div></section><h2>${esc(t('Body weight'))}</h2><div class="scroll"><table><thead><tr><th>${esc(t('Date'))}</th><th>${esc(t('Weight'))}</th><th>${esc(t('BMI'))}</th></tr></thead><tbody>${weightRows || `<tr>${td(t('No data yet'))}</tr>`}</tbody></table></div><h2>${esc(t('Body measurements'))}</h2><small>${esc(S.measurementUnit || 'cm')}</small><div class="scroll"><table><thead><tr><th>${esc(t('Date'))}</th>${measureHead}</tr></thead><tbody>${measureRows || `<tr>${td(t('No data yet'))}</tr>`}</tbody></table></div><h2>${esc(t('InBody history'))}</h2><div class="scroll"><table><thead><tr><th>${esc(t('Date'))}</th>${inbodyFields.map(([,label]) => `<th>${esc(t(label))}</th>`).join('')}</tr></thead><tbody>${inbodyRows || `<tr>${td(t('No data yet'))}</tr>`}</tbody></table></div><h2>${esc(t('Workout history'))}</h2><div class="scroll"><table><thead><tr><th>${esc(t('Date'))}</th><th>${esc(t('Routine'))}</th><th>${esc(t('Duration'))}</th><th>${esc(t('Volume'))}</th><th>${esc(t('Exercises'))}</th></tr></thead><tbody>${workoutRows || `<tr>${td(t('No workouts yet'))}</tr>`}</tbody></table></div>${activityReport}</body></html>`
   const filename = `tgym-stats-${todayISO()}.html`
-  if (MOBILE) { await shareExport(html, filename); return }
-  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([html], { type: 'text/html;charset=utf-8' })); a.download = filename; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000)
+  const fullHTML = html.replace('</body>', progressReportHTML(buildProgressReport(S), { t, exerciseNameFor, fmtNum, fmtDate, fragment:true }) + '</body>')
+  if (MOBILE) { await shareExport(fullHTML, filename); return }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([fullHTML], { type: 'text/html;charset=utf-8' })); a.download = filename; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000)
 }
 
 // Which muscles the training in a window actually hit — and, the point of the card,
@@ -432,6 +435,7 @@ export default function Stats() {
   if (showEff) exOpts.push({ value: 'effort', label: t('Effort') })
 
   return <>
+    <Button onClick={() => nav('/progress')}>{t('Progress Report')}</Button>
     <div className="hdr"><div><h1>{t('Stats')}</h1><div className="sub">{t('Progress & history')}</div></div>
       <div className="row" style={{ gap: 3 }}><button className="iconbtn" onClick={() => exportStatsReport(S)} aria-label={t('Export Stats report')} title={t('Export Stats report')}><Icon name="download" /></button>{!MOBILE && <button className="iconbtn" onClick={() => window.print()} aria-label={t('Print / Save as PDF')} title={t('Print / Save as PDF')}><Icon name="clipboard" /></button>}<button className="iconbtn" onClick={() => nav('/history')} aria-label={t('History')}><Icon name="history" /></button><button className="iconbtn" onClick={inBodySheet} aria-label={t('InBody history')} title={t('InBody history')}><Icon name="person" /></button></div></div>
 

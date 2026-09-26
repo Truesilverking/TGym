@@ -4,7 +4,7 @@ import { playAppSound, vibrate } from '../lib/sound.js'
 import { api } from '../lib/api.js'
 import { t } from '../lib/i18n.js'
 import { useStore } from './useStore.js'
-import { resumeWorkoutClock, inactivityState } from '../lib/workout-time.js'
+import { resumeWorkoutClock, recordWorkoutActivity } from '../lib/workout-time.js'
 
 // Fire-and-forget: lets the server push a "rest over" alert if this tab gets suspended
 // before the local timer completes. No-ops for guests / offline.
@@ -60,7 +60,7 @@ const maybeRestNotification = async () => {
 const saveRest = timer => {
   const store=useStore.getState()
   if (!store.S.active || (!timer && !store.S.active.restTimer)) return
-  store.update(s => { if(s.active) { if(timer) s.active.restTimer={endsAt:timer.endsAt,total:timer.total}; else delete s.active.restTimer } }, true, false)
+  store.update(s => { if(s.active) { if(timer) s.active.restTimer={endsAt:timer.endsAt,total:timer.total}; else { s.active.lastRestEndedAt=Math.min(Date.now(),s.active.restTimer.endsAt); delete s.active.restTimer } } }, true, false)
 }
 
 let toastTm = null
@@ -166,13 +166,13 @@ export const useUI = create((set, get) => ({
     get().stopRest()
     const total = Math.max(1, Math.round(sec) || 1)
     const endsAt = Date.now() + total * 1000
-    useStore.getState().update(s=>{ if(s.active) { if(userInitiated) { s.active=resumeWorkoutClock(s.active); s.active.lastActivityAt=s.active.lastMeaningfulWorkoutActivityAt=Date.now() }; s.active.workEndsAt=endsAt } })
+    useStore.getState().update(s=>{ if(s.active) { if(userInitiated) { s.active=resumeWorkoutClock(s.active); s.active=recordWorkoutActivity(s.active) }; s.active.workEndsAt=endsAt } })
     workDone = onDone
     set({ work: { left: total, total, endsAt, label } })
     workTick = () => {
       const wk = get().work
       if (!wk) return
-      if (inactivityState(useStore.getState().S.active) === 'finish') { get().stopWork(); return }
+      if (!useStore.getState().S.active) { get().stopWork(); return }
       const left = Math.max(0, Math.round((wk.endsAt - Date.now()) / 1000))
       if (left === wk.left) return
       const prefs = useStore.getState().S
@@ -203,7 +203,7 @@ export const useUI = create((set, get) => ({
   },
   // Abandon without logging anything.
   stopWork() {
-    if (get().work) useStore.getState().update(s=>{ if(s.active) { delete s.active.workEndsAt } })
+    if (get().work) useStore.getState().update(s=>{ if(s.active) { s.active.lastWorkEndedAt=Math.min(Date.now(),get().work.endsAt); delete s.active.workEndsAt } })
     if (workInt) clearInterval(workInt); workInt = null
     if (workTick) document.removeEventListener('visibilitychange', workTick); workTick = null
     workDone = null

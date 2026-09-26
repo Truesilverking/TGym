@@ -7,7 +7,7 @@ const parse = svg => new DOMParser().parseFromString(svg, 'image/svg+xml')
 describe('dedicated consistency reports', () => {
   it.each(['week', 'month', 'year', 'full'])('keeps %s pages square, bounded and free of routine/measurement content', period => {
     const pages = calendarReportPages(S, anchor, period, 'pdf', { now: anchor })
-    for (const page of pages) {
+    for (const page of period === 'full' ? pages.slice(0,4) : pages) {
       expect(page.svg).not.toContain('PRIVATE ROUTINE')
       expect(page.svg).not.toContain('Measurement')
       const doc = parse(page.svg)
@@ -19,6 +19,11 @@ describe('dedicated consistency reports', () => {
       }
       for (const label of ['Completed', 'Not completed', 'Pending']) expect(doc.documentElement.textContent).toContain(label)
     }
+  })
+  it('adds a progress section to Full Report without changing its calendar pages',()=>{
+    const pages=calendarReportPages(S,anchor,'full','pdf',{now:anchor})
+    expect(pages.length).toBeGreaterThan(4)
+    expect(pages.slice(4).every(p=>p.svg.includes('Progress Report'))).toBe(true)
   })
   it('renders all twelve months once across year PDF pages and in the PNG overview', () => {
     const pdf = calendarReportPages(S, anchor, 'year', 'pdf'), png = calendarReportPages(S, anchor, 'year', 'png')

@@ -1,0 +1,17 @@
+# Workout clock and recovery
+
+`frontend/src/lib/workout-time.js` remains the single duration authority: terminal timestamp minus start minus accumulated paused time. Intervals refresh the view/check a persisted deadline; they never accumulate elapsed seconds. Existing storage keys and legacy clocks remain compatible.
+
+`workout-lifecycle.js` defines transitions. Completing all required non-warmup work records `routineCompletedAt`, freezes at that timestamp and enters `awaiting_finish`. Ten minutes later it becomes `auto_completed`, with the same end timestamp. Continue removes the completion marker, accumulates the waiting interval as paused time and returns to active. Adding/unchecking work resumes likewise. Rest timers never extend a completed routine's end. Restored completed sessions missing a pause use historical done timestamps, never reopening time.
+
+Incomplete sessions have no touch-inactivity cutoff or 20-minute warning. Background/lock and 30–45 minutes without touching the phone leave the clock running. Native live notifications likewise have no active-session expiry; their completion expiry uses the persisted ten-minute deadline. If the OS suspends JavaScript, completion is persisted on the next execution/restoration using the original terminal timestamp.
+
+`lastMeaningfulTrainingActivityAt` (with the legacy workout-activity alias) changes on relevant set values/completion, exercise navigation, work start and explicit Continue. Settings touches write only `lastUserInteractionAt`. Notes, sync, renders and automatic ticking do not extend training. Historical set `doneAt` timestamps remain evidence even when a timer callback fires after suspension.
+
+At boot, return to foreground or an attempted new workout, an unpaused incomplete session is recovered as `abandoned` only when at least four hours have passed since the latest valid training/work/rest boundary. A running work/rest deadline protects it. This is a conservative inference, not proof that a person stopped exercising; it never runs as a generic periodic idle cutoff. The stored end is that historical boundary, not detection time. Expired/skipped rest and work deadlines retain their real terminal time. Future or invalid activity timestamps are excluded. Existing completed history is not retrospectively rewritten.
+
+Manual workout pause freezes the clock and survives reload. Relevant training edits or Continue resume it, excluding waiting. The separate **Pause Training** feature remains a plan/schedule break; it already requires finishing/discarding an active session. No workout is auto-ended by a plan break.
+
+Recovered sessions preserve logged and pending rows plus a snapshot. History offers duration correction, validating positive time and an end no later than now; it retains `originalEndedAt` and `durationCorrectedAt`. All statistics, Full Report and Progress Report use the shared corrected clock. Explicit continuation after recovery creates a new session ID without modifying the historical record.
+
+Coverage includes requested cases A–L, store/localStorage/native-mirror persistence, serialization/backup, multiple pauses, same-day multiple routines, historical rest end, no duplicate history, completion and duration correction. An exceptionally long untimed activity followed by four hours without any recorded evidence may need the offered correction; the app cannot infer unrecorded physical activity exactly.

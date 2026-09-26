@@ -15,7 +15,6 @@ import { t } from './i18n-core.js'
 import { todayISO, ACCENTS } from './format.js'
 import { measurementNotificationPlan, MEASUREMENT_NOTIFICATION_IDS } from './measurement-reminders.js'
 import { workoutNotificationPlan, WORKOUT_NOTIFICATION_IDS, deloadNotificationPlan, DELOAD_NOTIFICATION_IDS } from './workout-reminders.js'
-import { lastWorkoutActivity, INACTIVITY_WARNING_MINUTES } from './workout-time.js'
 import { syncNativeSounds, finishNativeSoundSync } from './native-sound.js'
 
 export const MOBILE = import.meta.env.VITE_MOBILE === '1'
@@ -91,10 +90,6 @@ async function syncReminderNow(S, interactive = false) {
     const decorate = notices => notices.map(n=>({...n,...notificationSoundOptions(S,soundSettings,n.schedule?.at),smallIcon:'ic_workout_notification',iconColor:ACCENTS[S.accent] || ACCENTS.red}))
     const deloadNotices = deloadNotificationPlan(S).map(n => ({id:n.id, title:t('Deload week'), body:t('Deload: {0} – {1}. Follow your reduced training targets.',n.start,n.end), schedule:{at:n.at,allowWhileIdle:true},extra:{type:'deload'}}))
     if (deloadNotices.length) await LocalNotifications.schedule({notifications:decorate(deloadNotices)})
-    if (S.active && S.active.timerPausedAt == null) {
-      const at = new Date(lastWorkoutActivity(S.active) + INACTIVITY_WARNING_MINUTES * 60000)
-      if (at > new Date()) await LocalNotifications.schedule({notifications:decorate([{id:3000,title:t('Still training?'),body:t('No activity has been recorded for a while.'),schedule:{at,allowWhileIdle:true},extra:{type:'workout',routineId:S.active.routineId,date:S.active.d}}])})
-    }
     const measurementNotices = measurementNotificationPlan(S).map(group => ({
       id: group.id, title: t('Time to update your measurements'), body: group.labels.map(label => t(label)).join(', '),
       schedule: { at: group.at, allowWhileIdle: true }, extra: { type: 'measurement', metrics: group.metrics },

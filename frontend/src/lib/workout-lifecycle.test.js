@@ -48,13 +48,13 @@ describe('persistent workout activity lifecycle',()=>{
     expect(resumed.timerPausedAt).toBeUndefined()
     expect(workoutElapsedMs(resumed,31*min)).toBe(11*min)
   })
-  it('warns at 20 and finishes at 30 using the last actual activity',()=>{
+  it('does not warn or finish incomplete work from inactivity',()=>{
     const a={...active(),lastMeaningfulWorkoutActivityAt:10*min}
     expect(inactivityState(a,29*min)).toBe('none')
-    expect(inactivityState(a,30*min)).toBe('warning')
-    expect(inactivityState(a,40*min)).toBe('finish')
+    expect(inactivityState(a,30*min)).toBe('none')
+    expect(inactivityState(a,40*min)).toBe('none')
     expect(lastWorkoutActivity(a)).toBe(10*min)
-    expect(inactivityState(JSON.parse(JSON.stringify(a)),55*min)).toBe('finish')
+    expect(inactivityState(JSON.parse(JSON.stringify(a)),55*min)).toBe('none')
   })
   it('resets after edits and navigation but not automatic rest timers',()=>{
     const before=active(), after=structuredClone(before);after.entries[0].sets[0].rir=2
@@ -65,8 +65,8 @@ describe('persistent workout activity lifecycle',()=>{
   })
   it('internal timers do not extend the inactivity deadline',()=>{
     const a={...active(),workEndsAt:60*min}
-    expect(inactivityState(a,45*min)).toBe('finish')
-    expect(inactivityState(a,80*min)).toBe('finish')
+    expect(inactivityState(a,45*min)).toBe('none')
+    expect(inactivityState(a,80*min)).toBe('none')
   })
   it('explicit continuation starts a new session while retaining auto-finished history',()=>{
     const snapshot=active(),state={active:null,workouts:[{id:snapshot.id,end:10*min,finishReason:'inactivity',resumeSnapshot:snapshot}]}
@@ -79,6 +79,6 @@ describe('persistent workout activity lifecycle',()=>{
   })
   it('does not mistake a warmup-only plan for completion and handles legacy starts',()=>{
     expect(effectiveWorkoutComplete({entries:[{sets:[{phase:'warmup',done:true}]}]})).toBe(false)
-    expect(inactivityState(active(),30*min)).toBe('finish')
+    expect(inactivityState(active(),30*min)).toBe('none')
   })
 })

@@ -47,8 +47,11 @@ it('runs three sessions through Later, reopen and Continue with independent cloc
  vi.setSystemTime(new Date(date+'T11:04:00'));act(()=>useStore.getState().update(s=>{s.active.entries[0].sets.forEach(row=>row.done=true)}));act(()=>doFinishWorkout());reopen();expect(dailyPlan(state(),date)).toMatchObject({completed:3,total:3});expect(new Set(state().workouts.map(w=>w.id)).size).toBe(3);expect(state().workouts.map(w=>workoutElapsedMs(w))).toEqual([120000,180000,60000]);expect(button('Continue')).toBeUndefined()
 })
 
-it('starts the next routine with its own inactivity window and saves an auto-ended session only once',()=>{
+it('keeps incomplete sessions open and resolves stale history before starting the next workout',()=>{
  act(()=>beginWorkout('a'));vi.setSystemTime(new Date(date+'T10:05:00'));act(()=>useStore.getState().update(s=>{s.active.entries[0].sets.forEach(row=>row.done=true)}));act(()=>doFinishWorkout());vi.setSystemTime(new Date(date+'T11:00:00'));act(()=>beginWorkout('b'))
- const second=state().active;expect(inactivityState(second)).toBe('none');expect(inactivityState(second,Date.now()+20*60000)).toBe('warning');expect(inactivityState(second,Date.now()+30*60000)).toBe('finish')
- vi.setSystemTime(new Date(date+'T11:30:00'));act(()=>doFinishWorkout({reason:'inactivity',end:second.start}));act(()=>doFinishWorkout({reason:'inactivity'}));reopen();expect(state().workouts).toHaveLength(2);expect(state().workouts[1]).toMatchObject({routineId:'b',finishReason:'inactivity'});expect(workoutElapsedMs(state().workouts[0])).toBe(300000);expect(nextDailyRoutine(state(),date).id).toBe('c')
+ const second=state().active;expect(inactivityState(second,Date.now()+30*60000)).toBe('none')
+ vi.setSystemTime(new Date(date+'T11:05:00'));act(()=>useStore.getState().update(s=>{s.active.entries[0].sets[0].r=9}))
+ vi.setSystemTime(new Date(date+'T16:00:00'));act(()=>beginWorkout('c'));const third=state().active.id
+ act(()=>beginWorkout('c'));reopen();expect(state().active.id).toBe(third);expect(state().workouts).toHaveLength(2)
+ expect(state().workouts[1]).toMatchObject({routineId:'b',finishReason:'abandoned'});expect(workoutElapsedMs(state().workouts[1])).toBe(300000);expect(state().active.routineId).toBe('c')
 })

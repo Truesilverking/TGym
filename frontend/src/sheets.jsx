@@ -7,7 +7,7 @@ import { fmtScheduledDate } from './lib/format.js'
 import TrainingPauseCard from './components/TrainingPauseCard.jsx'
 import { isTrainingPaused } from './lib/training-pause.js'
 import MetricFields from './components/MetricFields.jsx'
-import { upsertBodyRecord, parseMetrics, validMeasurementDate } from './lib/body-records.js'
+import { upsertBodyRecord, parseMetrics, validMeasurementDate, recordHeight } from './lib/body-records.js'
 import MeasurementReminders from './components/MeasurementReminders.jsx'
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from './store/useStore.js'
@@ -46,8 +46,8 @@ import { applyTrainingPlan, calendarDeload, deloadStatus, deloadTargetFor, repRa
 import { weightStepFor } from './lib/unit-conversion.js'
 import Heatmap from './components/Heatmap.jsx'
 import LineChart from './components/LineChart.jsx'
-import { pauseWorkoutClock, resumeWorkoutClock, workoutElapsedMs } from './lib/workout-time.js'
-import { effectiveWorkoutComplete, resumeAutoFinished } from './lib/workout-lifecycle.js'
+import { pauseWorkoutClock, resumeWorkoutClock, workoutElapsedMs, correctWorkoutDuration } from './lib/workout-time.js'
+import { effectiveWorkoutComplete, resumeAutoFinished, workoutResolution, ensureWorkoutCompletionPaused } from './lib/workout-lifecycle.js'
 import { routineMuscleSheet } from './components/RoutineMusclePreview.jsx'
 import { effortValue } from './lib/history.js'
 
@@ -217,7 +217,7 @@ function MeasurementsSheet({ existing, close, focusMetric }) {
     try {
       update(s => {
         const index = existing ? (st.measurements || []).indexOf(existing) : -1
-        const row = {...existing, id:recordId.current, d:date, ...parsed}
+        const row = {...existing, id:recordId.current, d:date, t:existing?.t || Date.now(), ...parsed}
         for (const [key] of MEASURE_FIELDS) if(row[key] == null) row[key]=0
         s.measurements = upsertBodyRecord(s.measurements, row, index)
       })
@@ -247,7 +247,7 @@ function HeightSheet({ close }) {
   const save = () => {
     const min = unit === 'in' ? 39 : 100, max = unit === 'in' ? 99 : 250
     if (!(height >= min && height <= max)) { toast(t('Enter a height between {0} and {1} {2}', min, max, unit)); return }
-    update(s => { s.heightCm = Math.round(height * 10) / 10; s.heightRecordedAt = todayISO() })
+    update(s => { recordHeight(s, Math.round(height * 10) / 10, todayISO(), Date.now(), uid()) })
     close(); toast(t('Height saved'))
   }
   return <><h3>{t('Height')}</h3><div className="muted small" style={{ marginBottom: 14 }}>{t('Your height is used with your latest body weight to calculate BMI.')}</div>
@@ -1263,7 +1263,7 @@ function InBodyHistory() {
     if (!image && !Object.values(parsed).some(v=>v>0)) { toast(t('Enter at least one InBody value')); return }
     setSaving(true)
     try {
-      change(s => { s.inbody = upsertBodyRecord(s.inbody, {...editing?.record,id:editing?.record.id || draftId.current,d:date,...parsed,image}, editing?.index ?? -1) })
+      change(s => { s.inbody = upsertBodyRecord(s.inbody, {...editing?.record,id:editing?.record.id || draftId.current,d:date,t:editing?.record.t || Date.now(),...parsed,image}, editing?.index ?? -1) })
       await useStore.getState().flushPersistence()
       setAdding(false); setValues({}); setImage(''); toast(t('InBody result saved'))
     } catch { toast(t('Could not save. Check available storage and try again.')) }
@@ -1285,9 +1285,12 @@ function InBodyHistory() {
 export const inBodySheet = () => ui().openSheet(() => <InBodyHistory />)
 
 /* ============================ workout detail ============================ */
-function WorkoutDetail({ w, close }) {
+function WorkoutDetail({ w: original, close }) {
   const st = useStore(s => s.S)
   const update = useStore(s => s.update)
+  const w=st.workouts.find(row=>row.id===original.id)||original
+  const [duration,setDuration]=useState(()=>String(Math.round(workoutElapsedMs(original)/6000)/10))
+  const [durationError,setDurationError]=useState('')
   // The session note is editable here rather than only at the finish sheet: what you want to
   // record about a session is often clearer once you have looked at what you actually did.
   const [note, setNote] = useState(w.note || '')
@@ -1309,8 +1312,9 @@ function WorkoutDetail({ w, close }) {
   } })
   return <>
     <h3>{w.name}</h3>
+    {['inactivity','abandoned','auto_completed'].includes(w.finishReason)&&<div className="card"><p>{t('Auto-ended at {0}',clockAt(w.end))}</p><label>{t('Duration (minutes)')}<input className="input" type="number" min="0.1" step="0.1" value={duration} onChange={e=>setDuration(e.target.value)}/></label>{durationError&&<p role="alert">{durationError}</p>}<Button onClick={()=>{const corrected=correctWorkoutDuration(w,duration);if(!corrected){setDurationError(t('Enter a valid duration ending before now.'));return}update(s=>{const i=s.workouts.findIndex(row=>row.id===w.id);if(i>=0)s.workouts[i]=corrected});setDurationError('');toast(t('Workout updated'))}}>{t('Save duration')}</Button></div>}
     <ActivityMetrics workout={st.workouts.find(row=>row.id===w.id) || w} />
-    {w.finishReason==='inactivity' && w.resumeSnapshot && !st.active && <Button onClick={()=>{update(s=>resumeAutoFinished(s,w.id));close();nav('/workout')}}>{t('Continue in a new session')}</Button>}
+    {['inactivity','abandoned','auto_completed'].includes(w.finishReason) && w.resumeSnapshot && !st.active && <Button onClick={()=>{update(s=>resumeAutoFinished(s,w.id));close();nav('/workout')}}>{t('Continue in a new session')}</Button>}
     <div className="muted small" style={{ marginBottom: 12 }}>{[fmtDate(w.d, true), ...(Number(w.end) > Number(w.start) ? [clockAt(w.start) + '–' + clockAt(w.end)] : []), ...durPart(workoutElapsedMs(w)), ...(!w.activity || w.activity.preservesWorkout ? [fmtVol(w.vol, st.unit)] : []), ...(w.bw ? [fmtNum(w.bw) + ' ' + st.unit] : [])].join(' · ')}</div>
     {(w.activity && !w.activity.preservesWorkout ? [] : editing ? draftEntries : w.entries).map((e, i) => {
       const ex = EXIDX[e.id]
@@ -1501,12 +1505,16 @@ export function WorkoutRow({ w, onClick }) {
 
 /* ============================ workout lifecycle ============================ */
 export function startFlow(routineId) {
+  const resolution=workoutResolution(S().active,Date.now(),true)
+  if(resolution)doFinishWorkout({...resolution,silent:true})
   if (S().active) {nav('/workout');return}
   if (routineId === undefined) routineId = nextDailyRoutine(S(),todayISO())?.id || null
   if(isTrainingPaused(S(),todayISO())) return ui().openSheet(close=><TrainingPauseCard onSaved={close} />)
   bwSheet({ required: true, onDone: bw => beginWorkout(routineId, bw) })
 }
 export function beginWorkout(routineId, bw) {
+  const resolution=workoutResolution(S().active,Date.now(),true)
+  if(resolution)doFinishWorkout({...resolution,silent:true})
   const st = S()
   if (st.active) {nav('/workout');return}
   if(isTrainingPaused(st,todayISO())) return ui().openSheet(close=><TrainingPauseCard onSaved={close} />)
@@ -1688,7 +1696,7 @@ function WorkoutComplete({ close }) {
   return <div style={{ textAlign: 'center', padding: '8px 0' }}>
     <div style={{ fontSize: 44, display: 'flex', justifyContent: 'center', color: 'var(--acc)' }}><Icon name="checkCircle" /></div>
     <h3 style={{ margin: '8px 0' }}>{t("That's the whole workout!")}</h3>
-    <div className="muted small" style={{ marginBottom: 16 }}>{t('Every exercise done — great work. Finish up, or keep going and add another exercise.')}</div>
+    <div className="muted small" style={{ marginBottom: 16 }}>{t('Timer frozen. Finish now or continue. After 10 minutes, this session saves at its completion time.')}</div>
     <Button variant="primary" icon="flag" onClick={() => { close(); finishWorkout() }}>{t('Finish workout')}</Button>
     <div style={{ height: 8 }} />
     <Button onClick={() => { resumeActiveWorkoutClock(); close(); useUI.getState().toast(t('Keep going — tap “+ Add exercise” below')) }}>{t('Continue workout')}</Button>
@@ -1701,9 +1709,6 @@ export const workoutCompleteSheet = () => {
   completionDecision = ui().openSheet(close => <WorkoutComplete close={close} />, { kind: 'center', onClose:()=>{completionDecision=null} })
   return completionDecision
 }
-export function inactivityWarningSheet() {
-  return ui().openSheet(close=><><h3>{t('Still training?')}</h3><p>{t('No activity has been recorded for a while.')}</p><Button onClick={()=>{update(s=>{if(s.active)s.active.lastActivityAt=s.active.lastMeaningfulWorkoutActivityAt=Date.now()});close()}}>{t('Continue workout')}</Button><Button onClick={()=>{close();finishWorkout()}}>{t('Finish workout')}</Button></>)
-}
 
 function FinishSummary({ w, prs, e1prs = [], milestone = null, close }) {
   const st = useStore(s => s.S)
@@ -1714,8 +1719,8 @@ function FinishSummary({ w, prs, e1prs = [], milestone = null, close }) {
       <div><b>{t('{0}-workout streak!', milestone)}</b><span>{t('Your consistency is paying off. Keep the flame alive!')}</span></div>
     </div>}
     <div style={{ fontSize: 44, display: 'flex', justifyContent: 'center', color: 'var(--acc)' }}><Icon name="trophy" /></div>
-    <h3 style={{ margin: '8px 0' }}>{t(w.finishReason === 'inactivity' ? 'Session ended after inactivity' : 'Workout complete!')}</h3>
-    {w.finishReason === 'inactivity' && <p className="small muted">{t('Saved at the 30-minute inactivity limit. Your logged sets are preserved.')}</p>}
+    <h3 style={{ margin: '8px 0' }}>{t(['abandoned','auto_completed'].includes(w.finishReason) ? 'Session recovered' : 'Workout complete!')}</h3>
+    {['abandoned','auto_completed'].includes(w.finishReason) && <><p className="small muted">{t('Saved using recorded training time. Review or correct the duration in History.')}</p><Button onClick={()=>{close();workoutDetailSheet(w)}}>{t('Edit duration')}</Button></>}
     <div className="tiles" style={{ textAlign: 'left' }}>
       <div className="tile"><div className="l">{t('Duration')}</div><div className="v" style={{ fontSize: '1.1rem' }}>{fmtDur(workoutElapsedMs(w))}</div></div>
       <div className="tile"><div className="l">{t('Volume')}</div><div className="v" style={{ fontSize: '1.1rem' }}>{fmtVol(w.vol, st.unit)}</div></div>
@@ -1744,7 +1749,7 @@ export function finishWorkout() {
 }
 export function doFinishWorkout(options = {}) {
   const st = S()
-  const A = st.active
+  const A = ensureWorkoutCompletionPaused(st.active)
   if (!A) return
   const prs = []
   const e1prs = []
@@ -1764,7 +1769,7 @@ export function doFinishWorkout(options = {}) {
   })
   delete w.restTimer
   w.vol = workoutVolume(w)
-  if (options.reason === 'inactivity') { w.finishReason='inactivity'; w.resumeSnapshot=structuredClone(A) }
+  if (['inactivity','abandoned','auto_completed'].includes(options.reason)) { w.resumeSnapshot=structuredClone(A) }
   update(s => {
     if (s.active?.id !== A.id || s.workouts.some(row=>row.id===w.id)) return
     w.entries.forEach(e => {
@@ -1788,5 +1793,7 @@ export function doFinishWorkout(options = {}) {
   void useStore.getState().flushPersistence().catch(()=>useUI.getState().toast(t('Could not save. Check available storage and try again.')))
   void playAppSound(S(), 'completion')
   void clearWorkoutNotification()
-  ui().openSheet(close => <><FinishSummary w={w} prs={prs} e1prs={e1prs} milestone={milestone} close={close} />{w.finishReason==='inactivity' && <Button onClick={()=>{update(s=>resumeAutoFinished(s,w.id));close();nav('/workout')}}>{t('Continue in a new session')}</Button>}</>, { kind: 'center', locked: true })
+  if(options.silent)return w
+  completionDecision?.close()
+  ui().openSheet(close => <><FinishSummary w={w} prs={prs} e1prs={e1prs} milestone={milestone} close={close} />{['inactivity','abandoned','auto_completed'].includes(w.finishReason) && <Button onClick={()=>{update(s=>resumeAutoFinished(s,w.id));close();nav('/workout')}}>{t('Continue in a new session')}</Button>}</>, { kind: 'center', locked: true })
 }

@@ -24,7 +24,7 @@ export function buildCompletedWorkout(active, { end = Date.now(), prs = [], reas
       if (entry.notePin) completed.notePin = true
     }
     return completed
-  }).filter(entry => reason === 'inactivity' || entry.sets.some(set => set.done || set.leftDone || set.rightDone))
+  }).filter(entry => ['inactivity','abandoned'].includes(reason) || entry.sets.some(set => set.done || set.leftDone || set.rightDone))
 
   const sessionNote = (active?.note || '').trim()
 
@@ -36,6 +36,8 @@ export function buildCompletedWorkout(active, { end = Date.now(), prs = [], reas
     sessionStartedAt: timing.sessionStartedAt, lastActivityAt: timing.lastActivityAt, accumulatedActiveDuration: timing.accumulatedActiveDuration,
     sessionStatus: timing.sessionStatus, endedAt: timing.endedAt, finishReason: reason,
     ...(timing.pausedDurationMs ? { pausedDurationMs: timing.pausedDurationMs } : {}),
+    ...Object.fromEntries(['routineCompletedAt','lastMeaningfulTrainingActivityAt','lastMeaningfulWorkoutActivityAt','lastUserInteractionAt'].filter(key=>active[key]!=null).map(key=>[key,active[key]])),
+    ...(!['inactivity','abandoned','auto_completed'].includes(reason)?{manualFinishedAt:end}:{}),
     routineId: active.routineId,
     name: active.name,
     bw: active.bw,

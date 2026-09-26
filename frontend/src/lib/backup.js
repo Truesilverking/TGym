@@ -29,7 +29,7 @@ export function portableState(state) {
 export function validateBackupState(data) {
   if (data?.trainingStartDate != null && (!Number.isFinite(dayNumber(data.trainingStartDate)) || !validateTrainingHistory(data.trainingStartDate, data.trainingHistory))) throw new Error('Invalid training history')
   if (!data || typeof data !== 'object' || Array.isArray(data) || !Array.isArray(data.workouts) || !Array.isArray(data.routines)) throw new Error('Invalid backup data')
-  for (const key of ['workouts','routines','customEx','bodyweight','measurements','inbody','equipProfiles','trainingPauses']) {
+  for (const key of ['workouts','routines','customEx','bodyweight','measurements','inbody','heightHistory','equipProfiles','trainingPauses']) {
     if (data[key] !== undefined && (!Array.isArray(data[key]) || data[key].some(v => !v || typeof v !== 'object' || Array.isArray(v)))) throw new Error(`Invalid backup field: ${key}`)
   }
   if (data.trainingPauses?.some(p=>!p.id || !Number.isFinite(dayNumber(p.start)) || (p.end != null && (!Number.isFinite(dayNumber(p.end)) || p.end < p.start)))) throw new Error('Invalid training pause')

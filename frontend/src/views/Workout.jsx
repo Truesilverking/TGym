@@ -646,6 +646,8 @@ function ActiveWorkout() {
       <div style={{ textAlign: 'center' }}><div style={{ fontWeight: 600 }}>{A.name}</div>{A.dailyPlanTotal>1 && A.dailyPlanIndex>=0 && <div className="workout-day-position">{t('Workout {0} of {1}',A.dailyPlanIndex+1,A.dailyPlanTotal)}</div>}<div className="sub"><Elapsed workout={A} /> · {t('{0} sets', done + '/' + total)}</div></div>
       <button className="iconbtn" style={{ color: 'var(--acc)' }} aria-label={t('Finish')} onClick={finishWorkout}><Icon name="check" /></button>
     </div>
+    {A.timerPausedAt==null && <Button size="sm" disabled={!!work} onClick={()=>{stopRest();update(s=>{if(s.active)s.active={...pauseWorkoutClock(s.active),pauseReason:'manual'}})}}>{t('Pause workout timer')}</Button>}
+    {A.pauseReason==='manual'&&<p className="small muted">{t('Workout timer paused. Continue when you are ready.')}</p>}
     <div className="wprog"><i style={{ width: (total ? done / total * 100 : 0) + '%' }} /></div>
 
     {A.entries.length ? <>
@@ -706,7 +708,7 @@ function ActiveWorkout() {
         {A.note ? t('Edit session note') : t('Add session note')}
       </Button>
     </div>
-    {A.timerPausedAt && <Button onClick={() => update(s => {
+    {A.timerPausedAt != null && <Button onClick={() => update(s => {
       if (s.active) s.active = resumeWorkoutClock(s.active)
     }, true)}>{t('Continue workout')}</Button>}
     {(() => {

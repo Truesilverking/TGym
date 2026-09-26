@@ -1,5 +1,5 @@
 import { Capacitor, registerPlugin } from '@capacitor/core'
-import { workoutElapsedMs, lastWorkoutActivity, INACTIVITY_AUTO_FINISH_MINUTES } from './workout-time.js'
+import { workoutElapsedMs, inactivityDeadline } from './workout-time.js'
 import { isWarmupRow } from './workout-model.js'
 import { t, getLang } from './i18n-core.js'
 const native = registerPlugin('WorkoutNotification')
@@ -18,7 +18,7 @@ export function workoutNotificationState(active, rest, now=Date.now()) {
     elapsedMs:workoutElapsedMs(active,now),workoutLabel:es?'ENTRENO':t('Workout').toUpperCase(),restLabel:es?'DESCANSO':t('Rest').toUpperCase(),
     setNumber,setLabel:setNumber ? `${es?'SERIE':t('Set').toUpperCase()} ${setNumber}` : '',
     restEndsAt:rest?.endsAt > now ? rest.endsAt : 0,
-    autoFinishAt:paused?0:lastWorkoutActivity(active)+INACTIVITY_AUTO_FINISH_MINUTES*60000}
+    autoFinishAt:active.routineCompletedAt!=null?inactivityDeadline(active):0}
 }
 let queue=Promise.resolve()
 let permissionRequested=false

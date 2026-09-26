@@ -45,7 +45,7 @@ describe('persisted workout clock boundaries', () => {
     expect(saved).toMatchObject({sessionStartedAt:360*min,lastActivityAt:400*min,sessionStatus:'active',endedAt:null})
     useStore.getState().update(s=>{s.active.note='A real note'})
     saved=JSON.parse(localStorage.getItem('gym_state_v1')).active
-    expect(saved.lastActivityAt).toBe(432*min)
+    expect(saved.lastActivityAt).toBe(400*min)
     expect(saved.accumulatedActiveDuration).toBe(72*min)
   })
 

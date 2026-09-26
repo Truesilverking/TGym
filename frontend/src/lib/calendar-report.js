@@ -1,4 +1,7 @@
 import { trainingStart } from './training-history.js'
+import { progressReportPages } from './progress-export.js'
+import { exerciseNameFor } from './i18n-core.js'
+import { fmtNum } from './format.js'
 import { calendarPeriod, calendarFilename } from './calendar-data.js'
 import { MONTHS_LONG, isoOf } from './format.js'
 
@@ -59,7 +62,8 @@ export function calendarReportPages(S, anchor, period, format, { t = x => x, now
   if (!Number.isFinite(anchor.getTime())) throw new Error('Invalid report date')
   const all = Array.from({ length: 12 }, (_, i) => i)
   const groups = period === 'week' || period === 'month' ? [null] : format === 'png' ? [all] : period === 'full' ? [all, all.slice(0, 4), all.slice(4, 8), all.slice(8)] : [all.slice(0, 4), all.slice(4, 8), all.slice(8)]
-  return groups.map((months, i) => page(S, anchor, period, months, months?.length === 12, t, now, i + 1, groups.length))
+  const pages = groups.map((months, i) => page(S, anchor, period, months, months?.length === 12, t, now, i + 1, groups.length))
+  return period === 'full' ? [...pages, ...progressReportPages(S,{t,now,name:exerciseNameFor,formatNumber:fmtNum})] : pages
 }
 
 export function reportFilename(anchor, period, format) {
