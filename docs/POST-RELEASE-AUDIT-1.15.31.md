@@ -80,3 +80,7 @@ Device screenshots are private, ignored local evidence and must not be published
 3. Installed production PWA upgrade, virtual keyboard, safe areas, assistive technology and exhaustive editorial review beyond the tested route/dialog matrix. iOS/macOS native acceptance requires its platform.
 
 These gaps must remain explicit in a release decision. Do not equate compilation, unit tests, simulated service boundaries or headless browser checks with physical-device acceptance.
+
+## Signed candidate preparation
+
+Candidate version 1.15.32/code67 is assigned for installation over the verified 1.15.31/code66 device build. `android-candidate.yml` runs only for an explicit `android-candidate-*` QA tag or manual dispatch. It produces a signed release APK as a short-lived Actions artifact, verifies its package/version and certificate against the currently published manifest, and has no release, Pages or notification step. Signing material remains in the runner and is excluded from the artifact. The QA tag does not match the production `v*.*.*` release trigger. Web/PWA/mobile builds and final Capacitor sync passed for the assigned version; physical installation and final publication remain pending.

@@ -1,0 +1,86 @@
+name: Build signed Android candidate
+
+# Explicit QA tags build an installable artifact without publishing an update.
+on:
+  push:
+    tags: ['android-candidate-*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 10 }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '21', cache: gradle }
+      - run: pnpm install --frozen-lockfile
+        working-directory: frontend
+      - name: Verify version and existing signing identity
+        shell: bash
+        run: |
+          OWNER="${GITHUB_REPOSITORY%%/*}"
+          NAME="${GITHUB_REPOSITORY#*/}"
+          curl --fail --silent --show-error "https://${OWNER,,}.github.io/${NAME}/updates/latest.json?check=${GITHUB_RUN_ID}" -o "$RUNNER_TEMP/tgym-previous.json"
+          GITHUB_REF_NAME= PREVIOUS_VERSION_CODE="$(jq -er '.versionCode' "$RUNNER_TEMP/tgym-previous.json")" node frontend/scripts/check-version.mjs
+      - name: Configure native application and signing
+        env:
+          CONFIG: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        shell: bash
+        run: |
+          test -n "$CONFIG" && test -n "$KEYSTORE_B64" && test -n "$STORE_PASSWORD" && test -n "$KEY_ALIAS" && test -n "$KEY_PASSWORD"
+          printf '%s' "$CONFIG" | base64 --decode > frontend/android/app/google-services.json
+          printf '%s' "$KEYSTORE_B64" | base64 --decode > frontend/android/app/tgym-release.jks
+          printf 'storeFile=tgym-release.jks\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' "$STORE_PASSWORD" "$KEY_ALIAS" "$KEY_PASSWORD" > frontend/android/keystore.properties
+      - name: Build candidate mobile assets
+        working-directory: frontend
+        env:
+          VITE_GITHUB_OWNER: ${{ github.repository_owner }}
+          VITE_GITHUB_REPO: ${{ github.event.repository.name }}
+          VITE_APP_DISTRIBUTION: github
+        run: pnpm run build:mobile
+      - run: ./gradlew assembleRelease :app:lintRelease
+        working-directory: frontend/android
+      - name: Validate signed APK and prepare isolated artifact
+        shell: bash
+        run: |
+          VERSION="$(node -p "require('./frontend/package.json').version")"
+          CODE="$(grep -oP 'versionCode\s+\K\d+' frontend/android/app/build.gradle)"
+          mkdir -p candidate
+          APK="candidate/TGym-Android-v${VERSION}.apk"
+          cp frontend/android/app/build/outputs/apk/release/app-release.apk "$APK"
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)"
+          "$APKSIGNER" verify --print-certs "$APK" > candidate/signature.txt
+          CERT_SHA="$(node frontend/scripts/signing-certificate.mjs candidate/signature.txt)"
+          test "$CERT_SHA" = "$(jq -er '.android.certificateSha256' "$RUNNER_TEMP/tgym-previous.json")"
+          AAPT="$(find "$ANDROID_HOME/build-tools" -name aapt | sort -V | tail -1)"
+          "$AAPT" dump badging "$APK" > candidate/package.txt
+          grep -F "package: name='app.framegym.mobile' versionCode='${CODE}' versionName='${VERSION}'" candidate/package.txt
+          ! grep -q '^application-debuggable' candidate/package.txt
+          APK_SHA="$(sha256sum "$APK" | cut -d' ' -f1)"
+          jq -n --arg version "$VERSION" --argjson code "$CODE" --arg sha "$APK_SHA" --arg cert "$CERT_SHA" --arg commit "$GITHUB_SHA" '{version:$version,versionCode:$code,commit:$commit,sha256:$sha,certificateSha256:$cert,published:false}' > candidate/candidate.json
+          (cd candidate && sha256sum *.apk > checksums.txt)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: signed-android-candidate
+          path: candidate/
+          if-no-files-found: error
+          retention-days: 7
+      - name: Remove temporary signing files
+        if: always()
+        shell: bash
+        run: rm -f frontend/android/app/tgym-release.jks frontend/android/keystore.properties
