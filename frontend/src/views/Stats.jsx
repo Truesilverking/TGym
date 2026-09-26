@@ -436,10 +436,12 @@ export default function Stats() {
   if (showEff) exOpts.push({ value: 'effort', label: t('Effort') })
 
   return <>
-    <Button onClick={() => nav('/progress')}>{t('Progress Report')}</Button>
     <div className="hdr"><div><h1>{t('Stats')}</h1><div className="sub">{t('Progress & history')}</div></div>
       <div className="row" style={{ gap: 3 }}><button className="iconbtn" onClick={() => exportStatsReport(S)} aria-label={t('Export Stats report')} title={t('Export Stats report')}><Icon name="download" /></button>{!MOBILE && <button className="iconbtn" onClick={() => window.print()} aria-label={t('Print / Save as PDF')} title={t('Print / Save as PDF')}><Icon name="clipboard" /></button>}<button className="iconbtn" onClick={() => nav('/history')} aria-label={t('History')}><Icon name="history" /></button><button className="iconbtn" onClick={inBodySheet} aria-label={t('InBody history')} title={t('InBody history')}><Icon name="person" /></button></div></div>
 
+    <section className="card" aria-label={t('Progress Report')}>
+      <div className="row between" style={{gap:16,flexWrap:'wrap'}}><div><h2>{t('Progress Report')}</h2><p className="sub">{t('Baseline → Current → Change → Trend')}</p></div><Button variant="primary" icon="chart" onClick={() => nav('/progress')}>{t('Open')} · {t('Progress Report')}</Button></div>
+    </section>
     <TrainingHistory />
     <div className="tiles">
       <div className="tile"><div className="l"><Icon name="dumbbell" />{t('Recorded workouts')}</div><div className="v">{workouts.length}</div></div>

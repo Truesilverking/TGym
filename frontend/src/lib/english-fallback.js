@@ -1,5 +1,6 @@
 // Explicit source-language fallback. Entries in language packs override these values.
 export default {
+  'Download': 'Download',
   "Synchronize all devices before replacing a changed cloud backup.": "Synchronize all devices before replacing a changed cloud backup.",
   "Sign-out completed. Your local data was kept on this device.": "Sign-out completed. Your local data was kept on this device.",
   "Could not sign out. Your local data was kept. Check your connection and try again.": "Could not sign out. Your local data was kept. Check your connection and try again.",

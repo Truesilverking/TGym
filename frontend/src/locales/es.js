@@ -2,6 +2,8 @@ import english from '../lib/english-fallback.js'
 // Spanish UI strings. Keys are the English source strings (see lib/i18n.js).
 export default {
   ...english,
+  'Download': 'Descargar',
+  'Scheduled': 'Programados',
   "Synchronize all devices before replacing a changed cloud backup.": "La copia en la nube cambió. Vuelve a sincronizar los dispositivos antes de reemplazarla.",
   "Sign-out completed. Your local data was kept on this device.": "La sesión se cerró. Tus datos locales se conservaron en este dispositivo.",
   "Could not sign out. Your local data was kept. Check your connection and try again.": "No se pudo cerrar la sesión. Tus datos locales se conservaron. Revisa la conexión e inténtalo de nuevo.",

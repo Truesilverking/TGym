@@ -13,3 +13,13 @@ Training includes session and complete Monday–Sunday weekly volume, sets, reps
 Expandable sections, memoized calculations, downsampled chart points and paginated measurement history keep long histories usable. HTML exports include comparable metrics and charts; Full Report preserves calendar pages and appends paginated progress cards. English uses source keys; Spanish is translated, and other locale keysets retain fallback text for new terms.
 
 Validation: pure data tests cover empty/single/multiple readings, periods, units, legacy history, joint strength/effort comparisons, AMRAP, per-side rows, PR deduplication, multi-routine schedules, activities and exports. Browser testing uses synthetic data only. Responsive checks at320/360/375/390/430/1024 found no horizontal overflow. Spanish light and English dark were inspected. Custom dates were verified with real keyboard changes; the browser tool's date `fill` did not trigger React's change event. HTML download was confirmed on disk. This is browser evidence, not physical iOS certification.
+
+## Download and presentation (1.15.35)
+
+Statistics now has a prominent Progress Report entry card. The report keeps the selected period and uses the same computed snapshot for the screen and PDF. Generate with **Export Progress Report · PDF**, then **Download** in web/PWA or **Share / save** in Capacitor. Browser downloads use an attached download link; native files use the existing base64 cache-file/share adapter. Files are named `TGym-Progress-Report-YYYY-MM-DD_YYYY-MM-DD.pdf`. A separate web Open link offers a preview where the browser permits blob navigation.
+
+A4 pages contain a compact overview, baseline/current/change cards, trends and dated records. Body-only reports omit the empty workout overview. Empty reports explicitly state that no comparable history exists. Lossless raster charts/text preserve accents and fonts without external assets. HTML fragments remain available in the existing complete statistics export. Calendar Full Report reuses the new page layout.
+
+Generation/save failures preserve the interactive report and allow retry. Buttons guard duplicate generation, share cancellation is not an error, period/data changes invalidate an old download, and object URLs are released. No persisted training data is modified by export. Bodyweight comparison groups are explicitly labelled, and exported completion includes its percent unit.
+
+Browser downloads were saved and opened using strict pypdf parsing plus PyMuPDF rendering with synthetic full/single/empty histories. The final audit records platform limitations separately: native adapter tests are not a physical Android/iOS file-manager test.

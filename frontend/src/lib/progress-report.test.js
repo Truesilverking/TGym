@@ -1,6 +1,6 @@
 import { describe,it,expect } from 'vitest'
 import { buildProgressReport,progressRange,progressMetric,comparePerformance } from './progress-report.js'
-import { progressReportHTML,progressReportPages } from './progress-export.js'
+import { progressReportHTML,progressReportPages,wrapProgressText } from './progress-export.js'
 import { convertWeightState,convertMeasurementState } from './unit-conversion.js'
 import { recordHeight } from './body-records.js'
 import { createBackup,validateBackupState } from './backup.js'
@@ -93,3 +93,26 @@ describe('exercise comparison and training aggregation',()=>{
   const html=progressReportHTML(report(s));expect(html).toContain('Estimated 1RM');expect(html).toContain('polyline');expect(html).not.toContain('<script>bad');expect(progressReportPages(s,{now}).length).toBeGreaterThan(1)
  })
 })
+
+ it('exports the selected report without rebuilding an all-time range',()=>{
+  const s=base();s.measurements=[{d:'2026-07-01',neck:30},{d:'2026-09-20',neck:35}]
+  const selected=buildProgressReport(s,{now,period:'custom',from:'2026-09-01',to:'2026-09-25'})
+  const pages=progressReportPages(null,{report:selected})
+  expect(pages[0].svg).toContain('2026-09-01 → 2026-09-25')
+  expect(pages[0].svg).toContain('35 cm');expect(pages[0].svg).not.toContain('30 cm');expect(pages[0].svg).toContain('More data needed')
+ })
+ it('renders a valid single-page empty PDF layout and escapes imported text',()=>{
+  const pages=progressReportPages(base(),{now});expect(pages).toHaveLength(1);expect(pages[0].svg).toContain('No comparable history in this period.');expect(pages[0].svg).not.toMatch(/NaN|undefined/)
+  const s=base();s.workouts=[workout('a','2026-09-01')]
+  const svg=progressReportPages(s,{now,name:()=>'<script>alert(1)</script>'}).map(p=>p.svg).join('')
+  expect(svg).not.toContain('<script>');expect(svg).toContain('&lt;script&gt;')
+ })
+
+ it('wraps localized labels at spaces without splitting ordinary exercise names',()=>{
+  expect(wrapProgressText('Récords personales · sentadilla profunda con barra',48)).toEqual(['Récords personales · sentadilla profunda con','barra'])
+  expect(wrapProgressText('Promedio de entrenamientos por semana',23)).toEqual(['Promedio de','entrenamientos por','semana'])
+ })
+ it('bounds long unbroken imported names without losing characters',()=>{
+  const name='x'.repeat(120),lines=wrapProgressText(name,48)
+  expect(lines.every(l=>l.length<=48)).toBe(true);expect(lines.join('')).toBe(name)
+ })
