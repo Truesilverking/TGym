@@ -16,6 +16,13 @@ Progress Report now uses the exact `iconbtn` and `Icon` structure in the Stats h
 
 ## Publication
 
-Pending exact-source CI, tag, release and public artifact/updater verification.
+Published [v1.15.36](https://github.com/Truesilverking/TGym/releases/tag/v1.15.36), Android code72, from `be04622f13b56db4a4d10f16b31f641d314675dd` on `feature/dashboard-visual-polish`. Remote branch and annotated tag target verified.
+
+- [Tests36253081123](https://github.com/Truesilverking/TGym/actions/runs/36253081123):SUCCESS.
+- [Validate Android36253081071](https://github.com/Truesilverking/TGym/actions/runs/36253081071):SUCCESS, including emulator instrumentation.
+- [Release36253515907](https://github.com/Truesilverking/TGym/actions/runs/36253515907):SUCCESS, signed APK/AAB, Pages, public metadata verification and FCM submission. Submission acceptance does not prove phone receipt.
+- Independently downloaded GitHub/Pages APKs are identical: SHA256 `964b10eed53b4f5853fff676532d804122a7436239b5115670e9f4e626fabe36`. apksigner verified the unchanged certificate `8ee233c984615e2b3f6f083dc0c47d148bb8956ff7caca97be0b9a0d260e6082`; aapt verified `app.framegym.mobile` version1.15.36/code72. Public manifest and PWA build match the release source.
+- Real shared `checkForAppUpdate` executed against public endpoints with isolated memory storage: Android and PWA detect1.15.36 from1.15.35; current1.15.36 does not offer itself again.
+- QA browser tab closed, viewport reset and test server5184 stopped. Physical mobile download/receipt/install remains unverified as described above.
 
 Local synthetic artifacts: ignored `.tools/browser-audit/progress-36/`. No private workout data, credentials or binaries committed.
