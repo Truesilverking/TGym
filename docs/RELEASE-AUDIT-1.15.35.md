@@ -22,4 +22,14 @@ ADB detected no physical Pixel. No iPhone was available. Physical native/PWA dow
 
 ## Publication
 
-Pending exact commit CI and signed release workflow. No release published at this checkpoint.
+Published [v1.15.35](https://github.com/Truesilverking/TGym/releases/tag/v1.15.35), code71, from `a0f9d0c2fdeb0d4289cae7e7c75884ce1c3ead15` on `feature/dashboard-visual-polish`. Remote branch and annotated tag target verified.
+
+- [Tests 36251535168](https://github.com/Truesilverking/TGym/actions/runs/36251535168): SUCCESS.
+- [Validate Android 36251535156](https://github.com/Truesilverking/TGym/actions/runs/36251535156): SUCCESS, including emulator instrumentation.
+- [Release 36251979315](https://github.com/Truesilverking/TGym/actions/runs/36251979315): SUCCESS, signed APK/AAB, Pages deployment, published-byte verification and FCM submission. Submission is not confirmation of phone delivery.
+- Independently downloaded GitHub APK and Pages `downloads/TGym-latest.apk` have identical SHA-256 `58efe3d5d703f0793073d24b0762ed32eb51f7677a226cdc2688a56a32f0df3e`.
+- `apksigner` verifies signature; signer remains `8ee233c984615e2b3f6f083dc0c47d148bb8956ff7caca97be0b9a0d260e6082`. `aapt` verifies `app.framegym.mobile`, version1.15.35/code71. Public manifest and PWA build metadata match the exact source commit.
+- Executed the real `checkForAppUpdate` module through Vite SSR against the live published endpoints with isolated in-memory storage: Android/GitHub and PWA both detect1.15.35 from1.15.34; current1.15.35 returns no duplicate update. This verifies app update detection logic and availability, not physical phone reception/installation.
+- Final standalone PDF:28pages,7954600bytes, SHA-256 `3fca357d3f54a2f8957453d08d000aa976affeef14ee1058fb1473853587e8cd`; strict parse and all pages rendered. Last-month PDF23pages also opened/rendered. Final empty and single-reading PDFs are one page. Browser landscape844x390 also had no horizontal overflow. QA viewport reset, tabs closed and servers5180-5183 stopped.
+
+Local reproducible evidence is under ignored `.tools/release-1.15.35/` and `.tools/browser-audit/progress-pdf/`; no credentials, signing material, generated APKs or private backups are committed.
