@@ -1,5 +1,11 @@
 import { expect, it } from 'vitest'
-import { upsertBodyRecord, parseMetrics, validMeasurementDate } from './body-records.js'
+import { upsertBodyRecord, removeBodyRecord, parseMetrics, validMeasurementDate } from './body-records.js'
+it('removes only the selected reading when multiple readings share a date',()=>{
+ const rows=[{id:'a',d:'2026-09-26',neck:30},{id:'b',d:'2026-09-26',neck:35},{d:'2026-09-26',neck:32}]
+ expect(removeBodyRecord(rows,rows[1])).toEqual([rows[0],rows[2]])
+ expect(removeBodyRecord(rows,structuredClone(rows[2]))).toEqual([rows[0],rows[1]])
+ expect(removeBodyRecord(rows,{id:'unknown'})).toEqual(rows)
+})
 it('edits dates without losing same-day records or image associations',()=>{
  const rows=[{id:'a',d:'2026-09-01',image:'data:image/jpeg;base64,AA',legacy:42},{id:'b',d:'2026-09-02',image:'other'}]
  const edited=upsertBodyRecord(rows,{id:'a',d:'2026-09-02',weight:80})

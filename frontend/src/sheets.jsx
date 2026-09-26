@@ -212,7 +212,6 @@ function MeasurementsSheet({ existing, close, focusMetric }) {
     const parsed = parseMetrics(values, MEASURE_FIELDS)
     if (!validMeasurementDate(date, todayISO()) || !parsed) { toast(t('Check the date and highlighted values.')); return }
     if (!Object.values(parsed).some(v=>v>0)) { toast(t('Enter at least one measurement')); return }
-    if (existing?.d !== date && (st.measurements || []).some(r=>r.d===date && r.id!==recordId.current)) { toast(t('A measurement already exists on this date. Edit it from history.')); return }
     setSaving(true)
     try {
       update(s => {

@@ -6,7 +6,7 @@ Progress Report was implemented first, followed by the workout clock/recovery ch
 
 ## Verification before publication
 
-- Final frontend run:1,099 tests /113 files passed, including the added legacy-height and timed-performance edge cases.
+- Final frontend run:1,099 tests /113 files passed, including the added legacy-height and timed-performance edge cases. A final same-day measurement preservation/deletion correction added two regression tests; the affected tests passed and final CI is expected to run1,101 tests.
 - API10 tests; MCP37 tests and plain-Node import graph passed.
 - Fatigue probes:108,000 monotonic and14,076 randomized history-deletion comparisons passed.
 - Twelve locales have1,623 matching keys. Frontend has no lint/typecheck scripts.

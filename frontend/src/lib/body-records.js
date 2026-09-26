@@ -24,6 +24,10 @@ export function validMeasurementDate(date, today) {
   if (!date || !Number.isFinite(new Date(date+'T12:00:00Z').getTime())) return false
   return /^\d{4}-\d{2}-\d{2}$/.test(date) && date <= today && new Date(date+'T12:00:00Z').toISOString().slice(0,10) === date
 }
+export function removeBodyRecord(rows, record) {
+  const index=(rows || []).findIndex(row=>record.id ? row.id===record.id : JSON.stringify(row)===JSON.stringify(record))
+  return (rows || []).filter((_,i)=>i!==index)
+}
 
 // New height readings retain their predecessors. Canonical centimetres keep this
 // additive history independent of display-unit conversion and older backups.
