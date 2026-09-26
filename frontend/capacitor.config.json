@@ -4,6 +4,7 @@
   "webDir": "dist",
   "backgroundColor": "#0c0e12",
   "android": {
-    "allowMixedContent": true
+    "allowMixedContent": true,
+    "adjustMarginsForEdgeToEdge": "auto"
   }
 }

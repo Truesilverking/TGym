@@ -52,7 +52,7 @@ The first offline probe failed under Vite preview because its `Vary: Origin` hea
 
 ## Native/publication checkpoint
 
-The configured User `ANDROID_HOME` and the previously supplied SDK path are still absent to this process; `adb` is unavailable. User `JAVA_HOME` and JDK21 exist. No failed Gradle attempt or new SDK installation was repeated. The published release's prior CI is historical evidence only.
+The full local Android build SDK is unavailable; User `JAVA_HOME` and JDK21 exist. After explicit user authorization, only the official Google Platform-Tools 37.0.1 were installed in the standard Android location, enabling ADB diagnostics. Android Studio/build tools/platform packages were not downloaded. The published release's prior CI is historical evidence only.
 
 Candidate `1b189fdd0dbb68a4cefa7ad5226edb2a01b0d9a1` was committed and pushed to `feature/dashboard-visual-polish`; the remote branch SHA was verified. Both workflows completed successfully for that exact source SHA:
 
@@ -61,7 +61,13 @@ Candidate `1b189fdd0dbb68a4cefa7ad5226edb2a01b0d9a1` was committed and pushed to
 
 These feature-branch workflows did not publish Pages, create a release or send FCM. Version remains 1.15.31/code66 until a distinct release is deliberately assigned. A documentation-only follow-up does not change the tested application source.
 
-The user subsequently connected a Pixel 10. Windows detects it as a healthy portable device, but USB file transfer alone does not provide app diagnostics. No reusable `adb.exe` was found in the configured SDK or common tool locations. USB-debugging authorization and permission to install only Google's Platform-Tools are pending; the earlier instruction against downloading another SDK remains respected. No phone files or app data were opened or erased.
+### Physical-device follow-up
+
+ADB access was authorized on a Pixel 10 running Android 17/API 37. The installed app is 1.15.31/code66; its APK SHA-256 exactly matches both the published artifact and the current public manifest (`f0e906dc1a961b668d34bd8cbb7f6321318378dad065d9e9dc47af14b1bba515`). Android reports notification and exercise-reading permissions granted, with package installation allowed. No newer APK is offered by the public manifest, so the absence of an update prompt is currently expected. Permission status alone does not prove delivery, installation or Health Connect import.
+
+Inspection of the real Home screen exposed a native layout defect: Android's status bar overlaps the header controls. Capacitor 7 defaults to disabled edge-to-edge margin adjustment; CSS safe-area values alone did not protect this device. The follow-up sets `android.adjustMarginsForEdgeToEdge` to `auto`, using Capacitor's native system-bar/display-cutout insets on Android 15+. `SafeAreaTest` checks actual WebView bounds on all four sides before and after activity recreation. The mobile asset build and Capacitor synchronization passed; the new native regression still requires exact-source CI, and the corrected APK has not yet been installed on the phone.
+
+Device screenshots are private, ignored local evidence and must not be published. No workout/profile state was edited, reset or removed. Further interactive checks require the phone to remain unlocked; app-version verification is distinct from acceptance of the unpublished candidate.
 
 ## Remaining external acceptance
 
