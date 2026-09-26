@@ -83,4 +83,12 @@ These gaps must remain explicit in a release decision. Do not equate compilation
 
 ## Signed candidate preparation
 
-Candidate version 1.15.32/code67 is assigned for installation over the verified 1.15.31/code66 device build. `android-candidate.yml` runs only for an explicit `android-candidate-*` QA tag or manual dispatch. It produces a signed release APK as a short-lived Actions artifact, verifies its package/version and certificate against the currently published manifest, and has no release, Pages or notification step. Signing material remains in the runner and is excluded from the artifact. The QA tag does not match the production `v*.*.*` release trigger. Web/PWA/mobile builds and final Capacitor sync passed for the assigned version; physical installation and final publication remain pending.
+Candidate version 1.15.32/code67 is assigned for installation over the verified 1.15.31/code66 device build. `android-candidate.yml` runs only for an explicit `android-candidate-*` QA tag or manual dispatch. It produces a signed release APK as a short-lived Actions artifact, verifies its package/version and certificate against the currently published manifest, and has no release, Pages or notification step. Signing material remains in the runner and is excluded from the artifact. The QA tag does not match the production `v*.*.*` release trigger. Web/PWA/mobile builds and final Capacitor sync passed for the assigned version.
+
+Source `27e3c914c1049ef217ce7331d58d89978eccad05` and QA tag `android-candidate-1.15.32-01` were verified remotely. All exact-source workflows passed:
+
+- [Tests 36218938863](https://github.com/Truesilverking/TGym/actions/runs/36218938863): frontend/API/MCP and their existing checks.
+- [Validate Android 36218938888](https://github.com/Truesilverking/TGym/actions/runs/36218938888): debug build/lint and 10 emulator tests.
+- [Signed candidate 36218941338](https://github.com/Truesilverking/TGym/actions/runs/36218941338): release build/lint, matching published signing identity, package/version checks and artifact upload.
+
+Artifact `10899265080` was downloaded with its archive digest verified. APK SHA-256 is `30c7addb5b633abe502315030e37ffdfd7297cc071dca852775b9a4d6f1202fa`. Installation on the Pixel succeeded using replacement mode, without uninstalling/resetting TGym. Android reports 1.15.32/code67, preserves the original first-install date, and the installed APK hash matches the candidate. The phone automatically locked during installation: the post-install visual/data comparison is still pending an unlock, so physical confirmation of the margin correction is not yet claimed. Production release, Pages and FCM remain unchanged.
