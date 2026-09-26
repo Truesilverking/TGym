@@ -41,3 +41,10 @@
 .progress-file p{overflow-wrap:anywhere;font-size:13px;line-height:1.6}
 .progress-file .btn{min-height:44px}
 @media(max-width:380px){.progress-controls{padding:16px}.progress-controls>.btn{width:100%}.progress-metric{padding:16px}.progress-values{gap:6px}.progress-values b{font-size:19px}}
+
+.progress-values time{display:block;font-size:11px;color:var(--label-2);line-height:1.5;margin-top:7px}
+.progress-status{font-size:11px;color:var(--label-2);padding:5px 8px;border:1px solid var(--sep);border-radius:20px}
+.progress-highlights{list-style:none;padding:0;margin:12px 0 0;display:grid;gap:0}
+.progress-highlights li{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px 20px;padding:14px 0;border-top:1px solid var(--sep);line-height:1.5}
+.progress-highlights span{flex:1 1 180px;overflow-wrap:anywhere}
+.progress-highlights b{font-variant-numeric:tabular-nums;font-size:14px}

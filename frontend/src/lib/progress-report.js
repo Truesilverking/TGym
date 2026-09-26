@@ -141,7 +141,7 @@ export function buildProgressReport(S, options={}) {
       const value=group.mode==='reps'?(repRecord?s.best.r:s.best.est):group.mode==='time'?s.best.sec:s.best.min
       if(value==null)continue
       const channel=repRecord?'reps:'+s.best.w:'primary',bestRecord=recordChannels.get(channel)
-      if(bestRecord!=null&&value>bestRecord&&inside(s.d))records.push({key:group.key+':'+s.t,exercise:group.exercise,d:s.d,t:s.t,value,previous:bestRecord,w:s.best.w,r:s.best.r,label:repRecord?'Reps at the same load':group.mode==='reps'?'Estimated 1RM':'Work duration',unit:repRecord?'reps':group.mode==='reps'?unit:group.mode==='time'?'s':'min'})
+      if(bestRecord!=null&&value>bestRecord&&inside(s.d))records.push({key:group.key+':'+s.t,exercise:group.exercise,d:s.d,t:s.t,value,previous:bestRecord,w:s.best.w,r:s.best.r,label:repRecord?'Reps at the same load':group.mode==='reps'?'Estimated 1RM':'Work duration',unit:repRecord?(group.side?'reps / side':'reps'):group.mode==='reps'?unit:group.mode==='time'?'s':'min'})
       recordChannels.set(channel,Math.max(bestRecord??0,value))
     }
     exercises.push({...group,sessions:recent,records:records.filter(r=>r.key.startsWith(group.key+':')),metrics:metrics.filter(m=>m.points.length),status:recent.length<2?'Insufficient Data':group.mode==='reps'?comparePerformance(recent[0].best,recent.at(-1).best):'Changed'})

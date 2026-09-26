@@ -45,12 +45,11 @@ export function progressReportPages(S,{t=x=>x,now=new Date(),name=e=>e.n||e.id,f
  const label=m=>m.muscle?t(m.label,t(m.muscle)):t(m.label)
  for(const section of sections(report,t,name).slice(1)) {
   for(const m of section.metrics||[])cards.push({title:section.title,label:label(m),value:val(m.last?.y,m.unit),detail:m.delta==null?t('More data needed'):(m.delta>0?'+':'')+val(m.delta,m.deltaUnit)+(m.percent==null?'':' · '+val(m.percent,'%')),dates:`${m.first.d} → ${m.last.d}`,baseline:t('Baseline')+': '+val(m.first?.y,m.unit),metric:m})
-  // Session counts already appear in the app; only record lines add distinct data.
-  if(section.title===t('Personal Records'))for(const l of section.lines||[])cards.push({title:section.title+' · '+name(l.record.exercise),label:t(l.record.label),dates:l.record.d,value:val(l.value,l.unit),baseline:t('Baseline')+': '+val(l.previous,l.unit)})
  }
  const q=report.summary
  const overview=[['Total workouts',q?.workouts],['Active days',q?.activeDays],['Personal Records',report.records?.length],['Average workouts per week',q?.averagePerWeek],['Total time (min)',q?.timedSessions?q.totalMinutes:null],['Average duration (min)',q?.averageMinutes],['Scheduled',q?.planned],['Completed',q?.completed],['Missed',q?.missed],['Completion',q?.rate==null?null:q.rate*100,'%'],['Longest active-day streak',q?.longestStreak],['Current active-day streak',q?.currentStreak]]
- const pages=[], total=(q?.workouts?1:0)+Math.max(q?.workouts?0:1,Math.ceil(cards.length/8))
+ const records=report.records||[]
+ const pages=[], total=(q?.workouts?1:0)+Math.max(q?.workouts?0:1,Math.ceil(cards.length/8))+Math.ceil(records.length/12)
  const text=(x,y,s,size=20,color='#17212f',weight=400)=>`<text x="${x}" y="${y}" font-size="${size}" fill="${color}" font-weight="${weight}">${esc(s)}</text>`
  // Wrap instead of truncating exercise names, including unbroken imported names.
  const lines=(x,y,s,size=18,length=40,max=3)=>wrapProgressText(s,length).slice(0,max).map((line,i)=>text(x,y+i*(size+5),line,size)).join('')
@@ -72,6 +71,15 @@ export function progressReportPages(S,{t=x=>x,now=new Date(),name=e=>e.n||e.id,f
    svg+=`<rect x="${x}" y="${y}" width="442" height="260" rx="16" fill="white" stroke="#dce2e9"/>`
    svg+=lines(x+18,y+27,c.title,16,48,2)+lines(x+18,y+74,c.label,21,33,2)+text(x+18,y+129,c.value,29,'#17212f',700)+text(x+18,y+157,c.detail||'',18,'#b51e28')+text(x+18,y+183,c.baseline||'',17,'#536174')+text(x+18,y+240,c.dates||'',15,'#536174')
    if(c.metric)svg+=spark(c.metric,x+20,y+195,395,22)
+  })
+  pages.push({svg:svg+footer(pages.length+1),width:1000,height:1390})
+ }
+ for(let i=0;i<records.length;i+=12){
+  svg=header()+text(48,207,t('Personal Records'),26,'#17212f',700)
+  records.slice(i,i+12).forEach((p,j)=>{const y=234+j*88
+   svg+=`<rect x="48" y="${y}" width="904" height="80" rx="12" fill="white" stroke="#dce2e9"/>`
+   svg+=lines(64,y+24,name(p.exercise),18,48,2)+text(64,y+66,p.d+' · '+t(p.label),14,'#536174')
+   svg+=text(650,y+31,val(p.value,p.unit),23,'#17212f',700)+text(650,y+59,t('Baseline')+': '+val(p.previous,p.unit),15,'#536174')
   })
   pages.push({svg:svg+footer(pages.length+1),width:1000,height:1390})
  }

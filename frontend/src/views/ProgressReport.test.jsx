@@ -76,3 +76,10 @@ it('discards a generated snapshot when persisted data changes during generation'
  await act(async()=>resolve({name:'outdated.pdf',blob:new Blob(['pdf'])}))
  expect(host.querySelector('.progress-file')).toBeNull()
 })
+
+it('shows body-only history without unrelated empty workout sections',()=>{
+ mount();expect(host.textContent).toContain('Body Progress');expect(host.textContent).toContain('+5 cm')
+ expect(host.querySelector('.progress-summary')).toBeNull()
+ for(const label of ['Exercise Progress','Training volume','Training consistency','Activity Progress','Personal Records'])expect([...host.querySelectorAll('summary')].some(el=>el.textContent===label)).toBe(false)
+ expect(host.querySelectorAll('.progress-values time')).toHaveLength(2)
+})

@@ -116,3 +116,19 @@ describe('exercise comparison and training aggregation',()=>{
   const name='x'.repeat(120),lines=wrapProgressText(name,48)
   expect(lines.every(l=>l.length<=48)).toBe(true);expect(lines.join('')).toBe(name)
  })
+
+it('keeps bodyweight rep records per side without changing legacy totals',()=>{
+ const s=base(),a=workout('a','2026-09-01',0,16),b=workout('b','2026-09-03',0,20)
+ for(const w of [a,b])w.entries[0].target={mode:'reps',bodyweight:true,side:true}
+ s.workouts=[a,b];const before=structuredClone(s),r=report(s)
+ expect(r.records[0]).toMatchObject({previous:8,value:10,unit:'reps / side'})
+ expect(s).toEqual(before)
+ expect(progressReportPages(s,{now}).map(p=>p.svg).join('')).toContain('10 reps / side')
+})
+it('paginates every personal record in compact rows without dropping records',()=>{
+ const r=report(base());r.records=Array.from({length:25},(_,i)=>({exercise:{n:'Unique exercise '+i},d:'2026-09-25',label:'Reps at the same load',previous:i,value:i+1,unit:'reps'}))
+ const pages=progressReportPages(null,{report:r}),svg=pages.map(p=>p.svg).join('')
+ expect(pages).toHaveLength(4)
+ for(let i=0;i<25;i++)expect(svg).toContain('Unique exercise '+i+'</text>')
+ expect(svg).toContain('4 / 4')
+})
