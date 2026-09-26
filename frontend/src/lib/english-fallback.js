@@ -1,5 +1,8 @@
 // Explicit source-language fallback. Entries in language packs override these values.
 export default {
+  "Synchronize all devices before replacing a changed cloud backup.": "Synchronize all devices before replacing a changed cloud backup.",
+  "Sign-out completed. Your local data was kept on this device.": "Sign-out completed. Your local data was kept on this device.",
+  "Could not sign out. Your local data was kept. Check your connection and try again.": "Could not sign out. Your local data was kept. Check your connection and try again.",
   "This device": "This device",
   "Other device": "Other device",
 "Session ended after inactivity":"Session ended after inactivity",
@@ -1543,4 +1546,9 @@ export default {
   ,"Next workout": "Next workout"
   ,"Return to your workout": "Return to your workout"
   ,"Partially completed": "Partially completed"
+  ,"Muscles trained: front view": "Muscles trained: front view"
+  ,"Muscles trained: back view": "Muscles trained: back view"
+  ,"Pause animation": "Pause animation"
+  ,"Play animation": "Play animation"
+  ,"Your saved data is synced first. Active workouts and unsent changes stay on this device.": "Your saved data is synced first. Active workouts and unsent changes stay on this device."
 }

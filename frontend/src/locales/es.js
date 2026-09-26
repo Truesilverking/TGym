@@ -2,6 +2,9 @@ import english from '../lib/english-fallback.js'
 // Spanish UI strings. Keys are the English source strings (see lib/i18n.js).
 export default {
   ...english,
+  "Synchronize all devices before replacing a changed cloud backup.": "La copia en la nube cambió. Vuelve a sincronizar los dispositivos antes de reemplazarla.",
+  "Sign-out completed. Your local data was kept on this device.": "La sesión se cerró. Tus datos locales se conservaron en este dispositivo.",
+  "Could not sign out. Your local data was kept. Check your connection and try again.": "No se pudo cerrar la sesión. Tus datos locales se conservaron. Revisa la conexión e inténtalo de nuevo.",
   "This device": "Este dispositivo",
   "Other device": "Otro dispositivo",
 "Session ended after inactivity":"Sesión finalizada por inactividad",
@@ -1487,4 +1490,9 @@ export default {
   ,"Return to your workout": "Vuelve a tu entrenamiento"
   ,"Partially completed": "Completado parcialmente",
   "Undo Completed": "Deshacer completada",
+  "Muscles trained: front view": "Músculos trabajados: vista frontal",
+  "Muscles trained: back view": "Músculos trabajados: vista posterior",
+  "Pause animation": "Pausar animación",
+  "Play animation": "Reproducir animación",
+  "Your saved data is synced first. Active workouts and unsent changes stay on this device.": "Primero se sincronizan tus datos guardados. Los entrenamientos activos y los cambios sin enviar se conservan en este dispositivo.",
 }

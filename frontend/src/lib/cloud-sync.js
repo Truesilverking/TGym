@@ -166,11 +166,16 @@ export async function connectGoogleDrive(state) {
   return { hasBackup: !!file }
 }
 
-export async function backupToGoogleDrive(state, { interactive = true, allowOverwrite = false } = {}) {
+export async function backupToGoogleDrive(state, { interactive = true, expectedFile } = {}) {
   const prompt = interactive && (!state?.cloudSync?.authorizedOnce || state?.cloudSync?.needsAuth) ? 'consent' : ''
   const token = await accessToken(configuredGoogleClientId(state), prompt, interactive)
   const existing = await latestFile(token)
-  if (existing && !allowOverwrite && existing.modifiedTime !== state.cloudSync?.lastModifiedTime) {
+  // A conflict dialog can stay open while another device saves. Check the exact
+  // reviewed file again, including deletion/replacement, before uploading choices.
+  const changed = expectedFile
+    ? existing?.id !== expectedFile.id || existing?.modifiedTime !== expectedFile.modifiedTime
+    : existing && existing.modifiedTime !== state.cloudSync?.lastModifiedTime
+  if (changed) {
     throw Object.assign(new Error('Synchronize all devices before replacing a changed cloud backup.'), { code: 'sync_required' })
   }
   const content = JSON.stringify(createBackup(state))
@@ -213,13 +218,13 @@ export async function synchronizeWithGoogleDrive(state, { interactive = true } =
   const file = await latestFile(token)
   if (!file) {
     const saved = await backupToGoogleDrive(state, { interactive: false })
-    return { merged: structuredClone(state), conflicts: [], fileId: saved.fileId, at: saved.at, created: true }
+    return { merged: structuredClone(state), conflicts: [], file: { id: saved.fileId, modifiedTime: saved.modifiedTime }, fileId: saved.fileId, at: saved.at, created: true }
   }
   const raw = await (await driveFetch(`https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`, token)).text()
   const parsed = parseTGymJson(raw)
   if (parsed.kind !== 'backup') throw new Error('The Google Drive file is not a complete TGym backup')
   const { merged, conflicts } = mergeTGymStates(state, parsed.data)
-  return { merged, conflicts, fileId: file.id, at: Date.now(), created: false }
+  return { merged, conflicts, file, fileId: file.id, at: Date.now(), created: false }
 }
 
 export function forgetGoogleDriveToken() {

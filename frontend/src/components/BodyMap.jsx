@@ -26,9 +26,9 @@ function useBodyPaths() {
   return paths
 }
 
-function View({ view, levels, onMuscle, selected }) {
+function View({ view, label, levels, onMuscle, selected }) {
   return (
-    <svg className="bm-v" viewBox={view.vb} role="img">
+    <svg className="bm-v" viewBox={view.vb} role="img" aria-label={label}>
       {INERT.map(slug => (view.p[slug] || []).map((d, i) =>
         <path key={slug + i} className="bm-sil" d={d} />))}
       {MUSCLES.map(slug => (view.p[slug] || []).map((d, i) =>
@@ -58,8 +58,8 @@ export default function BodyMap({ load = {}, thresholds, body = 'male', onMuscle
   return (
     <div className={'bodymap ' + className}>
       {g ? <>
-        <View view={g.front} levels={levels} onMuscle={onMuscle} selected={selected} />
-        <View view={g.back} levels={levels} onMuscle={onMuscle} selected={selected} />
+        <View view={g.front} label={t('Muscles trained: front view')} levels={levels} onMuscle={onMuscle} selected={selected} />
+        <View view={g.back} label={t('Muscles trained: back view')} levels={levels} onMuscle={onMuscle} selected={selected} />
       </> : <div className="bm-ph" aria-hidden="true" />}
     </div>
   )

@@ -42,23 +42,23 @@ export default function RestoreSheet({ authorize = action => action() }) {
     update(s => { s.cloudSync = { ...(s.cloudSync || {}), on: true, authorizedOnce: true, needsAuth: false, lastError: null, lastAttemptAt: null } }, false)
     toast(t('Google Drive connected'))
   })
-  const saveMerged = async next => {
+  const saveMerged = async (next, file) => {
     if (backupChecksum(portableState(useStore.getState().S)) !== backupChecksum(portableState(S))) throw new Error(t('Local data changed. Please synchronize again.'))
     saveImportUndo(useStore.getState().S)
     replaceState(next, false)
-    const saved = await backupToGoogleDrive(next, { interactive: false, allowOverwrite: true })
+    const saved = await backupToGoogleDrive(next, { interactive: false, expectedFile: file })
     update(s => { s.cloudSync = { ...(s.cloudSync || {}), on: true, authorizedOnce: true, lastBackupAt: saved.at, lastAttemptAt: saved.at, lastFileId: saved.fileId, lastModifiedTime: saved.modifiedTime, needsAuth: false, lastError: null } }, false)
     toast(t(saved.warning || 'All devices are synchronized'))
   }
   const synchronize = () => run(async () => {
     const result = await synchronizeWithGoogleDrive(S, { interactive: true })
-    if (!result.conflicts.length) { await saveMerged(result.merged); return }
+    if (!result.conflicts.length) { await saveMerged(result.merged, result.file); return }
     useUI.getState().openSheet(close => <>
       <h3>{t('Choose conflicting changes')}</h3>
       <p className="muted small">{t('{0} values were edited differently on both devices. Independent workouts and measurements have already been combined.', result.conflicts.length)}</p>
       <div className="sync-conflicts">{result.conflicts.map(item => <div key={JSON.stringify(item.segments || item.path)}><b>{item.path}</b><ConflictValues local={item.local} remote={item.remote} /></div>)}</div>
-      <Button variant="primary" onClick={async () => { close(); await run(() => saveMerged(result.merged)) }}>{t('Keep changes from this device')}</Button>
-      <div style={{ height: 8 }} /><Button onClick={async () => { close(); await run(() => saveMerged(applyRemoteConflicts(result.merged, result.conflicts))) }}>{t('Use changes from the other device')}</Button>
+      <Button variant="primary" onClick={async () => { close(); await run(() => saveMerged(result.merged, result.file)) }}>{t('Keep changes from this device')}</Button>
+      <div style={{ height: 8 }} /><Button onClick={async () => { close(); await run(() => saveMerged(applyRemoteConflicts(result.merged, result.conflicts), result.file)) }}>{t('Use changes from the other device')}</Button>
     </>)
   })
   const backup = () => run(async () => {

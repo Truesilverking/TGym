@@ -61,6 +61,7 @@ const hasData = st => !!(st.trainingStartDate || (st.workouts || []).length || (
 
 export const useStore = create((set, get) => {
   let pushTm = null
+  let pushQueue = Promise.resolve()
   let saveTm = null
 
   // Mobile build: mirror the state into a file in the app's data directory (survives WebView
@@ -122,12 +123,21 @@ export const useStore = create((set, get) => {
   window.addEventListener('pagehide', flushOnBackground)
 
   // Everything a sign-out leaves behind on this device, whichever way it was triggered.
-  const clearLocalSession = () => {
+  const clearLocalSession = uploaded => {
     get().setUser(null)
     localStorage.removeItem('gym_guest')
+    clearTimeout(pushTm)
+    pushTm = null
+    // The API intentionally excludes active workouts. Also retain any edits made
+    // while logout was pending: neither copy is covered by the successful upload.
+    if (get().S.active || (uploaded && backupChecksum(portableState(get().S)) !== backupChecksum(portableState(uploaded)))) {
+      localStorage.setItem('gym_dirty', '1')
+      return false
+    }
     localStorage.removeItem('gym_dirty')
     localStorage.removeItem(KEY)
     persist(clone(DEF), false)
+    return true
   }
 
   return {
@@ -187,11 +197,31 @@ export const useStore = create((set, get) => {
       set({ user: u })
     },
 
-    async pushState() {
+    async pushState({ strict = false } = {}) {
       if (!get().user) return
       clearTimeout(pushTm)
-      try { await api('/api/data', { method: 'PUT', body: JSON.stringify({ state: get().S }) }); localStorage.removeItem('gym_dirty') }
-      catch (e) { localStorage.setItem('gym_dirty', '1') }
+      pushTm = null
+      const snapshot = get().S
+      const userId = get().user.id
+      // Preserve request order. An older autosave must finish before the final
+      // sign-out upload, otherwise it could overwrite data after local cleanup.
+      const upload = pushQueue.then(async () => {
+        if (get().user?.id !== userId) {
+          if (strict) throw new Error('Session changed while saving')
+          return
+        }
+        try {
+          await api('/api/data', { method: 'PUT', body: JSON.stringify({ state: snapshot }) })
+          if (get().S === snapshot) localStorage.removeItem('gym_dirty')
+          else {
+            localStorage.setItem('gym_dirty', '1')
+            if (strict) throw new Error('Local data changed while saving')
+          }
+        } catch (e) { localStorage.setItem('gym_dirty', '1'); if (strict) throw e }
+      })
+      // A failed request must not prevent a later retry from reaching the API.
+      pushQueue = upload.catch(() => {})
+      return upload
     },
     async pullState() {
       try {
@@ -208,8 +238,11 @@ export const useStore = create((set, get) => {
     },
 
     async signOut() {
-      try { await get().pushState(); await api('/api/logout', { method: 'POST', body: '{}' }) } catch (e) { /* */ }
-      clearLocalSession()
+      // Never discard the only copy when the upload failed or a newer edit is pending.
+      const uploaded = get().S
+      await get().pushState({ strict: true })
+      await api('/api/logout', { method: 'POST', body: '{}' })
+      return clearLocalSession(uploaded)
     },
 
     // Mobile-only ("connect to my server" onboarding, see App.jsx's needsMobileOnboarding).
@@ -243,9 +276,10 @@ export const useStore = create((set, get) => {
     // the sessions elsewhere are all still valid, and wiping this device's copy of the data
     // would sign the user out of the one place the bump didn't reach. Caller reports the error.
     async signOutAll() {
-      await get().pushState()   // never throws — stores gym_dirty and moves on when offline
+      const uploaded = get().S
+      await get().pushState({ strict: true })
       await api('/api/logout/all', { method: 'POST', body: '{}' })
-      clearLocalSession()
+      return clearLocalSession(uploaded)
     },
 
     // Demo build only: drop the seeded example profile back in (Settings → "Reset demo data").

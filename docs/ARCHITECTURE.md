@@ -2,6 +2,8 @@
 
 Current published source: `48dc3a1` (1.15.31), with corrections described in `docs/PRE-RELEASE-AUDIT-2026-09-25.md` and exact-commit CI/publication evidence in `docs/RELEASE-AUDIT-1.15.31.md`. The user authorized publication using automated verification; the full visual/device audit remains incomplete. Older release reports below are historical evidence.
 
+The subsequent request to validate every function is tracked in `docs/POST-RELEASE-AUDIT-1.15.31.md`. Follow-up fixes serialize API uploads, preserve active workouts and unsent edits at sign-out, recheck the reviewed cloud snapshot before upload, and allow skipping an incomplete optional PIN. Real-browser auditing also improves theme contrast, keyboard controls, zoom, accessible labels and reduced-motion media. These changes are not included in the published 1.15.31 artifact.
+
 ## Repository and runtime
 
 `frontend/` contains the React 19 application, Vite build, assets, tests and Capacitor Android/iOS projects. React Router 7 handles navigation and Zustand 5 holds application state. `api/` is an optional Node HTTP backend with WebAuthn and web-push. `mcp/` exposes read-only tools and imports pure frontend calculations. `web/` supplies the nginx/container layer; `website/` is separate website material. GitHub Actions are in `.github/workflows/`.

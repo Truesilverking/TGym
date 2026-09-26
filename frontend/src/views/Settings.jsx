@@ -155,7 +155,7 @@ export default function Settings() {
     message: t('Signs this profile out on every device, including this one. Your passkeys keep working — sign in with them again anytime.'),
     confirmText: t('Sign out everywhere'), danger: true,
     onConfirm: async () => {
-      try { await signOutAll(); nav('/home'); toast(t('Signed out on all devices')) }
+      try { const cleared = await signOutAll(); nav('/home'); toast(t(cleared === false ? 'Sign-out completed. Your local data was kept on this device.' : 'Signed out on all devices')) }
       catch (e) { toast(t('Could not sign out everywhere — you are still signed in.')) }
     },
   })
@@ -179,7 +179,7 @@ export default function Settings() {
         {user.admin && <Row icon="wrench" iconTint="var(--indigo)" title={t('Admin dashboard')} accessory="chevron" onClick={() => nav('/admin')} />}
         <Row icon="link" iconTint="var(--blue)" title={t('Pair the mobile app')} subtitle={t('Connect the openGym app on your phone to this account.')} accessory="chevron"
           onClick={() => useUI.getState().openSheet(close => <PairSheet close={close} />)} />
-        <Row icon="signOut" iconTint="var(--red)" title={t('Sign out')} danger onClick={() => confirmSheet({ title: t('Sign out?'), message: t('Your data is synced to your profile first, then cleared from this device.'), confirmText: t('Sign out'), danger: true, onConfirm: () => { signOut(); nav('/home') } })} />
+        <Row icon="signOut" iconTint="var(--red)" title={t('Sign out')} danger onClick={() => confirmSheet({ title: t('Sign out?'), message: t('Your saved data is synced first. Active workouts and unsent changes stay on this device.'), confirmText: t('Sign out'), danger: true, onConfirm: async () => { try { const cleared = await signOut(); nav('/home'); if (cleared === false) toast(t('Sign-out completed. Your local data was kept on this device.')) } catch { toast(t('Could not sign out. Your local data was kept. Check your connection and try again.')) } } })} />
         <Row icon="shield" iconTint="var(--red)" title={t('Sign out everywhere')} subtitle={t('Ends this profile’s sessions on all your devices.')} danger onClick={signOutEverywhere} />
       </> : webauthnOK() ? <>
         <Row icon="sparkles" iconTint="var(--acc)" title={t('Create passkey profile')} subtitle={t('Keeps your data safe and separate per person.')} accessory="chevron" onClick={registerHere} />
@@ -359,7 +359,7 @@ export default function Settings() {
         telling people to look for it, and where it was not. On the phone build there is no
         address bar and no about box, so without this there is no way to tell which build you
         are running, or whether an update actually installed. */}
-    <div className="dim small" style={{ textAlign: 'center', marginTop: 4, lineHeight: 1.6 }}>
+    <div className="settings-credits dim small" style={{ textAlign: 'center', marginTop: 4, lineHeight: 1.6 }}>
       TGym v{__APP_VERSION__} · {t('free & open source (AGPL v3)')}<br />
       <UpdateCheckButton />
       {APP_REPOSITORY && <><a href={APP_REPOSITORY} target="_blank" rel="noopener">GitHub</a><br /></>}
