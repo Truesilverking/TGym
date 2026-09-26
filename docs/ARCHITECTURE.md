@@ -57,7 +57,7 @@ Routine/schedule selection in `sheets.jsx` creates an active workout from the ne
 
 Progression supports off, linear, Greyskull, double and timed modes. Warmups and planned deload sessions do not drive ordinary progression. Required effort information can hold progression. Rest-policy and superset helpers decide inter-set/round behavior separately from workout duration. Work timers and rest timers have their own notification needs.
 
-Completed set rows render read-only summaries until explicitly undone. Per-side confirmations retain their own flags; legacy total repetitions and explicit `repsPerSide` targets remain distinct. `active.restTimer` persists a deadline and total duration, never ticking seconds. It is removed from completed history. Early work-timer completion also derives elapsed time from its deadline so suspended render ticks cannot undercount a set.
+Completed set rows render read-only summaries until explicitly undone. Per-side confirmations retain their own flags. All rep editors, summaries, printed plans, CSV and rep-only statistics display the count for one side: legacy total 16 and explicit `repsPerSide` 8 both display 8 per side. `displayReps`/`storedReps` in `history.js` adapt the UI boundary; storage, portable backups, volume and progression retain their original semantics. Changing the side option explicitly preserves the visible prescription. `active.restTimer` persists a deadline and total duration, never ticking seconds. It is removed from completed history. Early work-timer completion also derives elapsed time from its deadline so suspended render ticks cannot undercount a set.
 
 ## Calendar, history and statistics
 

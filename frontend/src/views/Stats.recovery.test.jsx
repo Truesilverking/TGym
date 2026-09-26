@@ -184,6 +184,14 @@ afterEach(async () => {
 })
 
 describe('Stats muscle recovery view runtime', () => {
+  it.each([{ side: true, reps: 16 }, { side: true, repsPerSide: true, reps: 8 }])('shows unloaded per-side records as 8 reps for %j', async cfg => {
+    resetFixture([workout('side', BASE_NOW, [{ id: '0025', target: { mode: 'reps', ...cfg }, sets: [set(true, { w: 0, r: cfg.reps })] }])])
+    await mountStats()
+    expect(container.textContent).toContain('8 reps')
+    expect(container.textContent).not.toContain('16 reps')
+    expect(container.textContent).toContain('8 / side')
+    expect(mocks.S.workouts[0].entries[0].sets[0].r).toBe(cfg.reps)
+  })
   it('dispatches real clicks through Balance, Fatigue, and Strength and preserves selection', async () => {
     await mountStats()
     expectPressed(viewButton('Muscle balance'))

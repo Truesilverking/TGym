@@ -15,7 +15,7 @@ import { useUI } from './store/useUI.js'
 import { EXDB, EXIDX, BODYPARTS, isCardio, isBodyweightEq, allExercises, equipmentOf, smOf, exerciseSearchScore, exOr } from './lib/exercises.js'
 import { activeProfile, exAvailable, ALL_EQUIPMENT, newProfile } from './lib/equipment.js'
 import { fmtDate, fmtNum, fmtVol, fmtDur, durPart, todayISO, isoOf, uid, exCount, DAYN, MONTHS_LONG, ACCENTS } from './lib/format.js'
-import { lastEntryFor, bestWeightFor, buildSets, effectiveRoutineId, workoutVolume, setsDone, setsDoneActive, lastBW, supersetUnits, unitOf, setLabel, defaultConfig, cleanupSg, modeOf, effortOf, isBw, isPerSide, sideReps, workSetsDone, applyIntensifierPlan, MAX_PLANNED_WARMUPS, NOTE_MAX } from './lib/history.js'
+import { lastEntryFor, bestWeightFor, buildSets, effectiveRoutineId, workoutVolume, setsDone, setsDoneActive, lastBW, supersetUnits, unitOf, setLabel, defaultConfig, cleanupSg, modeOf, effortOf, isBw, isPerSide, displayReps, storedReps, displayRepConfig, workSetsDone, applyIntensifierPlan, MAX_PLANNED_WARMUPS, NOTE_MAX } from './lib/history.js'
 import { playAppSound, vibrate } from './lib/sound.js'
 import { t, instrFor, exerciseNameFor, getLang, INSTR_LANGS, dateLocale } from './lib/i18n.js'
 import { nav } from './lib/nav.js'
@@ -747,6 +747,10 @@ function RirRangeFields({ c, setC, role = null, label }) {
   </div>
 }
 
+function RepStepper({ cfg, value, onChange, ...props }) {
+  return <Stepper {...props} step={1} decimal={false} value={displayReps(value, cfg)} onChange={value => onChange(storedReps(value, cfg))} />
+}
+
 function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial }) {
   const st = useStore(s => s.S)
   const cardio = isCardio(ex.id)
@@ -853,7 +857,7 @@ function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial }) {
             rest-pause work set — so "Sets" has nothing left to mean and only invites a mismatch. */}
         {c.intensifier?.type !== 'restpause' && c.setScheme !== 'topback' &&
           <Stepper label={t('Sets')} value={c.sets} step={1} decimal={false} onChange={v => setC(x => ({ ...x, sets: v }))} />}
-        <Stepper label={t('Reps')} value={c.reps} step={perSide && !c.repsPerSide ? 2 : 1} decimal={false} onChange={v => setC(x => ({ ...x, reps: v }))} />
+        <RepStepper cfg={c} label={t('Reps')} value={c.reps} onChange={v => setC(x => ({ ...x, reps: v }))} />
         {/* On bodyweight work the weight stepper is the click #32 is about, so it is not here
             until there is a belt to describe — see the added-weight row below. */}
         {!bw && <Stepper label={t('Weight ({0})', st.unit)} value={c.weight} step={defaultIncrement(ex.id, st.unit)} onChange={v => setC(x => ({ ...x, weight: v }))} />}
@@ -886,9 +890,9 @@ function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial }) {
         <Switch checked={bw} onChange={v => setC(x => ({ ...x, bodyweight: v, weight: v ? 0 : x.weight }))} />
       </Row>
       {(mode === 'reps' || mode === 'time') && <Row icon="shuffle" iconTint="var(--blue)" title={t(mode === 'time' ? 'Time per side' : 'Reps per side')}
-        subtitle={mode === 'time' ? t('{0} seconds on the left, then {0} seconds on the right.', c.sec || 0) : perSide && c.repsPerSide ? t('Reps stay the same for each side. Confirm both sides to complete the set.') : perSide ? t('You still log the total: {0} is {1} per side.', c.reps || 0, fmtNum(sideReps(c.reps))) : t('For lunges, single-arm rows and the like.')}>
+        subtitle={mode === 'time' ? t('{0} seconds on the left, then {0} seconds on the right.', c.sec || 0) : perSide ? t('Reps stay the same for each side. Confirm both sides to complete the set.') : t('For lunges, single-arm rows and the like.')}>
         {/* New per-side targets retain the entered prescription and mark its semantics. */}
-        <Switch checked={perSide} onChange={v => setC(x => ({ ...x, side: v || undefined, repsPerSide: v ? true : undefined }))} />
+        <Switch checked={perSide} onChange={v => setC(x => ({ ...displayRepConfig(x), side: v || undefined, repsPerSide: v ? true : undefined }))} />
       </Row>}
     </div>}
     {/* A stepper is too wide to sit in a list row next to a label — it squeezes the text to
@@ -905,12 +909,12 @@ function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial }) {
     </>}
     {/* The rep ceiling only means something when there is no load to add instead. */}
     {mode === 'reps' && bw && !(c.weight > 0) && <div className="row cfgrow" style={{ marginBottom: 18 }}>
-      <Stepper label={t('Top of the range')} value={c.repsMax || 0} step={1} decimal={false}
+      <RepStepper cfg={c} label={t('Top of the range')} value={c.repsMax || 0} step={1} decimal={false}
         onChange={v => setC(x => ({ ...x, repsMax: v }))} />
     </div>}
     {mode === 'reps' && bw && !(c.weight > 0) && <div className="small dim" style={{ marginTop: -10, marginBottom: 18 }}>
       {c.repsMax > 0
-        ? t('Reps climb to {0}, then a set is added and the reps start over. At {1} sets it asks you to add weight instead.', c.repsMax, MAX_BW_SETS)
+        ? t('Reps climb to {0}, then a set is added and the reps start over. At {1} sets it asks you to add weight instead.', displayReps(c.repsMax, c), MAX_BW_SETS)
         : t('Reps climb by one whenever every set was clean. Set a ceiling to add sets instead of reps forever.')}
     </div>}
     {mode === 'reps' && c.setScheme !== 'topback' && <>
@@ -939,7 +943,7 @@ function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial }) {
           onChange={v => setC(x => ({ ...x, intensifier: { ...x.intensifier, pct: Math.max(5, v) } }))} />
       </div>}
       {c.intensifier?.type === 'restpause' && <div className="row cfgrow" style={{ marginBottom: 8 }}>
-        <Stepper label={t('Rest-pause reps')} value={c.intensifier.totalReps} step={1} decimal={false}
+        <RepStepper cfg={c} label={t('Rest-pause reps')} value={c.intensifier.totalReps} step={1} decimal={false}
           onChange={v => setC(x => ({ ...x, intensifier: { ...x.intensifier, totalReps: Math.max(1, v) } }))} />
         <Stepper label={t('Rest (s)')} value={c.intensifier.restSec} step={5} decimal={false}
           onChange={v => setC(x => ({ ...x, intensifier: { ...x.intensifier, restSec: Math.max(5, v) } }))} />
@@ -975,9 +979,9 @@ function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial }) {
       </div>
       {repRangeEnabled(c) && <>
         <div className="row cfgrow" style={{ marginBottom: 8 }}>
-          <Stepper label={t('Minimum reps')} value={c.repsMin || c.reps || 1} step={perSide && !c.repsPerSide ? 2 : 1} decimal={false}
+          <RepStepper cfg={c} label={t('Minimum reps')} value={c.repsMin || c.reps || 1}
             onChange={v => setC(x => ({ ...x, repRange: true, repsMin: Math.min(x.reps || v, Math.max(1, v)) }))} />
-          <Stepper label={t('Maximum reps')} value={c.reps || 10} step={perSide && !c.repsPerSide ? 2 : 1} decimal={false}
+          <RepStepper cfg={c} label={t('Maximum reps')} value={c.reps || 10}
             onChange={v => setC(x => ({ ...x, repRange: true, reps: Math.max(x.repsMin || 1, v) }))} />
         </div>
         <div className="sect-b" style={{ marginBottom: 18 }}>
@@ -1017,10 +1021,10 @@ function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial }) {
           <Switch checked={c.autoBackoffReps !== false} onChange={v => setC(x => ({ ...x, autoBackoffReps: v }))} />
         </Row></div>
         {c.autoBackoffReps !== false ? <div className="row cfgrow" style={{ marginBottom: 8 }}>
-          <Stepper label={t('Back-off rep offset')} value={c.backoffRepOffset ?? (Math.max(0, Math.min(5, (c.backoffRepsMax || c.reps || 10) - (c.topRepsMax || c.reps || 10))) || 2)} step={1} decimal={false} onChange={v => setC(x => ({ ...x, backoffRepOffset: Math.max(0, Math.min(5, Math.round(v))) }))} />
+          <RepStepper cfg={c} label={t('Back-off rep offset')} value={c.backoffRepOffset ?? (Math.max(0, Math.min(5, (c.backoffRepsMax || c.reps || 10) - (c.topRepsMax || c.reps || 10))) || 2)} onChange={v => setC(x => ({ ...x, backoffRepOffset: Math.max(0, Math.min(5, Math.round(v))) }))} />
         </div> : <div className="row cfgrow" style={{ marginBottom: 8 }}>
-          <Stepper label={t('Back-off min reps')} value={c.backoffRepsMin || c.repsMin || c.reps || 1} step={1} decimal={false} onChange={v => setC(x => ({ ...x, backoffRepsMin: Math.max(1, v) }))} />
-          <Stepper label={t('Back-off max reps')} value={c.backoffRepsMax || c.reps || 10} step={1} decimal={false} onChange={v => setC(x => ({ ...x, backoffRepsMax: Math.max(x.backoffRepsMin || 1, v) }))} />
+          <RepStepper cfg={c} label={t('Back-off min reps')} value={c.backoffRepsMin || c.repsMin || c.reps || 1} step={1} decimal={false} onChange={v => setC(x => ({ ...x, backoffRepsMin: Math.max(1, v) }))} />
+          <RepStepper cfg={c} label={t('Back-off max reps')} value={c.backoffRepsMax || c.reps || 10} step={1} decimal={false} onChange={v => setC(x => ({ ...x, backoffRepsMax: Math.max(x.backoffRepsMin || 1, v) }))} />
         </div>}
       </>}
       <div className="sect-b" style={{ marginTop: 12, marginBottom: 18 }}>

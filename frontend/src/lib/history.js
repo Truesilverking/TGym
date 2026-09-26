@@ -48,10 +48,24 @@ export const isTimed = cfg => modeOf(cfg) === 'time'
 // reads as false, so nothing needs migrating.
 export const isBw = cfg => (cfg && cfg.bodyweight != null ? !!cfg.bodyweight : isBodyweightEq(cfg && cfg.id))
 export const isPerSide = cfg => !!(cfg && cfg.side)
-// Preserve legacy total-rep display; explicit per-side targets display their entered count.
+// Read legacy storage without exposing both-side totals as the rep input.
 export const sideReps = (reps, cfg) => (reps || 0) / (cfg?.repsPerSide ? 1 : 2)
 // Legacy totals move in pairs; explicit per-side counts move one rep at a time.
 export const repStep = cfg => (isPerSide(cfg) && !cfg.repsPerSide ? 2 : 1)
+// UI counts always mean repetitions on one side. Keep legacy storage/calculations intact.
+const repStorageFactor = cfg => modeOf(cfg) === 'reps' && isPerSide(cfg) && !cfg.repsPerSide ? 2 : 1
+export const displayReps = (value, cfg) => value == null || value === '' || !Number.isFinite(Number(value)) ? value : Number(value) / repStorageFactor(cfg)
+export const storedReps = (value, cfg) => value == null || value === '' || !Number.isFinite(Number(value)) ? value : Number(value) * repStorageFactor(cfg)
+// Used when the user changes side semantics, so toggling the option keeps the visible count.
+export function displayRepConfig(cfg) {
+  const out = { ...cfg }
+  for (const key of ['reps', 'repsMin', 'repsMax', 'topRepsMin', 'topRepsMax', 'backoffRepsMin', 'backoffRepsMax', 'backoffRepOffset']) {
+    if (out[key] != null) out[key] = displayReps(out[key], cfg)
+  }
+  if (cfg.intensifier?.totalReps != null) out.intensifier = { ...cfg.intensifier, totalReps: displayReps(cfg.intensifier.totalReps, cfg) }
+  return out
+}
+
 
 // mm:ss for a work duration — seconds alone read badly past a minute ("90 s" vs "1:30").
 export function fmtSec(sec) {
@@ -122,8 +136,8 @@ export function setLabel(id, s, cfg) {
   }
   // Bodyweight reads as what you did — "12", or "+10 × 12" once there is a belt involved —
   // rather than "0×12", which says a set was performed with no weight and means nothing.
-  // Only explicit per-side counts need a label; legacy totals keep their original display.
-  const reps = (s.r || 0) + (isPerSide(c) && c.repsPerSide ? ` ${t('/ side')}` : '')
+  // Present old and new per-side rows with the same count and unit.
+  const reps = fmtNum(displayReps(s.r || 0, c)) + (isPerSide(c) ? ` ${t('/ side')}` : '')
   if (isBw({ ...c, id: c.id ?? id })) {
     const load = s.w > 0 ? `+${fmtNum(s.w)} × ` : ''
     return `${load}${reps}` + effortTail(s)
@@ -149,11 +163,11 @@ export function exLine(cfg, unit) {
   const load = cfg.weight ? ' · ' + (isBw(cfg) ? '+' : '') + fmtNum(cfg.weight) + ' ' + unit : ''
   if (mode === 'cardio') return `${n} × ${cfg.min || 20} min @ ${fmtNum(cfg.speed ?? 8)} km/h`
   if (mode === 'time') return `${n} × ${fmtSec(cfg.sec || 45)}${isPerSide(cfg) ? ` ${t('/ side')}` : ''}${load}`
-  // This is the line with room for it, so the split is spelled out: "3 × 16 · 8/side".
-  const split = isPerSide(cfg) ? ' · ' + t('{0}/side', fmtNum(sideReps(cfg.reps, cfg))) : ''
-  const range = cfg.repRange !== false && cfg.repsMin > 0 && cfg.repsMin < cfg.reps ? `${cfg.repsMin}–${cfg.reps}` : cfg.reps
-  if (cfg.setScheme === 'topback') return `${cfg.topSets || 1} Top + ${cfg.backoffSets || 2} Back-off · ${range} reps${load}`
-  return `${n} × ${range}${load}${split}`
+  const side = isPerSide(cfg) ? ` ${t('/ side')}` : ''
+  const [low, high] = [cfg.repsMin, cfg.reps].map(value => { const count = displayReps(value, cfg); return typeof count === 'number' ? fmtNum(count) : count })
+  const range = cfg.repRange !== false && cfg.repsMin > 0 && cfg.repsMin < cfg.reps ? `${low}–${high}` : high
+  if (cfg.setScheme === 'topback') return `${cfg.topSets || 1} Top + ${cfg.backoffSets || 2} Back-off · ${range} reps${side}${load}`
+  return `${n} × ${range}${side}${load}`
 }
 
 // Drop superset ids that no longer have an adjacent partner (after unlink/reorder/remove).

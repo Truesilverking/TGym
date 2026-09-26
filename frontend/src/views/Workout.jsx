@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { exOr } from '../lib/exercises.js'
-import { lastEntryFor, bestWeightFor, buildSets, freestyleConfig, defaultConfig, setsDoneActive, supersetUnits, unitOf, setLabel, modeOf, isBw, isPerSide, sideReps, repStep, fmtSec, EFFORT, effortOf, stepEffort, cascadeWeight, cascadeTopBackWeight, cascadeTopBackReps, insertWarmupRow, removeRowAt, pairAdjacent, unpairSuperset, cleanupSg, applyIntensifierPlan, pinnedNoteFor, exNoteFor, rerampWarmups } from '../lib/history.js'
+import { lastEntryFor, bestWeightFor, buildSets, freestyleConfig, defaultConfig, setsDoneActive, supersetUnits, unitOf, setLabel, modeOf, isBw, isPerSide, sideReps, displayReps, storedReps, repStep, fmtSec, EFFORT, effortOf, stepEffort, cascadeWeight, cascadeTopBackWeight, cascadeTopBackReps, insertWarmupRow, removeRowAt, pairAdjacent, unpairSuperset, cleanupSg, applyIntensifierPlan, pinnedNoteFor, exNoteFor, rerampWarmups } from '../lib/history.js'
 import { fmtNum, fmtDate, todayISO, exCount, DAYN } from '../lib/format.js'
 import { playAppSound, vibrate } from '../lib/sound.js'
 import { t, exerciseNameFor, dateLocale } from '../lib/i18n.js'
@@ -140,7 +140,7 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
   const loadStep = cfg.inc > 0 ? cfg.inc : defaultIncrement(entry.id, S.unit)
   const loadCol = { f: 'w', step: loadStep, dec: true, hd: bw ? t('Added ({0})', S.unit) : t('Weight ({0})', S.unit) }
   // Legacy unilateral totals step in pairs; new per-side prescriptions retain their count.
-  const repCol = { f: 'r', step: repStep(cfg), dec: false, hd: isPerSide(cfg) && cfg.repsPerSide ? t('Actual reps per side') : t('Actual reps') }
+  const repCol = { f: 'r', step: repStep(cfg), dec: false, hd: isPerSide(cfg) ? t('Actual reps per side') : t('Actual reps') }
   const col1 = cardio ? { f: 'min', step: 1, dec: true, hd: t('Duration (min)') }
     : timed ? { f: 'sec', step: 5, dec: false, hd: t('Seconds') }
       : (bw && !added) ? repCol : loadCol
@@ -165,12 +165,13 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
   }
   // Uses the shared stepper markup so a set row picks up the same control styling
   // as every other +/- field in the app.
+  const displayValidation = (s, i) => Object.fromEntries(Object.entries(actualRepValidation(entry, s, i)).map(([key, value]) => [key, displayReps(value, cfg)]))
   const cell = (s, i, col, cls) => (
     <div className={'set-metric ' + cls}><label htmlFor={`workout-${entryIdx}-${i}-${col.f}`}>{col.hd}{col.eff === 'rir' && targetRirRangeFor(cfg,s.role) && <small>{rirRangeLabel(targetRirRangeFor(cfg,s.role))}</small>}</label><div className={'stp' + (col.eff === 'rir' && s[col.f] != null && s[col.f] !== '' && Number(s[col.f]) === 0 ? ' effort-failure' : '')}>
       <button type="button" aria-label={t('Decrease')} onClick={() => bump(s, i, col, -1)}><Icon name="minus" /></button>
-      <span className="val"><NumberField retainInvalid key={`${entryIdx}-${i}-${col.f}`} id={`workout-${entryIdx}-${i}-${col.f}`} data-nodrag validation={col.f === 'r' ? actualRepValidation(entry,s,i) : col.eff ? {max: col.max, step: col.step} : ['min','sec'].includes(col.f) ? {min: 1} : {}} decimal={col.dec} nullable={col.opt} value={s[col.f] ?? ''}
+      <span className="val"><NumberField retainInvalid key={`${entryIdx}-${i}-${col.f}`} id={`workout-${entryIdx}-${i}-${col.f}`} data-nodrag validation={col.f === 'r' ? displayValidation(s,i) : col.eff ? {max: col.max, step: col.step} : ['min','sec'].includes(col.f) ? {min: 1} : {}} decimal={col.dec} nullable={col.opt} value={col.f === 'r' ? displayReps(s.r, cfg) ?? '' : s[col.f] ?? ''}
         displayValue={col.eff && s[col.f] != null && s[col.f] !== '' ? effortValue(col.eff, s[col.f]) : undefined} aria-label={col.hd}
-        onChange={v => onField(i, col.f, v)} /></span>
+        onChange={v => onField(i, col.f, col.f === 'r' ? storedReps(v, cfg) : v)} /></span>
       <button type="button" aria-label={t('Increase')} onClick={() => bump(s, i, col, 1)}><Icon name="plus" /></button>
     </div></div>
   )
@@ -242,7 +243,8 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
         const phaseNum = entry.sets.slice(0, i + 1).filter(x => isWarmupRow(x) === warm).length
         const roleBefore = i > 0 ? entry.sets[i - 1].role : null
         const hasRepTarget = [cfg.reps, cfg.topRepsMax, cfg.backoffRepsMax].some(v => Number(v) > 0)
-        const target = repBounds(cfg, s.role)
+        const rawTarget = repBounds(cfg, s.role)
+        const target = { min: displayReps(rawTarget.min, cfg), max: displayReps(rawTarget.max, cfg) }
         const amrap = s.amrap || cfg.amrap || /^amrap$/i.test(String(cfg.reps).trim()) || (entry.plan?.policy === 'greyskull' && i === entry.sets.findLastIndex(row => !isWarmupRow(row)))
         const targetText = amrap ? 'AMRAP' : hasRepTarget ? (target.min === target.max ? String(target.max) : `${target.min}–${target.max}`) : t('Free reps')
         return <div key={i} data-workout-set={`${entryIdx}-${i}`} ref={el => { rowRefs.current[i] = el }}>
@@ -256,13 +258,13 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
               <button type="button" className="set-undo" aria-label={`${t('Undo Completed')} · ${t('Set')} ${phaseNum}`} onClick={() => onToggle(i)}>{t('Undo Completed')}</button>
             </div>
             <dl className="set-summary-values">
-              {[col1, col2].filter(Boolean).map(col => <div key={col.f}><dt>{col.hd}</dt><dd>{Number(s[col.f] ?? 0).toLocaleString(dateLocale(), {maximumFractionDigits: 10})}</dd></div>)}
+              {[col1, col2].filter(Boolean).map(col => <div key={col.f}><dt>{col.hd}</dt><dd>{Number(col.f === 'r' ? displayReps(s.r ?? 0, cfg) : s[col.f] ?? 0).toLocaleString(dateLocale(), {maximumFractionDigits: 10})}</dd></div>)}
               {mode === 'reps' && ['rir','rpe'].filter(k => s[k] != null || (col3?.eff || 'rir') === k).map(k => <div key={k}><dt>{k.toUpperCase()}</dt><dd>{s[k] == null ? '—' : effortValue(k, s[k])}</dd></div>)}
               {timed && isPerSide(cfg) && ['left','right'].map(side => <div key={side}><dt>{t(side === 'left' ? 'Left' : 'Right')}</dt><dd>{fmtSec(s[`${side}Sec`] ?? s.sec)}</dd></div>)}
             </dl>
             {(dropsOf(s).length > 0 || clustersOf(s).length > 0) && <div className="set-summary-details">
-              {dropsOf(s).map((d,di)=><span key={`d${di}`}>{t('Drop {0}',di+1)} · {Number(d.w).toLocaleString(dateLocale(), {maximumFractionDigits: 10})} {S.unit} × {d.r} {t('reps')}</span>)}
-              {clustersOf(s).map((c,ci)=><span key={`c${ci}`}>{t('Burst {0}',ci+1)} · {c.r} {t('reps')} · {c.restSec}s</span>)}
+              {dropsOf(s).map((d,di)=><span key={`d${di}`}>{t('Drop {0}',di+1)} · {Number(d.w).toLocaleString(dateLocale(), {maximumFractionDigits: 10})} {S.unit} × {displayReps(d.r, cfg)} {t('reps')}</span>)}
+              {clustersOf(s).map((c,ci)=><span key={`c${ci}`}>{t('Burst {0}',ci+1)} · {displayReps(c.r, cfg)} {t('reps')} · {c.restSec}s</span>)}
             </div>}
           </div> : <div className={'setrow set-console' + (currentSet === i ? ' current' : '') + (col3 ? ' eff3' : '')}>
             <div className="set-console-head">
@@ -276,7 +278,7 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
                 </div> : <Check aria-label={`${t('Set')} ${phaseNum}`} checked={s.done} onChange={() => onToggle(i)} />}
               </div>
             </div>
-            {mode === 'reps' && !warm && <div className="set-target"><span>{t('Target reps')}{isPerSide(cfg) && cfg.repsPerSide ? ` ${t('/ side')}` : ''}</span><strong>{targetText}</strong></div>}
+            {mode === 'reps' && !warm && <div className="set-target"><span>{t('Target reps')}{isPerSide(cfg) ? ` ${t('/ side')}` : ''}</span><strong>{targetText}</strong></div>}
             {cell(s, i, col1, 'w')}
             {col2 && cell(s, i, col2, 'r')}
             {col3 && cell(s, i, col3, 'eff')}
@@ -289,14 +291,14 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
               <div className="subrow" key={'d' + di}>
                 <span className="subn">{t('Drop {0}', di + 1)}</span>
                 {miniStepper(d.w, loadStep, true, v => setDropField(i, di, 'w', v), loadCol.hd)}
-                {miniStepper(d.r, 1, false, v => setDropField(i, di, 'r', v), repCol.hd)}
+                {miniStepper(displayReps(d.r, cfg), 1, false, v => setDropField(i, di, 'r', storedReps(v, cfg)), repCol.hd)}
                 <button className="iconbtn" aria-label={t('Remove drop')} onClick={() => removeDrop(i, di)}><Icon name="xmark" /></button>
               </div>
             ))}
             {clustersOf(s).map((c, ci) => (
               <div className="subrow" key={'c' + ci}>
                 <span className="subn">{t('Burst {0}', ci + 1)}</span>
-                {miniStepper(c.r, 1, false, v => setClusterField(i, ci, v), repCol.hd)}
+                {miniStepper(displayReps(c.r, cfg), 1, false, v => setClusterField(i, ci, storedReps(v, cfg)), repCol.hd)}
                 <span className="dim small">{c.restSec}s</span>
                 <button className="iconbtn" aria-label={t('Remove burst')} onClick={() => removeCluster(i, ci)}><Icon name="xmark" /></button>
               </div>

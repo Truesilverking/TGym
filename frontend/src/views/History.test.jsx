@@ -41,3 +41,9 @@ describe('history export', () => {
     expect(state.workouts[0].name).toBe('=1+1')
   })
 })
+
+it.each([{side:true,reps:16}, {side:true,repsPerSide:true,reps:8}])('exports the same 8-per-side count for %j without rewriting history', target => {
+ const state={unit:'kg',workouts:[{name:'Test',entries:[{id:'0025',target,sets:[{r:target.reps,w:20,done:true}]}]}]}
+ const before=structuredClone(state),lines=historyCsv(state).split('\r\n'),cells=lines[1].split(',')
+ expect(cells[10]).toBe('"8"');expect(cells.at(-1)).toBe('"8"');expect(state).toEqual(before)
+})

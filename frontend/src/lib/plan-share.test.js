@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildPlanBundle, parsePlan, mergePlan } from './plan-share.js'
+import { buildPlanBundle, parsePlan, mergePlan, planPrintHTML } from './plan-share.js'
 import { planActivity, createActivityWorkout } from './activities.js'
 import { dailyPlan } from './daily-plan.js'
 import { isoOf } from './format.js'
@@ -64,4 +64,12 @@ it('shared activity routines still complete their daily assignment after ID rema
   expect(target.routines[0].ex[0]).toMatchObject({ activityType: 'running', mode: 'cardio' })
   target.workouts.push(createActivityWorkout(target, { type: 'running', start, minutes: 1 }, +now))
   expect(dailyPlan(target, date)).toMatchObject({ completed: 1, extra: 0 })
+})
+
+it('prints old and new per-side plans as 8 while keeping portable JSON semantics',()=>{
+ for(const cfg of [{side:true,reps:16},{side:true,repsPerSide:true,reps:8}]){
+  const S={...stateWith(cfg),unit:'kg'};const html=planPrintHTML(S,'Test')
+  expect(html).toContain('3 × 8 / side');expect(html).not.toContain('3 × 16')
+  expect(roundTrip(cfg).reps).toBe(cfg.reps)
+ }
 })

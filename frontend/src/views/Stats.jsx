@@ -8,7 +8,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { EXIDX } from '../lib/exercises.js'
-import { lastBW, setLabel, modeOf, effortOf, metricModeForEntry, metricRowsForEntry, bestWeightForEntry } from '../lib/history.js'
+import { lastBW, setLabel, modeOf, effortOf, metricModeForEntry, metricRowsForEntry, bestWeightForEntry, displayReps } from '../lib/history.js'
 import { fmtNum, fmtDate, fmtVol, todayISO, weekKey } from '../lib/format.js'
 import { t, exerciseNameFor, getLang } from '../lib/i18n.js'
 import { bwSheet, goalSheet, workoutDetailSheet, WorkoutRow, bwDeltaColor, measurementsSheet, heightSheet, sessionTimingSheet, confirmSheet, inBodySheet } from '../sheets.jsx'
@@ -345,7 +345,7 @@ export default function Stats() {
       // Unloaded reps work still has a current figure — its rep count. Without this the whole
       // picker label went blank and the exercise sorted to the bottom as if it had no history.
       if (mode === 'reps') {
-        const reps = Math.max(0, ...rows.map(s => Number(s.r) || 0))
+        const reps = Math.max(0, ...rows.map(s => displayReps(Number(s.r) || 0, en.target)))
         if (reps > 0) return { mx: reps, unit: t('reps') }
       }
     }
@@ -378,7 +378,7 @@ export default function Stats() {
     const en = w.entries.find(e => e.id === curEx)
     return en && bestWeightForEntry(en) > 0
   })
-  const bestRepsOf = en => Math.max(0, ...metricRowsForEntry(en, 'reps').map(s => Number(s.r) || 0))
+  const bestRepsOf = en => Math.max(0, ...metricRowsForEntry(en, 'reps').map(s => displayReps(Number(s.r) || 0, en.target)))
   const metric = s => curCardio ? (s.speed || 0) : curTimed ? (s.sec || 0) : (s.w || 0)
   const exUnit = curCardio ? 'km/h' : curTimed ? 's' : repsOnly ? t('reps') : S.unit
   let exPts = [], exList = [], exBest = 0

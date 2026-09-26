@@ -90,3 +90,30 @@ it('renders Spanish completed results with decimal precision and an accessible u
  try {mount({},[{w:42.75,r:8,rir:2,done:true}]);const row=container.querySelector('.set-summary');expect(row.textContent).toContain('42,75');expect(row.textContent).toContain('RIR');expect(row.querySelector('button').getAttribute('aria-label')).toContain('Deshacer completada');expect(row.querySelector('input')).toBeNull()}
  finally {await act(async()=>{await setLang('en')})}
 })
+
+
+it('edits legacy per-side totals as single-side reps across completion, reload and undo',()=>{
+ mount({side:true,reps:20,repsMin:12,repRange:true},[{w:20,r:16,done:false}])
+ expect(input('Actual reps per side').value).toBe('8')
+ expect(container.querySelector('.set-target strong').textContent).toBe('6–10')
+ type(input('Actual reps per side'),'7');expect(rows()[0].r).toBe(14)
+ act(()=>input('Actual reps per side').closest('.stp').querySelector('[aria-label="Increase"]').click())
+ expect(input('Actual reps per side').value).toBe('8');expect(rows()[0].r).toBe(16)
+ for(const side of container.querySelectorAll('.set-sides button'))act(()=>side.click())
+ expect(rows()[0].done).toBe(true);expect(workoutVolume(state().active)).toBe(320)
+ const repSummary=()=>[...container.querySelectorAll('.set-summary-values>div')].find(x=>x.querySelector('dt').textContent==='Actual reps per side').querySelector('dd').textContent
+ expect(repSummary()).toBe('8')
+ const saved=JSON.parse(localStorage.getItem('gym_state_v1'));expect(saved.active.entries[0].sets[0].r).toBe(16)
+ act(()=>{root.unmount();root=createRoot(container);useStore.getState().replaceState(saved);root.render(<MemoryRouter><Workout/></MemoryRouter>)})
+ expect(repSummary()).toBe('8');act(()=>container.querySelector('.set-undo').click());expect(input('Actual reps per side').value).toBe('8')
+ expect(rows()[0]).toMatchObject({r:16,leftDone:false,rightDone:false,done:false})
+})
+it.each(['dropset','restpause'])('uses one-side counts for legacy %s editors and completed details',typeName=>{
+ mount({side:true},[{w:20,r:16,done:false,type:typeName,...(typeName==='dropset'?{drops:[{w:15,r:12}]}:{clusters:[{r:4,restSec:15}]})}])
+ const reps=()=>[...container.querySelectorAll('input[aria-label="Actual reps per side"]')]
+ expect(reps().map(x=>x.value)).toEqual(['8',typeName==='dropset'?'6':'2'])
+ type(reps()[1],'5');expect(rows()[0]).toMatchObject(typeName==='dropset'?{r:16,drops:[{r:10}]}:{r:22,clusters:[{r:10}]})
+ expect(reps()[0].value).toBe(typeName==='dropset'?'8':'11')
+ for(const side of container.querySelectorAll('.set-sides button'))act(()=>side.click())
+ expect(container.querySelector('.set-summary-details').textContent).toContain('5 reps')
+})

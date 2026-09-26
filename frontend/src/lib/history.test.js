@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { modeOf, isTimed, fmtSec, setLabel, defaultConfig, buildSets, freestyleConfig, exLine, workoutVolume, bestWeightFor, bestWeightForEntry, effortOf, stepEffort, capEffort, isBw, isPerSide, sideReps, repStep, cascadeWeight, cascadeTopBackWeight, cascadeTopBackReps, insertWarmupRow, removeRowAt, workSetsDone, pairAdjacent, unpairSuperset, supersetUnits, applyIntensifierPlan, pinnedNoteFor, exNoteFor } from './history.js'
+import { modeOf, isTimed, fmtSec, setLabel, defaultConfig, buildSets, freestyleConfig, exLine, workoutVolume, bestWeightFor, bestWeightForEntry, effortOf, stepEffort, capEffort, isBw, isPerSide, sideReps, displayReps, storedReps, displayRepConfig, repStep, cascadeWeight, cascadeTopBackWeight, cascadeTopBackReps, insertWarmupRow, removeRowAt, workSetsDone, pairAdjacent, unpairSuperset, supersetUnits, applyIntensifierPlan, pinnedNoteFor, exNoteFor } from './history.js'
 import { EXDB } from './exercises.js'
 import { effortValue, effortLabel, rirRangeLabel } from './history.js'
 import { _setLangState } from './i18n-core.js'
@@ -353,9 +353,9 @@ describe('setLabel — bodyweight', () => {
   it('spells out a belt as an addition', () => {
     expect(setLabel(BW, { w: 10, r: 8 }, { id: BW })).toBe('+10 × 8')
   })
-  it('logs a per-side set as the plain total, like every other set in the app', () => {
-    expect(setLabel(BW, { w: 0, r: 16 }, { id: BW, side: true })).toBe('16')
-    expect(setLabel(LIFT, { w: 20, r: 16 }, { id: LIFT, side: true })).toBe('20×16')
+  it('shows one-side reps for legacy totals without changing stored values', () => {
+    expect(setLabel(BW, { w: 0, r: 16 }, { id: BW, side: true })).toBe('8 / side')
+    expect(setLabel(LIFT, { w: 20, r: 16 }, { id: LIFT, side: true })).toBe('20×8 / side')
   })
   it('keeps the effort tail', () => {
     expect(setLabel(BW, { w: 0, r: 12, rir: 2 }, { id: BW })).toBe('12 (RIR 2)')
@@ -363,8 +363,8 @@ describe('setLabel — bodyweight', () => {
 })
 
 describe('exLine', () => {
-  it('shows the split where there is room for it, next to the total you log', () => {
-    expect(exLine({ id: LIFT, sets: 3, reps: 16, side: true }, 'kg')).toBe('3 × 16 · 8/side')
+  it('shows only the per-side prescription, without a doubled total', () => {
+    expect(exLine({ id: LIFT, sets: 3, reps: 16, side: true }, 'kg')).toBe('3 × 8 / side')
   })
   it('marks added weight as added', () => {
     expect(exLine({ id: BW, sets: 3, reps: 8, weight: 10 }, 'kg')).toBe('3 × 8 · +10 kg')
@@ -921,4 +921,28 @@ it('preserves manually edited and partially completed back-off loads and reps',(
  const cfg={setScheme:'topback',backoffPct:10,backoffRepOffset:2};
  expect(cascadeTopBackWeight(rows,0,120,cfg,2.5).map(s=>s.w)).toEqual([120,80,90,107.5]);
  expect(cascadeTopBackReps(rows,0,10,cfg).map(s=>s.r)).toEqual([10,7,8,12])
+})
+
+
+describe('per-side display/storage boundary', () => {
+  it.each([{side:true}, {side:true,repsPerSide:true}, {}])('round-trips the displayed count without mutating %j', cfg => {
+    const stored = cfg.side && !cfg.repsPerSide ? 16 : 8
+    expect(displayReps(stored,cfg)).toBe(8)
+    expect(storedReps(8,cfg)).toBe(stored)
+  })
+  it('retains empty, AMRAP and odd legacy counts instead of inventing a target', () => {
+    expect(displayReps(17,{side:true})).toBe(8.5)
+    expect(displayReps('AMRAP',{side:true})).toBe('AMRAP')
+    expect(exLine({sets:3,reps:'AMRAP'},'kg')).toBe('3 × AMRAP')
+    expect(storedReps(null,{side:true})).toBeNull()
+    expect(displayReps('',{side:true})).toBe('')
+    expect(displayReps(30,{side:true,mode:'time'})).toBe(30)
+  })
+  it('presents ranges and converts config semantics only when explicitly requested', () => {
+    const cfg={side:true,reps:16,repsMin:12,topRepsMax:16,backoffRepsMax:20,backoffRepOffset:4,intensifier:{type:'restpause',totalReps:24}}
+    const before=structuredClone(cfg)
+    expect(exLine(cfg,'kg')).toBe('1 × 6–8 / side')
+    expect(displayRepConfig(cfg)).toMatchObject({reps:8,repsMin:6,topRepsMax:8,backoffRepsMax:10,backoffRepOffset:2,intensifier:{totalReps:12}})
+    expect(cfg).toEqual(before)
+  })
 })

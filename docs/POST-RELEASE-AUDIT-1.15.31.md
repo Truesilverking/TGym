@@ -92,3 +92,13 @@ Source `27e3c914c1049ef217ce7331d58d89978eccad05` and QA tag `android-candidate-
 - [Signed candidate 36218941338](https://github.com/Truesilverking/TGym/actions/runs/36218941338): release build/lint, matching published signing identity, package/version checks and artifact upload.
 
 Artifact `10899265080` was downloaded with its archive digest verified. APK SHA-256 is `30c7addb5b633abe502315030e37ffdfd7297cc071dca852775b9a4d6f1202fa`. Installation on the Pixel succeeded using replacement mode, without uninstalling/resetting TGym. Android reports 1.15.32/code67, preserves the original first-install date, and the installed APK hash matches the candidate. The phone automatically locked during installation: the post-install visual/data comparison is still pending an unlock, so physical confirmation of the margin correction is not yet claimed. Production release, Pages and FCM remain unchanged.
+
+### Per-side repetition follow-up
+
+The user requested that 8 reps per side display as 8 throughout the routine/workout UI. Legacy targets store the combined total (16), while newer `repsPerSide` targets store 8. UI adapters now show and accept the one-side count for either representation, including ranges, completed/undone rows, intensity extensions, history, printed plans, CSV and unloaded rep statistics. Normal reps and timed work retain their semantics. Storage, portable JSON backups, historical volume and progression calculations remain compatible; no bulk migration runs.
+
+Local validation passed: **1,050 frontend tests across 108 files, API 10, MCP 37 and plain-Node import validation**; web/PWA/mobile builds and final Capacitor sync succeeded. There are no frontend lint/typecheck scripts. The initial seven test failures were corrected before the successful full run. Build warnings about existing mixed static/dynamic imports remain non-fatal.
+
+An isolated real-Edge audit passed **8 flows and 80 layout checks**: legacy/new targets, EN/ES, dark/light, 320/360/375/390/430 px and reduced motion. It exercised routine editing, single-rep increments, side confirmations, completion, reload and undo, checking persisted values and runtime errors. Representative 320 px screenshots were visually inspected. These synthetic-profile checks do not modify the phone's training data.
+
+The replacement candidate is assigned **1.15.32/code68**, superseding code67 for QA. Its signed CI artifact, physical installation/visual verification and any production publication are still pending at this checkpoint. Candidate01 does not contain the per-side correction.

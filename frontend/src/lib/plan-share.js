@@ -10,7 +10,7 @@ import { routineIds } from './daily-plan.js'
 //     a page break — each exercise, and each routine that fits, stays in one place.
 
 import { EXIDX, isBodyweightEq } from './exercises.js'
-import { modeOf, fmtSec, isBw, isPerSide, sideReps, MAX_PLANNED_WARMUPS } from './history.js'
+import { modeOf, fmtSec, isBw, isPerSide, displayReps, MAX_PLANNED_WARMUPS } from './history.js'
 import { uid, todayISO, DAYN, fmtNum, exCount } from './format.js'
 import { t, exerciseNameFor } from './i18n-core.js'
 
@@ -205,10 +205,9 @@ function scheme(e, unit) {
     const body = `${e.min || 20} min @ ${fmtNum(e.speed || 8)} km/h`
     return sets > 1 ? `${sets} × ${body}` : body
   }
-  let s = mode === 'time' ? `${sets} × ${fmtSec(e.sec || 45)}` : `${sets} × ${e.reps ?? 10}`
+  const reps = displayReps(e.reps ?? 10, e)
+  let s = mode === 'time' ? `${sets} × ${fmtSec(e.sec || 45)}` : `${sets} × ${typeof reps === 'number' ? fmtNum(reps) : reps}${isPerSide(e) ? ` ${t('/ side')}` : ''}`
   if (e.weight) s += ` · ${isBw(e) ? '+' : ''}${fmtNum(e.weight)} ${unit}`
-  // A printed plan is read at the rack, so the split earns its four characters.
-  if (mode !== 'time' && isPerSide(e)) s += ` · ${t('{0}/side', fmtNum(sideReps(e.reps ?? 10, e)))}`
   return s
 }
 
