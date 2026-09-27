@@ -16,4 +16,13 @@ Progress Report now has matching Period/Section selectors, persistent routine/ex
 
 ## Publication
 
-Pending exact-source CI and authorized release verification. No private records, credentials or signing files are included. Reproducible ignored QA evidence is under `.tools/browser-audit/progress-dashboard/`.
+Published [v1.15.38](https://github.com/Truesilverking/TGym/releases/tag/v1.15.38), Android code 74, from runtime commit `c2970e79253f72be284c40a7ddab5d0897cfa5e7` on `feature/dashboard-visual-polish`.
+
+- Exact-source [Tests](https://github.com/Truesilverking/TGym/actions/runs/36340334021) and [Validate Android](https://github.com/Truesilverking/TGym/actions/runs/36340334048) succeeded, including the Android emulator job.
+- [Release workflow](https://github.com/Truesilverking/TGym/actions/runs/36340739552) succeeded, including signed APK/AAB, PWA deployment, published metadata verification and update-topic notification submission. The release is public, stable and non-draft; APK, AAB, checksums and latest.json are present.
+- Independently downloaded GitHub and Pages APKs are identical by SHA-256: `efa19d8d8e2903d86df6a1b68128c37a8eba6fe575ee3d34e245de6f477d9ec3`.
+- APK signature verified. Signing certificate is unchanged from 1.15.37: `8ee233c984615e2b3f6f083dc0c47d148bb8956ff7caca97be0b9a0d260e6082`. aapt confirms package `app.framegym.mobile`, version 1.15.38 / code 74.
+- Published PWA build metadata and update manifest identify the runtime commit above. The real app-update module, executed against live public metadata, detects 1.15.38 from 1.15.37 in Android/GitHub and PWA distributions; 1.15.38 does not offer itself again.
+- FCM submission succeeded. Physical phone delivery, installation and iOS behavior remain unverified in this run.
+
+No private records, credentials or signing files are included. Reproducible ignored QA evidence is under `.tools/browser-audit/progress-dashboard/` and `.tools/release-1.15.38/`.
