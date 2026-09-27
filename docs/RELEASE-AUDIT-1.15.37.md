@@ -17,6 +17,14 @@ PDF layout uses complete-row page breaks, repeated section context, wrapped titl
 
 ## Publication
 
-Pending exact-source CI and release verification. Publication authorized by the user; release only after successful checks.
+Published [v1.15.37](https://github.com/Truesilverking/TGym/releases/tag/v1.15.37), Android versionCode 73, from runtime commit `c88db48691c108fc04fc8671a219291685fccf5f` on `feature/dashboard-visual-polish`.
+
+- Exact-source [Tests](https://github.com/Truesilverking/TGym/actions/runs/36334145061) and [Validate Android](https://github.com/Truesilverking/TGym/actions/runs/36334145120) succeeded.
+- [Release workflow](https://github.com/Truesilverking/TGym/actions/runs/36334585112) succeeded, including signed APK/AAB, PWA deployment, public metadata verification and update-topic notification submission. Release is public, non-draft and stable; APK, AAB, checksums and latest.json are present.
+- Independently downloaded GitHub APK and Pages APK are byte-identical by SHA-256: `f9f8ee748afa7b9257f680fffbc09b399cdb21fe5a31968f55dc7709d18f83c6`.
+- APK signature verified; signing certificate matches 1.15.36: `8ee233c984615e2b3f6f083dc0c47d148bb8956ff7caca97be0b9a0d260e6082`. Package `app.framegym.mobile`, version 1.15.37/code73 verified with aapt.
+- Public PWA build metadata and Android update manifest identify the runtime commit above.
+- Executed the real app-update module against live public metadata: 1.15.36 detects 1.15.37 in Android/GitHub and PWA distributions; 1.15.37 does not offer itself again.
+- FCM submission succeeded. Physical phone notification receipt, installation and iOS device behavior remain unverified in this run.
 
 Ignored reproducible QA artifacts: `.tools/browser-audit/progress-routines/`. No credentials, signing material or binary artifacts committed.
