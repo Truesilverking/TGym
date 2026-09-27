@@ -758,4 +758,8 @@ export default {
   "Save duration": "Save duration",
   "Pause workout timer": "Pause workout timer",
   "Workout timer paused. Continue when you are ready.": "Workout timer paused. Continue when you are ready.",
+ "Routine progress": "按训练计划查看进展",
+ "Sessions stay grouped by routine, including exercises recorded before later edits.": "训练记录按训练计划分组，包括后续修改前记录的动作。",
+ "Adherence uses the available schedule; earlier plans are not reconstructed.": "完成情况依据现有日历，不重建过去的计划。",
+ "History without a routine ID stays separate from current routines.": "没有计划 ID 的历史记录与当前计划分开保留。"
 }

@@ -758,4 +758,8 @@ export default {
   "Save duration": "Save duration",
   "Pause workout timer": "Pause workout timer",
   "Workout timer paused. Continue when you are ready.": "Workout timer paused. Continue when you are ready.",
+ "Routine progress": "루틴별 진행",
+ "Sessions stay grouped by routine, including exercises recorded before later edits.": "나중에 수정되기 전에 기록된 운동을 포함하여 세션은 루틴별로 유지됩니다.",
+ "Adherence uses the available schedule; earlier plans are not reconstructed.": "이행률은 사용 가능한 달력을 기준으로 하며 이전 계획을 재구성하지 않습니다.",
+ "History without a routine ID stays separate from current routines.": "루틴 ID가 없는 기록은 현재 루틴과 별도로 유지됩니다."
 }

@@ -1,11 +1,12 @@
 import { buildProgressReport } from './progress-report.js'
+import { PROGRESS_SECTIONS } from './progress-sections.js'
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
 function sections(report,t,name) {
  const q=report.summary
  if(!q)return []
  return [
   {title:t('Your progress'),lines:[...Object.entries({ 'Total workouts':q.workouts,'Active days':q.activeDays,'Average workouts per week':q.averagePerWeek,'Total time (min)':q.timedSessions?q.totalMinutes:null,'Average duration (min)':q.averageMinutes,'Scheduled':q.planned,'Completed':q.completed,'Missed':q.missed,'Completion':q.rate==null?null:q.rate*100,'Longest active-day streak':q.longestStreak,'Current active-day streak':q.currentStreak,'Personal Records':report.records.length}).map(([label,value])=>({label:t(label),value,unit:label==='Completion'?'%':''})),...report.highlights.map(m=>({label:(m.exercise?name(m.exercise):t(m.label))+' · '+t('Change'),value:m.delta,unit:m.deltaUnit}))]},
-  {title:t('Body Progress'),metrics:report.body},...report.exercises.map(e=>({title:t('Exercise Progress')+' · '+name(e.exercise)+' · '+t(e.mode==='reps'?'Reps':e.mode==='time'?'Time':'Cardio')+' / '+t(e.type)+' / '+t(e.role)+(e.bwMode?' / '+t('Bodyweight'):'')+(e.side?' / '+t('/ side'):''),metrics:e.metrics,lines:[{label:t('Sessions'),value:e.sessions.length},{label:t('Personal Records'),value:e.records.length}]})),
+  {title:t('Body Progress'),metrics:report.body},...report.exercises.map(e=>({title:t('Routine progress')+' · '+((report.routines||[]).find(r=>r.key===e.routineKey)?.name||t('Routine'))+' · '+name(e.exercise)+' · '+t(e.mode==='reps'?'Reps':e.mode==='time'?'Time':'Cardio')+' / '+t(e.type)+' / '+t(e.role)+(e.bwMode?' / '+t('Bodyweight'):'')+(e.side?' / '+t('/ side'):''),metrics:e.metrics,lines:[{label:t('Sessions'),value:e.sessions.length},{label:t('Personal Records'),value:e.records.length}]})),
   {title:t('Training volume'),metrics:report.training}, {title:t('Activity Progress'),metrics:report.activities.map(m=>({...m,label:t(m.activity)+' · '+t(m.label)}))},
   {title:t('Personal Records'),lines:report.records.map(p=>({label:name(p.exercise)+' · '+p.d+' · '+t(p.label),value:p.value,unit:p.unit,previous:p.previous,record:p}))},
  ]
@@ -38,50 +39,75 @@ export function wrapProgressText(value, width) {
  if(line)rows.push(line)
  return rows
 }
-// Reused by both the selected-period download and the calendar's complete report.
+// Flow complete rows onto pages; repeat section context after every page break.
+// Shared by selected-period downloads and the calendar's complete report.
 export function progressReportPages(S,{t=x=>x,now=new Date(),name=e=>e.n||e.id,formatNumber=n=>Number(n.toFixed(1)).toLocaleString(),report=buildProgressReport(S,{now})}={}) {
- const cards=[]
  const val=(n,u='')=>n==null?'—':formatNumber(n)+(u?' '+t(u):'')
  const label=m=>m.muscle?t(m.label,t(m.muscle)):t(m.label)
- for(const section of sections(report,t,name).slice(1)) {
-  for(const m of section.metrics||[])cards.push({title:section.title,label:label(m),value:val(m.last?.y,m.unit),detail:m.delta==null?t('More data needed'):(m.delta>0?'+':'')+val(m.delta,m.deltaUnit)+(m.percent==null?'':' · '+val(m.percent,'%')),dates:`${m.first.d} → ${m.last.d}`,baseline:t('Baseline')+': '+val(m.first?.y,m.unit),metric:m})
+ const text=(x,y,s,size=18,color='#17212f',weight=400)=>`<text x="${x}" y="${y}" font-size="${size}" fill="${color}" font-weight="${weight}">${esc(s)}</text>`
+ const wrap=(s,width)=>wrapProgressText(s,width)
+ const lines=(x,y,rows,size=18,color='#17212f',weight=400)=>rows.map((s,i)=>text(x,y+i*(size+5),s,size,color,weight)).join('')
+ const rect=(x,y,w,h)=>`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="12" fill="white" stroke="#dce2e9"/>`
+ const pages=[];let svg='',y=0,hasContent=false
+ const start=()=>{svg=`<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1390"><rect width="1000" height="1390" fill="#f8fafc"/><g font-family="Arial,sans-serif"><rect width="1000" height="8" fill="#b51e28"/>${text(44,46,'TGym',20,'#b51e28',700)}${text(44,87,t('Progress Report'),30,'#17212f',700)}${text(44,117,report.range.start+' → '+report.range.end,18,'#536174')}`;y=150;hasContent=false}
+ const finish=()=>{if(hasContent)pages.push(svg)}
+ const next=()=>{finish();start()}
+ const headingRows=h=>({title:wrap(h.title,65),sub:wrap(h.sub,90)})
+ const headingHeight=h=>{const r=headingRows(h);return r.title.length*29+r.sub.length*23+24}
+ const heading=h=>{const r=headingRows(h);svg+=lines(44,y+24,r.title,24,'#17212f',700);y+=r.title.length*29;svg+=lines(44,y+20,r.sub,18,'#536174');y+=r.sub.length*23+24;hasContent=true}
+ // Never orphan a heading or split a card. Continuations always repeat context.
+ const group=(h,rows)=>{if(!rows.length)return
+  let first=true
+  for(const row of rows){
+   if(y+row.height+(first?headingHeight(h):0)>1310){next();first=true}
+   if(first){heading(h);first=false}
+   svg+=row.draw(y);y+=row.height;hasContent=true
+  }
+  y+=16
  }
+ const pairRows=(items,make)=>{const rows=[];for(let i=0;i<items.length;i+=2){const cards=items.slice(i,i+2).map(make),height=Math.max(...cards.map(c=>c.height));rows.push({height:height+12,draw:y=>cards.map((c,j)=>c.draw(44+j*464,y,height)).join('')})}return rows}
+ start()
  const q=report.summary
- const overview=[['Total workouts',q?.workouts],['Active days',q?.activeDays],['Personal Records',report.records?.length],['Average workouts per week',q?.averagePerWeek],['Total time (min)',q?.timedSessions?q.totalMinutes:null],['Average duration (min)',q?.averageMinutes],['Scheduled',q?.planned],['Completed',q?.completed],['Missed',q?.missed],['Completion',q?.rate==null?null:q.rate*100,'%'],['Longest active-day streak',q?.longestStreak],['Current active-day streak',q?.currentStreak]]
- const records=report.records||[]
- const pages=[], total=(q?.workouts?1:0)+Math.max(q?.workouts?0:1,Math.ceil(cards.length/8))+Math.ceil(records.length/12)
- const text=(x,y,s,size=20,color='#17212f',weight=400)=>`<text x="${x}" y="${y}" font-size="${size}" fill="${color}" font-weight="${weight}">${esc(s)}</text>`
- // Wrap instead of truncating exercise names, including unbroken imported names.
- const lines=(x,y,s,size=18,length=40,max=3)=>wrapProgressText(s,length).slice(0,max).map((line,i)=>text(x,y+i*(size+5),line,size)).join('')
- const header=()=>`<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1390"><rect width="1000" height="1390" fill="#f8fafc"/><g font-family="Arial,sans-serif"><rect width="1000" height="12" fill="#b51e28"/>${text(48,62,'TGym',22,'#b51e28',700)}${text(48,114,t('Progress Report'),38,'#17212f',700)}${text(48,150,report.range.start+' → '+report.range.end,20,'#536174')}`
- const footer=page=>text(48,1345,'TGym · '+t('Progress Report'),16,'#536174')+text(900,1345,page+' / '+total,16,'#536174')+'</g></svg>'
- let svg=header()+text(48,212,t('Your progress'),26,'#17212f',700)
- overview.forEach(([l,n,u],i)=>{const x=48+(i%3)*306,y=240+Math.floor(i/3)*155;svg+=`<rect x="${x}" y="${y}" width="292" height="139" rx="16" fill="#ffffff" stroke="#dce2e9"/>`+text(x+20,y+52,val(n,u),34,'#17212f',700)+lines(x+20,y+87,t(l),18,23,3)})
- svg+=text(48,920,t('Highlights'),26,'#17212f',700)
- const highlights=report.highlights||[]
- if(!highlights.length)svg+=text(48,964,t('More data needed'),20,'#536174')
- highlights.forEach((m,i)=>{svg+=lines(48,960+i*65,(m.exercise?name(m.exercise):label(m))+': '+(m.delta>0?'+':'')+val(m.delta,m.deltaUnit),20,78,2)})
- svg+=lines(48,1250,t('Only recorded data. Changes are not automatically improvements.'),18,90,2)
- if(!cards.length)svg+=lines(48,1030,t('No comparable history in this period.'),22,70,2)
- if(q?.workouts)pages.push({svg:svg+footer(1),width:1000,height:1390})
- else if(!cards.length)pages.push({svg:header()+lines(48,240,t('No comparable history in this period.'),24,60,3)+footer(1),width:1000,height:1390})
- for(let i=0;i<cards.length;i+=8){
-  svg=header()
-  cards.slice(i,i+8).forEach((c,j)=>{const x=48+(j%2)*462,y=192+Math.floor(j/2)*274
-   svg+=`<rect x="${x}" y="${y}" width="442" height="260" rx="16" fill="white" stroke="#dce2e9"/>`
-   svg+=lines(x+18,y+27,c.title,16,48,2)+lines(x+18,y+74,c.label,21,33,2)+text(x+18,y+129,c.value,29,'#17212f',700)+text(x+18,y+157,c.detail||'',18,'#b51e28')+text(x+18,y+183,c.baseline||'',17,'#536174')+text(x+18,y+240,c.dates||'',15,'#536174')
-   if(c.metric)svg+=spark(c.metric,x+20,y+195,395,22)
-  })
-  pages.push({svg:svg+footer(pages.length+1),width:1000,height:1390})
+ const sectionHead=id=>{const [,title,sub]=PROGRESS_SECTIONS.find(s=>s[0]===id);return {title:t(title),sub:t(sub)}}
+ const tileRows=items=>{const rows=[]
+  for(let i=0;i<items.length;i+=3){const cells=items.slice(i,i+3),height=Math.max(...cells.map(([l])=>wrap(t(l),25).length))*23+58
+   rows.push({height:height+10,draw:y=>cells.map(([l,n,u],j)=>{const x=44+j*309;return rect(x,y,295,height)+text(x+16,y+35,val(n,u),28,'#17212f',700)+lines(x+16,y+62,wrap(t(l),25),18,'#536174')}).join('')})
+  }return rows
  }
- for(let i=0;i<records.length;i+=12){
-  svg=header()+text(48,207,t('Personal Records'),26,'#17212f',700)
-  records.slice(i,i+12).forEach((p,j)=>{const y=234+j*88
-   svg+=`<rect x="48" y="${y}" width="904" height="80" rx="12" fill="white" stroke="#dce2e9"/>`
-   svg+=lines(64,y+24,name(p.exercise),18,48,2)+text(64,y+66,p.d+' · '+t(p.label),14,'#536174')
-   svg+=text(650,y+31,val(p.value,p.unit),23,'#17212f',700)+text(650,y+59,t('Baseline')+': '+val(p.previous,p.unit),15,'#536174')
-  })
-  pages.push({svg:svg+footer(pages.length+1),width:1000,height:1390})
+ const metricRows=items=>pairRows(items,m=>{
+  const title=wrap(label(m),36),change=m.delta==null?t('More data needed'):(m.delta>0?'+':'')+val(m.delta,m.deltaUnit)+(m.percent==null?'':' · '+val(m.percent,'%'))
+  const details=wrap(change,42),height=(m.points.length>1?150:120)+(title.length-1)*25+(details.length-1)*23
+  return {height,draw:(x,y,h)=>{const top=y+title.length*25;return rect(x,y,448,h)+lines(x+16,y+25,title,20,'#17212f',700)+text(x+16,top+33,val(m.last?.y,m.unit),27,'#17212f',700)+text(x+230,top+32,t('Baseline')+': '+val(m.first?.y,m.unit),16,'#536174')+lines(x+16,top+60,details,18,'#b51e28')+spark(m,x+16,y+height-55,414,25)+text(x+16,y+height-15,m.first.d+' → '+m.last.d,16,'#536174')}}
+ })
+ const recordRows=items=>items.map(p=>{const title=wrap(name(p.exercise),48),detail=wrap(p.d+' · '+t(p.label),60),height=title.length*23+detail.length*21+20
+  return {height:height+8,draw:y=>rect(44,y,912,height)+lines(60,y+25,title,18,'#17212f',700)+lines(60,y+title.length*23+25,detail,16,'#536174')+text(665,y+29,val(p.value,p.unit),23,'#17212f',700)+text(665,y+54,t('Baseline')+': '+val(p.previous,p.unit),16,'#536174')}
+ })
+ if(q?.workouts){
+  group(sectionHead('overview'),tileRows([['Total workouts',q.workouts],['Active days',q.activeDays],['Personal Records',report.records.length],['Average workouts per week',q.averagePerWeek],['Total time (min)',q.timedSessions?q.totalMinutes:null],['Average duration (min)',q.averageMinutes]]))
+  group({...sectionHead('consistency'),sub:sectionHead('consistency').sub+' '+t('Adherence uses the available schedule; earlier plans are not reconstructed.')},tileRows([['Scheduled',q.planned],['Completed',q.completed],['Missed',q.missed],['Pending',q.pending],['Completion',q.rate==null?null:q.rate*100,'%'],['Longest active-day streak',q.longestStreak],['Current active-day streak',q.currentStreak]]))
+  group(sectionHead('duration'),[...tileRows([['Total time (min)',q.timedSessions?q.totalMinutes:null],['Average duration (min)',q.averageMinutes],['Median',q.medianMinutes,'min']]),...metricRows(report.training.filter(m=>m.key==='duration'))])
  }
- return pages
+ for(const r of report.routines||[]){
+  const routineTitle=t('Routine progress')+' · '+(r.name||t('Routine'))
+  const sub=r.legacy?t('History without a routine ID stays separate from current routines.'):t('Sessions stay grouped by routine, including exercises recorded before later edits.')
+  group({title:routineTitle,sub:sub+' '+t('Adherence uses the available schedule; earlier plans are not reconstructed.')},[...tileRows([['Sessions',r.count],['Average duration (min)',r.averageMinutes],['Median',r.medianMinutes,'min'],['Completion',r.rate==null?null:r.rate*100,'%'],['Total volume',r.volume,report.unit],['Average workouts per week',r.averagePerWeek]]),...metricRows(r.metrics)])
+  for(const e of r.exercises)group({title:(r.name||t('Routine'))+' · '+name(e.exercise),sub:t('Exercise Progress')+' · '+t(e.mode==='reps'?'Reps':e.mode==='time'?'Time':'Cardio')+' / '+t(e.type)+' / '+t(e.role)+(e.bwMode?' / '+t('Bodyweight'):'')+(e.side?' / '+t('/ side'):'')+' · '+t('Baseline → Current → Change → Trend')},metricRows(e.metrics))
+  group({title:(r.name||t('Routine'))+' · '+t('Personal Records'),sub:t('Records beat an earlier recorded best in the same comparison group. Equal sets do not create duplicate records.')},recordRows(r.records))
+ }
+ const groups=[
+  {...sectionHead('performance'),metrics:report.training.filter(m=>m.key!=='duration')},
+  {title:t('Activity Progress'),sub:t('Baseline → Current → Change → Trend'),metrics:report.activities.map(m=>({...m,label:t(m.activity)+' · '+t(m.label)}))},
+  {...sectionHead('body'),metrics:report.body.filter(m=>!m.key.startsWith('inbody:'))},
+  {...sectionHead('inbody'),metrics:report.body.filter(m=>m.key.startsWith('inbody:'))},
+ ]
+ for(const section of groups)group(section,metricRows(section.metrics||[]))
+ group(sectionHead('trends'),pairRows(report.highlights||[],m=>{const routine=(report.routines||[]).find(r=>r.key===m.routineKey),title=wrap((routine?(routine.name||t('Routine'))+' · ':'')+(m.exercise?name(m.exercise):label(m)),38),height=title.length*23+59;return {height,draw:(x,y,h)=>rect(x,y,448,h)+lines(x+16,y+25,title)+text(x+16,y+height-17,(m.delta>0?'+':'')+val(m.delta,m.deltaUnit),22,'#b51e28',700)}}))
+ // Compatibility with caller-created snapshots predating routine grouping.
+ if(!report.routines){
+  for(const e of report.exercises||[])group({title:t('Exercise Progress')+' · '+name(e.exercise),sub:t('Baseline → Current → Change → Trend')},metricRows(e.metrics))
+  group({title:t('Personal Records'),sub:t('Records beat an earlier recorded best in the same comparison group. Equal sets do not create duplicate records.')},recordRows(report.records||[]))
+ }
+ if(!hasContent&&!pages.length){heading({title:t('Your progress'),sub:t('No comparable history in this period.')})}
+ finish()
+ return pages.map((page,i)=>({svg:page+text(44,1350,'TGym · '+t('Progress Report'),16,'#536174')+text(875,1350,(i+1)+' / '+pages.length,16,'#536174')+'</g></svg>',width:1000,height:1390}))
 }

@@ -758,4 +758,8 @@ export default {
   "Save duration": "Save duration",
   "Pause workout timer": "Pause workout timer",
   "Workout timer paused. Continue when you are ready.": "Workout timer paused. Continue when you are ready.",
+ "Routine progress": "Rutine göre ilerleme",
+ "Sessions stay grouped by routine, including exercises recorded before later edits.": "Seanslar, sonraki düzenlemelerden önce kaydedilen egzersizler dahil rutine göre gruplanır.",
+ "Adherence uses the available schedule; earlier plans are not reconstructed.": "Uyum, mevcut takvimi kullanır; eski planları yeniden oluşturmaz.",
+ "History without a routine ID stays separate from current routines.": "Rutin kimliği olmayan geçmiş, mevcut rutinlerden ayrı tutulur."
 }

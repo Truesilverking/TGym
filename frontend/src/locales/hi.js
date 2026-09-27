@@ -758,4 +758,8 @@ export default {
   "Save duration": "Save duration",
   "Pause workout timer": "Pause workout timer",
   "Workout timer paused. Continue when you are ready.": "Workout timer paused. Continue when you are ready.",
+ "Routine progress": "रूटीन के अनुसार प्रगति",
+ "Sessions stay grouped by routine, including exercises recorded before later edits.": "सत्र रूटीन के अनुसार समूहित रहते हैं, बाद के बदलावों से पहले दर्ज व्यायाम भी शामिल हैं।",
+ "Adherence uses the available schedule; earlier plans are not reconstructed.": "पालन उपलब्ध कैलेंडर पर आधारित है; पुराने कार्यक्रम दोबारा नहीं बनाए जाते।",
+ "History without a routine ID stays separate from current routines.": "रूटीन ID के बिना इतिहास वर्तमान रूटीन से अलग रखा जाता है।"
 }

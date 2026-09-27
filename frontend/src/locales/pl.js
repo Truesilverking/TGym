@@ -758,4 +758,8 @@ export default {
   "Save duration": "Save duration",
   "Pause workout timer": "Pause workout timer",
   "Workout timer paused. Continue when you are ready.": "Workout timer paused. Continue when you are ready.",
+ "Routine progress": "Postęp według planu",
+ "Sessions stay grouped by routine, including exercises recorded before later edits.": "Sesje są grupowane według planu, także ćwiczenia zapisane przed późniejszymi zmianami.",
+ "Adherence uses the available schedule; earlier plans are not reconstructed.": "Realizacja opiera się na dostępnym kalendarzu, bez odtwarzania wcześniejszych planów.",
+ "History without a routine ID stays separate from current routines.": "Historia bez identyfikatora planu pozostaje oddzielona od aktualnych planów."
 }

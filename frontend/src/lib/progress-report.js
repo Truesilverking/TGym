@@ -1,7 +1,7 @@
 import { isoOf } from './format.js'
 import { validDate } from './training-history.js'
 import { dayNumber } from './training-pause.js'
-import { loggedWorkouts, consistencyStats } from './consistency.js'
+import { loggedWorkouts, consistencyStats, consistencyDays } from './consistency.js'
 import { MEASURE_FIELDS, measurementValue, validTimedSessions } from './stats-insights.js'
 import { displayReps, isBw, modeOf } from './history.js'
 import { isWarmupRow, modeForSet, setType, extraVolumeOf, dropsOf } from './workout-model.js'
@@ -26,6 +26,8 @@ const point = (row,y) => { const time=number(row.t)??number(row.start);return {d
 const load = (v,from,to) => number(v) == null ? null : Number(v)*(from===to?1:from==='lb'?1/LB_PER_KG:LB_PER_KG)
 const length = (v,from,to) => number(v) == null ? null : Number(v)*(from===to?1:from==='in'?CM_PER_IN:1/CM_PER_IN)
 const performanceScore = row => row.mode==='time' ? row.sec||0 : row.mode==='cardio' ? row.min||0 : row.est??row.w??0
+export const progressRoutineKey = w => w.routineId != null ? `id:${w.routineId}` : `legacy:${w.name || ''}`
+const median = values => {const sorted=[...values].sort((a,b)=>a-b),n=sorted.length;return n?(sorted[Math.floor((n-1)/2)]+sorted[Math.floor(n/2)])/2:null}
 const addDays = (d,n) => { const value=new Date(d+'T12:00:00');value.setDate(value.getDate()+n);return isoOf(value) }
 
 export function progressRange(S, {period='all',from,to,now=new Date()}={}) {
@@ -65,7 +67,7 @@ export function comparePerformance(a,b) {
 
 export function buildProgressReport(S, options={}) {
   const range=progressRange(S,options)
-  if(range.error)return {range,body:[],exercises:[],training:[],activities:[],records:[],highlights:[]}
+  if(range.error)return {range,body:[],routines:[],exercises:[],training:[],activities:[],records:[],highlights:[]}
   const {start,end,today}=range,inside=d=>validDate(d)&&d>=start&&d<=end
   const unit=S.unit==='lb'?'lb':'kg',measureUnit=S.measurementUnit==='in'?'in':'cm'
   const metric=(key,label,u,pts,opts)=>progressMetric(key,label,u,pts.filter(p=>inside(p.d)),opts)
@@ -82,18 +84,20 @@ export function buildProgressReport(S, options={}) {
   body.push(metric('derived-bmi','BMI from recorded height','',bw.flatMap(r=>{const h=heightTimeline.filter(h=>h.d<=r.d).at(-1);return h&&positive(r.w)?[point(r,load(r.w,r.unit||unit,'kg')/(h.cm/100)**2)]:[]}),{percent:false}))
 
   const seen=new Set()
-  const all=loggedWorkouts(S).filter(w=>validDate(w.d)&&w.d<=end&&(!S.trainingStartDate||w.d>=S.trainingStartDate)).filter(w=>{const k=w.id??JSON.stringify([w.d,w.start,w.end,w.entries]);if(seen.has(k))return false;seen.add(k);return true}).sort((a,b)=>a.d.localeCompare(b.d)||(a.start||0)-(b.start||0))
-  const workouts=all.filter(w=>inside(w.d)),groups=new Map(),sessions=[],records=[],activityGroups=new Map(),muscleGroups=new Map()
+  const all=loggedWorkouts(S).filter(w=>validDate(w.d)&&w.d<=end&&(!S.trainingStartDate||w.d>=S.trainingStartDate)).filter(w=>{const k=w.id??JSON.stringify([w.d,w.start,w.end,w.routineId,w.name,w.entries,w.pausedDurationMs]);if(seen.has(k))return false;seen.add(k);return true}).sort((a,b)=>a.d.localeCompare(b.d)||(a.start||0)-(b.start||0))
+  const workouts=all.filter(w=>inside(w.d)),groups=new Map(),sessions=[],records=[],activityGroups=new Map(),muscleGroups=new Map(),routineGroups=new Map()
   for(const w of all) {
+    const routineKey=progressRoutineKey(w)
+    if(!routineGroups.has(routineKey))routineGroups.set(routineKey,{key:routineKey,id:w.routineId??null,name:(S.routines||[]).find(r=>r.id===w.routineId)?.name||w.name||'',legacy:w.routineId==null,sessions:[]})
     let sets=0,reps=0,volume=0
-    for(const e of w.entries||[]) {
+    for(const [entryIndex,e] of (w.entries||[]).entries()) {
       const cfg={id:e.id,...e.target},ex=e.exercise||EXIDX[e.id]||(S.customEx||[]).find(x=>x.id===e.id)||{id:e.id,n:e.n||e.id}
       cfg.mode=modeOf(cfg)
       const grouped=new Map()
       for(const s of e.sets||[]) {
         if(!s.done||isWarmupRow(s))continue
         const mode=modeForSet(s,cfg),type=setType(s),role=s.role||'work',side=!!cfg.side,bwMode=isBw(cfg)
-        const key=JSON.stringify([e.id,mode,type,role,side,bwMode])
+        const key=JSON.stringify([routineKey,e.id??e.exercise?.id??['unlinked',w.id??w.start??w.d,entryIndex],mode,type,role,side,bwMode])
         const rawWeight=load(s.w,s.unit||w.unit||unit,unit),weight=rawWeight!=null&&rawWeight>=0?rawWeight:null,r=number(displayReps(s.r,cfg)),rir=number(rirOf(s))
         const row={w:weight,r,rir:rir!=null&&rir>=0&&rir<=10?rir:null,sec:positive(s.sec),min:positive(s.min),speed:number(s.speed),mode}
         row.est=mode==='reps'&&type==='straight'&&!bwMode?estimate1RM(weight,r):null
@@ -102,7 +106,7 @@ export function buildProgressReport(S, options={}) {
         row.volume=validReps&&weight>=0?load((number(s.w)||0)*rawReps+extraVolumeOf({...s,drops:dropsOf(s).filter(d=>number(d.w)>=0&&positive(d.r))}),s.unit||w.unit||unit,unit):0
         row.totalReps=validReps?rawReps+sum(dropsOf(s).map(d=>positive(d.r)||0)):0
         sets++;reps+=row.totalReps;volume+=row.volume
-        if(!grouped.has(key))grouped.set(key,{rows:[],key,id:e.id,exercise:ex,mode,type,role,side,bwMode})
+        if(!grouped.has(key))grouped.set(key,{rows:[],key,routineKey,id:e.id,exercise:ex,mode,type,role,side,bwMode})
         grouped.get(key).rows.push(row)
         if(inside(w.d))for(const [slug,factor] of Object.entries(musclesOf(ex))) {
           if(!muscleGroups.has(slug))muscleGroups.set(slug,[])
@@ -118,7 +122,8 @@ export function buildProgressReport(S, options={}) {
       }
     }
     if(inside(w.d)) {
-      sessions.push({...point(w,0),sets,reps,volume})
+      sessions.push({...point(w,0),id:w.id,routineKey,sets,reps,volume})
+      routineGroups.get(routineKey).sessions.push({...point(w,volume),id:w.id,sets,reps,volume})
       for(const a of activityEntries(w)) {
         if(!activityGroups.has(a.type))activityGroups.set(a.type,[])
         activityGroups.get(a.type).push({...a,...point(w,0)})
@@ -141,7 +146,7 @@ export function buildProgressReport(S, options={}) {
       const value=group.mode==='reps'?(repRecord?s.best.r:s.best.est):group.mode==='time'?s.best.sec:s.best.min
       if(value==null)continue
       const channel=repRecord?'reps:'+s.best.w:'primary',bestRecord=recordChannels.get(channel)
-      if(bestRecord!=null&&value>bestRecord&&inside(s.d))records.push({key:group.key+':'+s.t,exercise:group.exercise,d:s.d,t:s.t,value,previous:bestRecord,w:s.best.w,r:s.best.r,label:repRecord?'Reps at the same load':group.mode==='reps'?'Estimated 1RM':'Work duration',unit:repRecord?(group.side?'reps / side':'reps'):group.mode==='reps'?unit:group.mode==='time'?'s':'min'})
+      if(bestRecord!=null&&value>bestRecord&&inside(s.d))records.push({key:group.key+':'+s.t,exercise:group.exercise,routineKey:group.routineKey,d:s.d,t:s.t,value,previous:bestRecord,w:s.best.w,r:s.best.r,label:repRecord?'Reps at the same load':group.mode==='reps'?'Estimated 1RM':'Work duration',unit:repRecord?(group.side?'reps / side':'reps'):group.mode==='reps'?unit:group.mode==='time'?'s':'min'})
       recordChannels.set(channel,Math.max(bestRecord??0,value))
     }
     exercises.push({...group,sessions:recent,records:records.filter(r=>r.key.startsWith(group.key+':')),metrics:metrics.filter(m=>m.points.length),status:recent.length<2?'Insufficient Data':group.mode==='reps'?comparePerformance(recent[0].best,recent.at(-1).best):'Changed'})
@@ -166,7 +171,26 @@ export function buildProgressReport(S, options={}) {
     const m=metric(type+':'+key,label,u,rows.filter(r=>number(r[key])!=null).map(r=>({...r,y:r[key]})),{percent:!['rpe','hrZone','averageHeartRate'].includes(key)});if(m.points.length)activities.push({...m,activity:activityType(type).label})
   }
   const consistency=consistencyStats({...S,workouts},start,end,new Date(today+'T12:00:00'))
-  const summary={workouts:workouts.length,activeDays:dates.length,averagePerWeek:workouts.length/(days/7),longestStreak:longest,currentStreak:current,totalMinutes:sum(timed.map(w=>w.durationMs))/60000,averageMinutes:avg(timed.map(w=>w.durationMs/60000)),timedSessions:timed.length,sets:sum(sessions.map(s=>s.sets)),reps:sum(sessions.map(s=>s.reps)),volume:sum(sessions.map(s=>s.volume)),averageVolume:avg(sessions.map(s=>s.volume)),...consistency}
-  const visibleBody=body.filter(m=>m.points.length),highlights=[...visibleBody,...exercises.flatMap(e=>e.metrics.filter(m=>m.key==='w').map(m=>({...m,exercise:e.exercise})))].filter(m=>m.delta!=null&&Math.abs(m.delta)>1e-8).sort((a,b)=>Math.abs(b.percent||0)-Math.abs(a.percent||0)).slice(0,4)
-  return {range,unit,measureUnit,body:visibleBody,exercises,training:workouts.length?training.filter(m=>m.points.length):[],activities,records:records.sort((a,b)=>b.t-a.t),highlights,summary,weekly}
+  const summary={workouts:workouts.length,activeDays:dates.length,averagePerWeek:workouts.length/(days/7),longestStreak:longest,currentStreak:current,totalMinutes:sum(timed.map(w=>w.durationMs))/60000,averageMinutes:avg(timed.map(w=>w.durationMs/60000)),timedSessions:timed.length,medianMinutes:median(timed.map(w=>w.durationMs/60000)),sets:sum(sessions.map(s=>s.sets)),reps:sum(sessions.map(s=>s.reps)),volume:sum(sessions.map(s=>s.volume)),averageVolume:avg(sessions.map(s=>s.volume)),...consistency}
+  // Routine IDs survive edits/deletion. Legacy name groups remain explicitly
+  // separate: never guess that a matching name identifies an existing routine.
+  const scheduleDays=consistencyDays({...S,workouts},start,end,new Date(today+'T12:00:00'))
+  const routines=[...routineGroups.values()].filter(r=>r.sessions.length).map(r=>{
+    const durations=timed.filter(w=>progressRoutineKey(w)===r.key).map(w=>w.durationMs/60000)
+    let planned=0,completed=0,missed=0,pending=0,unknown=0
+    if(!r.legacy)for(const day of scheduleDays)for(const item of day.plan?.items||[])if(item.id===r.id){
+      planned++
+      if(item.session?.routineId===r.id)completed++
+      else if(item.session)unknown++
+      else if(item.status==='skipped'||day.iso<today)missed++
+      else pending++
+    }
+    const rows=r.sessions,keys=new Set(rows.map(s=>s.d)),evaluated=completed+missed
+    const metrics=[metric('volume','Volume per workout',unit,rows),metric('duration','Workout duration','min',timed.filter(w=>progressRoutineKey(w)===r.key).map(w=>point(w,w.durationMs/60000)))]
+    const frequency=weekly.filter(w=>!w.partial).map(w=>({...w,y:rows.filter(s=>s.d>=w.d&&s.d<=w.end).length}))
+    metrics.push(progressMetric('frequency','Workouts per week','',frequency))
+    return {...r,count:rows.length,activeDays:keys.size,averagePerWeek:rows.length/(days/7),averageMinutes:avg(durations),medianMinutes:median(durations),timedSessions:durations.length,volume:sum(rows.map(s=>s.volume)),planned,completed,missed,pending,unknown,rate:!unknown&&evaluated?completed/evaluated:null,metrics:metrics.filter(m=>m.points.length),exercises:exercises.filter(e=>e.routineKey===r.key),records:records.filter(p=>p.routineKey===r.key)}
+  })
+  const visibleBody=body.filter(m=>m.points.length),highlights=[...visibleBody,...exercises.flatMap(e=>e.metrics.filter(m=>m.key==='w').map(m=>({...m,exercise:e.exercise,routineKey:e.routineKey})))].filter(m=>m.delta!=null&&Math.abs(m.delta)>1e-8).sort((a,b)=>Math.abs(b.percent||0)-Math.abs(a.percent||0)).slice(0,4)
+  return {range,unit,measureUnit,body:visibleBody,routines,exercises,training:workouts.length?training.filter(m=>m.points.length):[],activities,records:records.sort((a,b)=>b.t-a.t),highlights,summary,weekly}
 }

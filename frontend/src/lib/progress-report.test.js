@@ -126,9 +126,73 @@ it('keeps bodyweight rep records per side without changing legacy totals',()=>{
  expect(progressReportPages(s,{now}).map(p=>p.svg).join('')).toContain('10 reps / side')
 })
 it('paginates every personal record in compact rows without dropping records',()=>{
- const r=report(base());r.records=Array.from({length:25},(_,i)=>({exercise:{n:'Unique exercise '+i},d:'2026-09-25',label:'Reps at the same load',previous:i,value:i+1,unit:'reps'}))
+ const r=report(base());delete r.routines;r.records=Array.from({length:25},(_,i)=>({exercise:{n:'Unique exercise '+i},d:'2026-09-25',label:'Reps at the same load',previous:i,value:i+1,unit:'reps'}))
  const pages=progressReportPages(null,{report:r}),svg=pages.map(p=>p.svg).join('')
- expect(pages).toHaveLength(4)
+ expect(pages).toHaveLength(2)
  for(let i=0;i<25;i++)expect(svg).toContain('Unique exercise '+i+'</text>')
- expect(svg).toContain('4 / 4')
+ expect(svg).toContain('2 / 2')
+})
+
+it('repeats section context on continuation pages and keeps all metric rows in bounds',()=>{
+ const r=report(base()),points=[{d:'2026-09-01',t:1,y:30},{d:'2026-09-25',t:2,y:35}]
+ r.body=Array.from({length:37},(_,i)=>progressMetric('metric-'+i,'Metric '+i,'cm',points))
+ const pages=progressReportPages(null,{report:r});expect(pages.length).toBeLessThan(5)
+ for(const p of pages){
+  expect(p.svg).toContain('Body Progress');expect(p.svg).toContain('Baseline → Current → Change → Trend')
+  for(const match of p.svg.matchAll(/<rect x="(?:44|508)" y="([0-9.]+)" width="448" height="([0-9.]+)"/g))expect(Number(match[1])+Number(match[2])).toBeLessThanOrEqual(1310)
+ }
+ const svg=pages.map(p=>p.svg).join('')
+ for(let i=0;i<37;i++)expect(svg).toContain('Metric '+i+'</text>')
+ expect((svg.match(/<polyline/g)||[])).toHaveLength(37)
+})
+it('preserves long section titles and metric labels instead of silently truncating them',()=>{
+ const r=report(base());delete r.routines;const long='Unique exercise name '.repeat(12).trim()
+ r.exercises=[{exercise:{n:long},mode:'reps',type:'normal',role:'work',metrics:[progressMetric('a','Long metric label '.repeat(5),'cm',[{d:'2026-09-01',t:1,y:30}])],sessions:[],records:[]}]
+ const svg=progressReportPages(null,{report:r}).map(p=>p.svg).join('')
+ expect((svg.match(/Unique exercise name/g)||[]).length).toBeGreaterThan(8)
+ expect(svg).toContain('30 cm');expect(svg).not.toMatch(/NaN|undefined/)
+})
+
+describe('routine-first report identity',()=>{
+ it('keeps the same exercise in different routine IDs separate even when names match',()=>{
+  const s=base();s.routines=[{id:'r1',name:'Same'},{id:'r2',name:'Same'}]
+  s.workouts=[workout('a','2026-09-01',40,8,2,{routineId:'r1',name:'Old name'}),workout('b','2026-09-03',100,8,2,{routineId:'r2',name:'Same'})]
+  const r=report(s);expect(r.routines).toHaveLength(2);expect(r.exercises).toHaveLength(2);expect(r.records).toEqual([])
+  expect(r.routines.map(g=>g.exercises[0].metrics.find(m=>m.key==='w').last.y)).toEqual([40,100])
+ })
+ it('retains history after routine renames, exercise edits or routine deletion without mutating state',()=>{
+  const s=base();s.routines=[{id:'r1',name:'New name',exercises:[]}]
+  s.workouts=[workout('a','2026-09-01',40,8,2,{routineId:'r1',name:'Old name'}),workout('b','2026-09-03',50,8,2,{routineId:'r1',name:'New name'})]
+  const before=structuredClone(s),r=report(s);expect(r.routines[0].name).toBe('New name');expect(r.routines[0].count).toBe(2);expect(r.routines[0].records).toHaveLength(1);expect(s).toEqual(before)
+  s.routines=[];expect(report(s).routines[0].count).toBe(2)
+ })
+ it('separates legacy name history from a matching current routine and excludes invalid timed sessions',()=>{
+  const s=base();s.routines=[{id:'r1',name:'Same'}]
+  const a=workout('a','2026-09-01',40,8,2,{name:'Same'}),b=workout('b','2026-09-03',50,8,2,{routineId:'r1',name:'Same'}),c=workout('c','2026-09-04',50,8,2,{routineId:'r1',name:'Same',end:0})
+  s.workouts=[a,b,c,structuredClone(b)];const r=report(s)
+  expect(r.routines).toHaveLength(2);expect(r.routines.find(g=>g.legacy).rate).toBeNull()
+  const known=r.routines.find(g=>!g.legacy);expect(known.count).toBe(2);expect(known.timedSessions).toBe(1);expect(known.averageMinutes).toBe(60);expect(known.medianMinutes).toBe(60)
+ })
+})
+
+it('computes routine mean/median from valid shared-clock durations and adheres by exact routine ID',()=>{
+ const s={...base(),trainingStartDate:'2026-09-01',routines:[{id:'r1',name:'Same'},{id:'r2',name:'Same'}],week:{1:['r1','r2']}}
+ s.workouts=[workout('a','2026-09-07',40,8,2,{routineId:'r1',end:date('2026-09-07')+30*60000}),workout('b','2026-09-14',50,8,2,{routineId:'r1',end:date('2026-09-14')+90*60000}),workout('c','2026-09-21',20,8,2,{routineId:'r2'})]
+ const r=report(s),a=r.routines.find(g=>g.id==='r1'),b=r.routines.find(g=>g.id==='r2')
+ expect(a.averageMinutes).toBe(60);expect(a.medianMinutes).toBe(60);expect(a.completed).toBe(2);expect(a.missed).toBe(1);expect(a.rate).toBeCloseTo(2/3)
+ expect(b.completed).toBe(1);expect(b.rate).toBeCloseTo(1/3);expect(a.volume).toBe(720)
+ expect(a.exercises[0].sessions.map(s=>s.id)).toEqual(['a','b'])
+})
+it('does not merge unrelated unidentified exercises or identical legacy sessions from different routines',()=>{
+ const s=base(),a=workout(null,'2026-09-01',40,8,2,{routineId:'a'}),b=workout(null,'2026-09-01',40,8,2,{routineId:'b'})
+ s.workouts=[a,b];expect(report(s).summary.workouts).toBe(2)
+ a.entries=[{target:{mode:'reps'},sets:[{done:true,w:10,r:8}]},{target:{mode:'reps'},sets:[{done:true,w:40,r:8}]}];s.workouts=[a]
+ expect(report(s).exercises).toHaveLength(2)
+})
+it('exports routine context and every nested exercise without combining records across routines',()=>{
+ const s=base();s.routines=[{id:'a',name:'ROUTINE_ALPHA'},{id:'b',name:'ROUTINE_BETA'}]
+ s.workouts=[workout('a','2026-09-01',40,8,2,{routineId:'a'}),workout('b','2026-09-03',100,8,2,{routineId:'b'})]
+ const r=report(s),svg=progressReportPages(null,{report:r}).map(p=>p.svg).join('')
+ expect(svg).toContain('Routine progress · ROUTINE_ALPHA');expect(svg).toContain('Routine progress · ROUTINE_BETA')
+ expect(svg).toContain('40 kg');expect(svg).toContain('100 kg');expect(r.records).toHaveLength(0)
 })

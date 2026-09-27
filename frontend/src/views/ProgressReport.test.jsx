@@ -14,7 +14,8 @@ let host,root
 globalThis.IS_REACT_ACT_ENVIRONMENT=true
 beforeEach(()=>{mock.build.mockReset().mockImplementation(async report=>({name:`TGym-Progress-Report-${report.range.start}_${report.range.end}.pdf`,blob:new Blob(['%PDF-1.3'])}));mock.save.mockReset().mockResolvedValue(undefined);vi.useFakeTimers();vi.setSystemTime(new Date('2026-09-26T12:00:00'));mock.S={trainingStartDate:'2026-07-01',workouts:[],measurements:[{d:'2026-07-01',neck:30},{d:'2026-09-20',neck:35}]};host=document.createElement('div');document.body.append(host);root=createRoot(host)})
 afterEach(()=>{act(()=>root.unmount());host.remove();vi.restoreAllMocks();vi.useRealTimers()})
-const mount=()=>act(()=>root.render(<MemoryRouter><ProgressReport/></MemoryRouter>))
+const selectSection=label=>act(()=>[...host.querySelectorAll('.progress-sections button')].find(b=>b.textContent===label).click())
+const mount=()=>{act(()=>root.render(<MemoryRouter><ProgressReport/></MemoryRouter>));selectSection('Body Progress')}
 it('changes periods, renders sufficient/insufficient data and exports the selected range',async()=>{
  mount();expect(host.textContent).toContain('+5 cm');expect(host.textContent).toContain('+16.7%')
  act(()=>{const el=host.querySelector('select');el.value='1';el.dispatchEvent(new Event('change',{bubbles:true}))})
@@ -29,7 +30,7 @@ it('shows an empty state without invented metrics for a new user',()=>{
 it('includes a workout completed this afternoon in current-day duration totals',()=>{
  vi.setSystemTime(new Date('2026-09-26T18:00:00'))
  mock.S={workouts:[{id:'afternoon',d:'2026-09-26',start:new Date('2026-09-26T16:00:00').getTime(),end:new Date('2026-09-26T17:00:00').getTime(),entries:[]}],measurements:[]}
- mount();const tile=[...host.querySelectorAll('.progress-summary>div')].find(el=>el.textContent.includes('Total time (min)'))
+ mount();selectSection('Workout duration');const tile=[...host.querySelectorAll('.progress-summary>div')].find(el=>el.textContent.includes('Total time (min)'))
  expect(tile.querySelector('b').textContent).toBe('60')
 })
 
@@ -82,4 +83,18 @@ it('shows body-only history without unrelated empty workout sections',()=>{
  expect(host.querySelector('.progress-summary')).toBeNull()
  for(const label of ['Exercise Progress','Training volume','Training consistency','Activity Progress','Personal Records'])expect([...host.querySelectorAll('summary')].some(el=>el.textContent===label)).toBe(false)
  expect(host.querySelectorAll('.progress-values time')).toHaveLength(2)
+})
+
+it('opens independent report sections instead of rendering every metric at once',()=>{
+ act(()=>root.render(<MemoryRouter><ProgressReport/></MemoryRouter>))
+ expect(host.querySelectorAll('.progress-sections button')).toHaveLength(8)
+ expect(host.querySelector('.progress-metric')).toBeNull()
+ selectSection('Body Progress');expect(host.textContent).toContain('+5 cm')
+ selectSection('InBody history');expect(host.textContent).not.toContain('+5 cm');expect(host.textContent).toContain('No comparable history')
+})
+
+it('keeps recorded body data visible in the overview when there are no workouts',()=>{
+ act(()=>root.render(<MemoryRouter><ProgressReport/></MemoryRouter>))
+ expect(host.querySelector('.progress-panel').textContent).toContain('35 cm')
+ expect(host.querySelector('.progress-panel').textContent).not.toContain('No comparable history')
 })
