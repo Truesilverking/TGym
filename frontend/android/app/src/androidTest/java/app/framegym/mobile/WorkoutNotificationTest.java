@@ -28,11 +28,11 @@ public class WorkoutNotificationTest {
     }
     @Test public void workoutAndRestSurviveBackgroundAndStopOnFinish() throws Exception {
         context=InstrumentationRegistry.getInstrumentation().getTargetContext();
-        shell("pm grant app.framegym.mobile android.permission.POST_NOTIFICATIONS");
+        shell("pm grant " + context.getPackageName() + " android.permission.POST_NOTIFICATIONS");
         assertTrue("Android notification permission must be granted",((NotificationManager)context.getSystemService(Context.NOTIFICATION_SERVICE)).areNotificationsEnabled());
         Intent service=new Intent(context,WorkoutNotificationService.class);
         try {
-            shell("am start -W -n app.framegym.mobile/.WorkoutNotificationTestActivity");
+            shell("am start -W -n " + context.getPackageName() + "/app.framegym.mobile.WorkoutNotificationTestActivity");
             for(int wait=0;wait<100 && notification()==null;wait++) SystemClock.sleep(100);
             assertNotNull(notification());
             assertNotNull(notification().getNotification().contentView);

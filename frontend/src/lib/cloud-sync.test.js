@@ -81,7 +81,7 @@ describe('Drive account and backup recovery', () => {
   })
   it('does not loop endlessly when a renewed token is rejected', async () => {
     native.on = true
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(response({}, 401))
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async()=>response({}, 401))
     await expect(connectGoogleDrive(state())).rejects.toMatchObject({ code: 'auth_required' })
     expect(native.authorize).toHaveBeenCalledTimes(2)
   })
@@ -101,4 +101,13 @@ describe('Drive account and backup recovery', () => {
     await expect(backupToGoogleDrive(state())).rejects.toMatchObject({ code: 'sync_required' })
     expect(fetcher).toHaveBeenCalledOnce()
   })
+})
+it.each([false,true])('bounds Drive stalls (body stalled: %s) without retrying a write blindly',async bodyStalls=>{
+ vi.useFakeTimers();native.on=true
+ const fetcher=vi.spyOn(globalThis,'fetch').mockImplementation(()=>bodyStalls?Promise.resolve({text:()=>new Promise(()=>{})}):new Promise(()=>{}))
+ try {
+  const failed=expect(connectGoogleDrive(state())).rejects.toMatchObject({code:'timeout'})
+  await vi.advanceTimersByTimeAsync(30000);await failed
+  expect(fetcher).toHaveBeenCalledOnce();expect(fetcher.mock.calls[0][1].signal.aborted).toBe(true)
+ } finally {vi.useRealTimers();fetcher.mockRestore()}
 })

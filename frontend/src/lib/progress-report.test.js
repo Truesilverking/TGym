@@ -196,3 +196,10 @@ it('exports routine context and every nested exercise without combining records 
  expect(svg).toContain('Routine progress · ROUTINE_ALPHA');expect(svg).toContain('Routine progress · ROUTINE_BETA')
  expect(svg).toContain('40 kg');expect(svg).toContain('100 kg');expect(r.records).toHaveLength(0)
 })
+it('keeps a small body dashboard and weight trend on one page without dropping comparison facts',()=>{
+ const s=base();s.measurements=[{d:'2026-09-01',neck:30,waist:90,armLeft:35},{d:'2026-09-25',neck:36,waist:86.5}]
+ s.bodyweight=[{d:'2026-09-01',w:82.3},{d:'2026-09-25',w:78.7}]
+ const pages=progressReportPages(s,{now,sections:['body']})
+ expect(pages).toHaveLength(1)
+ for(const label of ['Neck','Waist','Left upper arm','First record','Current record','Largest increase','Largest decrease','No significant change','Body Weight'])expect(pages[0].svg).toContain(label)
+})

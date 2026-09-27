@@ -143,3 +143,21 @@ it('does not send a queued profile using another account session', async () => {
   expect(api).toHaveBeenCalledOnce()
   expect(useStore.getState().user.id).toBe('other-user')
 })
+
+it('marks edits dirty synchronously and retries on reconnect without requiring another edit',async()=>{
+ expect(localStorage.getItem('gym_dirty')).toBe('1')
+ expect(api).not.toHaveBeenCalled()
+ api.mockResolvedValue({})
+ window.dispatchEvent(new Event('online'))
+ await vi.waitFor(()=>expect(api).toHaveBeenCalledOnce())
+ expect(JSON.parse(api.mock.calls[0][1].body).state.workouts[0].id).toBe('unsynced')
+ await vi.waitFor(()=>expect(localStorage.getItem('gym_dirty')).toBeNull())
+})
+it('keeps the prior state and reports a failed primary storage write',()=>{
+ const before=useStore.getState().S
+ const write=vi.spyOn(localStorage,'setItem').mockImplementation(()=>{throw new Error('QuotaExceededError')})
+ expect(()=>useStore.getState().update(s=>{s.unit='lb'})).toThrow()
+ expect(useStore.getState().S).toBe(before)
+ expect(useStore.getState().storageWarning).toBe('primary')
+ write.mockRestore()
+})

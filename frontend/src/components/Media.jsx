@@ -44,6 +44,12 @@ function usePoster(source) {
   return poster
 }
 
+function MediaImage({src,alt='',className='',...props}) {
+ const [failed,setFailed]=useState(null),[retry,setRetry]=useState(0)
+ useEffect(()=>{const online=()=>{setFailed(null);setRetry(n=>n+1)};window.addEventListener('online',online);return()=>window.removeEventListener('online',online)},[])
+ return src&&failed!==src ? <img {...props} key={src+retry} src={src} alt={alt} className={className} onError={()=>setFailed(src)}/> : <span className={className==='thumb'?'thumb thumb-x':'media-placeholder'} role="img" aria-label={alt||t('Exercises')}><Icon name="dumbbell"/></span>
+}
+
 // Big autoplaying animation; tap toggles to the still frame. `compact` shrinks it (superset cards).
 // Custom GIF/WebP uploads get a decoded poster so they can pause too. Reduced
 // motion starts with the still frame; a deliberate play action remains available.
@@ -59,14 +65,14 @@ export default function Media({ ex, id, compact, minimizable }) {
   useEffect(() => setRequestedPlayback(null), [ex.id, reduced])
   const gifSize = useStore(s => s.S.gifSize)
   const update = useStore(s => s.update)
-  if (!ex.gif && !customAnimation) return ex.img ? <div className={'exmedia' + (compact ? ' compact' : '')}><img decoding="async" src={imgSrc(ex)} alt={exerciseNameFor(ex)} /></div> : null
+  if (!ex.gif && !customAnimation) return ex.img ? <div className={'exmedia' + (compact ? ' compact' : '')}><MediaImage decoding="async" src={imgSrc(ex)} alt={exerciseNameFor(ex)} /></div> : null
   const source = playing ? (customAnimation ? ex.img : gifSrc(ex)) : (customAnimation ? poster : imgSrc(ex))
   const mini = minimizable && gifSize === 'mini'
   const toggleSize = e => { e.stopPropagation(); update(s => { s.gifSize = mini ? 'full' : 'mini' }) }
   return (
     <div className={'exmedia' + (compact ? ' compact' : '') + (mini ? ' mini' : '')} id={id}>
       <button type="button" className="media-playback" aria-label={t(playing ? 'Pause animation' : 'Play animation')} onClick={() => setRequestedPlayback(!playing)}>
-        {source ? <img decoding="async" src={source} alt={exerciseNameFor(ex)} /> : <span className="media-placeholder" role="img" aria-label={exerciseNameFor(ex)}><Icon name="dumbbell" /></span>}
+        {source ? <MediaImage decoding="async" src={source} alt={exerciseNameFor(ex)} /> : <span className="media-placeholder" role="img" aria-label={exerciseNameFor(ex)}><Icon name="dumbbell" /></span>}
       </button>
       {minimizable && (
         <button className="giftoggle" onClick={toggleSize}>
@@ -85,12 +91,12 @@ export default function Media({ ex, id, compact, minimizable }) {
 export function Thumb({ ex }) {
   if (!ex.img) return <div className="thumb thumb-x"><Icon name="dumbbell" /></div>
   if (animatedCustomImage(ex)) return <CustomThumb ex={ex} />
-  return <img className="thumb" loading="lazy" decoding="async" src={imgSrc(ex)} alt="" />
+  return <MediaImage className="thumb" loading="lazy" decoding="async" src={imgSrc(ex)} alt="" />
 }
 
 function CustomThumb({ ex }) {
   const reduced = useReducedMotion()
   const poster = usePoster(ex.img)
   const source = reduced ? poster : ex.img
-  return source ? <img className="thumb" src={source} alt="" /> : <div className="thumb thumb-x" aria-hidden="true"><Icon name="dumbbell" /></div>
+  return source ? <MediaImage className="thumb" src={source} alt="" /> : <div className="thumb thumb-x" aria-hidden="true"><Icon name="dumbbell" /></div>
 }

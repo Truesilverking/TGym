@@ -34,6 +34,7 @@ import Settings from './views/Settings.jsx'
 import Admin from './views/Admin.jsx'
 import AppLock from './components/AppLock.jsx'
 import AppUpdate from './components/AppUpdate.jsx'
+import OfflineStatus from './components/OfflineStatus.jsx'
 import AppTour from './components/AppTour.jsx'
 import { backupToGoogleDrive, cloudBackupDue } from './lib/cloud-sync.js'
 import { MOBILE, syncReminder } from './lib/mobile.js'
@@ -82,7 +83,7 @@ export function ThemePreferences() {
 function Shell() {
   const navigate = useNavigate()
   const loc = useLocation()
-  const { S, user, ready, storageError } = useStore()
+  const { S, user, ready, storageError, storageWarning } = useStore()
   const isGuest = useStore(s => s.isGuest())
   const needsMobileOnboarding = useStore(s => s.needsMobileOnboarding)
   const langV = useLang()   // re-renders the whole shell when the language (pack) changes
@@ -218,9 +219,11 @@ function Shell() {
 
   return (
     <>
-      {/* keyed on the route: a view that throws is contained, and switching tabs
-          re-mounts the boundary, so the tab bar is always a way out */}
-      <div id="app" className="vfade" key={loc.pathname}>
+      <div id="app">
+        <OfflineStatus />
+        {storageWarning && <aside className="offline-status" role="alert">{t(storageWarning==='primary'?'Could not save changes. Free device storage and try again.':'Local backup is unavailable. Export your data as a precaution.')}</aside>}
+        {/* Reset route errors/animation without restarting offline readiness. */}
+        <div className="vfade" key={loc.pathname}>
         <ErrorBoundary>
           {!authed ? <Login /> : needsMobileOnboarding ? <MobileOnboarding /> : (
             <Routes>
@@ -238,6 +241,7 @@ function Shell() {
             </Routes>
           )}
         </ErrorBoundary>
+        </div>
       </div>
       <TabBar onStart={startFlow} />
       <RestTimer />

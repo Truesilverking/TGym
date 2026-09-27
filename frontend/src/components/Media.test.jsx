@@ -57,3 +57,11 @@ it.each(['app', 'system'])('does not autoplay an uploaded GIF or thumbnail under
   act(() => host.querySelector('button[aria-label="Pause animation"]').click())
   expect(host.querySelector('img[src^="data:image/gif"]')).toBeNull()
 })
+
+it('replaces unavailable media with an accessible placeholder and retries on reconnect',()=>{
+ mount();act(()=>host.querySelector('img').dispatchEvent(new Event('error')))
+ expect(host.querySelector('img')).toBeNull()
+ expect(host.querySelector('[role="img"]').getAttribute('aria-label')).toBe('QA exercise')
+ act(()=>window.dispatchEvent(new Event('online')))
+ expect(src()).toContain('motion.gif')
+})

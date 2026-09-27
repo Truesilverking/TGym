@@ -107,10 +107,18 @@ async function accessToken(clientId, prompt, interactive) {
 }
 
 async function driveFetch(path, token, init = {}, retried = false) {
-  const response = await fetch(path, {
-    ...init,
-    headers: { Authorization: `Bearer ${token}`, ...(init.headers || {}) },
-  })
+  // Include reading the body: a connection can stall after receiving headers.
+  const controller=new AbortController()
+  let timer,response,body
+  try {
+    ;({response,body}=await Promise.race([
+      (async()=>{
+        const response=await fetch(path,{...init,signal:controller.signal,headers:{Authorization:`Bearer ${token}`,...(init.headers||{})}})
+        return {response,body:await response.text()}
+      })(),
+      new Promise((_,reject)=>{timer=setTimeout(()=>{controller.abort();reject(Object.assign(new Error('Connection timed out. Please try again.'),{code:'timeout'}))},30000)})
+    ]))
+  } finally {clearTimeout(timer)}
   if (!response.ok) {
     if (response.status === 401 && !retried) {
       const clientId = readToken()?.clientId
@@ -119,7 +127,6 @@ async function driveFetch(path, token, init = {}, retried = false) {
       if (nativeDriveAuthAvailable()) await NativeGoogleDriveAuth.clearToken({ accessToken: token })
       if (clientId) return driveFetch(path, await accessToken(clientId, '', false), init, true)
     }
-    const body = await response.text().catch(() => '')
     const error = new Error(`Google Drive ${response.status}${body ? ': ' + body.slice(0, 180) : ''}`)
     error.code = response.status === 401 ? 'auth_required' : 'drive_error'
     if (response.status === 403 && /accessNotConfigured|SERVICE_DISABLED/i.test(body)) {
@@ -128,7 +135,7 @@ async function driveFetch(path, token, init = {}, retried = false) {
     }
     throw error
   }
-  return response
+  return {json:async()=>JSON.parse(body),text:async()=>body}
 }
 
 async function latestFile(token) {

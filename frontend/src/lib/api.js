@@ -15,24 +15,38 @@ let remoteBase = ''
 let remoteToken = null
 export function setRemoteAuth(base, token) { remoteBase = base || ''; remoteToken = token || null }
 
+async function requestJson(url, options = {}) {
+  const controller = new AbortController()
+  const { timeoutMs = 15000, signal, ...init } = options
+  const abort = () => controller.abort()
+  signal?.addEventListener('abort', abort, { once: true })
+  if (signal?.aborted) abort()
+  let timer
+  try {
+    return await Promise.race([
+      (async () => {
+        const response = await fetch(url, { ...init, signal: controller.signal })
+        const data = response.status===204 ? {} : await response.json().catch(() => {throw Object.assign(new Error(response.ok?'Invalid server response':'HTTP '+response.status),{status:response.status})})
+        if (!response.ok) throw Object.assign(new Error(data?.error || ('HTTP ' + response.status)), { status: response.status })
+        return data
+      })(),
+      new Promise((_, reject) => { timer = setTimeout(() => { controller.abort(); reject(Object.assign(new Error('Connection timed out. Please try again.'), { code: 'timeout' })) }, timeoutMs) }),
+    ])
+  } finally { clearTimeout(timer); signal?.removeEventListener('abort', abort) }
+}
+
 export async function api(path, opts) {
   const headers = Object.assign({ 'Content-Type': 'application/json' }, opts && opts.headers)
   if (remoteToken) headers.Authorization = 'Bearer ' + remoteToken
-  const r = await fetch(remoteBase + path, Object.assign({}, opts, { headers }))
-  const data = await r.json().catch(() => ({}))
-  if (!r.ok) { const e = new Error(data.error || ('HTTP ' + r.status)); e.status = r.status; throw e }
-  return data
+  return requestJson(remoteBase + path, { ...opts, headers })
 }
 
 // Bootstraps the connection itself: the base isn't configured yet (that's what this call decides),
 // so it talks straight to the server the user typed in, no Authorization header.
 export async function pairRedeem(serverBase, code) {
-  const r = await fetch(serverBase + '/api/pair/redeem', {
+  return requestJson(serverBase + '/api/pair/redeem', {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code })
   })
-  const data = await r.json().catch(() => ({}))
-  if (!r.ok) { const e = new Error(data.error || ('HTTP ' + r.status)); e.status = r.status; throw e }
-  return data
 }
 
 const bufToB64u = buf => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')

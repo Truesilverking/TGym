@@ -71,6 +71,13 @@ export const useStore = create((set, get) => {
     saveTm = setTimeout(() => { saveTm = null; nativeSave(get().S); syncReminder(get().S) }, 800)
   }
 
+  const mirrorWeb = async S => {
+    let ok=false
+    try {ok=await saveWebState(S)} catch {}
+    if(get().S===S&&get().storageWarning!=='primary')set({storageWarning:ok?null:'mirror'})
+    return ok
+  }
+
   const persist = (S, push = true) => {
     if (storageError) throw new Error(storageError)
     S = migrateState(S, { onboarded: !!get().S.hasCompletedOnboarding, toured: !!get().S.hasCompletedAppTour })
@@ -80,10 +87,15 @@ export const useStore = create((set, get) => {
       S.cloudSync = { ...S.cloudSync, dirtyAt: Date.now() }
     }
     S._ts = Date.now()
+    // Mark before writing the profile: a suspended page cannot lose its sync intent.
+    try {
+      if (push && get().user) localStorage.setItem('gym_dirty', '1')
+      localStorage.setItem(KEY, JSON.stringify(S))
+    }
+    catch(error){set({storageWarning:'primary'});throw error}
     registerCustom(S.customEx)
-    localStorage.setItem(KEY, JSON.stringify(S))
-    set({ S })
-    if (STANDALONE) void saveWebState(S).catch(() => {})
+    set({ S, storageWarning:null })
+    if (STANDALONE) void mirrorWeb(S)
     if (MOBILE) {
       if (clockChanged) {
         clearTimeout(saveTm)
@@ -121,6 +133,10 @@ export const useStore = create((set, get) => {
     if (document.visibilityState === 'hidden') flushOnBackground()
   })
   window.addEventListener('pagehide', flushOnBackground)
+  window.addEventListener('online', () => {
+    try {if (get().user && localStorage.getItem('gym_dirty') === '1') void get().pushState()}
+    catch {set({storageWarning:'primary'})}
+  })
 
   // Everything a sign-out leaves behind on this device, whichever way it was triggered.
   const clearLocalSession = uploaded => {
@@ -144,10 +160,11 @@ export const useStore = create((set, get) => {
     S: (() => { const s = loadState(); registerCustom(s.customEx); return s })(),
     user: (() => { try { return JSON.parse(localStorage.getItem('gym_user')) || null } catch { return null } })(),
     storageError,
+    storageWarning: null,
     ready: false,
     needsMobileOnboarding: false,   // mobile build only — set true by boot() on a genuine first launch
     async flushPersistence() {
-      if (!MOBILE) { if (STANDALONE) await saveWebState(get().S); return }
+      if (!MOBILE) { if (STANDALONE) await mirrorWeb(get().S); return }
       clearTimeout(saveTm)
       saveTm = null
       if (await nativeSave(get().S) === false) throw new Error('Native storage unavailable')
@@ -334,7 +351,7 @@ export const useStore = create((set, get) => {
         const saved = await loadWebState()
         try {
           if (saved && (!get().S._ts || (saved._ts || 0) > get().S._ts)) persist(Object.assign(clone(DEF), saved), false)
-          else if (get().S._ts) await saveWebState(get().S).catch(() => false)
+          else if (get().S._ts) await mirrorWeb(get().S)
         } catch (error) { set({ ready: true, storageError: error.message }); return }
         get().setGuest(true)
         set({ ready: true, needsMobileOnboarding: !get().S.hasCompletedOnboarding && !localStorage.getItem('framegym_onboarded_v1') && !hasData(get().S) })

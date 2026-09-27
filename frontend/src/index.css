@@ -194,7 +194,7 @@ html{scroll-padding-top:calc(var(--sat) + 8px);scroll-padding-bottom:calc(var(--
 @media (max-height:400px){body:has(input:focus,textarea:focus,[contenteditable="true"]:focus) #tabbar,body:has(input:focus,textarea:focus,[contenteditable="true"]:focus) #timer{display:none}}
 @media (pointer:coarse){input,select,textarea{font-size:16px}}
 @keyframes viewfade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
-#app.vfade{animation:viewfade var(--med) var(--ease)}
+.vfade{animation:viewfade var(--med) var(--ease)}
 
 /* large title, the way a nav bar does it */
 .hdr{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin:8px 0 18px}
@@ -1458,3 +1458,5 @@ button:focus-visible,[role="button"]:focus-visible,summary:focus-visible,a:focus
 .set-summary-values dd{overflow-wrap:anywhere;margin:0;font-size:15px;font-weight:650;font-variant-numeric:tabular-nums;color:var(--label)}
 .set-summary-details{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;padding-top:8px;border-top:1px solid var(--sep);font-size:11px;color:var(--label-2)}
 @media(max-width:380px){.set-summary-values{gap:8px 16px}.set-summary .set-state{font-size:10px}.set-undo{font-size:11px;padding-inline:4px}}
+
+.offline-status{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:12px 0;padding:12px;border:1px solid var(--sep);border-radius:12px;background:var(--surface);color:var(--label-2);font-size:13px;overflow-wrap:anywhere}

@@ -1603,5 +1603,10 @@ export default {
  "Retry": "Reintentar",
  "Loading…": "Cargando…",
  "Comparison details": "Detalles de la comparación",
- "Edit measurement history": "Editar historial de medidas"
+ "Edit measurement history": "Editar historial de medidas",
+ "Offline. Server actions need a connection.": "Sin conexión. Las acciones del servidor requieren Internet.",
+ "Preparing offline access...": "Preparando el acceso sin conexión...",
+ "Offline access is not ready. Connect and retry before closing TGym.": "El acceso sin conexión no está listo. Conéctate y reintenta antes de cerrar TGym.",
+ "Could not save changes. Free device storage and try again.": "No se pudieron guardar los cambios. Libera espacio en el dispositivo e inténtalo de nuevo.",
+ "Local backup is unavailable. Export your data as a precaution.": "La copia local no está disponible. Exporta tus datos como precaución."
 }
