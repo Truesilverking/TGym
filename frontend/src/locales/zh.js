@@ -761,5 +761,22 @@ export default {
  "Routine progress": "按训练计划查看进展",
  "Sessions stay grouped by routine, including exercises recorded before later edits.": "训练记录按训练计划分组，包括后续修改前记录的动作。",
  "Adherence uses the available schedule; earlier plans are not reconstructed.": "完成情况依据现有日历，不重建过去的计划。",
- "History without a routine ID stays separate from current routines.": "没有计划 ID 的历史记录与当前计划分开保留。"
+ "History without a routine ID stays separate from current routines.": "没有计划 ID 的历史记录与当前计划分开保留。",
+ "Section": "Section",
+ "Before": "Before",
+ "After": "After",
+ "Entire report": "Entire report",
+ "Select at least one section.": "Select at least one section.",
+ "Generate and download": "Generate and download",
+ "Expand chart": "Expand chart",
+ "Collapse chart": "Collapse chart",
+ "Select a body zone to compare its recorded measurements.": "Select a body zone to compare its recorded measurements.",
+ "First record": "First record",
+ "Current record": "Current record",
+ "Records": "Records",
+ "Elapsed days": "Elapsed days",
+ "Largest increase": "Largest increase",
+ "Largest decrease": "Largest decrease",
+ "No significant change": "No significant change",
+ "Changes below 0.1 cm are treated as unchanged. Missing values are not zero.": "Changes below 0.1 cm are treated as unchanged. Missing values are not zero."
 }

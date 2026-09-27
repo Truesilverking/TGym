@@ -36,3 +36,17 @@ Routine aggregates include recorded session count, active days, frequency across
 The A4 dashboard uses section headings/subtitles, three-column summary tiles, two-column metric cards and dated routine-specific record lists. Complete rows flow between pages; continuation pages repeat routine/exercise context. Card height follows wrapped titles/details; single readings do not reserve chart space. Body/InBody remain separate. The complete calendar export reuses this layout. All relevant metrics, baseline/current/change values, dates, charts and records are retained.
 
 See `RELEASE-AUDIT-1.15.37.md` for exact validation and publication evidence.
+
+## Interactive dashboard and body comparison (1.15.38)
+
+Period and Section use the same labelled select control. Section replaces the eight navigation buttons; only its content is mounted. Routine and exercise folds retain their expansion state while navigating sections, keyed by routine/exercise identity. Charts start compact and can expand to a taller labelled view. Transitions honor system and application reduced-motion preferences.
+
+Export opens a confirmation dialog with one, multiple or all existing sections. Confirmation generates and saves a PDF from the current report snapshot. The prepared file remains available for retry or opening. A single-section filename ends in its section ID; a multi-section subset ends in `-selected`. Full-report names retain the existing date-range pattern. Calendar Full Report still defaults to all sections.
+
+Body Progress uses an anatomical reference silhouette and the existing 13 circumference fields. Numbered, selectable zones correspond to labelled current values. The chosen zone shows the exact Before and After readings, their dates, absolute difference and percentage. Either record can be selected within the active report period. Weight, height and other existing metrics remain in expandable measurement history; InBody remains independent.
+
+`body-report.js` projects existing dated measurement rows without writing storage. It preserves separate same-date entries, converts recorded centimetres/inches to the selected unit, and retains legacy bilateral fallbacks. Missing/nonpositive/nonfinite values are absent, never zero. A single record or missing comparison value produces an insufficient-data state. Transient record identifiers reset when the report snapshot changes; no persisted IDs, keys or schema change and no migration is needed.
+
+Statistics show the first record in the period, selected current record, elapsed comparison days, record count, largest increase/decrease, and zones whose absolute change is below 0.1 cm (converted for inches). Changes are descriptive, not claims of improvement. The PDF uses the same selected records and includes a static silhouette, all available zone comparisons and these statistics; it does not depend on interactive expansion.
+
+See `RELEASE-AUDIT-1.15.38.md` for validation and publication evidence.

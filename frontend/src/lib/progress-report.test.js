@@ -127,7 +127,7 @@ it('keeps bodyweight rep records per side without changing legacy totals',()=>{
 })
 it('paginates every personal record in compact rows without dropping records',()=>{
  const r=report(base());delete r.routines;r.records=Array.from({length:25},(_,i)=>({exercise:{n:'Unique exercise '+i},d:'2026-09-25',label:'Reps at the same load',previous:i,value:i+1,unit:'reps'}))
- const pages=progressReportPages(null,{report:r}),svg=pages.map(p=>p.svg).join('')
+ const pages=progressReportPages(null,{report:r,sections:['routines']}),svg=pages.map(p=>p.svg).join('')
  expect(pages).toHaveLength(2)
  for(let i=0;i<25;i++)expect(svg).toContain('Unique exercise '+i+'</text>')
  expect(svg).toContain('2 / 2')
@@ -136,7 +136,7 @@ it('paginates every personal record in compact rows without dropping records',()
 it('repeats section context on continuation pages and keeps all metric rows in bounds',()=>{
  const r=report(base()),points=[{d:'2026-09-01',t:1,y:30},{d:'2026-09-25',t:2,y:35}]
  r.body=Array.from({length:37},(_,i)=>progressMetric('metric-'+i,'Metric '+i,'cm',points))
- const pages=progressReportPages(null,{report:r});expect(pages.length).toBeLessThan(5)
+ const pages=progressReportPages(null,{report:r,sections:['body']});expect(pages.length).toBeLessThan(5)
  for(const p of pages){
   expect(p.svg).toContain('Body Progress');expect(p.svg).toContain('Baseline → Current → Change → Trend')
   for(const match of p.svg.matchAll(/<rect x="(?:44|508)" y="([0-9.]+)" width="448" height="([0-9.]+)"/g))expect(Number(match[1])+Number(match[2])).toBeLessThanOrEqual(1310)

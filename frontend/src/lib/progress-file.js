@@ -15,7 +15,8 @@ export async function buildProgressFile(report, options = {}) {
     const image = await rasterizeReport(page, 'image/png')
     pdf.addImage(image, 'PNG', 0, 0, 210, 291.9, undefined, 'FAST')
   }
-  return { name: `TGym-Progress-Report-${report.range.start}_${report.range.end}.pdf`, blob: pdf.output('blob') }
+  const suffix=options.sections?.length===1?'-'+options.sections[0]:options.sections?.length&&options.sections.length<8?'-selected':''
+  return { name: `TGym-Progress-Report-${report.range.start}_${report.range.end}${suffix}.pdf`, blob: pdf.output('blob') }
 }
 
 export async function saveProgressFile({ blob, name, url }) {

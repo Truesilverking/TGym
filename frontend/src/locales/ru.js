@@ -761,5 +761,22 @@ export default {
  "Routine progress": "Прогресс по программам",
  "Sessions stay grouped by routine, including exercises recorded before later edits.": "Занятия сгруппированы по программе, включая упражнения, записанные до последующих изменений.",
  "Adherence uses the available schedule; earlier plans are not reconstructed.": "Выполнение оценивается по доступному календарю без восстановления прежних планов.",
- "History without a routine ID stays separate from current routines.": "История без ID программы хранится отдельно от текущих программ."
+ "History without a routine ID stays separate from current routines.": "История без ID программы хранится отдельно от текущих программ.",
+ "Section": "Section",
+ "Before": "Before",
+ "After": "After",
+ "Entire report": "Entire report",
+ "Select at least one section.": "Select at least one section.",
+ "Generate and download": "Generate and download",
+ "Expand chart": "Expand chart",
+ "Collapse chart": "Collapse chart",
+ "Select a body zone to compare its recorded measurements.": "Select a body zone to compare its recorded measurements.",
+ "First record": "First record",
+ "Current record": "Current record",
+ "Records": "Records",
+ "Elapsed days": "Elapsed days",
+ "Largest increase": "Largest increase",
+ "Largest decrease": "Largest decrease",
+ "No significant change": "No significant change",
+ "Changes below 0.1 cm are treated as unchanged. Missing values are not zero.": "Changes below 0.1 cm are treated as unchanged. Missing values are not zero."
 }

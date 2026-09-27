@@ -1581,5 +1581,22 @@ export default {
  "Routine progress": "Progreso por rutina",
  "Sessions stay grouped by routine, including exercises recorded before later edits.": "Las sesiones se agrupan por rutina, incluidos los ejercicios registrados antes de cambios posteriores.",
  "Adherence uses the available schedule; earlier plans are not reconstructed.": "El cumplimiento usa el calendario disponible; no reconstruye planes anteriores.",
- "History without a routine ID stays separate from current routines.": "Historial sin ID de rutina; se mantiene separado de las rutinas actuales."
+ "History without a routine ID stays separate from current routines.": "Historial sin ID de rutina; se mantiene separado de las rutinas actuales.",
+ "Section": "Sección",
+ "Before": "Antes",
+ "After": "Después",
+ "Entire report": "Todo el reporte",
+ "Select at least one section.": "Selecciona al menos una sección.",
+ "Generate and download": "Generar y descargar",
+ "Expand chart": "Ampliar gráfica",
+ "Collapse chart": "Contraer gráfica",
+ "Select a body zone to compare its recorded measurements.": "Selecciona una zona corporal para comparar sus medidas registradas.",
+ "First record": "Primer registro",
+ "Current record": "Registro actual",
+ "Records": "Registros",
+ "Elapsed days": "Días transcurridos",
+ "Largest increase": "Mayor incremento",
+ "Largest decrease": "Mayor disminución",
+ "No significant change": "Sin cambio significativo",
+ "Changes below 0.1 cm are treated as unchanged. Missing values are not zero.": "Los cambios inferiores a 0,1 cm se consideran sin cambio. Los valores ausentes no son cero."
 }

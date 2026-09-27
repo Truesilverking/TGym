@@ -761,5 +761,22 @@ export default {
  "Routine progress": "Postęp według planu",
  "Sessions stay grouped by routine, including exercises recorded before later edits.": "Sesje są grupowane według planu, także ćwiczenia zapisane przed późniejszymi zmianami.",
  "Adherence uses the available schedule; earlier plans are not reconstructed.": "Realizacja opiera się na dostępnym kalendarzu, bez odtwarzania wcześniejszych planów.",
- "History without a routine ID stays separate from current routines.": "Historia bez identyfikatora planu pozostaje oddzielona od aktualnych planów."
+ "History without a routine ID stays separate from current routines.": "Historia bez identyfikatora planu pozostaje oddzielona od aktualnych planów.",
+ "Section": "Section",
+ "Before": "Before",
+ "After": "After",
+ "Entire report": "Entire report",
+ "Select at least one section.": "Select at least one section.",
+ "Generate and download": "Generate and download",
+ "Expand chart": "Expand chart",
+ "Collapse chart": "Collapse chart",
+ "Select a body zone to compare its recorded measurements.": "Select a body zone to compare its recorded measurements.",
+ "First record": "First record",
+ "Current record": "Current record",
+ "Records": "Records",
+ "Elapsed days": "Elapsed days",
+ "Largest increase": "Largest increase",
+ "Largest decrease": "Largest decrease",
+ "No significant change": "No significant change",
+ "Changes below 0.1 cm are treated as unchanged. Missing values are not zero.": "Changes below 0.1 cm are treated as unchanged. Missing values are not zero."
 }

@@ -761,5 +761,22 @@ export default {
  "Routine progress": "रूटीन के अनुसार प्रगति",
  "Sessions stay grouped by routine, including exercises recorded before later edits.": "सत्र रूटीन के अनुसार समूहित रहते हैं, बाद के बदलावों से पहले दर्ज व्यायाम भी शामिल हैं।",
  "Adherence uses the available schedule; earlier plans are not reconstructed.": "पालन उपलब्ध कैलेंडर पर आधारित है; पुराने कार्यक्रम दोबारा नहीं बनाए जाते।",
- "History without a routine ID stays separate from current routines.": "रूटीन ID के बिना इतिहास वर्तमान रूटीन से अलग रखा जाता है।"
+ "History without a routine ID stays separate from current routines.": "रूटीन ID के बिना इतिहास वर्तमान रूटीन से अलग रखा जाता है।",
+ "Section": "Section",
+ "Before": "Before",
+ "After": "After",
+ "Entire report": "Entire report",
+ "Select at least one section.": "Select at least one section.",
+ "Generate and download": "Generate and download",
+ "Expand chart": "Expand chart",
+ "Collapse chart": "Collapse chart",
+ "Select a body zone to compare its recorded measurements.": "Select a body zone to compare its recorded measurements.",
+ "First record": "First record",
+ "Current record": "Current record",
+ "Records": "Records",
+ "Elapsed days": "Elapsed days",
+ "Largest increase": "Largest increase",
+ "Largest decrease": "Largest decrease",
+ "No significant change": "No significant change",
+ "Changes below 0.1 cm are treated as unchanged. Missing values are not zero.": "Changes below 0.1 cm are treated as unchanged. Missing values are not zero."
 }

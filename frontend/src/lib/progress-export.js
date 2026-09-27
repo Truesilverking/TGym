@@ -1,3 +1,4 @@
+import { compareBody, BODY_PATH, BODY_ZONES } from './body-report.js'
 import { buildProgressReport } from './progress-report.js'
 import { PROGRESS_SECTIONS } from './progress-sections.js'
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
@@ -41,13 +42,15 @@ export function wrapProgressText(value, width) {
 }
 // Flow complete rows onto pages; repeat section context after every page break.
 // Shared by selected-period downloads and the calendar's complete report.
-export function progressReportPages(S,{t=x=>x,now=new Date(),name=e=>e.n||e.id,formatNumber=n=>Number(n.toFixed(1)).toLocaleString(),report=buildProgressReport(S,{now})}={}) {
+export function progressReportPages(S,{t=x=>x,now=new Date(),name=e=>e.n||e.id,formatNumber=n=>Number(n.toFixed(1)).toLocaleString(),report=buildProgressReport(S,{now}),sections:chosen=PROGRESS_SECTIONS.map(s=>s[0]),bodySelection={}}={}) {
  const val=(n,u='')=>n==null?'—':formatNumber(n)+(u?' '+t(u):'')
  const label=m=>m.muscle?t(m.label,t(m.muscle)):t(m.label)
  const text=(x,y,s,size=18,color='#17212f',weight=400)=>`<text x="${x}" y="${y}" font-size="${size}" fill="${color}" font-weight="${weight}">${esc(s)}</text>`
  const wrap=(s,width)=>wrapProgressText(s,width)
  const lines=(x,y,rows,size=18,color='#17212f',weight=400)=>rows.map((s,i)=>text(x,y+i*(size+5),s,size,color,weight)).join('')
  const rect=(x,y,w,h)=>`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="12" fill="white" stroke="#dce2e9"/>`
+ const enabled=new Set(chosen.filter(id=>PROGRESS_SECTIONS.some(s=>s[0]===id))),rendered=new Set()
+ if(!enabled.size)throw new Error('Select at least one section.')
  const pages=[];let svg='',y=0,hasContent=false
  const start=()=>{svg=`<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1390"><rect width="1000" height="1390" fill="#f8fafc"/><g font-family="Arial,sans-serif"><rect width="1000" height="8" fill="#b51e28"/>${text(44,46,'TGym',20,'#b51e28',700)}${text(44,87,t('Progress Report'),30,'#17212f',700)}${text(44,117,report.range.start+' → '+report.range.end,18,'#536174')}`;y=150;hasContent=false}
  const finish=()=>{if(hasContent)pages.push(svg)}
@@ -56,7 +59,8 @@ export function progressReportPages(S,{t=x=>x,now=new Date(),name=e=>e.n||e.id,f
  const headingHeight=h=>{const r=headingRows(h);return r.title.length*29+r.sub.length*23+24}
  const heading=h=>{const r=headingRows(h);svg+=lines(44,y+24,r.title,24,'#17212f',700);y+=r.title.length*29;svg+=lines(44,y+20,r.sub,18,'#536174');y+=r.sub.length*23+24;hasContent=true}
  // Never orphan a heading or split a card. Continuations always repeat context.
- const group=(h,rows)=>{if(!rows.length)return
+ const group=(h,rows)=>{if(!enabled.has(h.id)||!rows.length)return
+  rendered.add(h.id)
   let first=true
   for(const row of rows){
    if(y+row.height+(first?headingHeight(h):0)>1310){next();first=true}
@@ -68,7 +72,7 @@ export function progressReportPages(S,{t=x=>x,now=new Date(),name=e=>e.n||e.id,f
  const pairRows=(items,make)=>{const rows=[];for(let i=0;i<items.length;i+=2){const cards=items.slice(i,i+2).map(make),height=Math.max(...cards.map(c=>c.height));rows.push({height:height+12,draw:y=>cards.map((c,j)=>c.draw(44+j*464,y,height)).join('')})}return rows}
  start()
  const q=report.summary
- const sectionHead=id=>{const [,title,sub]=PROGRESS_SECTIONS.find(s=>s[0]===id);return {title:t(title),sub:t(sub)}}
+ const sectionHead=id=>{const [,title,sub]=PROGRESS_SECTIONS.find(s=>s[0]===id);return {id,title:t(title),sub:t(sub)}}
  const tileRows=items=>{const rows=[]
   for(let i=0;i<items.length;i+=3){const cells=items.slice(i,i+3),height=Math.max(...cells.map(([l])=>wrap(t(l),25).length))*23+58
    rows.push({height:height+10,draw:y=>cells.map(([l,n,u],j)=>{const x=44+j*309;return rect(x,y,295,height)+text(x+16,y+35,val(n,u),28,'#17212f',700)+lines(x+16,y+62,wrap(t(l),25),18,'#536174')}).join('')})
@@ -90,24 +94,35 @@ export function progressReportPages(S,{t=x=>x,now=new Date(),name=e=>e.n||e.id,f
  for(const r of report.routines||[]){
   const routineTitle=t('Routine progress')+' · '+(r.name||t('Routine'))
   const sub=r.legacy?t('History without a routine ID stays separate from current routines.'):t('Sessions stay grouped by routine, including exercises recorded before later edits.')
-  group({title:routineTitle,sub:sub+' '+t('Adherence uses the available schedule; earlier plans are not reconstructed.')},[...tileRows([['Sessions',r.count],['Average duration (min)',r.averageMinutes],['Median',r.medianMinutes,'min'],['Completion',r.rate==null?null:r.rate*100,'%'],['Total volume',r.volume,report.unit],['Average workouts per week',r.averagePerWeek]]),...metricRows(r.metrics)])
-  for(const e of r.exercises)group({title:(r.name||t('Routine'))+' · '+name(e.exercise),sub:t('Exercise Progress')+' · '+t(e.mode==='reps'?'Reps':e.mode==='time'?'Time':'Cardio')+' / '+t(e.type)+' / '+t(e.role)+(e.bwMode?' / '+t('Bodyweight'):'')+(e.side?' / '+t('/ side'):'')+' · '+t('Baseline → Current → Change → Trend')},metricRows(e.metrics))
-  group({title:(r.name||t('Routine'))+' · '+t('Personal Records'),sub:t('Records beat an earlier recorded best in the same comparison group. Equal sets do not create duplicate records.')},recordRows(r.records))
+  group({id:'routines',title:routineTitle,sub:sub+' '+t('Adherence uses the available schedule; earlier plans are not reconstructed.')},[...tileRows([['Sessions',r.count],['Average duration (min)',r.averageMinutes],['Median',r.medianMinutes,'min'],['Completion',r.rate==null?null:r.rate*100,'%'],['Total volume',r.volume,report.unit],['Average workouts per week',r.averagePerWeek]]),...metricRows(r.metrics)])
+  for(const e of r.exercises)group({id:'routines',title:(r.name||t('Routine'))+' · '+name(e.exercise),sub:t('Exercise Progress')+' · '+t(e.mode==='reps'?'Reps':e.mode==='time'?'Time':'Cardio')+' / '+t(e.type)+' / '+t(e.role)+(e.bwMode?' / '+t('Bodyweight'):'')+(e.side?' / '+t('/ side'):'')+' · '+t('Baseline → Current → Change → Trend')},metricRows(e.metrics))
+  group({id:'routines',title:(r.name||t('Routine'))+' · '+t('Personal Records'),sub:t('Records beat an earlier recorded best in the same comparison group. Equal sets do not create duplicate records.')},recordRows(r.records))
+ }
+ const body=compareBody(report.bodyRecords||[],bodySelection.before,bodySelection.after)
+ const renderBody=()=>{if(body.metrics.length){
+  const model={height:380,draw:y=>rect(44,y,912,368)+`<g transform="translate(50 ${y+10}) scale(.9)"><path d="${BODY_PATH}" fill="#fbeaec" stroke="#b51e28" stroke-width="1.5"/>${body.metrics.map((m,i)=>{const [x,cy]=BODY_ZONES[m.key];return `<circle cx="${x}" cy="${cy}" r="11" fill="white" stroke="#b51e28"/>${text(x,cy+4,i+1,11,'#17212f',700).replace('<text ','<text text-anchor="middle" ')}`}).join('')}</g>`+body.metrics.map((m,i)=>text(365,y+30+i*25,(i+1)+'. '+t(m.label),17,'#536174')+text(690,y+30+i*25,val(m.last,m.unit),19,'#17212f',700)).join('')}
+  const comparison=pairRows(body.metrics,m=>{const title=wrap(t(m.label),35),detail=m.delta==null?t('More data needed'):(m.delta>0?'+':'')+val(m.delta,m.unit)+' · '+(m.percent>0?'+':'')+val(m.percent,'%'),height=95+title.length*25;return {height,draw:(x,y,h)=>rect(x,y,448,h)+lines(x+16,y+27,title,20,'#17212f',700)+text(x+16,y+title.length*25+35,val(m.first,m.unit)+' → '+val(m.last,m.unit),23,'#17212f',700)+text(x+16,y+height-38,detail,18,'#b51e28')+text(x+16,y+height-15,body.before.d+' → '+body.after.d,16,'#536174')}})
+
+  const facts=[[t('First record'),report.bodyRecords[0].d],[t('Current record'),body.after.d],[t('Largest increase'),body.increase?t(body.increase.label)+' · '+val(body.increase.delta,body.increase.unit):'—'],[t('Largest decrease'),body.decrease?t(body.decrease.label)+' · '+val(body.decrease.delta,body.decrease.unit):'—'],[t('No significant change'),body.stable.length?body.stable.map(m=>t(m.label)).join(', '):'—']]
+  const factRows=facts.map(([title,v])=>{const rows=wrap(title+': '+v,85);return {height:rows.length*24+12,draw:y=>lines(60,y+22,rows,18)}})
+  const note=wrap(t('Changes below 0.1 cm are treated as unchanged. Missing values are not zero.'),90)
+  group({...sectionHead('body'),sub:t('Before')+': '+body.before.d+' · '+t('After')+': '+body.after.d},[model,...tileRows([['Records',body.count],['Elapsed days',body.days]]),...comparison,...factRows,{height:note.length*23+16,draw:y=>lines(60,y+22,note,17,'#536174')},...metricRows(report.body.filter(m=>!m.key.startsWith('inbody:')&&!BODY_ZONES[m.key]))])
+ }
  }
  const groups=[
   {...sectionHead('performance'),metrics:report.training.filter(m=>m.key!=='duration')},
-  {title:t('Activity Progress'),sub:t('Baseline → Current → Change → Trend'),metrics:report.activities.map(m=>({...m,label:t(m.activity)+' · '+t(m.label)}))},
-  {...sectionHead('body'),metrics:report.body.filter(m=>!m.key.startsWith('inbody:'))},
+  {id:'performance',title:t('Activity Progress'),sub:t('Baseline → Current → Change → Trend'),metrics:report.activities.map(m=>({...m,label:t(m.activity)+' · '+t(m.label)}))},
+  {...sectionHead('body'),metrics:body.metrics.length?[]:report.body.filter(m=>!m.key.startsWith('inbody:'))},
   {...sectionHead('inbody'),metrics:report.body.filter(m=>m.key.startsWith('inbody:'))},
  ]
- for(const section of groups)group(section,metricRows(section.metrics||[]))
+ for(const section of groups){if(section.id==='body')renderBody();group(section,metricRows(section.metrics||[]))}
  group(sectionHead('trends'),pairRows(report.highlights||[],m=>{const routine=(report.routines||[]).find(r=>r.key===m.routineKey),title=wrap((routine?(routine.name||t('Routine'))+' · ':'')+(m.exercise?name(m.exercise):label(m)),38),height=title.length*23+59;return {height,draw:(x,y,h)=>rect(x,y,448,h)+lines(x+16,y+25,title)+text(x+16,y+height-17,(m.delta>0?'+':'')+val(m.delta,m.deltaUnit),22,'#b51e28',700)}}))
  // Compatibility with caller-created snapshots predating routine grouping.
  if(!report.routines){
-  for(const e of report.exercises||[])group({title:t('Exercise Progress')+' · '+name(e.exercise),sub:t('Baseline → Current → Change → Trend')},metricRows(e.metrics))
-  group({title:t('Personal Records'),sub:t('Records beat an earlier recorded best in the same comparison group. Equal sets do not create duplicate records.')},recordRows(report.records||[]))
+  for(const e of report.exercises||[])group({id:'routines',title:t('Exercise Progress')+' · '+name(e.exercise),sub:t('Baseline → Current → Change → Trend')},metricRows(e.metrics))
+  group({id:'routines',title:t('Personal Records'),sub:t('Records beat an earlier recorded best in the same comparison group. Equal sets do not create duplicate records.')},recordRows(report.records||[]))
  }
- if(!hasContent&&!pages.length){heading({title:t('Your progress'),sub:t('No comparable history in this period.')})}
+ for(const id of enabled)if(!rendered.has(id))group(sectionHead(id),[{height:38,draw:y=>text(44,y+20,t('No comparable history in this period.'),18,'#536174')}])
  finish()
  return pages.map((page,i)=>({svg:page+text(44,1350,'TGym · '+t('Progress Report'),16,'#536174')+text(875,1350,(i+1)+' / '+pages.length,16,'#536174')+'</g></svg>',width:1000,height:1390}))
 }
