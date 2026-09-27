@@ -1,9 +1,9 @@
-import { bodyRecords } from './body-report.js'
+import { bodyRecords, measurementInUnit } from './body-report.js'
 import { isoOf } from './format.js'
 import { validDate } from './training-history.js'
 import { dayNumber } from './training-pause.js'
 import { loggedWorkouts, consistencyStats, consistencyDays } from './consistency.js'
-import { MEASURE_FIELDS, measurementValue, validTimedSessions } from './stats-insights.js'
+import { MEASURE_FIELDS, validTimedSessions } from './stats-insights.js'
 import { displayReps, isBw, modeOf } from './history.js'
 import { isWarmupRow, modeForSet, setType, extraVolumeOf, dropsOf } from './workout-model.js'
 import { estimate1RM } from './onerm.js'
@@ -75,7 +75,7 @@ export function buildProgressReport(S, options={}) {
   const body=[]
   const bw=(S.bodyweight||[]).flatMap(r=>Array.isArray(r.samples)&&r.samples.length?r.samples.map(s=>({...s,d:r.d,unit:r.unit})):r)
   body.push(metric('weight','Body Weight',unit,bw.filter(r=>positive(r.w)).map(r=>point(r,load(r.w,r.unit||unit,unit)))))
-  for(const [key,label] of MEASURE_FIELDS) body.push(metric(key,label,measureUnit,(S.measurements||[]).filter(r=>measurementValue(r,key)>0).map(r=>point(r,length(measurementValue(r,key),r.unit||measureUnit,measureUnit)))))
+  for(const [key,label] of MEASURE_FIELDS) body.push(metric(key,label,measureUnit,(S.measurements||[]).map(r=>point(r,measurementInUnit(r,key,measureUnit)))))
   const heights=[...(S.heightHistory||[])]
   if(!heights.length&&positive(S.heightCm)&&validDate(S.heightRecordedAt))heights.push({d:S.heightRecordedAt,cm:length(S.heightCm,measureUnit,'cm')})
   body.push(metric('height','Height',measureUnit,heights.filter(r=>positive(r.cm)).map(r=>point(r,length(r.cm,'cm',measureUnit)))))
@@ -193,5 +193,5 @@ export function buildProgressReport(S, options={}) {
     return {...r,count:rows.length,activeDays:keys.size,averagePerWeek:rows.length/(days/7),averageMinutes:avg(durations),medianMinutes:median(durations),timedSessions:durations.length,volume:sum(rows.map(s=>s.volume)),planned,completed,missed,pending,unknown,rate:!unknown&&evaluated?completed/evaluated:null,metrics:metrics.filter(m=>m.points.length),exercises:exercises.filter(e=>e.routineKey===r.key),records:records.filter(p=>p.routineKey===r.key)}
   })
   const visibleBody=body.filter(m=>m.points.length),highlights=[...visibleBody,...exercises.flatMap(e=>e.metrics.filter(m=>m.key==='w').map(m=>({...m,exercise:e.exercise,routineKey:e.routineKey})))].filter(m=>m.delta!=null&&Math.abs(m.delta)>1e-8).sort((a,b)=>Math.abs(b.percent||0)-Math.abs(a.percent||0)).slice(0,4)
-  return {range,unit,measureUnit,bodyRecords:bodyRecords(S,range),body:visibleBody,routines,exercises,training:workouts.length?training.filter(m=>m.points.length):[],activities,records:records.sort((a,b)=>b.t-a.t),highlights,summary,weekly}
+  return {range,unit,measureUnit,bodyType:S.body==='female'?'female':'male',bodyRecords:bodyRecords(S,range),body:visibleBody,routines,exercises,training:workouts.length?training.filter(m=>m.points.length):[],activities,records:records.sort((a,b)=>b.t-a.t),highlights,summary,weekly}
 }

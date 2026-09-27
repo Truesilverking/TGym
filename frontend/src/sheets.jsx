@@ -29,6 +29,7 @@ import { calendarDay } from './lib/calendar-data.js'
 import { consistencyStats, nextScheduledWorkout } from './lib/consistency.js'
 import { Button, Slider, Switch, Segmented, SelectRow, Row, TextField, MultiSelectRow, NumberField } from './components/ui.jsx'
 import { glyphOf, GLYPH_GROUPS, DEFAULT_GLYPH } from './lib/glyphs.js'
+import { measurementInUnit } from './lib/body-report.js'
 import BodyMap from './components/BodyMap.jsx'
 import { exerciseMuscleSnapshot, loadOfWorkouts, MUSCLES, MUSCLE_NAME, normalizeMuscleGroups, hasExplicitMuscleMetadata } from './lib/muscles.js'
 import { parseImport, mergeImport } from './lib/import-csv.js'
@@ -206,8 +207,8 @@ function MeasurementsSheet({ existing, close, focusMetric }) {
   const [saving, setSaving] = useState(false)
   useEffect(() => { if (focusMetric) document.getElementById('measure-' + focusMetric)?.querySelector('input')?.focus() }, [focusMetric])
   const [date, setDate] = useState(existing?.d || todayISO())
-  const [values, setValues] = useState(() => Object.fromEntries(MEASURE_FIELDS.map(([k]) => [k, measurementValue(initial, k) || ''])))
   const unit = st.measurementUnit || 'cm'
+  const [values, setValues] = useState(() => Object.fromEntries(MEASURE_FIELDS.map(([k]) => [k, measurementInUnit(initial, k, unit) ?? ''])))
   const save = async () => {
     const parsed = parseMetrics(values, MEASURE_FIELDS)
     if (!validMeasurementDate(date, todayISO()) || !parsed) { toast(t('Check the date and highlighted values.')); return }
@@ -216,7 +217,7 @@ function MeasurementsSheet({ existing, close, focusMetric }) {
     try {
       update(s => {
         const index = existing ? (st.measurements || []).indexOf(existing) : -1
-        const row = {...existing, id:recordId.current, d:date, t:existing?.t || Date.now(), ...parsed}
+        const row = {...existing, id:recordId.current, d:date, unit, t:existing?.t || Date.now(), ...parsed}
         for (const [key] of MEASURE_FIELDS) if(row[key] == null) row[key]=0
         s.measurements = upsertBodyRecord(s.measurements, row, index)
       })

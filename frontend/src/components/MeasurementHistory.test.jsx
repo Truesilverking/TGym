@@ -6,7 +6,7 @@ import {DEF,useStore} from '../store/useStore.js'
 import {useUI} from '../store/useUI.js'
 import {measurementsSheet} from '../sheets.jsx'
 import {buildProgressReport} from '../lib/progress-report.js'
-vi.mock('./MetricFields.jsx',()=>({default:({onChange})=><button onClick={()=>onChange({neck:'35'})}>Enter reading</button>}))
+vi.mock('./MetricFields.jsx',()=>({default:({values,onChange})=><button data-values={JSON.stringify(values)} onClick={()=>onChange({neck:'35'})}>Enter reading</button>}))
 globalThis.IS_REACT_ACT_ENVIRONMENT=true
 let host,root
 beforeEach(()=>{vi.useFakeTimers();vi.setSystemTime(new Date('2026-09-26T12:00:00'));const S=structuredClone(DEF);S.lang='en';S.measurements=[{id:'first',d:'2026-09-26',t:Date.now()-3600000,neck:30}];useStore.setState({S,user:null});useUI.setState({sheets:[]});host=document.createElement('div');document.body.append(host);root=createRoot(host)})
@@ -18,4 +18,13 @@ it('adds a second same-day measurement with its own timestamp and preserves the 
  await act(async()=>[...host.querySelectorAll('button')].find(b=>b.textContent==='Save').click())
  const S=useStore.getState().S;expect(S.measurements).toHaveLength(2);expect(S.measurements[0].neck).toBe(30);expect(S.measurements[1].t).toBe(Date.now())
  expect(S.measurements[1].id).not.toBe('first');expect(buildProgressReport(S).body.find(m=>m.key==='neck').delta).toBe(5)
+})
+
+it('edits a stamped inch record in centimeters without changing its identity or baseline',async()=>{
+ const S=structuredClone(DEF);S.lang='en';S.measurementUnit='cm';S.measurements=[{id:'inch',d:'2026-09-25',t:123,unit:'in',neck:10}];useStore.setState({S,user:null})
+ act(()=>{root.render(<Sheets/>);measurementsSheet(S.measurements[0])})
+ expect(JSON.parse(host.querySelector('[data-values]').getAttribute('data-values')).neck).toBe(25.4)
+ await act(async()=>[...host.querySelectorAll('button')].find(b=>b.textContent==='Save').click())
+ expect(useStore.getState().S.measurements).toHaveLength(1)
+ expect(useStore.getState().S.measurements[0]).toMatchObject({id:'inch',d:'2026-09-25',t:123,unit:'cm',neck:25.4})
 })

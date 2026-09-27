@@ -1,3 +1,4 @@
+import bodyGeometry from './body-paths.js'
 import { describe,it,expect } from 'vitest'
 import { bodyRecords,compareBody } from './body-report.js'
 import { buildProgressReport } from './progress-report.js'
@@ -33,7 +34,7 @@ describe('selected PDF sections',()=>{
  const S={measurements:[{d:'2026-01-01',neck:30,waist:90},{d:'2026-03-01',neck:32,waist:89},{d:'2026-09-01',neck:36,waist:87}]}
  const report=()=>buildProgressReport(S,{now:new Date('2026-09-27T12:00:00')})
  it('exports one section with its exact body comparison and a static model',()=>{
-  const svg=progressReportPages(null,{report:report(),sections:['body'],bodySelection:{before:'0',after:'1'}}).map(p=>p.svg).join('')
+  const svg=progressReportPages(null,{report:report(),sections:['body'],bodyGeometry,bodySelection:{before:'0',after:'1'}}).map(p=>p.svg).join('')
   expect(svg).toContain('Body Progress');expect(svg).toContain('32 cm');expect(svg).not.toContain('36 cm')
   expect(svg).toContain('2026-03-01');expect(svg).toContain('<path');expect(svg).not.toContain('Training consistency')
  })

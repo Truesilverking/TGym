@@ -1598,5 +1598,10 @@ export default {
  "Largest increase": "Mayor incremento",
  "Largest decrease": "Mayor disminución",
  "No significant change": "Sin cambio significativo",
- "Changes below 0.1 cm are treated as unchanged. Missing values are not zero.": "Los cambios inferiores a 0,1 cm se consideran sin cambio. Los valores ausentes no son cero."
+ "Changes below 0.1 cm are treated as unchanged. Missing values are not zero.": "Los cambios inferiores a 0,1 cm se consideran sin cambio. Los valores ausentes no son cero.",
+ "Could not load body model.": "No se pudo cargar el modelo corporal.",
+ "Retry": "Reintentar",
+ "Loading…": "Cargando…",
+ "Comparison details": "Detalles de la comparación",
+ "Edit measurement history": "Editar historial de medidas"
 }

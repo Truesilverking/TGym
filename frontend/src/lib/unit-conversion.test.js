@@ -60,3 +60,17 @@ describe('stored unit conversion', () => {
     expect(weightStepFor('lb')).toBe(5)
   })
 })
+
+it('converts explicit mixed measurement units once and retains dates and missing values', () => {
+  const S={measurementUnit:'cm',measurements:[{id:'a',d:'2026-09-01',unit:'cm',neck:25.4,waist:null},{id:'b',d:'2026-09-02',unit:'in',neck:10}]}
+  convertMeasurementState(S,'in')
+  expect(S.measurements).toEqual([{id:'a',d:'2026-09-01',unit:'in',neck:10,waist:null},{id:'b',d:'2026-09-02',unit:'in',neck:10}])
+  convertMeasurementState(S,'cm')
+  expect(S.measurements.map(r=>[r.unit,r.neck])).toEqual([['cm',25.4],['cm',25.4]])
+})
+it('updates stamped bodyweight and samples together without converting pounds twice',()=>{
+  const S={unit:'kg',bodyweight:[{unit:'lb',w:154,samples:[{w:153}]},{unit:'kg',w:70,samples:[{w:69}]}]}
+  convertWeightState(S,'lb')
+  expect(S.bodyweight[0]).toEqual({unit:'lb',w:154,samples:[{w:153}]})
+  expect(S.bodyweight[1]).toEqual({unit:'lb',w:154.32,samples:[{w:152.12}]})
+})

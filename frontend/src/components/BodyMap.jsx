@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { MUSCLES, INERT, MUSCLE_NAME, levelsOf } from '../lib/muscles.js'
+import { loadBodyGeometry } from '../lib/body-geometry.js'
+import { Button } from './ui.jsx'
 import { t } from '../lib/i18n.js'
 
 // Front and back views of a body, each muscle shaded by how hard it was worked.
@@ -11,24 +13,20 @@ import { t } from '../lib/i18n.js'
 // render instead of riding along in the main bundle. Until it lands the component
 // renders nothing but keeps its height, so nothing below it jumps on arrival.
 
-let CACHE = null                                  // shared across every mounted map
-let PENDING = null
-
 function useBodyPaths() {
-  const [paths, setPaths] = useState(CACHE)
-  useEffect(() => {
-    if (CACHE) return
-    let alive = true
-    PENDING = PENDING || import('../lib/body-paths.js').then(m => (CACHE = m.default))
-    PENDING.then(p => { if (alive) setPaths(p) }).catch(() => {})
-    return () => { alive = false }
-  }, [])
-  return paths
+  const [paths,setPaths]=useState(null),[error,setError]=useState(false),[attempt,setAttempt]=useState(0)
+  useEffect(()=>{
+    let alive=true
+    setError(false)
+    loadBodyGeometry().then(p=>{if(alive)setPaths(p)}).catch(()=>{if(alive)setError(true)})
+    return()=>{alive=false}
+  },[attempt])
+  return {paths,error,retry:()=>setAttempt(n=>n+1)}
 }
 
-function View({ view, label, levels, onMuscle, selected }) {
+function View({ view, label, levels, onMuscle, selected, overlay }) {
   return (
-    <svg className="bm-v" viewBox={view.vb} role="img" aria-label={label}>
+    <svg className="bm-v" viewBox={view.vb} role={overlay ? "group" : "img"} aria-label={label}>
       {INERT.map(slug => (view.p[slug] || []).map((d, i) =>
         <path key={slug + i} className="bm-sil" d={d} />))}
       {MUSCLES.map(slug => (view.p[slug] || []).map((d, i) =>
@@ -40,6 +38,7 @@ function View({ view, label, levels, onMuscle, selected }) {
         >
           <title>{t(MUSCLE_NAME[slug])}</title>
         </path>))}
+      {overlay}
     </svg>
   )
 }
@@ -51,16 +50,16 @@ function View({ view, label, levels, onMuscle, selected }) {
  * `{ at, level, exclusive? }` `thresholds` for a fixed absolute scale (recovery views use this
  * to keep their semantic bands stable); omitting it preserves the balance behavior.
  */
-export default function BodyMap({ load = {}, thresholds, body = 'male', onMuscle, selected, className = '' }) {
-  const paths = useBodyPaths()
+export default function BodyMap({ load = {}, thresholds, body = 'male', onMuscle, selected, className = '', renderOverlay, frontOnly=false, label }) {
+  const {paths,error,retry} = useBodyPaths()
   const levels = levelsOf(load, thresholds)
   const g = paths && (paths[body] || paths.male)
   return (
     <div className={'bodymap ' + className}>
       {g ? <>
-        <View view={g.front} label={t('Muscles trained: front view')} levels={levels} onMuscle={onMuscle} selected={selected} />
-        <View view={g.back} label={t('Muscles trained: back view')} levels={levels} onMuscle={onMuscle} selected={selected} />
-      </> : <div className="bm-ph" aria-hidden="true" />}
+        <View view={g.front} label={label||t('Muscles trained: front view')} overlay={renderOverlay?.(g.front)} levels={levels} onMuscle={onMuscle} selected={selected} />
+        {!frontOnly&&<View view={g.back} label={t('Muscles trained: back view')} levels={levels} onMuscle={onMuscle} selected={selected} />}
+      </> : <div className="bm-ph" role="status">{error?<><p>{t('Could not load body model.')}</p><Button size="sm" onClick={retry}>{t('Retry')}</Button></>:t('Loading…')}</div>}
     </div>
   )
 }

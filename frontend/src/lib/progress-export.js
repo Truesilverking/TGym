@@ -1,4 +1,5 @@
-import { compareBody, BODY_PATH, BODY_ZONES } from './body-report.js'
+import { MEASUREMENT_ZONES,measurementMapSvg,CHANGE_STYLES,measurementChange } from './measurement-map.js'
+import { compareBody } from './body-report.js'
 import { buildProgressReport } from './progress-report.js'
 import { PROGRESS_SECTIONS } from './progress-sections.js'
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
@@ -42,7 +43,7 @@ export function wrapProgressText(value, width) {
 }
 // Flow complete rows onto pages; repeat section context after every page break.
 // Shared by selected-period downloads and the calendar's complete report.
-export function progressReportPages(S,{t=x=>x,now=new Date(),name=e=>e.n||e.id,formatNumber=n=>Number(n.toFixed(1)).toLocaleString(),report=buildProgressReport(S,{now}),sections:chosen=PROGRESS_SECTIONS.map(s=>s[0]),bodySelection={}}={}) {
+export function progressReportPages(S,{t=x=>x,now=new Date(),name=e=>e.n||e.id,formatNumber=n=>Number(n.toFixed(1)).toLocaleString(),report=buildProgressReport(S,{now}),sections:chosen=PROGRESS_SECTIONS.map(s=>s[0]),bodySelection={},bodyGeometry}={}) {
  const val=(n,u='')=>n==null?'—':formatNumber(n)+(u?' '+t(u):'')
  const label=m=>m.muscle?t(m.label,t(m.muscle)):t(m.label)
  const text=(x,y,s,size=18,color='#17212f',weight=400)=>`<text x="${x}" y="${y}" font-size="${size}" fill="${color}" font-weight="${weight}">${esc(s)}</text>`
@@ -100,13 +101,14 @@ export function progressReportPages(S,{t=x=>x,now=new Date(),name=e=>e.n||e.id,f
  }
  const body=compareBody(report.bodyRecords||[],bodySelection.before,bodySelection.after)
  const renderBody=()=>{if(body.metrics.length){
-  const model={height:380,draw:y=>rect(44,y,912,368)+`<g transform="translate(50 ${y+10}) scale(.9)"><path d="${BODY_PATH}" fill="#fbeaec" stroke="#b51e28" stroke-width="1.5"/>${body.metrics.map((m,i)=>{const [x,cy]=BODY_ZONES[m.key];return `<circle cx="${x}" cy="${cy}" r="11" fill="white" stroke="#b51e28"/>${text(x,cy+4,i+1,11,'#17212f',700).replace('<text ','<text text-anchor="middle" ')}`}).join('')}</g>`+body.metrics.map((m,i)=>text(365,y+30+i*25,(i+1)+'. '+t(m.label),17,'#536174')+text(690,y+30+i*25,val(m.last,m.unit),19,'#17212f',700)).join('')}
+  const model={height:380,draw:y=>rect(44,y,912,368)+`<g transform="translate(0 ${y+4})">${measurementMapSvg(bodyGeometry,report.bodyType,body.metrics)}</g>`+body.metrics.map((m,i)=>text(365,y+30+i*25,CHANGE_STYLES[measurementChange(m)].symbol+' '+t(m.label),17,'#536174')+text(690,y+30+i*25,val(m.last,m.unit),19,'#17212f',700)).join('')}
+
   const comparison=pairRows(body.metrics,m=>{const title=wrap(t(m.label),35),detail=m.delta==null?t('More data needed'):(m.delta>0?'+':'')+val(m.delta,m.unit)+' · '+(m.percent>0?'+':'')+val(m.percent,'%'),height=95+title.length*25;return {height,draw:(x,y,h)=>rect(x,y,448,h)+lines(x+16,y+27,title,20,'#17212f',700)+text(x+16,y+title.length*25+35,val(m.first,m.unit)+' → '+val(m.last,m.unit),23,'#17212f',700)+text(x+16,y+height-38,detail,18,'#b51e28')+text(x+16,y+height-15,body.before.d+' → '+body.after.d,16,'#536174')}})
 
   const facts=[[t('First record'),report.bodyRecords[0].d],[t('Current record'),body.after.d],[t('Largest increase'),body.increase?t(body.increase.label)+' · '+val(body.increase.delta,body.increase.unit):'—'],[t('Largest decrease'),body.decrease?t(body.decrease.label)+' · '+val(body.decrease.delta,body.decrease.unit):'—'],[t('No significant change'),body.stable.length?body.stable.map(m=>t(m.label)).join(', '):'—']]
   const factRows=facts.map(([title,v])=>{const rows=wrap(title+': '+v,85);return {height:rows.length*24+12,draw:y=>lines(60,y+22,rows,18)}})
   const note=wrap(t('Changes below 0.1 cm are treated as unchanged. Missing values are not zero.'),90)
-  group({...sectionHead('body'),sub:t('Before')+': '+body.before.d+' · '+t('After')+': '+body.after.d},[model,...tileRows([['Records',body.count],['Elapsed days',body.days]]),...comparison,...factRows,{height:note.length*23+16,draw:y=>lines(60,y+22,note,17,'#536174')},...metricRows(report.body.filter(m=>!m.key.startsWith('inbody:')&&!BODY_ZONES[m.key]))])
+  group({...sectionHead('body'),sub:t('Before')+': '+body.before.d+' · '+t('After')+': '+body.after.d},[model,...tileRows([['Records',body.count],['Elapsed days',body.days]]),...comparison,...factRows,{height:note.length*23+16,draw:y=>lines(60,y+22,note,17,'#536174')},...metricRows(report.body.filter(m=>!m.key.startsWith('inbody:')&&!MEASUREMENT_ZONES[m.key]))])
  }
  }
  const groups=[

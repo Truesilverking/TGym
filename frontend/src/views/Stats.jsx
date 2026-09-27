@@ -1,3 +1,5 @@
+import ProgressBody from '../components/ProgressBody.jsx'
+import { bodyRecords,measurementInUnit } from '../lib/body-report.js'
 import { removeBodyRecord } from '../lib/body-records.js'
 import { hybridSummary } from '../lib/activities.js'
 import { HybridSummary } from '../components/Activities.jsx'
@@ -43,7 +45,7 @@ async function exportStatsReport(S) {
   const last = lastBW(S), consistency = routineConsistency(S), streak = trainingStreak(S)
   const bmi = bmiFor(last?.w, S.unit, S.heightCm, S.measurementUnit)
   const measureHead = MEASURE_FIELDS.map(([, label]) => `<th>${esc(t(label))}</th>`).join('')
-  const measureRows = [...(S.measurements || [])].reverse().map(m => `<tr>${td(fmtDate(m.d, true))}${MEASURE_FIELDS.map(([key]) => td(measurementValue(m, key) || '—')).join('')}</tr>`).join('')
+  const measureRows = [...(S.measurements || [])].reverse().map(m => `<tr>${td(fmtDate(m.d, true))}${MEASURE_FIELDS.map(([key]) => td(measurementInUnit(m, key, S.measurementUnit || 'cm') ?? '—')).join('')}</tr>`).join('')
   const weightRows = [...(S.bodyweight || [])].reverse().map(b => `<tr>${td(fmtDate(b.d, true))}${td(`${fmtNum(b.w)} ${S.unit}`)}${td(bmiFor(b.w, S.unit, S.heightCm, S.measurementUnit) || '—')}</tr>`).join('')
   const workoutRows = [...(S.workouts || [])].reverse().map(w => `<tr>${td(fmtDate(w.d, true))}${td(w.name)}${td(Math.max(0, Math.round(workoutElapsedMs(w) / 60000)) + ' min')}${td(fmtVol(w.vol || 0, S.unit))}${td((w.entries || []).map(e => `${EXIDX[e.id] ? exerciseNameFor(EXIDX[e.id]) : (e.n || e.id)}: ${(e.sets || []).filter(s => s.done).map(s => setLabel(e.id, s, e.target)).join(', ')}`).join(' | '))}</tr>`).join('')
   const inbodyFields = [['weight','Weight'],['skeletalMuscle','Skeletal muscle mass'],['bodyFatMass','Body fat mass'],['bodyFatPct','Body fat percentage'],['bmi','BMI'],['visceralFat','Visceral fat level'],['bodyWater','Total body water'],['protein','Protein'],['minerals','Minerals'],['bmr','Basal metabolic rate'],['score','InBody score']]
@@ -317,7 +319,9 @@ export default function Stats() {
   const [range, setRange] = useState(90)
   const [exId, setExId] = useState(null)
   const [exMetric, setExMetric] = useState('top')
-  const [measureKey, setMeasureKey] = useState('waist')
+  const [bodySelection,setBodySelection]=useState({})
+  const measurementRows=useMemo(()=>bodyRecords(S,{start:'0001-01-01',end:todayISO()}),[S])
+  useEffect(()=>setBodySelection({}),[measurementRows])
   const now = Date.now()
   const kind = displayScale(S)
   const hd = scaleName(kind)
@@ -329,10 +333,7 @@ export default function Stats() {
   const workouts = S.workouts
   const monthW = workouts.filter(w => String(w.d || '').slice(0, 7) === todayISO().slice(0, 7)).length
   const streak = trainingStreak(S)
-  const measures = [...(S.measurements || [])].sort((a, b) => a.d.localeCompare(b.d))
-  const selectedMeasureKey = measures.some(m => measurementValue(m, measureKey) > 0) ? measureKey : (MEASURE_FIELDS.find(([key]) => measures.some(m => measurementValue(m, key) > 0))?.[0] || measureKey)
-  const measurePoints = measures.filter(m => measurementValue(m, selectedMeasureKey) > 0).map(m => ({ t: new Date(m.d + 'T12:00:00').getTime(), d: m.d, y: measurementValue(m, selectedMeasureKey) }))
-  const currentMeasure = measurePoints.at(-1), previousMeasure = measurePoints.at(-2), firstMeasure = measurePoints[0]
+  const measures = [...(S.measurements || [])].sort((a, b) => String(a.d||'').localeCompare(String(b.d||'')))
   const latestWeight = lastBW(S)
   const bmi = bmiFor(latestWeight?.w, S.unit, S.heightCm, S.measurementUnit)
   const bmiPoints = S.heightCm ? S.bodyweight.map(b => ({ t: b.t || new Date(b.d + 'T12:00:00').getTime(), d: b.d, y: bmiFor(b.w, S.unit, S.heightCm, S.measurementUnit) })).filter(p => p.y) : []
@@ -472,13 +473,11 @@ export default function Stats() {
       <div className="card">
         <div className="row between" style={{ marginBottom: 10 }}><h2 style={{ margin: 0 }}>{t('Body measurements')}</h2><Button size="sm" icon="plus" onClick={() => measurementsSheet()}>{t('Log')}</Button></div>
         {measures.length ? <>
-          <SelectRow title={t('Measurement')} sheetTitle={t('Body measurements')} value={selectedMeasureKey} onChange={setMeasureKey}
-            options={MEASURE_FIELDS.map(([value, label]) => ({ value, label: t(label) }))} />
-          <div className="row" style={{ alignItems: 'baseline', gap: 8, marginTop: 10 }}><div className="big" style={{ fontSize: 28 }}>{currentMeasure ? fmtNum(currentMeasure.y) + ' ' + (S.measurementUnit || 'cm') : '—'}</div></div>
-          {currentMeasure && measurePoints.length > 1 && <div className="small dim">{previousMeasure ? t('Since previous: {0}', (currentMeasure.y > previousMeasure.y ? '+' : '') + fmtNum(currentMeasure.y - previousMeasure.y) + ' ' + (S.measurementUnit || 'cm')) : ''}{measurePoints.length > 2 ? ' · ' + t('Since first: {0}', (currentMeasure.y > firstMeasure.y ? '+' : '') + fmtNum(currentMeasure.y - firstMeasure.y) + ' ' + (S.measurementUnit || 'cm')) : ''}</div>}
-          <div className="chart"><LineChart points={measurePoints} h={150} unit={S.measurementUnit || 'cm'} color="var(--acc)" /></div>
+          <ProgressBody records={measurementRows} selection={bodySelection} onSelection={setBodySelection} body={S.body}/>
+          <details><summary>{t('Edit measurement history')}</summary>
           <h4 className="sec">{t('Measurement history')}</h4>
-          {[...measures].reverse().map(m => <div className="row between" key={m.id || m.d} style={{ padding: '7px 0', borderBottom: 'var(--hair) solid var(--sep)' }}><details className="measurement-history"><summary>{fmtDate(m.d, true)}</summary><div className="dim small">{MEASURE_FIELDS.filter(([k]) => measurementValue(m, k) > 0).map(([k, label]) => t(label) + ' ' + fmtNum(measurementValue(m, k)) + ' ' + (S.measurementUnit || 'cm')).join(' · ')}</div></details><div className="row" style={{ gap: 4 }}><button className="iconbtn" style={{ width: 30, height: 30, fontSize: 14 }} onClick={() => measurementsSheet(m)} aria-label={t('Edit')}><Icon name="pencil" /></button><button className="iconbtn" style={{ width: 30, height: 30, fontSize: 14, color: 'var(--red)' }} onClick={() => confirmSheet({ title: t('Delete measurement?'), message: t('This measurement will be removed from its graphs.'), confirmText: t('Delete'), danger: true, onConfirm: () => update(s => { s.measurements=removeBodyRecord(s.measurements,m) }) })} aria-label={t('Delete')}><Icon name="trash" /></button></div></div>)}
+          {[...measures].reverse().map(m => <div className="row between" key={m.id || m.d} style={{ padding: '7px 0', borderBottom: 'var(--hair) solid var(--sep)' }}><details className="measurement-history"><summary>{fmtDate(m.d, true)}</summary><div className="dim small">{MEASURE_FIELDS.filter(([k]) => measurementValue(m, k) > 0).map(([k, label]) => t(label) + ' ' + fmtNum(measurementInUnit(m,k,S.measurementUnit||'cm')) + ' ' + (S.measurementUnit || 'cm')).join(' · ')}</div></details><div className="row" style={{ gap: 4 }}><button className="iconbtn" style={{ width: 30, height: 30, fontSize: 14 }} onClick={() => measurementsSheet(m)} aria-label={t('Edit')}><Icon name="pencil" /></button><button className="iconbtn" style={{ width: 30, height: 30, fontSize: 14, color: 'var(--red)' }} onClick={() => confirmSheet({ title: t('Delete measurement?'), message: t('This measurement will be removed from its graphs.'), confirmText: t('Delete'), danger: true, onConfirm: () => update(s => { s.measurements=removeBodyRecord(s.measurements,m) }) })} aria-label={t('Delete')}><Icon name="trash" /></button></div></div>)}
+          </details>
         </> : <div className="muted small">{t('No measurements logged yet.')}</div>}
       </div>
 

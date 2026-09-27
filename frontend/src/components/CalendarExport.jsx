@@ -1,3 +1,4 @@
+import { loadBodyGeometry } from '../lib/body-geometry.js'
 import { useEffect, useState } from 'react'
 import { jsPDF } from 'jspdf'
 import { calendarReportPages, reportFilename } from '../lib/calendar-report.js'
@@ -21,7 +22,7 @@ export async function rasterizeReport({ svg, width, height }, mime = 'image/png'
 }
 
 export async function buildCalendarExport(S, anchor, period, format) {
-  const pages = calendarReportPages(S, anchor, period, format, { t })
+  const pages = calendarReportPages(S, anchor, period, format, { t, bodyGeometry:period==='full'?await loadBodyGeometry():undefined })
   const name = reportFilename(anchor, period, format)
   if (format === 'png') return { name, blob: await (await fetch(await rasterizeReport(pages[0]))).blob() }
   const pdf = new jsPDF({ unit: 'mm', format: 'a4' })

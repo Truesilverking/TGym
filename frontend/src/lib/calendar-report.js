@@ -55,7 +55,7 @@ function page(S, anchor, period, months, overview, t, now, pageNumber, pageCount
   return { svg: svg + '</g></svg>', width: 1000, height }
 }
 
-export function calendarReportPages(S, anchor, period, format, { t = x => x, now = new Date() } = {}) {
+export function calendarReportPages(S, anchor, period, format, { t = x => x, now = new Date(), bodyGeometry } = {}) {
   if (!['week', 'month', 'year', 'full'].includes(period) || !['png', 'pdf'].includes(format)) throw new Error('Invalid calendar export')
   if (period === 'full' && format !== 'pdf') throw new Error('Full reports require PDF')
   anchor = new Date(typeof anchor === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(anchor) ? anchor + 'T12:00:00' : anchor)
@@ -63,7 +63,7 @@ export function calendarReportPages(S, anchor, period, format, { t = x => x, now
   const all = Array.from({ length: 12 }, (_, i) => i)
   const groups = period === 'week' || period === 'month' ? [null] : format === 'png' ? [all] : period === 'full' ? [all, all.slice(0, 4), all.slice(4, 8), all.slice(8)] : [all.slice(0, 4), all.slice(4, 8), all.slice(8)]
   const pages = groups.map((months, i) => page(S, anchor, period, months, months?.length === 12, t, now, i + 1, groups.length))
-  return period === 'full' ? [...pages, ...progressReportPages(S,{t,now,name:exerciseNameFor,formatNumber:fmtNum})] : pages
+  return period === 'full' ? [...pages, ...progressReportPages(S,{t,now,name:exerciseNameFor,formatNumber:fmtNum,bodyGeometry})] : pages
 }
 
 export function reportFilename(anchor, period, format) {

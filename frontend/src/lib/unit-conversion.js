@@ -53,8 +53,11 @@ export function convertWeightState(state, nextUnit) {
 
   change(state, 'targetW', factor)
   ;(Array.isArray(state.bodyweight) ? state.bodyweight : []).forEach(row => {
-    change(row, 'w', factor)
-    if (Array.isArray(row.samples)) row.samples.forEach(sample => change(sample, 'w', factor))
+    const source=row.unit==='lb'||row.unit==='kg'?row.unit:previous
+    const rowFactor=source===next?1:next==='lb'?LB_PER_KG:1/LB_PER_KG
+    change(row, 'w', rowFactor)
+    if (Array.isArray(row.samples)) row.samples.forEach(sample => change(sample, 'w', rowFactor))
+    if (row.unit) row.unit=next
   })
   Object.values(state.exWeights || {}).forEach(row => change(row, 'w', factor))
   Object.values(state.exerciseGoals || {}).forEach(goal => change(goal, 'weight', factor))
@@ -80,7 +83,12 @@ export function convertMeasurementState(state, nextUnit) {
   const keys = new Set(MEASURE_FIELDS.map(([key]) => key))
   // Old backups used one arm/thigh/calf value; keep those compatible too.
   ;['arm', 'thigh', 'calf'].forEach(key => keys.add(key))
-  ;(Array.isArray(state.measurements) ? state.measurements : []).forEach(row => keys.forEach(key => change(row, key, factor)))
+  ;(Array.isArray(state.measurements) ? state.measurements : []).forEach(row => {
+    const source = row.unit === 'in' || row.unit === 'cm' ? row.unit : previous
+    const rowFactor = source === next ? 1 : next === 'in' ? 1 / CM_PER_IN : CM_PER_IN
+    keys.forEach(key => change(row, key, rowFactor))
+    if (row.unit) row.unit = next
+  })
   state.measurementUnit = next
   return state
 }
