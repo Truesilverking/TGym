@@ -27,7 +27,7 @@ export function mergeTGymStates(local, remote) {
     // Explicitly cleared values are edits, not missing fields from an older schema.
     if (a === null || b === null) return conflict(a, b, path)
     // A day's ordered plan is atomic: union would resurrect removed routines or erase a rest override.
-    if (path.length === 2 && ['week','dayPlan','daySkipped'].includes(path[0])) {
+    if ((path.length === 1 && path[0] === 'routineOrder') || (path.length === 2 && ['week','dayPlan','daySkipped'].includes(path[0]))) {
       return conflict(a, b, path)
     }
     if (Array.isArray(a) && Array.isArray(b)) {

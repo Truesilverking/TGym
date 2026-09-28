@@ -791,5 +791,12 @@ export default { ...english, ...PT_TRANSLATIONS,
  "Preparing offline access...": "Preparing offline access...",
  "Offline access is not ready. Connect and retry before closing TGym.": "Offline access is not ready. Connect and retry before closing TGym.",
  "Could not save changes. Free device storage and try again.": "Could not save changes. Free device storage and try again.",
- "Local backup is unavailable. Export your data as a precaution.": "Local backup is unavailable. Export your data as a precaution."
+ "Local backup is unavailable. Export your data as a precaution.": "Local backup is unavailable. Export your data as a precaution.",
+ "Resume workout timer": "Resume workout timer",
+ "Tomorrow": "Tomorrow",
+ "Next workout": "Next workout",
+ "Scheduled": "Scheduled",
+ "Hold a routine for 2.5 seconds to reorder.": "Hold a routine for 2.5 seconds to reorder.",
+ "Reorder routine": "Reorder routine",
+ "Move the routine, then release to save.": "Move the routine, then release to save."
 }

@@ -248,7 +248,8 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
         const amrap = s.amrap || cfg.amrap || /^amrap$/i.test(String(cfg.reps).trim()) || (entry.plan?.policy === 'greyskull' && i === entry.sets.findLastIndex(row => !isWarmupRow(row)))
         const targetText = amrap ? 'AMRAP' : hasRepTarget ? (target.min === target.max ? String(target.max) : `${target.min}–${target.max}`) : t('Free reps')
         return <div key={i} data-workout-set={`${entryIdx}-${i}`} ref={el => { rowRefs.current[i] = el }}>
-          {isFirstWarmup && <div className="setph">{t('Warm-up')}</div>}
+          {isFirstWarmup && <div className="set-phase">{t('Warm-up')}</div>}
+          {!warm && (i === 0 || warmBefore) && !entry.sets.some(row => row.role === 'top' || row.role === 'backoff') && <div className="set-phase">{t('Working sets')}</div>}
           {!warm && warmBefore && <div className="setsep" />}
           {!warm && s.role && s.role !== roleBefore && <div className="set-phase">{s.role === 'top' ? t('Top set') : t('Back-off sets')}</div>}
           {s.done ? <div className="setrow set-console done set-summary">
@@ -643,11 +644,9 @@ function ActiveWorkout() {
   return <div className="narrow">
     <div className="hdr workout-header">
       <button className="iconbtn" aria-label={t('Discard')} onClick={() => confirmSheet({ title: t('Discard workout?'), message: t('The sets you logged in this session will be lost.'), confirmText: t('Discard'), danger: true, onConfirm: () => { update(s => { s.active = null }); stopRest(); nav('/home') } })}><Icon name="xmark" /></button>
-      <div style={{ textAlign: 'center' }}><div style={{ fontWeight: 600 }}>{A.name}</div>{A.dailyPlanTotal>1 && A.dailyPlanIndex>=0 && <div className="workout-day-position">{t('Workout {0} of {1}',A.dailyPlanIndex+1,A.dailyPlanTotal)}</div>}<div className="sub"><Elapsed workout={A} /> · {t('{0} sets', done + '/' + total)}</div></div>
+      <div style={{ textAlign: 'center' }}><div style={{ fontWeight: 600 }}>{A.name}</div>{A.dailyPlanTotal>1 && A.dailyPlanIndex>=0 && <div className="workout-day-position">{t('Workout {0} of {1}',A.dailyPlanIndex+1,A.dailyPlanTotal)}</div>}<div className="workout-clock-control"><span className="sub"><Elapsed workout={A} /> · {t('{0} sets', done + '/' + total)}</span><button type="button" className="iconbtn" disabled={!!work} aria-label={t(A.timerPausedAt == null ? 'Pause workout timer' : 'Resume workout timer')} title={t(A.timerPausedAt == null ? 'Pause workout timer' : 'Resume workout timer')} aria-pressed={A.timerPausedAt != null} onClick={() => { if(A.timerPausedAt == null)stopRest(); update(s => { if(s.active)s.active = s.active.timerPausedAt == null ? {...pauseWorkoutClock(s.active),pauseReason:'manual'} : resumeWorkoutClock(s.active) }) }}><Icon name={A.timerPausedAt == null ? 'pause' : 'play'} /></button></div></div>
       <button className="iconbtn" style={{ color: 'var(--acc)' }} aria-label={t('Finish')} onClick={finishWorkout}><Icon name="check" /></button>
     </div>
-    {A.timerPausedAt==null && <Button size="sm" disabled={!!work} onClick={()=>{stopRest();update(s=>{if(s.active)s.active={...pauseWorkoutClock(s.active),pauseReason:'manual'}})}}>{t('Pause workout timer')}</Button>}
-    {A.pauseReason==='manual'&&<p className="small muted">{t('Workout timer paused. Continue when you are ready.')}</p>}
     <div className="wprog"><i style={{ width: (total ? done / total * 100 : 0) + '%' }} /></div>
 
     {A.entries.length ? <>
@@ -708,9 +707,6 @@ function ActiveWorkout() {
         {A.note ? t('Edit session note') : t('Add session note')}
       </Button>
     </div>
-    {A.timerPausedAt != null && <Button onClick={() => update(s => {
-      if (s.active) s.active = resumeWorkoutClock(s.active)
-    }, true)}>{t('Continue workout')}</Button>}
     {(() => {
       const exDone = A.entries.filter(e => e.sets.length && e.sets.every(s => s.done)).length
       const allDone = A.entries.length > 0 && exDone === A.entries.length

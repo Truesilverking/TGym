@@ -1,3 +1,5 @@
+import RoutineList from '../components/RoutineList.jsx'
+import { reorderRoutine } from '../lib/routine-order.js'
 import { routineIds, removeRoutineAssignments } from '../lib/daily-plan.js'
 import { openActivityEditor } from '../components/Activities.jsx'
 import { TrainingPauseAction } from '../components/TrainingPauseCard.jsx'
@@ -8,9 +10,8 @@ import { t } from '../lib/i18n.js'
 import { dayAssignSheet, guidedPlansSheet, planToolsSheet, confirmSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
 import { Button } from '../components/ui.jsx'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { glyphOf, DEFAULT_GLYPH } from '../lib/glyphs.js'
-import { vibrate } from '../lib/sound.js'
 import { routineMuscleSheet } from '../components/RoutineMusclePreview.jsx'
 
 export default function Plan() {
@@ -18,9 +19,6 @@ export default function Plan() {
   const S = useStore(s => s.S)
   const update = useStore(s => s.update)
   const [undoVisible, setUndoVisible] = useState(false)
-  const [drag, setDrag] = useState({ id: null, dx: 0, armed: false })
-  const dragRef = useRef(null)
-  const didSwipe = useRef(false)
   useEffect(() => {
     if (!undoVisible) return
     const tm = setTimeout(() => setUndoVisible(false), 6500)
@@ -58,7 +56,7 @@ export default function Plan() {
     sessionStorage.removeItem('framegym_deleted_routines')
     sessionStorage.setItem('framegym_deleted_single_routine', JSON.stringify({ routine: r, days: Object.entries(S.week || {}).filter(([, ids]) => routineIds(ids).includes(r.id)), overrides: Object.entries(S.dayPlan || {}).filter(([, ids]) => routineIds(ids).includes(r.id)) }))
     update(s => { s.routines = s.routines.filter(x => x.id !== r.id); removeRoutineAssignments(s,r.id) })
-    setDrag({ id: null, dx: 0, armed: false }); setUndoVisible(true)
+    setUndoVisible(true)
   }
   const restoreDeleted = () => {
     if (sessionStorage.getItem('framegym_deleted_routines')) return restoreAll()
@@ -68,31 +66,6 @@ export default function Plan() {
       update(s => { if (!s.routines.some(r => r.id === saved.routine.id)) s.routines.push(saved.routine); (saved.days || []).forEach(([d, id]) => { s.week[d] = id }); (saved.overrides || []).forEach(([d, id]) => { s.dayPlan[d] = id }) })
       sessionStorage.removeItem('framegym_deleted_single_routine'); setUndoVisible(false)
     } catch { sessionStorage.removeItem('framegym_deleted_single_routine'); setUndoVisible(false) }
-  }
-  const beginSwipe = (e, r) => {
-    dragRef.current = { id: r.id, startX: e.clientX, startY: e.clientY, width: e.currentTarget.getBoundingClientRect().width, vertical: false, buzzed: false }
-    didSwipe.current = false
-    e.currentTarget.setPointerCapture?.(e.pointerId)
-  }
-  const moveSwipe = e => {
-    const d = dragRef.current
-    if (!d) return
-    const rawX = e.clientX - d.startX, rawY = e.clientY - d.startY
-    if (Math.abs(rawY) > Math.abs(rawX) && Math.abs(rawY) > 8) { d.vertical = true; return }
-    if (d.vertical || rawX > 0) return
-    const dx = Math.max(-d.width, rawX)
-    const armed = Math.abs(dx) >= d.width * .72
-    d.armed = armed
-    if (armed && !d.buzzed) { d.buzzed = true; if (S.vibration !== false) vibrate(35) }
-    if (!armed) d.buzzed = false
-    if (Math.abs(dx) > 8) didSwipe.current = true
-    setDrag({ id: d.id, dx, armed })
-  }
-  const endSwipe = r => {
-    const d = dragRef.current
-    dragRef.current = null
-    if (d && !d.vertical && d.id === r.id && d.armed) { deleteOne(r); return }
-    setDrag({ id: null, dx: 0, armed: false })
   }
 
   return <>
@@ -122,13 +95,7 @@ export default function Plan() {
         <h4 className="sec" style={{ margin: 0 }}>{t('Routines')}</h4>
         <div className="row" style={{ gap: 6 }}><Button size="sm" variant="tinted" icon="sparkles" onClick={guidedPlansSheet}>{t('Guided')}</Button><Button size="sm" variant="tinted" icon="plus" onClick={addRoutine}>{t('New')}</Button></div>
       </div>
-      {S.routines.length ? <div className="routine-list">{S.routines.map(r => <div key={r.id} className={'swipe-routine' + (drag.id === r.id && drag.armed ? ' armed' : '')} style={{ '--swipe-x': `${drag.id === r.id ? drag.dx : 0}px` }}>
-        <div className="swipe-delete" aria-hidden="true"><Icon name="trash" />{drag.id === r.id && drag.armed ? t('Release to delete') : t('Swipe to delete')}</div>
-        <div className="item swipe-content" onPointerDown={e => beginSwipe(e, r)} onPointerMove={moveSwipe} onPointerUp={() => endSwipe(r)} onPointerCancel={() => { dragRef.current = null; setDrag({ id: null, dx: 0, armed: false }) }} onClick={() => { if (didSwipe.current) { didSwipe.current = false; return } nav('/plan/r/' + r.id) }}>
-          <span className="lrow-i"><Icon name={glyphOf(r.emoji)} /></span>
-          <div className="grow"><div className="tt">{r.name}</div><div className="ss">{exCount(r.ex.length)}</div></div>
-          <button className="iconbtn" aria-label={t('Muscles trained')} onPointerDown={e=>e.stopPropagation()} onClick={e=>{e.stopPropagation();routineMuscleSheet(r.id)}}><Icon name="info" /></button>
-        </div></div>)}</div> : <>
+      {S.routines.length ? <RoutineList S={S} onOpen={id=>nav('/plan/r/'+id)} onDelete={deleteOne} onInfo={routineMuscleSheet} onReorder={(id,target)=>update(s=>reorderRoutine(s,id,target))}/> : <>
         <div className="empty"><div className="ico"><Icon name="clipboard" /></div>{t('No routines yet.')}<br />{t('Create one or load the starter plan.')}</div>
         <Button icon="sparkles" onClick={guidedPlansSheet}>{t('Choose a guided plan')}</Button>
       </>}

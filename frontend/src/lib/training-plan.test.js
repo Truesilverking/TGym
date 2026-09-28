@@ -128,13 +128,13 @@ it('seeds new work sets from their own target without changing the prescription'
   const cfg={setScheme:'topback',topSets:1,backoffSets:2,topRepsMax:6,backoffRepsMax:8,topRirMin:1,topRirMax:2,backoffRirMin:2,backoffRirMax:3}
   const original=structuredClone(cfg)
   const sets=applyTrainingPlan([{w:20,r:8,warmup:true},{w:100,r:6,done:false}],cfg)
-  expect(sets.map(s=>s.rir)).toEqual([undefined,2,3,3])
+  expect(sets.map(s=>s.rir)).toEqual([undefined,1,2,2])
   sets[1].rir=.5; sets[1].done=true; sets[1].doneAt=30
   sets[2].rir=3; sets[2].done=true; sets[2].doneAt=20
   expect(rirAdvice(sets,cfg).kind).toBe('reduce')
   expect(cfg).toEqual(original)
 })
-it.each([[{targetRir:2},2],[{targetRirMin:1,targetRirMax:2},2],[{targetRirMin:1.5,targetRirMax:2.5},2.5]])('initializes a straight work set from the target upper bound', (cfg, expected) => {
+it.each([[{targetRir:3},3],[{targetRirMin:1,targetRirMax:3},1],[{targetRirMin:2,targetRirMax:4},2],[{targetRirMin:1.5,targetRirMax:2.5},1.5],[{targetRirMin:0,targetRirMax:2},0]])('initializes a straight work set from the target lower bound', (cfg, expected) => {
   const rows=applyTrainingPlan([{w:100,r:6,done:false}],cfg)
   expect(rows[0].rir).toBe(expected)
 })

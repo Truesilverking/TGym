@@ -149,7 +149,7 @@ describe('Workout set completion flow', () => {
     await toggleSet(0)
     expect(mocks.S.active.timerPausedAt).toBe(pausedAt)
     await act(async () => { root.render(React.createElement(Workout)) })
-    const resume = [...container.querySelectorAll('button')].find(b => b.textContent.includes('Continue workout'))
+    const resume = container.querySelector('[aria-label="Resume workout timer"]')
     expect(resume).toBeTruthy()
     await act(async () => { resume.dispatchEvent(new dom.Event('click', { bubbles: true })) })
     expect(mocks.S.active.timerPausedAt).toBeUndefined()

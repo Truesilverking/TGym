@@ -1,3 +1,4 @@
+import { orderedRoutines } from './routine-order.js'
 import { routineIds } from './daily-plan.js'
 export const STATE_SCHEMA = 3
 export const hasTrainingData = s => !!(s?.trainingStartDate || ['workouts','routines','bodyweight','measurements','inbody','trainingPauses'].some(k => s?.[k]?.length))
@@ -9,6 +10,7 @@ export function migrateState(input, { onboarded = false, toured = false } = {}) 
   for (const key of ['week','dayPlan']) {
     if (state[key]) state[key] = Object.fromEntries(Object.entries(state[key]).map(([day,value])=>[day,routineIds(value)]))
   }
+  state.routineOrder = orderedRoutines(state).map(r => r.id)
   state.storageVersion = STATE_SCHEMA
   state.hasCompletedOnboarding = state.hasCompletedOnboarding === true || onboarded || hasTrainingData(state)
   state.hasCompletedAppTour = state.hasCompletedAppTour === true || toured

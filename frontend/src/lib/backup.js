@@ -41,6 +41,7 @@ export function validateBackupState(data) {
     if (!Array.isArray(value) || value.some(row => !object(row))) throw new Error(`Invalid backup field: ${field}`)
     return value
   }
+  if (data.routineOrder !== undefined && (!Array.isArray(data.routineOrder) || data.routineOrder.some(id => typeof id !== 'string'))) throw new Error('Invalid backup field: routineOrder')
   for (const routine of data.routines) records(routine.ex, 'routines.ex')
   for (const workout of [...data.workouts, ...(data.active ? [data.active] : [])]) {
     for (const entry of records(workout.entries, 'workouts.entries')) {

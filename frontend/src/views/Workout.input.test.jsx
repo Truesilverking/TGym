@@ -8,7 +8,7 @@ import {DEF,useStore} from '../store/useStore.js'
 import {useUI} from '../store/useUI.js'
 import {bindUI} from '../components/ui.jsx'
 import {doFinishWorkout} from '../sheets.jsx'
-import {workoutVolume} from '../lib/history.js'
+import {buildSets,workoutVolume} from '../lib/history.js'
 import {convertWeightState} from '../lib/unit-conversion.js'
 vi.mock('../lib/sound.js',()=>({playAppSound:vi.fn(),vibrate:vi.fn()}))
 vi.mock('../lib/api.js',()=>({api:vi.fn(async()=>({}))}))
@@ -116,4 +116,16 @@ it.each(['dropset','restpause'])('uses one-side counts for legacy %s editors and
  expect(reps()[0].value).toBe(typeName==='dropset'?'8':'11')
  for(const side of container.querySelectorAll('.set-sides button'))act(()=>side.click())
  expect(container.querySelector('.set-summary-details').textContent).toContain('5 reps')
+})
+
+it('uses the same phase heading for warmup, top and back-off and adds working headings only for normal sets',()=>{
+ mount({},[{w:10,r:8,warmup:true},{w:40,r:8,role:'top'},{w:30,r:8,role:'backoff'}]);expect([...container.querySelectorAll('.set-phase')].map(e=>e.textContent)).toEqual(['Warm-up','Top set','Back-off sets']);
+ act(()=>useStore.getState().update(s=>{s.active.entries[0].sets=[{w:10,r:8,warmup:true},{w:30,r:8}]}));expect([...container.querySelectorAll('.set-phase')].map(e=>e.textContent)).toEqual(['Warm-up','Working sets']);
+ act(()=>useStore.getState().update(s=>{s.active.entries[0].sets=[{w:30,r:8}]}));expect([...container.querySelectorAll('.set-phase')].map(e=>e.textContent)).toEqual(['Working sets'])
+})
+it.each([[1,3],[2,4],[3,3]])('seeds RIR %i-%i low, preserves edits on reload and in history, and seeds added sets low', (min,max)=>{
+ const cfg={id:'0025',mode:'reps',sets:2,reps:8,targetRirMin:min,targetRirMax:max};const sets=buildSets({...structuredClone(DEF)},cfg);mount(cfg,sets);expect(rows().map(s=>s.rir)).toEqual([min,min]);type(input('RIR'),String(max));click('Add set');expect(rows().at(-1).rir).toBe(min);const saved=JSON.parse(localStorage.getItem('gym_state_v1'));act(()=>useStore.setState({S:saved}));expect(rows()[0].rir).toBe(max);act(()=>container.querySelector('[role="checkbox"]').click());act(()=>doFinishWorkout());expect(state().workouts[0].entries[0].sets[0].rir).toBe(max)
+})
+it('pauses and resumes through the header action with a persisted frozen clock',()=>{
+ mount({reps:8});act(()=>vi.advanceTimersByTime(60000));click('Pause workout timer');const paused=JSON.parse(localStorage.getItem('gym_state_v1'));expect(paused.active.pauseReason).toBe('manual');const at=paused.active.timerPausedAt;act(()=>vi.advanceTimersByTime(120000));act(()=>useStore.setState({S:paused}));expect(state().active.timerPausedAt).toBe(at);click('Resume workout timer');expect(state().active.timerPausedAt).toBeUndefined();expect(state().active.pausedDurationMs).toBe(120000);expect(container.querySelector('[aria-label="Pause workout timer"]')).not.toBeNull()
 })

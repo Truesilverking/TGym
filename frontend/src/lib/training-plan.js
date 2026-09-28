@@ -226,7 +226,7 @@ export const targetRirFor = (cfg, role) => targetRirRangeFor(cfg, role)?.max ?? 
 // prescription remains in entry.target. Never reseed an existing active/history record.
 export function seedPlannedRir(row, cfg) {
   if (isWarmupRow(row) || modeForSet(row, cfg) !== 'reps') return row
-  const initial = targetRirFor(cfg, row.role)
+  const initial = targetRirRangeFor(cfg, row.role)?.min
   return initial == null ? row : { ...row, rir: initial }
 }
 

@@ -1,4 +1,5 @@
 import { calendarDay } from '../lib/calendar-data.js'
+import { nextScheduledWorkout } from '../lib/consistency.js'
 import { nextDailyRoutine } from '../lib/daily-plan.js'
 import DailyPlan from '../components/DailyPlan.jsx'
 import { statisticsState, isUntracked } from '../lib/training-history.js'
@@ -30,8 +31,11 @@ export default function Home() {
   const [weekOffset, setWeekOffset] = useState(0)
 
   const today = new Date()
-  const routine = nextDailyRoutine(S, todayISO())
-  const todayOvr = S.dayPlan[todayISO()] !== undefined
+  const nextDate = nextScheduledWorkout(S, today)
+  const routine = nextDate ? nextDailyRoutine(S, nextDate) : null
+  const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1)
+  const nextLabel = S.active ? t('Today') : nextDate === todayISO() ? t('Today') : nextDate === isoOf(tomorrow) ? t('Tomorrow') : nextDate ? fmtDate(nextDate, true) : t('Next workout')
+  const todayOvr = nextDate && S.dayPlan[nextDate] !== undefined
   const bw = lastBW(statsState)
   const prevBW = statsState.bodyweight.length > 1 ? statsState.bodyweight[statsState.bodyweight.length - 2] : null
   const delta = bw && prevBW ? bw.w - prevBW.w : null
@@ -41,9 +45,6 @@ export default function Home() {
   const paused = isTrainingPaused(S,todayISO())
 
   const monday = new Date(today); monday.setDate(today.getDate() - ((today.getDay() + 6) % 7) + weekOffset * 7)
-  // The last session logged for today, if any — what the row below reports instead of asking
-  // you to start the one you already did. Last wins, so a second session names itself.
-  const doneToday = routine ? null : S.workouts.filter(w => w.d === todayISO()).at(-1) || null
   const strip = []
   for (let i = 0; i < 7; i++) {
     const d = new Date(monday); d.setDate(monday.getDate() + i)
@@ -60,7 +61,7 @@ export default function Home() {
   const bwPoints = statsState.bodyweight.slice(-30).map(b => ({ t: b.t || new Date(b.d).getTime(), y: b.w, d: b.d }))
 
   // today's session shown right under the week strip
-  const onToday = () => { if (S.active) nav('/workout'); else if (paused) startFlow(); else if (routine) startFlow(routine.id); else dayOverrideSheet(todayISO()) }
+  const onToday = () => { if (S.active) nav('/workout'); else if (routine && nextDate === todayISO()) startFlow(routine.id); else if (routine) dayOverrideSheet(nextDate); else dayOverrideSheet(todayISO()) }
 
   return <div className="narrow">
     <div className="hdr hdr-centered">
@@ -79,29 +80,21 @@ export default function Home() {
       </div>
       <div className="week">{strip}</div>
       {routine && <button className="btn sm" onClick={()=>routineMuscleSheet(routine.id)}>{t('Muscles trained')}</button>}
-      {/* Once today's session is logged the row stops asking for it. The week strip already
-          knew (its dot goes 'done'); this row did not, so a finished day kept showing the
-          routine name behind a green Start tag and read as still outstanding (issue #4).
-          An in-progress session still wins — that one is happening right now. Tapping the
-          row keeps working, so a second session in one day is a tap away, just not urged. */}
-      <div className="today-row" onClick={onToday}>
+      <button type="button" className="today-row" onClick={onToday}>
         <div className="row" style={{ gap: 9, minWidth: 0 }}>
-          <span className="lrow-i" style={{ background: S.active ? 'var(--orange)' : doneToday ? 'var(--surface-3)' : routine ? 'var(--acc)' : 'var(--surface-3)' }}>
-            <Icon name={S.active ? 'timer' : doneToday ? 'checkCircle' : routine ? glyphOf(routine.emoji) : 'moon'}
-              style={doneToday && !S.active ? { color: 'var(--green)' } : undefined} />
+          <span className="lrow-i" style={{ background: S.active ? 'var(--orange)' : routine ? 'var(--acc)' : 'var(--surface-3)' }}>
+            <Icon name={S.active ? 'timer' : routine ? glyphOf(routine.emoji) : 'moon'} />
           </span>
           <div style={{ minWidth: 0 }}>
-            <div className="lbl2">{t('Today')}</div>
+            <div className="lbl2">{nextLabel}</div>
             <div className="ttl">{S.active ? t('{0} — in progress', S.active.name)
-              : doneToday ? (doneToday.name ? t('{0} — done', doneToday.name) : t('Workout done'))
-              : paused ? t('Training paused') : routine ? routine.name : t('Rest day')}{todayOvr && routine && !doneToday ? ' · ' + t('rescheduled') : ''}</div>
+              : routine ? routine.name : paused ? t('Training paused') : t('No upcoming workout')}{todayOvr && routine ? ' · ' + t('rescheduled') : ''}</div>
           </div>
         </div>
         {S.active ? <span className="tag" style={{ color: 'var(--orange)', background: 'color-mix(in srgb,var(--orange) 16%,transparent)' }}>{t('Resume')}</span>
-          : doneToday ? <span className="tag" style={{ color: 'var(--green)', background: 'color-mix(in srgb,var(--green) 16%,transparent)' }}>{t('Done')}</span>
-          : routine ? <span className="tag acc">{t('Start')}</span>
+          : routine ? <span className="tag acc">{t(nextDate === todayISO() ? 'Start' : 'Scheduled')}</span>
           : <Icon name="plus" className="chev" />}
-      </div>
+      </button>
     </div>
 
     <DailyPlan compact onStart={startFlow}/>
