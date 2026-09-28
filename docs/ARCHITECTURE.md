@@ -1,6 +1,6 @@
 # TGym architecture
 
-Current published source: `e999554` (1.15.41/code77), with exact-commit CI/publication evidence in `docs/RELEASE-AUDIT-1.15.41.md` and scoped changes in `docs/WORKOUT-UX-AUDIT-2026-09-28.md`. Android emulator checks passed; physical iOS and current physical-device gestures remain unverified. Older release reports below are historical evidence.
+Current published source: `6ca09b3` (1.15.42/code78), with exact-commit CI/publication evidence in `docs/RELEASE-AUDIT-1.15.42.md` and scope in `docs/RECENT-CHANGES-AUDIT-2026-09-28.md`. Physical Pixel QA routine gestures, order retention across update/offline/relaunch, and Android emulator checks passed. Physical iPhone remains unverified; WebKit coverage is not hardware validation. Older release reports below are historical evidence.
 
 The subsequent request to validate every function is tracked in `docs/POST-RELEASE-AUDIT-1.15.31.md`. Follow-up fixes serialize API uploads, preserve active workouts and unsent edits at sign-out, recheck the reviewed cloud snapshot before upload, and allow skipping an incomplete optional PIN. Real-browser auditing also improves theme contrast, keyboard controls, zoom, accessible labels and reduced-motion media. These changes are not included in the published 1.15.31 artifact.
 
