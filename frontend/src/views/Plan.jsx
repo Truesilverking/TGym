@@ -1,11 +1,11 @@
 import RoutineList from '../components/RoutineList.jsx'
-import { reorderRoutine } from '../lib/routine-order.js'
+import { reorderRoutine, orderedRoutines } from '../lib/routine-order.js'
 import { routineIds, removeRoutineAssignments } from '../lib/daily-plan.js'
 import { openActivityEditor } from '../components/Activities.jsx'
 import { TrainingPauseAction } from '../components/TrainingPauseCard.jsx'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
-import { DAYN, uid, exCount } from '../lib/format.js'
+import { DAYN, uid } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
 import { dayAssignSheet, guidedPlansSheet, planToolsSheet, confirmSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
@@ -37,7 +37,7 @@ export default function Plan() {
       message: t('{0} routines will be deleted. {1} scheduled days will be cleared. You can undo this during the current app session.', S.routines.length, scheduled),
       confirmText: t('Delete all'), danger: true,
       onConfirm: () => {
-        sessionStorage.setItem('framegym_deleted_routines', JSON.stringify({ routines: S.routines, week: S.week, dayPlan: S.dayPlan }))
+        sessionStorage.setItem('framegym_deleted_routines', JSON.stringify({ routines: S.routines, routineOrder: S.routineOrder, week: S.week, dayPlan: S.dayPlan }))
         sessionStorage.removeItem('framegym_deleted_single_routine')
         update(s => { s.routines = []; s.week = {}; s.dayPlan = {} })
         setUndoVisible(true)
@@ -48,13 +48,13 @@ export default function Plan() {
     try {
       const saved = JSON.parse(sessionStorage.getItem('framegym_deleted_routines'))
       if (!saved?.routines) return
-      update(s => { s.routines = saved.routines; s.week = saved.week || {}; s.dayPlan = saved.dayPlan || {} })
+      update(s => { s.routines = saved.routines; s.routineOrder = saved.routineOrder || []; s.week = saved.week || {}; s.dayPlan = saved.dayPlan || {} })
       sessionStorage.removeItem('framegym_deleted_routines'); setUndoVisible(false)
     } catch { sessionStorage.removeItem('framegym_deleted_routines'); setUndoVisible(false) }
   }
   const deleteOne = r => {
     sessionStorage.removeItem('framegym_deleted_routines')
-    sessionStorage.setItem('framegym_deleted_single_routine', JSON.stringify({ routine: r, days: Object.entries(S.week || {}).filter(([, ids]) => routineIds(ids).includes(r.id)), overrides: Object.entries(S.dayPlan || {}).filter(([, ids]) => routineIds(ids).includes(r.id)) }))
+    sessionStorage.setItem('framegym_deleted_single_routine', JSON.stringify({ routine: r, position: orderedRoutines(S).findIndex(row=>row.id===r.id), days: Object.entries(S.week || {}).filter(([, ids]) => routineIds(ids).includes(r.id)), overrides: Object.entries(S.dayPlan || {}).filter(([, ids]) => routineIds(ids).includes(r.id)) }))
     update(s => { s.routines = s.routines.filter(x => x.id !== r.id); removeRoutineAssignments(s,r.id) })
     setUndoVisible(true)
   }
@@ -63,7 +63,7 @@ export default function Plan() {
     try {
       const saved = JSON.parse(sessionStorage.getItem('framegym_deleted_single_routine'))
       if (!saved?.routine) return
-      update(s => { if (!s.routines.some(r => r.id === saved.routine.id)) s.routines.push(saved.routine); (saved.days || []).forEach(([d, id]) => { s.week[d] = id }); (saved.overrides || []).forEach(([d, id]) => { s.dayPlan[d] = id }) })
+      update(s => { if (!s.routines.some(r => r.id === saved.routine.id)) s.routines.push(saved.routine); if(Number.isInteger(saved.position)){const ids=orderedRoutines(s).map(r=>r.id).filter(id=>id!==saved.routine.id);ids.splice(Math.max(0,saved.position),0,saved.routine.id);s.routineOrder=ids} (saved.days || []).forEach(([d, id]) => { s.week[d] = id }); (saved.overrides || []).forEach(([d, id]) => { s.dayPlan[d] = id }) })
       sessionStorage.removeItem('framegym_deleted_single_routine'); setUndoVisible(false)
     } catch { sessionStorage.removeItem('framegym_deleted_single_routine'); setUndoVisible(false) }
   }
