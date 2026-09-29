@@ -34,21 +34,18 @@ export default function RestTimer() {
       <Button size="sm" variant="primary" icon="check" onClick={finishWorkEarly}>{t('Done')}</Button>
     </div>
   )
-  // Three controls plus the clock don't fit one line on a phone — at 360px the bar is left
-  // with about 30px and stops saying anything. So the rest variant stacks: clock and bar
-  // read at a glance, controls get their own row. −15 and +15 sit together in number-line
-  // order; Skip is pushed to the far edge, away from the button you tap to buy more time.
+  // Compact clock and touch-sized controls share a row; progress stays underneath.
   return (
     <div id="timer" className="rest">
       <div className="head">
         <div><div className="lbl">{t('Rest')}</div><div className="t" aria-label={t('Rest')+': '+clock(timer.left)}>{clock(timer.left)}</div></div>
-        <div className="bar"><i style={{ width: pct + '%' }} /></div>
       </div>
       <div className="acts">
         <Button size="sm" icon="minus" onClick={() => addRest(-15)}>15s</Button>
         <Button size="sm" icon="plus" onClick={() => addRest(15)}>15s</Button>
         <Button size="sm" variant="primary" className="skip" onClick={stopRest}>{t('Skip')}</Button>
       </div>
+      <div className="bar"><i style={{ width: pct + '%' }} /></div>
     </div>
   )
 }

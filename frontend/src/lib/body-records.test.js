@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { upsertBodyRecord, removeBodyRecord, parseMetrics, validMeasurementDate } from './body-records.js'
+import { upsertBodyRecord, removeBodyRecord, parseMetrics, validMeasurementDate, recordHeight } from './body-records.js'
 it('removes only the selected reading when multiple readings share a date',()=>{
  const rows=[{id:'a',d:'2026-09-26',neck:30},{id:'b',d:'2026-09-26',neck:35},{d:'2026-09-26',neck:32}]
  expect(removeBodyRecord(rows,rows[1])).toEqual([rows[0],rows[2]])
@@ -24,4 +24,8 @@ it('rejects invalid dates, signed/pasted junk, infinity and invalid percentages'
  expect(validMeasurementDate('2026-09-23','2026-09-23')).toBe(true)
  for(const v of ['-20','Infinity','1e8','101','0']) expect(parseMetrics({bodyFatPct:v},[['bodyFatPct']])).toBeNull()
  expect(parseMetrics({weight:'80,2',bmi:''},[['weight'],['bmi']])).toEqual({weight:80.2,bmi:null})
+})
+
+it('keeps latest height current when backdating, edits matching dates and preserves legacy readings',()=>{
+ const s={measurementUnit:'cm',heightCm:180,heightRecordedAt:'2026-09-20'};recordHeight(s,175,'2026-08-01',100,'past');expect(s.heightCm).toBe(180);expect(s.heightHistory.map(r=>r.cm)).toEqual([175,180]);recordHeight(s,176,'2026-08-01',200,'other');expect(s.heightHistory).toHaveLength(2);expect(s.heightHistory[0]).toMatchObject({id:'past',cm:176});expect(s.heightCm).toBe(180)
 })

@@ -68,8 +68,9 @@ function Elapsed({ workout }) {
 }
 
 /* ---------- one exercise block (reps: weight×reps · time: a held duration · cardio: duration+speed) ---------- */
-function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemoveSet, onAddWarmup, onRemoveSetAt, onStartTimed, onPairPrev, onPairNext, onSubstitute }) {
-  const S = useStore(s => s.S)
+function ExerciseBlock({ preview, entryIdx, compact, onToggle, onField, onAddSet, onRemoveSet, onAddWarmup, onRemoveSetAt, onStartTimed, onPairPrev, onPairNext, onSubstitute }) {
+  const stored = useStore(s => s.S)
+  const S = preview ? {...stored, active:preview} : stored
   const update = useStore(s => s.update)
   const working = useUI(s => s.work)
   const entry = S.active.entries[entryIdx]
@@ -80,7 +81,7 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
     if (currentSet !== previousSet.current && currentSet >= 0 && (S.active.cur || 0) === entryIdx) {
       const el = rowRefs.current[currentSet]
       const bounds = el?.getBoundingClientRect()
-      if (bounds && (bounds.top < 80 || bounds.bottom > window.innerHeight - 100)) {
+      if (bounds && (bounds.top < 80 || bounds.bottom > (document.getElementById('timer')?.getBoundingClientRect().top || window.innerHeight - 100))) {
         el.scrollIntoView?.({ block: 'nearest', behavior: S.reduceMotion || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' })
       }
     }
@@ -197,9 +198,9 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
         <button className="iconbtn" aria-label={t('Details')} onClick={() => exerciseDetailSheet(ex)}><Icon name="info" /></button>
       </div>
     </div>
-    {!compact && (onPairPrev || onPairNext) && <div className="row" style={{ gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
-      {onPairPrev && <Button size="xs" variant="tinted" icon="link" title={t('Make superset with previous')} onClick={onPairPrev}>{t('Make superset with previous')}</Button>}
-      {onPairNext && <Button size="xs" variant="tinted" icon="link" title={t('Make superset with next')} onClick={onPairNext}>{t('Make superset with next')}</Button>}
+    {!compact && (onPairPrev || onPairNext) && <div className="workout-pair-actions" data-tour="supersets">
+      {onPairPrev && <Button size="xs" variant="tinted" aria-label={t('Make superset with previous')} title={t('Make superset with previous')} onClick={onPairPrev}><span aria-hidden="true">←</span> {t('Superset')}</Button>}
+      {onPairNext && <Button size="xs" variant="tinted" aria-label={t('Make superset with next')} title={t('Make superset with next')} onClick={onPairNext}>{t('Superset')} <span aria-hidden="true">→</span></Button>}
     </div>}
     <div className="row" style={{ gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
       {cardio && <span className="tag acc"><Icon name="figureRun" />{t('Cardio')}</span>}
@@ -209,22 +210,20 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
       {ex.eq && <span className="tag">{t(ex.eq)}</span>}
       {best > 0 && <span className="tag nocap">{t('Best:')} {fmtNum(best)} {S.unit}</span>}
     </div>
-    {/* Three notes can apply to one exercise and they are not interchangeable, so each keeps its
-        own line and its own icon: the plan's instruction (cfg.note, from the routine), the
-        standing fact about the movement (exNotes), and the message you pinned to yourself last
-        session. Today's own note is edited through the button in the header and shown last. */}
-    {cfg.note && <div className="exnote">{cfg.note}</div>}
-    {standingNote && <div className="exnote"><Icon name="info" style={{ fontSize: 13, marginRight: 5, verticalAlign: '-2px' }} />{standingNote}</div>}
-    {pinnedNote && <div className="exnote" style={{ color: 'var(--yellow)' }}>
-      <Icon name="flag" style={{ fontSize: 13, marginRight: 5, verticalAlign: '-2px' }} />
-      {t('From {0}:', fmtDate(pinnedNote.d, true))} {pinnedNote.note}
-    </div>}
-    {entry.note && <div className="exnote">{entry.note}</div>}
-    {last && <div className="small dim" style={{ marginBottom: 4 }}>{t('Last time')} ({fmtDate(last.d)}): {last.sets.map(s => setLabel(entry.id, s, last.target)).join(', ')}</div>}
-    {plan && plan.why && plan.kind !== 'off' && <div className={'progline' + (plan.kind === 'deload' ? ' warn' : '')}>
-      <Icon name={plan.kind === 'up' ? 'arrowUp' : plan.kind === 'deload' ? 'arrowDown' : 'lightbulb'} />
-      <span>{t(...plan.why)}</span>
-    </div>}
+    {(cfg.note || standingNote || pinnedNote || entry.note) && <details className="workout-notes">
+      <summary>{t('Exercise notes')}<Icon name="chevronDown" /></summary>
+      <div className="workout-notes-content">
+        {cfg.note && <div className="exnote">{cfg.note}</div>}
+        {standingNote && <div className="exnote"><Icon name="info" /> {standingNote}</div>}
+        {pinnedNote && <div className="exnote"><Icon name="flag" /> {t('From {0}:', fmtDate(pinnedNote.d, true))} {pinnedNote.note}</div>}
+        {entry.note && <div className="exnote">{entry.note}</div>}
+      </div>
+    </details>}
+    <div className="exercise-history-context">
+      {last ? <div className="small muted"><b>{t('Last time')}</b> ({fmtDate(last.d)}): {last.sets.map(s => setLabel(entry.id, s, last.target)).join(', ')}</div>
+        : <div className="small muted first-history"><Icon name="history" /> {t('Nothing logged yet — this session sets the baseline.')}</div>}
+      {plan?.why && !['off','first'].includes(plan.kind) && <div className={'progline' + (plan.kind === 'deload' ? ' warn' : '')}><Icon name={plan.kind === 'up' ? 'arrowUp' : plan.kind === 'deload' ? 'arrowDown' : 'lightbulb'} /><span>{t(...plan.why)}</span></div>}
+    </div>
     {!cardio && !timed && (() => {
       const targetRir = targetRirRangeFor(cfg, null)
       return <div className="row" style={{ gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
@@ -233,7 +232,6 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
     })()}
     {S.exerciseGoals?.[entry.id] && <div className="small row" style={{ color: 'var(--yellow)', gap: 5, marginBottom: 8 }}><Icon name="target" />{t('Goal')}: {S.exerciseGoals[entry.id].weight > 0 ? fmtNum(S.exerciseGoals[entry.id].weight) + ' ' + S.unit : ''}{S.exerciseGoals[entry.id].weight > 0 && S.exerciseGoals[entry.id].reps > 0 ? ' × ' : ''}{S.exerciseGoals[entry.id].reps > 0 ? S.exerciseGoals[entry.id].reps + ' ' + t('reps') : ''}</div>}
     {bw && !added && <Button size="sm" variant="tinted" icon="plus" onClick={() => update(s => { s.active.entries[entryIdx].logAddedWeight = true })}>{t('Log added weight')}</Button>}
-    <p className="workout-entry-hint">{t('Tap a number to edit. Reps follow the target range.')}</p>
     <div className="card sets-card" style={{ marginTop: 10, marginBottom: 0 }}>
       {entry.sets.map((s, i) => {
         const warm = isWarmupRow(s)
@@ -248,10 +246,10 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
         const amrap = s.amrap || cfg.amrap || /^amrap$/i.test(String(cfg.reps).trim()) || (entry.plan?.policy === 'greyskull' && i === entry.sets.findLastIndex(row => !isWarmupRow(row)))
         const targetText = amrap ? 'AMRAP' : hasRepTarget ? (target.min === target.max ? String(target.max) : `${target.min}–${target.max}`) : t('Free reps')
         return <div key={i} data-workout-set={`${entryIdx}-${i}`} ref={el => { rowRefs.current[i] = el }}>
-          {isFirstWarmup && <div className="set-phase">{t('Warm-up')}</div>}
-          {!warm && (i === 0 || warmBefore) && !entry.sets.some(row => row.role === 'top' || row.role === 'backoff') && <div className="set-phase">{t('Working sets')}</div>}
+          {isFirstWarmup && <div data-tour="set-types" className="set-phase">{t('Warm-up')}</div>}
+          {!warm && (i === 0 || warmBefore) && !entry.sets.some(row => row.role === 'top' || row.role === 'backoff') && <div data-tour="set-types" className="set-phase">{t('Working sets')}</div>}
           {!warm && warmBefore && <div className="setsep" />}
-          {!warm && s.role && s.role !== roleBefore && <div className="set-phase">{s.role === 'top' ? t('Top set') : t('Back-off sets')}</div>}
+          {!warm && s.role && s.role !== roleBefore && <div data-tour="set-types" className="set-phase">{s.role === 'top' ? t('Top set') : t('Back-off sets')}</div>}
           {s.done ? <div className="setrow set-console done set-summary">
             <div className="set-console-head">
               <span className="set-number">{t('Set')} {phaseNum}</span>
@@ -267,7 +265,7 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
               {dropsOf(s).map((d,di)=><span key={`d${di}`}>{t('Drop {0}',di+1)} · {Number(d.w).toLocaleString(dateLocale(), {maximumFractionDigits: 10})} {S.unit} × {displayReps(d.r, cfg)} {t('reps')}</span>)}
               {clustersOf(s).map((c,ci)=><span key={`c${ci}`}>{t('Burst {0}',ci+1)} · {displayReps(c.r, cfg)} {t('reps')} · {c.restSec}s</span>)}
             </div>}
-          </div> : <div className={'setrow set-console' + (currentSet === i ? ' current' : '') + (col3 ? ' eff3' : '')}>
+          </div> : <div data-tour={i===Math.max(0,entry.sets.findIndex(row=>!isWarmupRow(row)))?'sets':undefined} className={'setrow set-console' + (currentSet === i ? ' current' : '') + (col3 ? ' eff3' : '')}>
             <div className="set-console-head">
               <span className="set-number">{t('Set')} {phaseNum}</span>
               <span className="set-state">{t(currentSet === i ? 'Current' : 'Pending')}</span>
@@ -717,7 +715,13 @@ function ActiveWorkout() {
   </div>
 }
 
+const tourWorkout = {cur:0, entries:[{id:'0025',target:{bodyweight:false,reps:10,targetRirMin:2,targetRirMax:2,note:'',setScheme:'topback'},sets:[{w:10,r:10,warmup:true},{w:30,r:8,role:'top'},{w:20,r:10,role:'backoff'}]}]}
+function WorkoutTourPreview() {
+  const noop=()=>{}
+  return <div className="narrow workout-tour-preview"><p className="tag acc">{t('Practice preview - nothing is saved')}</p><ExerciseBlock preview={tourWorkout} entryIdx={0} onToggle={noop} onField={noop} onAddSet={noop} onRemoveSet={noop} onAddWarmup={noop} onPairPrev={noop} onPairNext={noop}/></div>
+}
 export default function Workout() {
+  const preview = useUI(s=>s.appTourWorkoutPreview)
   const active = useStore(s => s.S.active)
-  return active ? <ActiveWorkout /> : <StartChooser />
+  return preview ? <WorkoutTourPreview /> : active ? <ActiveWorkout /> : <StartChooser />
 }

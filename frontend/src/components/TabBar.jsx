@@ -33,7 +33,7 @@ export default function TabBar({ onStart }) {
   )
 
   return (
-    <nav id="tabbar">
+    <nav id="tabbar" data-tour="navigation">
       {tab('home', 'house', '/home', t('Home'))}
       {tab('plan', 'calendar', '/plan', t('Routine'))}
       <button data-tour="start" className={'start' + (S.active ? ' rec' : '')} onClick={startWorkout}>

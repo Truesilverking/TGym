@@ -289,7 +289,7 @@ export default function Settings() {
 
     {(user || MOBILE) && <NotificationsCard S={S} update={update} toast={toast} />}
 
-    <Section title={t('Help')}><Row icon="sparkles" title={t('Replay App Tour')} accessory="chevron" onClick={replayAppTour} /></Section>
+    <Section title={t('Help')}><Row className="tour-replay" icon="sparkles" title={t('Replay App Tour')} accessory="chevron" onClick={replayAppTour} /></Section>
     <div data-tour="health"><Section title={t('Health')}>
       <Row icon="history" title={t('Measurement reminders')} accessory="chevron" onClick={() => measurementRemindersSheet()} />
       <Row icon="figureRun" iconTint="var(--red)" title={t('Health & wearables')} subtitle={t('Activities and health data')} accessory="chevron" onClick={openHealthActivities} />

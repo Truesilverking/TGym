@@ -148,35 +148,48 @@ function WeightInput({ value, setValue, unit }) {
 }
 
 /* ============================ body weight ============================ */
-function BwSheet({ required, onDone, close }) {
+function BwSheet({ required, onDone, close, initialDate }) {
   const st = useStore(s => s.S)
   const unit = st.unit
   const bw = lastBW(st)
+  const [date, setDate] = useState(initialDate || todayISO())
   const [v, setV] = useState(bw ? bw.w : 70)
-  const save = () => {
+  const reading = useRef({id:uid(),t:Date.now()})
+  const [saving, setSaving] = useState(false)
+  const save = async () => {
+    if(saving)return
+    if(!validMeasurementDate(date,todayISO())){toast(t('Check the date and highlighted values.'));return}
     const n = Math.round((v || 0) * 10) / 10
     if (!n || n <= 0) { toast(t('Enter a valid weight')); return }
+    setSaving(true)
+    try {
     update(s => {
-      const iso = todayISO()
+      const iso = date
       const ex = s.bodyweight.find(b => b.d === iso)
       if (ex) {
         const samples = Array.isArray(ex.samples) ? ex.samples : [{ w: ex.w, t: ex.t || Date.now() }]
-        samples.push({ w: n, t: Date.now() }); ex.samples = samples
+        const sample={...reading.current,w:n},index=samples.findIndex(x=>x.id===sample.id)
+        if(index>=0)samples[index]=sample;else samples.push(sample)
+        ex.samples = samples
         ex.w = Math.round((samples.reduce((sum, x) => sum + x.w, 0) / samples.length) * 10) / 10; ex.t = Date.now()
-      } else s.bodyweight.push({ d: iso, w: n, t: Date.now(), samples: [{ w: n, t: Date.now() }] })
+      } else s.bodyweight.push({ d: iso, w: n, t: Date.now(), samples: [{...reading.current,w:n}] })
       s.bodyweight.sort((a, b) => (a.d < b.d ? -1 : 1))
     })
+    if(!required)await useStore.getState().flushPersistence()
     close()
     if (onDone) onDone(n); else toast(t('Weight saved'))
+    } catch { toast(t('Could not save. Check available storage and try again.')) } finally {setSaving(false)}
   }
   const recent = [...st.bodyweight].reverse().slice(0, 3)
   const delEntry = d => update(s => { s.bodyweight = s.bodyweight.filter(b => b.d !== d) })
   return <>
     <h3>{required ? t('Quick check-in') : t('Log body weight')}</h3><Button size="sm" onClick={() => measurementRemindersSheet('weight')}>{t('Measurement reminder')}</Button>
-    <div className="muted small">{required ? t('Slide or tap to set your weight — tracked before every workout so your curve stays honest.') : t('Today') + ', ' + fmtDate(todayISO(), true)}</div>
+    {required && <div className="muted small">{t('Slide or tap to set your weight — tracked before every workout so your curve stays honest.')}</div>}
+    {!required && <label className="field-label">{t('Date')}<input className="field" aria-label={t('Date')} type="date" max={todayISO()} value={date} onChange={e=>setDate(e.target.value)}/></label>}
+    {st.bodyweight.some(b=>b.d===date) && <p className="small muted">{t('This reading will be added to the daily average.')}</p>}
     <WeightInput value={v} setValue={setV} unit={unit} />
     <div style={{ height: 14 }} />
-    <Button variant="primary" onClick={save}>{required ? t('Save & start workout') : t('Save')}</Button>
+    <Button variant="primary" disabled={saving} onClick={save}>{required ? t('Save & start workout') : t('Save')}</Button>
     {required && <>
       <div style={{ height: 8 }} /><Button variant="ghost" className="dim" onClick={() => { close(); onDone && onDone(null) }}>{t('Start without weighing in')}</Button>
       <div style={{ height: 2 }} /><Button variant="ghost" className="dim" icon="reset" onClick={() => { close(); nav('/workout') }}>{t('Choose a different workout')}</Button>
@@ -200,24 +213,26 @@ export function bwSheet(opts = {}) {
   return h
 }
 
-function MeasurementsSheet({ existing, close, focusMetric }) {
+function MeasurementsSheet({ existing, close, focusMetric, initialDate }) {
   const st = useStore(s => s.S)
-  const initial = existing || {}
-  const recordId = useRef(existing?.id || uid())
+  const initial = existing || [...(st.measurements || [])].reverse().find(r=>r.d===(initialDate || todayISO())) || null
+  const [editing, setEditing] = useState(initial)
+  const recordId = useRef(initial?.id || uid())
   const [saving, setSaving] = useState(false)
   useEffect(() => { if (focusMetric) document.getElementById('measure-' + focusMetric)?.querySelector('input')?.focus() }, [focusMetric])
-  const [date, setDate] = useState(existing?.d || todayISO())
+  const [date, setDate] = useState(initial?.d || initialDate || todayISO())
   const unit = st.measurementUnit || 'cm'
-  const [values, setValues] = useState(() => Object.fromEntries(MEASURE_FIELDS.map(([k]) => [k, measurementInUnit(initial, k, unit) ?? ''])))
+  const [values, setValues] = useState(() => Object.fromEntries(MEASURE_FIELDS.map(([k]) => [k, measurementInUnit(initial || {}, k, unit) ?? ''])))
   const save = async () => {
+    if(saving)return
     const parsed = parseMetrics(values, MEASURE_FIELDS)
     if (!validMeasurementDate(date, todayISO()) || !parsed) { toast(t('Check the date and highlighted values.')); return }
     if (!Object.values(parsed).some(v=>v>0)) { toast(t('Enter at least one measurement')); return }
     setSaving(true)
     try {
       update(s => {
-        const index = existing ? (st.measurements || []).indexOf(existing) : -1
-        const row = {...existing, id:recordId.current, d:date, unit, t:existing?.t || Date.now(), ...parsed}
+        const index = editing ? (s.measurements || []).findIndex(r=>editing.id ? r.id===editing.id : JSON.stringify(r)===JSON.stringify(editing)) : -1
+        const row = {...editing, id:recordId.current, d:date, unit, t:editing?.t || Date.now(), ...parsed}
         for (const [key] of MEASURE_FIELDS) if(row[key] == null) row[key]=0
         s.measurements = upsertBodyRecord(s.measurements, row, index)
       })
@@ -228,7 +243,8 @@ function MeasurementsSheet({ existing, close, focusMetric }) {
   }
   return <><h3>{t('Body measurements')}</h3><Button size="sm" onClick={() => measurementRemindersSheet(focusMetric || 'waist')}>{t('Measurement reminder')}</Button><div className="muted small" style={{ marginBottom: 14 }}>{t('Use the same measuring position each time for a useful trend.')}</div>
     <div className="exnote" style={{ marginBottom: 12 }}>{t('Measure relaxed, at the same time of day, without pulling the tape tight. Measure shoulders and chest around their widest point, waist at the navel, limbs at their widest point.')}</div>
-    <label className="field-label">{t('Date')}</label><input className="input" type="date" value={date} max={todayISO()} onChange={e => setDate(e.target.value)} />
+    <label className="field-label">{t('Date')}<input className="input" aria-label={t('Date')} type="date" value={date} max={todayISO()} onChange={e => {const d=e.target.value;setDate(d);const row=[...(st.measurements||[])].reverse().find(r=>r.d===d);setEditing(row||null);recordId.current=row?.id||uid();setValues(Object.fromEntries(MEASURE_FIELDS.map(([k])=>[k,measurementInUnit(row||{},k,unit)??''])))}} /></label>
+    {editing && <div className="measurement-edit-notice"><b>{t('Editing an existing measurement')}</b><p className="small muted">{t('Saving updates this reading. Other records stay unchanged.')}</p></div>}
     <MetricFields prefix="measure" values={values} onChange={setValues} groups={[
       ['Torso',MEASURE_FIELDS.slice(0,5).map(([k,l])=>[k,l,unit])],
       ['Arms',MEASURE_FIELDS.slice(5,9).map(([k,l])=>[k,l,unit])],
@@ -236,25 +252,33 @@ function MeasurementsSheet({ existing, close, focusMetric }) {
     ]} />
     <div style={{ height: 14 }} /><Button variant="primary" disabled={saving} onClick={save}>{t('Save')}</Button></>
 }
-export const measurementsSheet = (existing, focusMetric) => ui().openSheet(close => <MeasurementsSheet existing={existing} focusMetric={focusMetric} close={close} />)
-export const openMeasurementEntry = metric => metric === 'weight' ? bwSheet() : metric === 'bodySize' ? heightSheet() : measurementsSheet(undefined, metric === 'bodyMeasurements' ? undefined : metric)
+export const measurementsSheet = (existing, focusMetric, initialDate) => ui().openSheet(close => <MeasurementsSheet existing={existing} focusMetric={focusMetric} initialDate={initialDate} close={close} />)
+export const openMeasurementEntry = (metric, initialDate) => metric === 'weight' ? bwSheet({initialDate}) : metric === 'bodySize' ? heightSheet(initialDate) : measurementsSheet(undefined, metric === 'bodyMeasurements' ? undefined : metric, initialDate)
 export const measurementRemindersSheet = metric => ui().openSheet(() => <MeasurementReminders initialMetric={metric} onRecord={openMeasurementEntry} />)
 
-function HeightSheet({ close }) {
+function HeightSheet({ close, initialDate }) {
   const st = useStore(s => s.S)
   const unit = st.measurementUnit || 'cm'
-  const [height, setHeight] = useState(st.heightCm || (unit === 'in' ? 67 : 170))
-  const save = () => {
+  const [date, setDate] = useState(typeof initialDate==='string' ? initialDate : todayISO())
+  const current = (st.heightHistory || []).find(r=>r.d===date)
+  const [height, setHeight] = useState(current ? current.cm/(unit==='in'?2.54:1) : st.heightCm || (unit === 'in' ? 67 : 170))
+  const [saving,setSaving]=useState(false)
+  const save = async () => {
+    if(saving)return
     const min = unit === 'in' ? 39 : 100, max = unit === 'in' ? 99 : 250
+    if (!validMeasurementDate(date,todayISO())) {toast(t('Check the date and highlighted values.'));return}
     if (!(height >= min && height <= max)) { toast(t('Enter a height between {0} and {1} {2}', min, max, unit)); return }
-    update(s => { recordHeight(s, Math.round(height * 10) / 10, todayISO(), Date.now(), uid()) })
-    close(); toast(t('Height saved'))
+    setSaving(true)
+    try {update(s => { recordHeight(s, Math.round(height * 10) / 10, date, Date.now(), current?.id || uid()) });await useStore.getState().flushPersistence();close();toast(t('Height saved'))}
+    catch {toast(t('Could not save. Check available storage and try again.'))} finally {setSaving(false)}
   }
   return <><h3>{t('Height')}</h3><div className="muted small" style={{ marginBottom: 14 }}>{t('Your height is used with your latest body weight to calculate BMI.')}</div>
+    <label className="field-label">{t('Date')}<input aria-label={t('Date')} className="field" type="date" max={todayISO()} value={date} onChange={e=>{setDate(e.target.value);const row=(st.heightHistory||[]).find(r=>r.d===e.target.value);if(row)setHeight(row.cm/(unit==='in'?2.54:1))}}/></label>
+    {current && <p className="small muted">{t('Editing an existing measurement')}</p>}
     <Stepper label={t('Height ({0})', unit)} unit={unit} value={height} step={0.5} onChange={setHeight} />
-    <div style={{ height: 14 }} /><Button variant="primary" onClick={save}>{t('Save')}</Button></>
+    <div style={{ height: 14 }} /><Button variant="primary" disabled={saving} onClick={save}>{t('Save')}</Button></>
 }
-export const heightSheet = () => ui().openSheet(close => <HeightSheet close={close} />)
+export const heightSheet = initialDate => ui().openSheet(close => <HeightSheet initialDate={initialDate} close={close} />)
 
 /* ============================ import from another app ============================ */
 // Shows what a parsed export would actually do before anything is written. An import is

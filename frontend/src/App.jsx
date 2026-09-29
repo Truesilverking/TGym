@@ -131,6 +131,7 @@ function Shell() {
     }
     const foreground=()=>{if(document.visibilityState==='visible')check(true)}
     const interact=event=>{
+      if(event.target?.closest?.('.app-tour, .tour-replay'))return
       if(!event.isTrusted || document.visibilityState==='hidden' || !event.target?.closest?.('#app, [role="dialog"], #tabbar'))return
       const active=useStore.getState().S.active
       if(!active)return

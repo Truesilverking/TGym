@@ -33,9 +33,11 @@ export function removeBodyRecord(rows, record) {
 // additive history independent of display-unit conversion and older backups.
 export function recordHeight(state, value, date, timestamp, id) {
   state.heightHistory ||= []
-  if (!state.heightHistory.length && state.heightCm > 0 && validMeasurementDate(state.heightRecordedAt, date)) {
+  if (!state.heightHistory.length && state.heightCm > 0 && validMeasurementDate(state.heightRecordedAt, '9999-12-31')) {
     state.heightHistory.push({id:id+'-previous',d:state.heightRecordedAt,cm:state.heightCm*(state.measurementUnit==='in'?2.54:1)})
   }
-  state.heightHistory.push({id,d:date,t:timestamp,cm:value*(state.measurementUnit==='in'?2.54:1)})
-  state.heightCm=value;state.heightRecordedAt=date
+  const existing=state.heightHistory.find(row=>row.d===date)
+  state.heightHistory=upsertBodyRecord(state.heightHistory,{id:existing?.id||id,d:date,t:existing?.t||timestamp,cm:value*(state.measurementUnit==='in'?2.54:1)},existing?state.heightHistory.indexOf(existing):-1)
+  const latest=state.heightHistory.at(-1)
+  state.heightCm=latest.cm/(state.measurementUnit==='in'?2.54:1);state.heightRecordedAt=latest.d
 }

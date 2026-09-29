@@ -7,12 +7,18 @@ import { Button } from './ui.jsx'
 import './AppTour.css'
 
 export const TOUR_STEPS = [
-  ['/home', 'calendar', 'Your training at a glance', 'Your streak rewards scheduled days. Open the calendar to plan and review.'],
-  ['/plan', 'routine', 'Build your week', 'Combine strength, running and recovery in your routines and weekly plan.'],
-  ['/home', 'start', 'Start or resume', 'Start today’s routine here. Your active workout stays available.'],
-  ['/stats', 'progress', 'See your progress', 'Review strength and activity metrics, history and reports.'],
-  ['/plan', 'pause', 'Take a training break', 'Pause for illness or travel. Protect your streak and resume when ready.'],
-  ['/settings', 'health', 'Make TGym yours', 'Log other activities, connect supported health data and adjust your preferences.'],
+  ['/home','calendar','Your training at a glance','Your streak rewards scheduled days. Open the calendar to plan and review.'],
+  ['/home','navigation','Move around TGym','Home, routines, training, stats and exercises stay one tap away.'],
+  ['/plan','routine','Build your week','Create routines, assign training days and reorder with arrows or a short hold and drag.'],
+  ['/home','start','Start or resume','Start today’s routine here. Your active workout stays available.'],
+  ['/workout','sets','Log each set','Enter weight, reps and RIR, then check the set when completed. This preview saves nothing.'],
+  ['/workout','set-types','Know your set types','Warm-up prepares you. Top sets are heavier; back-off sets reduce the load. Working sets count toward completion.'],
+  ['/workout','supersets','Pair and recover','Pair with the previous or next exercise. Rest counts down between sets; adjust it or skip when ready.'],
+  ['/stats','history','Review your sessions','Open History to review completed sessions. Statistics summarize your recorded training.'],
+  ['/progress','report','Explore your progress','Choose a period and section. Expand details or download selected sections as a PDF.'],
+  ['/stats','measurements','Track body measurements','Log a dated reading and compare body zones. Existing dates open for editing.'],
+  ['/stats','inbody','Keep InBody history','Add dated InBody results to compare body composition over time.'],
+  ['/settings','health','Make TGym yours','Choose your theme and preferences. Local tracking works offline once ready; reconnect to check for updates.'],
 ]
 export function replayAppTour() { useUI.setState({ appTourRequest: Date.now() }) }
 export default function AppTour() {
@@ -24,6 +30,7 @@ export default function AppTour() {
   const [finishing, setFinishing] = useState(false)
   const active = finishing || !!requested || (S.hasCompletedOnboarding && !S.hasCompletedAppTour)
   useEffect(() => { if (requested) { originalPath.current = location.pathname; setStep(0) } }, [requested])
+  useEffect(()=>{useUI.setState({appTourWorkoutPreview:active && TOUR_STEPS[step][0]==='/workout'});return()=>useUI.setState({appTourWorkoutPreview:false})},[active,step])
   useEffect(() => {
     if (!active || sheets) return
     nav(TOUR_STEPS[step][0])
@@ -34,14 +41,16 @@ export default function AppTour() {
     const refresh = () => {
       target = document.querySelector(`[data-tour="${TOUR_STEPS[step][1]}"]`)
       const bounds = target?.getBoundingClientRect()
-      setRect(bounds ? { top: bounds.top, left: bounds.left, width: bounds.width, height: bounds.height } : null)
+      setRect(bounds && bounds.width>0 ? { top:Math.max(8,bounds.top), left:Math.max(8,bounds.left), width:Math.min(bounds.width,window.innerWidth-16), height:Math.max(0,Math.min(bounds.height,window.innerHeight-Math.max(8,bounds.top)-8,Math.max(44,window.innerHeight-(dialog.current?.offsetHeight||280)-48))) } : null)
     }
-    const timer = setTimeout(() => { document.querySelector(`[data-tour="${TOUR_STEPS[step][1]}"]`)?.scrollIntoView({ block: 'center', behavior: 'instant' }); refresh(); dialog.current?.querySelector('button')?.focus() }, 60)
-    window.addEventListener('resize', refresh); document.addEventListener('scroll', refresh, true)
+    const timer = setTimeout(() => { document.querySelector(`[data-tour="${TOUR_STEPS[step][1]}"]`)?.scrollIntoView({ block: 'start', behavior: 'instant' }); refresh(); dialog.current?.querySelector('button')?.focus() }, 60)
+    const observer=new MutationObserver(refresh);const app=document.getElementById('app');if(app)observer.observe(app,{childList:true,subtree:true})
+    const reposition=()=>{document.querySelector(`[data-tour="${TOUR_STEPS[step][1]}"]`)?.scrollIntoView({block:'start',behavior:'instant'});refresh()}
+    window.addEventListener('resize', reposition); document.addEventListener('scroll', refresh, true)
     const before = document.activeElement
     const blocked = ['app', 'tabbar'].map(id => document.getElementById(id)).filter(Boolean)
     blocked.forEach(el => { el.inert = true })
-    return () => { clearTimeout(timer); window.removeEventListener('resize', refresh); document.removeEventListener('scroll', refresh, true); blocked.forEach(el => { el.inert = false }); if (before?.isConnected) before.focus?.() }
+    return () => { observer.disconnect();clearTimeout(timer); window.removeEventListener('resize', reposition); document.removeEventListener('scroll', refresh, true); blocked.forEach(el => { el.inert = false }); if (before?.isConnected) before.focus?.() }
   }, [active, step, location.pathname, sheets])
   if (!active || sheets) return null
   const finish = async () => {
@@ -49,7 +58,7 @@ export default function AppTour() {
     try {
       useStore.getState().update(s => { s.hasCompletedAppTour = true })
       await useStore.getState().flushPersistence()
-      useUI.setState({ appTourRequest: null })
+      useUI.setState({ appTourRequest: null, appTourWorkoutPreview:false })
       setFinishing(false); nav(originalPath.current)
     } catch { setError(t('Could not save. Check available storage and try again.')) }
     finally { setBusy(false) }

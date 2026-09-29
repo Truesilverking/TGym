@@ -438,7 +438,7 @@ export default function Stats() {
 
   return <>
     <div className="hdr"><div><h1>{t('Stats')}</h1><div className="sub">{t('Progress & history')}</div></div>
-      <div className="row" style={{ gap: 3 }}><button className="iconbtn" onClick={() => exportStatsReport(S)} aria-label={t('Export Stats report')} title={t('Export Stats report')}><Icon name="download" /></button>{!MOBILE && <button className="iconbtn" onClick={() => window.print()} aria-label={t('Print / Save as PDF')} title={t('Print / Save as PDF')}><Icon name="clipboard" /></button>}<button className="iconbtn" onClick={() => nav('/progress')} aria-label={t('Progress Report')} title={t('Progress Report')}><Icon name="chart" /></button><button className="iconbtn" onClick={() => nav('/history')} aria-label={t('History')}><Icon name="history" /></button><button className="iconbtn" onClick={inBodySheet} aria-label={t('InBody history')} title={t('InBody history')}><Icon name="person" /></button></div></div>
+      <div className="row" style={{ gap: 3 }}><button className="iconbtn" onClick={() => exportStatsReport(S)} aria-label={t('Export Stats report')} title={t('Export Stats report')}><Icon name="download" /></button>{!MOBILE && <button className="iconbtn" onClick={() => window.print()} aria-label={t('Print / Save as PDF')} title={t('Print / Save as PDF')}><Icon name="clipboard" /></button>}<button className="iconbtn" onClick={() => nav('/progress')} aria-label={t('Progress Report')} title={t('Progress Report')}><Icon name="chart" /></button><button className="iconbtn" data-tour="history" onClick={() => nav('/history')} aria-label={t('History')}><Icon name="history" /></button><button className="iconbtn" data-tour="inbody" onClick={inBodySheet} aria-label={t('InBody history')} title={t('InBody history')}><Icon name="person" /></button></div></div>
 
     <TrainingHistory />
     <div className="tiles">
@@ -471,7 +471,7 @@ export default function Stats() {
       </div>
 
       <div className="card">
-        <div className="row between" style={{ marginBottom: 10 }}><h2 style={{ margin: 0 }}>{t('Body measurements')}</h2><Button size="sm" icon="plus" onClick={() => measurementsSheet()}>{t('Log')}</Button></div>
+        <div className="row between" style={{ marginBottom: 10 }}><h2 data-tour="measurements" style={{ margin: 0 }}>{t('Body measurements')}</h2><Button size="sm" icon="plus" onClick={() => measurementsSheet()}>{t('Log')}</Button></div>
         {measures.length ? <>
           <ProgressBody records={measurementRows} selection={bodySelection} onSelection={setBodySelection} body={S.body}/>
           <details><summary>{t('Edit measurement history')}</summary>
@@ -521,7 +521,7 @@ export default function Stats() {
     {workouts.length > 0 && <>
       <div className="row between" style={{ marginBottom: 10 }}>
         <h4 className="sec" style={{ margin: 0 }}>{t('Recent workouts')}</h4>
-        <Button size="sm" variant="ghost" trailingIcon="chevronRight" onClick={() => nav('/history')}>{t('All')} {workouts.length}</Button>
+        <Button size="sm" variant="ghost" trailingIcon="chevronRight" data-tour="history" onClick={() => nav('/history')}>{t('All')} {workouts.length}</Button>
       </div>
       <div className="list">{[...workouts].reverse().slice(0, 6).map(w => <WorkoutRow key={w.id} w={w} onClick={() => workoutDetailSheet(w)} />)}</div>
     </>}
