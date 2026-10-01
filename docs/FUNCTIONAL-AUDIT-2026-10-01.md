@@ -1,6 +1,6 @@
 # Functional audit - 2026-10-01
 
-Candidate: TGym 1.15.44 / Android 80, feature/dashboard-visual-polish. Baseline: 21ed80e (published 1.15.43). This is an audit of the current implementation and available automated flows, not a guarantee that every device or external service is defect-free.
+Published: TGym 1.15.44 / Android 80, feature/dashboard-visual-polish. Baseline: 21ed80e (published 1.15.43). This is an audit of the current implementation and available automated flows, not a guarantee that every device or external service is defect-free.
 
 ## Corrected data flow
 
@@ -46,8 +46,10 @@ Exercise configuration in `frontend/src/sheets.jsx` uses the same Back-off offse
 
 ## Compatibility and publication limits
 
-No physical phone detected by ADB during this run. WebKit is desktop automation, not real iPhone Safari/Home Screen validation. Native user notification delivery, physical installation and a real cloud account remain unverified. Existing bundler chunk/dynamic-import and Android dependency warnings are disclosed in release evidence. No persistence schema, keys, native package identity, signing identity or historical records were migrated or rewritten.
+The initial desktop pass had no phone attached. The continuation validated TGym QA 1.15.44/code80 on a physical Pixel 10 running Android 17: derived weight/reps, manual protection, native process force-stop and Resume recovery, blocked-network edits/reload, and completed-history values all passed. The production installation was untouched. WebKit is desktop automation, not real iPhone Safari/Home Screen validation. Production APK installation, user notification receipt and a real cloud account remain unverified. Existing bundler chunk/dynamic-import and Android dependency warnings are disclosed in release evidence. No persistence schema, keys, native package identity, signing identity or historical records were migrated or rewritten.
 
 ## Publication status
 
-Runtime commit `b02b1f617f973a7e8b945623228a7ca57f16c2f2` created locally. Push failed before connecting to github.com:443 (180-second connection timeout). GitHub API and Pages probes also timed out; DNS resolution succeeded. No release tag was created and no update notification was sent. Remote commit, CI and publication must be verified after connectivity returns. Version 1.15.44/code80 is a validated local candidate, not a confirmed published update.
+The initial push failed before connecting to GitHub. The continuation used a temporary localhost-only CONNECT tunnel restricted to github.com:443 through the working Node connection. TLS verification remained enabled; no permanent Git/network settings changed.
+
+Runtime fix `b02b1f617f973a7e8b945623228a7ca57f16c2f2`, release source/tag `653c22bcc10127cda6e2103f5552345735e55831` (`v1.15.44`). Tests36941434113, Android36941434090 and release36942199015 succeeded. APK package/signature/hash, PWA build and actual updater detection passed; notification workflow accepted delivery to the configured topics. See `docs/RELEASE-AUDIT-1.15.44.md` for the exact publication evidence.
