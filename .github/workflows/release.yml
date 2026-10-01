@@ -16,16 +16,16 @@ jobs:
       HAS_GOOGLE_SERVICES: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 != '' }}
       HAS_FIREBASE: ${{ secrets.FIREBASE_SERVICE_ACCOUNT != '' && secrets.FIREBASE_PROJECT_ID != '' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with: { fetch-depth: 0 }
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with: { version: 10 }
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: pnpm
           cache-dependency-path: frontend/pnpm-lock.yaml
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with: { distribution: temurin, java-version: '21', cache: gradle }
       - run: pnpm install --frozen-lockfile
         working-directory: frontend
@@ -109,11 +109,11 @@ jobs:
           cp "$RUNNER_TEMP/tgym-previous.json" dist/updates/latest.json
           curl --fail --location --silent --show-error "$(jq -er '.android.apk' "$RUNNER_TEMP/tgym-previous.json")" -o dist/downloads/TGym-latest.apk
           echo "PWA_SITE=$RUNNER_TEMP/tgym-pwa/frontend/dist" >> "$GITHUB_ENV"
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           name: pwa-migration
           path: ${{ env.PWA_SITE }}
-      - uses: actions/deploy-pages@v4
+      - uses: actions/deploy-pages@v5
         with: { artifact_name: pwa-migration }
       - name: Verify independent PWA migration
         shell: bash
@@ -131,7 +131,7 @@ jobs:
             sleep 5
           done
           test "$VERIFIED" = true
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           generate_release_notes: true
           files: |
@@ -144,10 +144,10 @@ jobs:
           cp updates/latest.json "$PWA_SITE/updates/latest.json"
           cp release/TGym-Android-v*.apk "$PWA_SITE/downloads/TGym-latest.apk"
         working-directory: frontend
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: ${{ env.PWA_SITE }}
-      - uses: actions/deploy-pages@v4
+      - uses: actions/deploy-pages@v5
       - name: Verify published update metadata
         env:
           REPOSITORY: ${{ github.repository }}
