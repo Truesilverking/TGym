@@ -38,7 +38,7 @@ Exercise configuration in `frontend/src/sheets.jsx` uses the same Back-off offse
 - Final full frontend suite: 1,225 tests /126 files passed. Affected Back-off/history/Workout suite: 179 tests passed, including new/existing-user seeding.
 - API10 and MCP37 plus Node-loadability passed. Locales/source strings/version checks and fatigue probes (108,000 monotonic +14,076 history-edit comparisons) passed.
 - No frontend lint or typecheck scripts exist. Android lint is a separate check.
-- Production/PWA/mobile builds passed with exit 0. Clean Android release/lint passed; final synchronization and rebuild also required before publication. Android lint: 0 errors, 18 existing warnings (dependency/resources/icons/FCM token callback); none caused by these JavaScript changes.
+- Production/PWA/mobile builds passed with exit 0. Clean Android release/lint passed (2m9s); final synchronization and rebuild/lint passed again (44s). Android lint: 0 errors, 18 existing warnings (dependency/resources/icons/FCM token callback); none caused by these JavaScript changes.
 - Chromium and WebKit Back-off input/cascade/manual/reload/offline persistence at 320/360/375/390/430 and 844x390 passed.
 - Chromium onboarding/offline reopen, workout recovery/finish, routine edit/delete/undo, backup/import/undo, calendar PNG/PDF and activity edit flows passed.
 - Downloaded PDFs opened and rasterized successfully: empty/selected 1 page, multiple sections 2 pages, full synthetic history 24 pages. All full-report pages and empty report visually inspected; no corrupt/blank pages or clipped components observed. PDF pages use raster dashboard content, so text-extraction-only validation is inappropriate.
@@ -47,3 +47,7 @@ Exercise configuration in `frontend/src/sheets.jsx` uses the same Back-off offse
 ## Compatibility and publication limits
 
 No physical phone detected by ADB during this run. WebKit is desktop automation, not real iPhone Safari/Home Screen validation. Native user notification delivery, physical installation and a real cloud account remain unverified. Existing bundler chunk/dynamic-import and Android dependency warnings are disclosed in release evidence. No persistence schema, keys, native package identity, signing identity or historical records were migrated or rewritten.
+
+## Publication status
+
+Runtime commit `b02b1f617f973a7e8b945623228a7ca57f16c2f2` created locally. Push failed before connecting to github.com:443 (180-second connection timeout). GitHub API and Pages probes also timed out; DNS resolution succeeded. No release tag was created and no update notification was sent. Remote commit, CI and publication must be verified after connectivity returns. Version 1.15.44/code80 is a validated local candidate, not a confirmed published update.
