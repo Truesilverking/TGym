@@ -1637,4 +1637,5 @@ export default {
  "Keep InBody history": "Conserva tu historial InBody",
  "Add dated InBody results to compare body composition over time.": "Añade resultados InBody con fecha para comparar tu composición corporal.",
  "Choose your theme and preferences. Local tracking works offline once ready; reconnect to check for updates.": "Elige tema y preferencias. El registro local funciona sin conexión cuando está listo; reconecta para buscar actualizaciones."
+, "Automatic targets": "Objetivos autom\u00e1ticos"
 }

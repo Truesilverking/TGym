@@ -825,4 +825,5 @@ export default {
  "Add dated InBody results to compare body composition over time.": "Add dated InBody results to compare body composition over time.",
  "Make TGym yours": "Make TGym yours",
  "Choose your theme and preferences. Local tracking works offline once ready; reconnect to check for updates.": "Choose your theme and preferences. Local tracking works offline once ready; reconnect to check for updates."
+, "Automatic targets": "Automatic targets"
 }

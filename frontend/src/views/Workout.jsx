@@ -278,6 +278,10 @@ function ExerciseBlock({ preview, entryIdx, compact, onToggle, onField, onAddSet
               </div>
             </div>
             {mode === 'reps' && !warm && <div className="set-target"><span>{t('Target reps')}{isPerSide(cfg) ? ` ${t('/ side')}` : ''}</span><strong>{targetText}</strong></div>}
+            {s.role === 'backoff' && !warm && <div className="small muted" style={{gridColumn:'1 / -1',padding:'0 12px 8px'}}>{t('Automatic targets')}: {[
+              !s.manualFields?.w && t('Weight'),
+              cfg.autoBackoffReps !== false && !s.manualFields?.r && t('reps'),
+            ].filter(Boolean).join(' + ') || t('Manual')}</div>}
             {cell(s, i, col1, 'w')}
             {col2 && cell(s, i, col2, 'r')}
             {col3 && cell(s, i, col3, 'eff')}

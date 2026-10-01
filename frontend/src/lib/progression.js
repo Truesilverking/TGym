@@ -1,3 +1,4 @@
+import { loggedWorkouts } from './daily-plan.js'
 // Automatic progression (issue #17).
 //
 // Everything here is a pure function of the workout history. Nothing writes back into a
@@ -143,12 +144,12 @@ export function readSession(entry, fallback) {
 /** Every past session for one exercise, oldest first. `fallback` — see readSession. */
 export function sessionsFor(S, exId, fallback) {
   const out = []
-  ;(S.workouts || []).forEach(w => {
+  ;loggedWorkouts(S).slice().sort((a,b) => String(a.d || '').localeCompare(String(b.d || '')) || (Number(a.start) || 0) - (Number(b.start) || 0)).forEach(w => {
     // A planned deload is recovery work, not a failed attempt at the normal prescription.
     // Excluding it prevents the reduced load/volume from triggering a stall or another deload.
     if (w.deload) return
-    const entry = w.entries.find(e => e.id === exId)
-    if (entry && entry.sets.some(s => s.done && !isWarmupRow(s))) out.push({ d: w.d, ...readSession(entry, fallback) })
+    const entry = (w.entries || []).find(e => e.id === exId)
+    if (entry && (entry.sets || []).some(s => s.done && !isWarmupRow(s))) out.push({ d: w.d, ...readSession(entry, fallback) })
   })
   return out
 }

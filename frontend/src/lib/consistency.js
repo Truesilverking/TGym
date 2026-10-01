@@ -29,7 +29,7 @@ export function consistencyStats(S, start, end, now = new Date()) {
   const result = { planned: 0, completed: 0, missed: 0, pending: 0, extra: 0 }
   for (const day of days) {
     for (const key of ['planned','completed','missed','pending']) result[key] += day.counts?.[key] || 0
-    result.extra += day.extra
+    result.extra += day.extra || 0
   }
   const evaluated = result.completed + result.missed
   return { ...result, rate: evaluated ? result.completed / evaluated : null }

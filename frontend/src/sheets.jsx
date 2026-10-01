@@ -43,7 +43,7 @@ import { GUIDED_PLANS, createGuidedPlan } from './lib/guided-plans.js'
 import { saveImportUndo } from './lib/import-undo.js'
 import { MEASURE_FIELDS, measurementValue } from './lib/stats-insights.js'
 import { sessionTimingSummary } from './lib/stats-insights.js'
-import { applyTrainingPlan, calendarDeload, deloadStatus, deloadTargetFor, repRangeEnabled, streakTier, trainingStreak, targetRirRangeFor } from './lib/training-plan.js'
+import { backoffRepOffsetFor, applyTrainingPlan, calendarDeload, deloadStatus, deloadTargetFor, repRangeEnabled, streakTier, trainingStreak, targetRirRangeFor } from './lib/training-plan.js'
 import { weightStepFor } from './lib/unit-conversion.js'
 import Heatmap from './components/Heatmap.jsx'
 import LineChart from './components/LineChart.jsx'
@@ -836,7 +836,7 @@ function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial }) {
         out.backoffRepsMax = Math.max(out.backoffRepsMin, Math.round(c.backoffRepsMax) || reps)
         out.backoffPct = Math.max(1, Math.min(50, Number(c.backoffPct) || 10))
         out.autoBackoffReps = c.autoBackoffReps !== false
-        out.backoffRepOffset = Math.max(0, Math.min(5, Math.round(c.backoffRepOffset ?? ((c.backoffRepsMax || reps) - (c.topRepsMax || reps)) ?? 2)))
+        out.backoffRepOffset = backoffRepOffsetFor(c)
         const topRir = targetRirRangeFor(c, 'top'), backRir = targetRirRangeFor(c, 'backoff')
         if (topRir) { out.topRirMin = topRir.min; out.topRirMax = topRir.max }
         if (backRir) { out.backoffRirMin = backRir.min; out.backoffRirMax = backRir.max }
@@ -1045,7 +1045,7 @@ function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial }) {
           <Switch checked={c.autoBackoffReps !== false} onChange={v => setC(x => ({ ...x, autoBackoffReps: v }))} />
         </Row></div>
         {c.autoBackoffReps !== false ? <div className="row cfgrow" style={{ marginBottom: 8 }}>
-          <RepStepper cfg={c} label={t('Back-off rep offset')} value={c.backoffRepOffset ?? (Math.max(0, Math.min(5, (c.backoffRepsMax || c.reps || 10) - (c.topRepsMax || c.reps || 10))) || 2)} onChange={v => setC(x => ({ ...x, backoffRepOffset: Math.max(0, Math.min(5, Math.round(v))) }))} />
+          <RepStepper cfg={c} label={t('Back-off rep offset')} value={backoffRepOffsetFor(c)} onChange={v => setC(x => ({ ...x, backoffRepOffset: backoffRepOffsetFor({ ...x, backoffRepOffset: v }) }))} />
         </div> : <div className="row cfgrow" style={{ marginBottom: 8 }}>
           <RepStepper cfg={c} label={t('Back-off min reps')} value={c.backoffRepsMin || c.repsMin || c.reps || 1} step={1} decimal={false} onChange={v => setC(x => ({ ...x, backoffRepsMin: Math.max(1, v) }))} />
           <RepStepper cfg={c} label={t('Back-off max reps')} value={c.backoffRepsMax || c.reps || 10} step={1} decimal={false} onChange={v => setC(x => ({ ...x, backoffRepsMax: Math.max(x.backoffRepsMin || 1, v) }))} />

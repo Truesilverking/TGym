@@ -180,7 +180,7 @@ export function mergePlan(s, bundle, { schedule } = {}) {
       ex: (r.ex || []).map(e => ({ ...e, id: exIdMap[e.id] || e.id }))
     })
   })
-  if (bundle.routines.some(r => (r.ex || []).some(e => e.targetRir != null || e.topRir != null || e.backoffRir != null)) && (!s.effort || s.effort === 'none')) s.effort = 'rir'
+  if (bundle.routines.some(r => (r.ex || []).some(e => ['targetRir','topRir','backoffRir','targetRirMin','targetRirMax','topRirMin','topRirMax','backoffRirMin','backoffRirMax'].some(key => e[key] != null))) && (!s.effort || s.effort === 'none')) s.effort = 'rir'
   if (schedule) {
     WEEK_ORDER.forEach(d => { delete s.week[d] })
     Object.entries(bundle.week || {}).forEach(([d, oldId]) => {

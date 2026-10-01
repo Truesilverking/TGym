@@ -73,3 +73,11 @@ it('prints old and new per-side plans as 8 while keeping portable JSON semantics
   expect(roundTrip(cfg).reps).toBe(cfg.reps)
  }
 })
+
+it('enables effort logging for imported role-specific RIR ranges, including zero',()=>{
+ const bundle=buildPlanBundle(stateWith({setScheme:'topback',topRirMin:0,topRirMax:1,backoffRirMin:2,backoffRirMax:3}),'RIR')
+ const S={routines:[],week:{},customEx:[],effort:'none'}
+ mergePlan(S,parsePlan(JSON.stringify(bundle)))
+ expect(S.effort).toBe('rir')
+ expect(S.routines[0].ex[0]).toMatchObject({topRirMin:0,backoffRirMax:3})
+})

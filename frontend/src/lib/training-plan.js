@@ -116,12 +116,10 @@ export function applyTrainingPlan(rows, cfg, step = 2.5, deload = null) {
     const topN = clamp(Math.round(cfg.topSets) || 1, 1, 99)
     const backN = clamp(Math.round(cfg.backoffSets) || 2, 1, 99)
     const topSeed = work[0]
-    const topWeight = Number(topSeed.w) || Number(cfg.weight) || 0
-    const pct = clamp(Number(cfg.backoffPct) || 10, 1, 50)
-    const backWeight = topWeight > 0 ? snap(topWeight * (1 - pct / 100), step) : 0
+    const topWeight = Number(topSeed.w ?? cfg.weight) || 0
+    const backWeight = backoffWeightFor(topWeight, cfg, step)
     const topReps = Math.max(1, Math.round(cfg.topRepsMax || cfg.reps || topSeed.r || 1))
-    const offset = backoffRepOffsetFor(cfg)
-    const backReps = cfg.autoBackoffReps === false ? Math.max(1, Math.round(cfg.backoffRepsMax || cfg.reps || topReps)) : topReps + offset
+    const backReps = backoffRepsFor(topReps, cfg)
     work = [
       ...Array.from({ length: topN }, () => ({ ...copyRow(topSeed), w: topWeight, r: topReps, role: 'top' })),
       ...Array.from({ length: backN }, () => ({ ...copyRow(topSeed), w: backWeight, r: backReps, role: 'backoff' })),
@@ -173,22 +171,44 @@ export function deloadTargetFor(cfg, deload) {
 }
 
 export function repBounds(cfg, role = null) {
-  if (role === 'top') return { min: Math.max(1, Number(cfg.topRepsMin) || Number(cfg.repsMin) || Number(cfg.reps) || 1), max: Math.max(1, Number(cfg.topRepsMax) || Number(cfg.reps) || 1) }
+  const range = (low, high) => {
+    const max = Math.max(1, Math.round(Number(high) || 1))
+    const min = Math.min(max, Math.max(1, Math.round(Number(low) || max)))
+    return { min, max }
+  }
+  if (role === 'top') return range(cfg.topRepsMin || cfg.repsMin, cfg.topRepsMax || cfg.reps)
   if (role === 'backoff') {
-    if (cfg.autoBackoffReps !== false && cfg.setScheme === 'topback') { const top = repBounds(cfg, 'top'), offset = backoffRepOffsetFor(cfg); return { min: top.min + offset, max: top.max + offset } }
-    return { min: Math.max(1, Number(cfg.backoffRepsMin) || Number(cfg.repsMin) || Number(cfg.reps) || 1), max: Math.max(1, Number(cfg.backoffRepsMax) || Number(cfg.reps) || 1) }
+    if (cfg.autoBackoffReps !== false && cfg.setScheme === 'topback') {
+      const top = repBounds(cfg, 'top'), offset = backoffRepOffsetFor(cfg)
+      return { min: top.min + offset, max: top.max + offset }
+    }
+    return range(cfg.backoffRepsMin || cfg.repsMin, cfg.backoffRepsMax || cfg.reps)
   }
-  if (cfg.repRange === false) {
-    const exact = Math.max(1, Number(cfg.reps) || 1)
-    return { min: exact, max: exact }
-  }
-  return { min: Math.max(1, Number(cfg.repsMin) || Number(cfg.reps) || 1), max: Math.max(1, Number(cfg.reps) || 1) }
+  return range(cfg.repRange === false ? cfg.reps : cfg.repsMin, cfg.reps)
 }
 
+// Legacy unilateral configurations store totals across both sides.
 export function backoffRepOffsetFor(cfg = {}) {
-  if (cfg.backoffRepOffset != null && Number.isFinite(Number(cfg.backoffRepOffset))) return clamp(Math.round(Number(cfg.backoffRepOffset)), 0, 5)
+  const factor = cfg.side && !cfg.repsPerSide ? 2 : 1
+  if (cfg.backoffRepOffset != null && Number.isFinite(Number(cfg.backoffRepOffset))) return clamp(Math.round(Number(cfg.backoffRepOffset) / factor), 0, 5) * factor
   const derived = Number(cfg.backoffRepsMax) - Number(cfg.topRepsMax)
-  return Number.isFinite(derived) && derived >= 0 && derived <= 5 ? Math.round(derived) : 2
+  return Number.isFinite(derived) && derived >= 0 && derived <= 5 * factor ? Math.round(derived / factor) * factor : 2 * factor
+}
+
+export function backoffWeightFor(value, cfg = {}, step = 2.5) {
+  if (value == null || !Number.isFinite(Number(value))) return null
+  const increment = Number(step) > 0 && Number.isFinite(Number(step)) ? Number(step) : 2.5
+  const raw = Math.max(0, Number(value)) * (1 - clamp(Number(cfg.backoffPct) || 10, 1, 50) / 100)
+  const rounded = Math.min(Math.round(raw / increment), Math.floor(Math.max(0, Number(value)) / increment))
+  return Math.round(rounded * increment * 1000) / 1000
+}
+
+export function backoffRepsFor(value, cfg = {}) {
+  const bounds = repBounds(cfg, 'backoff')
+  if (cfg.autoBackoffReps === false) return Math.max(bounds.min, bounds.max)
+  const derived = Math.max(0, Math.round(Number(value) || 0)) + backoffRepOffsetFor(cfg)
+  const hasTarget = [cfg.topRepsMax, cfg.reps].some(v => Number(v) > 0)
+  return hasTarget ? clamp(derived, Math.min(bounds.min, bounds.max), Math.max(bounds.min, bounds.max)) : derived
 }
 
 export const repRangeEnabled = cfg => cfg?.repRange === true || (cfg?.repRange !== false && Number(cfg?.repsMin) > 0 && Number(cfg?.repsMin) < Number(cfg?.reps))

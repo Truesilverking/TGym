@@ -139,3 +139,17 @@ it('keeps previous before next, hides missing neighbors and pairs using current 
 it('shows real set fields in tour practice without creating an active workout or changing history',()=>{
  const S=structuredClone(DEF);S.lang='en';S.effort='none';useStore.setState({S,user:null});useUI.setState({appTourWorkoutPreview:true});act(()=>root.render(<MemoryRouter><Workout/></MemoryRouter>));expect(input('RIR')).toBeTruthy();expect(container.querySelector('[data-tour="sets"]')).not.toBeNull();expect(state().active).toBeNull();expect(state().workouts).toEqual([]);act(()=>useUI.setState({appTourWorkoutPreview:false}));expect(container.querySelector('.workout-tour-preview')).toBeNull()
 })
+
+it('derives Back-off weight and reps, protects manual fields and retains them in reopened history',()=>{
+ mount({setScheme:'topback',reps:6,topRepsMin:4,topRepsMax:6,backoffRepOffset:2,backoffPct:10},[{role:'top',w:100,r:6},{role:'backoff',w:90,r:8},{role:'backoff',w:90,r:8}]);
+ type(input('Actual reps'),'5');type(input('Weight (kg)'),'110');
+ expect(rows().map(s=>[s.w,s.r])).toEqual([[110,5],[100,7],[100,7]]);
+ type(input('Actual reps',1),'6');type(input('Weight (kg)',1),'95');type(input('Actual reps'),'6');type(input('Weight (kg)'),'120');
+ expect(rows().map(s=>[s.w,s.r])).toEqual([[120,6],[95,6],[107.5,8]]);
+ const saved=JSON.parse(localStorage.getItem('gym_state_v1'));
+ act(()=>{root.unmount();root=createRoot(container);useStore.getState().replaceState(saved);root.render(<MemoryRouter><Workout/></MemoryRouter>)});
+ expect(rows()[1]).toMatchObject({w:95,r:6,manualFields:{w:true,r:true}});
+ act(()=>{for(const el of container.querySelectorAll('[role="checkbox"]'))el.click()});
+ act(()=>doFinishWorkout());expect(state().active).toBeNull();
+ expect(state().workouts[0].entries[0].sets.map(s=>[s.w,s.r])).toEqual([[120,6],[95,6],[107.5,8]]);
+})

@@ -65,3 +65,8 @@ describe('next scheduled workout', () => {
     expect(nextScheduledWorkout(S, now)).toBeNull()
   })
 })
+
+it('keeps extra-session totals finite when the period includes untracked days',()=>{
+ const S={routines:[],workouts:[{id:'w',d:'2026-09-26',entries:[]}],trainingHistory:{trackedFrom:'2026-09-26',historicalWorkouts:0,workoutsPerWeek:3}}
+ expect(consistencyStats(S,'2026-09-01','2026-09-26',new Date('2026-09-26T12:00:00'))).toMatchObject({extra:1,planned:0})
+})

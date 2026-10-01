@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { applyTrainingPlan, calendarDeload, backoffRepOffsetFor, clampReps, defaultDeload, deloadStatus, deloadTargetFor, repBounds, repRangeEnabled, rirAdvice, streakTier, targetRirFor, targetRirRangeFor, trainingStreak } from './training-plan.js'
+import { applyTrainingPlan, backoffRepsFor, backoffWeightFor, calendarDeload, backoffRepOffsetFor, clampReps, defaultDeload, deloadStatus, deloadTargetFor, repBounds, repRangeEnabled, rirAdvice, streakTier, targetRirFor, targetRirRangeFor, trainingStreak } from './training-plan.js'
 
 const base = { routines: [{ id: 'r', name: 'Push' }], week: { 1: 'r', 3: 'r', 5: 'r' }, dayPlan: {}, workouts: [] }
 describe('trainingStreak', () => {
@@ -164,4 +164,30 @@ it('does not invent a strict target for free reps or cap AMRAP',()=>{
  expect(clampReps({strictReps:true},{},{},17)).toBe(17)
  expect(clampReps({strictReps:true},{reps:'AMRAP'},{},23)).toBe(23)
  expect(clampReps({strictReps:true},{reps:5,amrap:true},{},18)).toBe(18)
+})
+
+
+describe('Back-off target invariants', () => {
+  it('uses the same defaults in editor, generation and updates, including explicit zero offset', () => {
+    expect(backoffRepOffsetFor({})).toBe(2)
+    expect(backoffRepOffsetFor({topRepsMax:8,backoffRepsMax:8})).toBe(0)
+    expect(backoffRepOffsetFor({backoffRepOffset:0})).toBe(0)
+    expect(backoffRepOffsetFor({side:true,backoffRepOffset:8})).toBe(8)
+    expect(backoffRepOffsetFor({side:true})).toBe(4)
+  })
+  it('respects configured rep ranges and their upper-bound initial value', () => {
+    const cfg={setScheme:'topback',topRepsMin:4,topRepsMax:6,backoffRepOffset:2}
+    expect([0,4,5,6,20].map(v=>backoffRepsFor(v,cfg))).toEqual([6,6,7,8,8])
+    const fixed={...cfg,autoBackoffReps:false,backoffRepsMin:10,backoffRepsMax:12}
+    expect(backoffRepsFor(4,fixed)).toBe(12)
+    expect(applyTrainingPlan([{w:100,r:6}],fixed)[1]).toMatchObject({r:12,w:90})
+    expect(repBounds({reps:12,topRepsMax:6},'top')).toEqual({min:6,max:6})
+  })
+  it('rounds identically for initial and edited loads, preserving zero and cleared input', () => {
+    const cfg={setScheme:'topback',weight:100,backoffPct:50,reps:6}
+    for(const value of [0,0.5,1,2.5,100,105]) expect(applyTrainingPlan([{w:value,r:6}],cfg,2.5)[1].w).toBe(backoffWeightFor(value,cfg,2.5))
+    expect(backoffWeightFor(null,cfg)).toBeNull()
+    expect(backoffWeightFor(0,cfg)).toBe(0)
+    expect(backoffWeightFor(1.5,{backoffPct:1},2.5)).toBe(0)
+  })
 })

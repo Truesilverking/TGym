@@ -1,3 +1,4 @@
+import { applyTrainingPlan } from './training-plan.js'
 import { describe, it, expect } from 'vitest'
 import { modeOf, isTimed, fmtSec, setLabel, defaultConfig, buildSets, freestyleConfig, exLine, workoutVolume, bestWeightFor, bestWeightForEntry, effortOf, stepEffort, capEffort, isBw, isPerSide, sideReps, displayReps, storedReps, displayRepConfig, repStep, cascadeWeight, cascadeTopBackWeight, cascadeTopBackReps, insertWarmupRow, removeRowAt, workSetsDone, pairAdjacent, unpairSuperset, supersetUnits, applyIntensifierPlan, pinnedNoteFor, exNoteFor } from './history.js'
 import { EXDB } from './exercises.js'
@@ -945,4 +946,38 @@ describe('per-side display/storage boundary', () => {
     expect(displayRepConfig(cfg)).toMatchObject({reps:8,repsMin:6,topRepsMax:8,backoffRepsMax:10,backoffRepOffset:2,intensifier:{totalReps:12}})
     expect(cfg).toEqual(before)
   })
+})
+
+
+describe('Back-off group isolation',()=>{
+ const cfg={setScheme:'topback',backoffPct:10,backoffRepOffset:2,topRepsMin:4,topRepsMax:8}
+ const seed=()=>[{role:'top',w:100,r:6},{role:'backoff',w:90,r:8},{role:'top',w:80,r:5},{role:'backoff',w:72.5,r:7}]
+ it('updates only the contiguous Top/Back-off prescription group',()=>{
+  expect(cascadeTopBackWeight(seed(),0,110,cfg).map(s=>s.w)).toEqual([110,100,80,72.5])
+  expect(cascadeTopBackReps(seed(),0,7,cfg).map(s=>s.r)).toEqual([7,9,5,7])
+  expect(cascadeTopBackWeight(seed(),1,85,cfg).map(s=>s.w)).toEqual([100,85,80,72.5])
+ })
+ it('clears automatic loads instead of turning cleared Top input into zero',()=>{
+  expect(cascadeTopBackWeight(seed(),0,null,cfg)[1].w).toBeUndefined()
+ })
+ it('protects performed Top rows even when called outside the UI',()=>{
+  const rows=seed();rows[0].done=true
+  expect(cascadeTopBackWeight(rows,0,120,cfg)).toEqual(rows)
+  expect(cascadeTopBackReps(rows,0,8,cfg)).toEqual(rows)
+ })
+ it('does not rewrite manual reps or load across JSON persistence',()=>{
+  const rows=seed();rows[1].manualFields={r:true,w:true}
+  const reopened=JSON.parse(JSON.stringify(rows))
+  expect(cascadeTopBackWeight(reopened,0,120,cfg)[1]).toEqual(rows[1])
+  expect(cascadeTopBackReps(reopened,0,8,cfg)[1]).toEqual(rows[1])
+ })
+})
+
+it('generates both target fields consistently for new and historical users without copying manual flags',()=>{
+ const cfg={id:'0025',sets:3,reps:6,setScheme:'topback',topRepsMin:4,topRepsMax:6,backoffRepOffset:2,backoffPct:10,weight:100}
+ for(const workouts of [[],[{id:'old',d:'2026-09-01',entries:[{id:cfg.id,target:cfg,sets:[{role:'top',w:100,r:5,done:true,manualFields:{r:true}},{role:'backoff',w:90,r:7,done:true}]}]}]]) {
+  const rows=applyTrainingPlan(buildSets({workouts,exWeights:{}},cfg),cfg)
+  expect(rows.map(s=>[s.w,s.r])).toEqual([[100,6],[90,8],[90,8]])
+  expect(rows.every(s=>!s.done&&!s.manualFields)).toBe(true)
+ }
 })

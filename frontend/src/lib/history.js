@@ -4,7 +4,7 @@ import { todayISO, isoOf, weekKey, fmtNum } from './format.js'
 import { isCardio, isBodyweightEq } from './exercises.js'
 import { phaseForSet, modeForSet, modeForEntry, isWarmupRow, normalizeMode, extraVolumeOf, nextDropWeight, splitBurstReps } from './workout-model.js'
 import { warmupPrescription, recalculatePendingWarmups } from './warmup.js'
-import { seedPlannedRir } from './training-plan.js'
+import { seedPlannedRir, backoffWeightFor, backoffRepsFor } from './training-plan.js'
 const objectOf = value => value && typeof value === 'object' && !Array.isArray(value) ? value : {}
 // Completed-state-independent work rows whose authoritative mode matches the requested mode.
 const workRowsForMode = (entry = {}, mode = 'reps') => {
@@ -473,21 +473,32 @@ export function cascadeWeight(rows, from, value) {
   return next
 }
 
+// A contiguous Top block and its following Back-offs form one prescription group.
+// Resolve against row order each time, so removing a row never leaves dangling links.
+function topBackGroup(rows, from) {
+  let start = from
+  while (start > 0 && rows[start - 1].role === rows[from].role && !isWarmupRow(rows[start - 1])) start--
+  if (rows[from].role === 'backoff') while (start > 0 && rows[start - 1].role === 'top' && !isWarmupRow(rows[start - 1])) start--
+  let end = start
+  while (end < rows.length && rows[end].role === 'top' && !isWarmupRow(rows[end])) end++
+  while (end < rows.length && rows[end].role === 'backoff' && !isWarmupRow(rows[end])) end++
+  return { start, end }
+}
+
 /** Keep a Top/Back-off session proportional without ever rewriting performed work. */
 export function cascadeTopBackWeight(rows, from, value, cfg, step = 2.5) {
   if (cfg?.setScheme !== 'topback') return cascadeWeight(rows, from, value)
   const next = rows.map(row => ({ ...row }))
   const edited = next[from]
   if (!edited || isWarmupRow(edited)) return cascadeWeight(rows, from, value)
+  if (edited.done || edited.leftDone || edited.rightDone) return next
+  const group = topBackGroup(next, from)
   if (value == null) delete edited.w
   else edited.w = value
   if (edited.role === 'top') {
-    const pct = Math.min(50, Math.max(1, Number(cfg.backoffPct) || 10))
-    const raw = Number(value) * (1 - pct / 100)
-    const increment = Number(step) > 0 ? Number(step) : 2.5
-    const backoff = Number.isFinite(raw) ? Math.round(raw / increment) * increment : null
+    const backoff = backoffWeightFor(value, cfg, step)
     next.forEach((row, index) => {
-      if (index === from || preservesInput(row, 'w') || isWarmupRow(row)) return
+      if (index < group.start || index >= group.end || index === from || preservesInput(row, 'w') || isWarmupRow(row)) return
       if (row.role === 'top') {
         if (value == null) delete row.w; else row.w = value
       } else if (row.role === 'backoff') {
@@ -495,7 +506,7 @@ export function cascadeTopBackWeight(rows, from, value, cfg, step = 2.5) {
       }
     })
   } else if (edited.role === 'backoff') {
-    for (let j = from + 1; j < next.length; j++) {
+    for (let j = from + 1; j < group.end; j++) {
       const row = next[j]
       if (row.role !== 'backoff' || preservesInput(row, 'w') || isWarmupRow(row)) continue
       if (value == null) delete row.w; else row.w = value
@@ -509,13 +520,12 @@ export function cascadeTopBackReps(rows, from, value, cfg) {
   const next = rows.map(row => ({ ...row }))
   const edited = next[from]
   if (!edited || isWarmupRow(edited)) return next
+  if (edited.done || edited.leftDone || edited.rightDone) return next
+  const group = topBackGroup(next, from)
   edited.r = Math.max(0, Math.round(Number(value) || 0))
   if (cfg?.setScheme !== 'topback' || cfg.autoBackoffReps === false) return next
-  const derived = Number(cfg.backoffRepOffset) - 0
-  const legacy = Number(cfg.backoffRepsMax) - Number(cfg.topRepsMax)
-  const offset = Number.isFinite(derived) && cfg.backoffRepOffset != null ? Math.max(0, Math.min(5, Math.round(derived))) : Number.isFinite(legacy) && legacy >= 0 && legacy <= 5 ? Math.round(legacy) : 2
-  if (edited.role === 'top') next.forEach((row, index) => { if (index !== from && row.role === 'backoff' && !preservesInput(row, 'r')) row.r = edited.r + offset })
-  else if (edited.role === 'backoff') for (let i = from + 1; i < next.length; i++) if (next[i].role === 'backoff' && !preservesInput(next[i], 'r')) next[i].r = edited.r
+  if (edited.role === 'top') next.forEach((row, index) => { if (index >= group.start && index < group.end && index !== from && row.role === 'backoff' && !preservesInput(row, 'r')) row.r = backoffRepsFor(edited.r, cfg) })
+  else if (edited.role === 'backoff') for (let i = from + 1; i < group.end; i++) if (next[i].role === 'backoff' && !preservesInput(next[i], 'r')) next[i].r = edited.r
   return next
 }
 
