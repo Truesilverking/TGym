@@ -31,3 +31,15 @@ it('keeps the primary save and reports a failed mirror until retry succeeds',asy
  disk.fail=false;await useStore.getState().flushPersistence()
  expect(useStore.getState().storageWarning).toBeNull();expect(disk.value.routines[0].id).toBe('offline')
 })
+
+it('persists Back-off preference and pending targets through offline reopen/update recovery',async()=>{
+ const history=[{id:'saved',entries:[{sets:[{role:'backoff',r:8,done:true}]}]}]
+ useStore.setState({S:{...structuredClone(DEF),workouts:history,active:{id:'live',start:Date.now(),entries:[{id:'ex',target:{setScheme:'topback',reps:6,topRepsMin:4,topRepsMax:6},sets:[{role:'top',r:6},{role:'backoff',r:8},{role:'backoff',r:9,manualFields:{r:true}}]}]}}})
+ useStore.getState().update(s=>{s.backoffRepsMode='same'})
+ await useStore.getState().flushPersistence()
+ expect(JSON.parse(localStorage.getItem('gym_state_v1')).backoffRepsMode).toBe('same')
+ localStorage.clear();useStore.setState({S:structuredClone(DEF),ready:false});await useStore.getState().boot()
+ expect(useStore.getState().S.backoffRepsMode).toBe('same')
+ expect(useStore.getState().S.active.entries[0].sets.map(s=>s.r)).toEqual([6,6,9])
+ expect(useStore.getState().S.workouts).toEqual(history)
+})

@@ -22,7 +22,7 @@ import { nextPrescription, applyPrescription, defaultIncrement } from '../lib/pr
 import { glyphOf } from '../lib/glyphs.js'
 import { setSideState, toggleSetSide, isWarmupRow, isDropSet, isRestPauseSet, dropsOf, clustersOf, addDrop, addCluster, removeDropAt, removeClusterAt, setDropAt, setClusterAt, nextDropWeight, nextBurstReps } from '../lib/workout-model.js'
 import { restSeconds } from '../lib/rest-policy.js'
-import { seedPlannedRir, applyTrainingPlan, clampReps, deloadStatus, deloadTargetFor, repBounds, rirAdvice, targetRirFor, targetRirRangeFor } from '../lib/training-plan.js'
+import { withBackoffRepsMode, seedPlannedRir, applyTrainingPlan, clampReps, deloadStatus, deloadTargetFor, repBounds, rirAdvice, targetRirFor, targetRirRangeFor } from '../lib/training-plan.js'
 import { pauseWorkoutClock, resumeWorkoutClock, workoutElapsedMs } from '../lib/workout-time.js'
 import { effectiveWorkoutComplete } from '../lib/workout-lifecycle.js'
 import { effortValue, rirRangeLabel } from '../lib/history.js'
@@ -689,7 +689,7 @@ function ActiveWorkout() {
         const sets = buildSets(s, full, { step, ...(freestyle ? { preferLast: true } : {}) })
         const progressed = freestyle ? sets : applyPrescription(sets, plan, step)
         const deload = deloadStatus(s)
-        const target = deloadTargetFor(full, deload)
+        const target = deloadTargetFor(withBackoffRepsMode(full, s), deload)
         const shownPlan = deload.active ? { kind: 'deload', why: ['Deload session — load, working sets and effort are reduced for recovery.'] } : plan
         s.active.entries.push({ id: ex.id, target, plan: shownPlan, sets: applyIntensifierPlan(applyTrainingPlan(progressed, target, step, deload), target) })
         s.active.cur = s.active.entries.length - 1

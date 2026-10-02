@@ -64,7 +64,8 @@ it('uses per-side reps for rest-pause plans', () => {
 
 it('updates both Back-off range limits when the Top range is edited instead of reusing stale topRepsMin',()=>{
  mount({setScheme:'topback',repRange:true,reps:6,repsMin:4,topRepsMin:4,topRepsMax:6,backoffRepOffset:0,backoffRepsMin:4,backoffRepsMax:6})
- expect(input('Back-off rep offset').value).toBe('2')
+ expect(input('Back-off rep offset')).toBeNull()
+ expect(container.textContent).toContain('Increased reps')
  type('Maximum reps','10');type('Minimum reps','8');click('Save')
  expect(saved).toHaveBeenCalledWith(expect.objectContaining({topRepsMin:8,topRepsMax:10,backoffRepsMin:10,backoffRepsMax:12,backoffRepOffset:2}))
 })

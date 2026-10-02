@@ -1,7 +1,7 @@
 # TGym releases and verification
 
 The production version comes from frontend/package.json and must match Android versionName.
-Android versionCode must increase. Current candidate: 1.15.12 / 47.
+Android versionCode must increase. Current candidate: 1.15.46 / 82.
 Run frontend/scripts/check-version.mjs before tagging.
 
 ## Single publication
@@ -10,7 +10,7 @@ Only release.yml deploys production Pages. pages.yml validates the PWA without d
 This prevents main pushes overwriting updates/latest.json or the production PWA with the demo.
 All artifacts originate from the tagged commit; dist/build.json includes version and commit.
 
-Validate main CI (Tests, Validate PWA, Validate Android) before creating v{version}.
+Validate exact-commit branch CI (Tests, Validate PWA, Validate Android) before creating v{version}.
 The tag builds signed APK/AAB, verifies their signatures, publishes checksums and latest.json,
 deploys the PWA, checks the actual public manifest and APK, then sends FCM.
 FCM credentials are tested without sending a notification before publication.

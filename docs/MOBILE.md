@@ -1,6 +1,8 @@
+> Current TGym builds use pnpm 10: `pnpm build:mobile` builds assets and synchronizes Capacitor, not an APK. Android compilation requires JDK21/SDK35 and Gradle; iOS requires macOS/Xcode. `gym_state_v1` is mirrored to `framegym-state.json`. Current release evidence is in `RELEASE-AUDIT-1.15.46.md`; platform examples below are not physical-device acceptance evidence.
+
 # Building the mobile app (iOS / Android)
 
-openGym ships in two flavors from the same codebase:
+TGym ships in two flavors from the same codebase:
 
 | | **Self-hosted** (this repo's default) | **Mobile app** (`VITE_MOBILE=1`) |
 |---|---|---|
@@ -11,7 +13,7 @@ openGym ships in two flavors from the same codebase:
 | Exercise media | served by your server (`img/`, `gif/`) | loaded from the jsDelivr CDN |
 
 The mobile flavor never talks to a backend by default: no sign-in screen, no sync, no
-telemetry. State is mirrored from `localStorage` into `opengym-state.json` in the app's
+telemetry. State is mirrored from `localStorage` into `framegym-state.json` in the app's
 private data directory on every change (iOS is allowed to evict WebView storage under
 pressure — the file mirror is the durable copy and is restored on launch). Backups go out
 through the OS share sheet instead of a browser download.
@@ -19,7 +21,7 @@ through the OS share sheet instead of a browser download.
 ### Connecting the app to your own server
 
 On first launch the app asks how you want to use it. Alongside the fully local mode above,
-you can instead **connect it to a self-hosted openGym server** — your data then lives there,
+you can instead **connect it to a self-hosted TGym server** — your data then lives there,
 synced the same way the browser PWA does, instead of only on the phone. This is a mode of the
 same app, not a different build or download.
 
@@ -46,24 +48,24 @@ or Settings → **"Connect to my server"** later) to finish. Notes:
 - **Android:** Android Studio (bundles the SDK). Java 21 for Gradle.
 - **iOS:** a Mac with Xcode 15+ and CocoaPods (`brew install cocoapods`). A free Apple ID
   is enough to run the app on your own iPhone (see below); paid membership is only needed
-  for App Store distribution, which openGym doesn't do.
+  for App Store distribution, which TGym doesn't do.
 
 ## Build & run
 
 ```sh
 cd frontend
-npm install
-npm run build:mobile        # VITE_MOBILE build + `cap sync` into android/ and ios/
+pnpm install --frozen-lockfile
+pnpm build:mobile        # VITE_MOBILE build + `cap sync` into android/ and ios/
 
 npx cap open android        # opens Android Studio → run on emulator or device
 npx cap open ios            # opens Xcode (Mac only) → set your signing team, then run
 ```
 
-`npm run build:mobile` bakes the CDN media base into the bundle and copies the web build
+`pnpm build:mobile` bakes the CDN media base into the bundle and copies the web build
 into both native projects — re-run it after every web-code change before building natively.
 
 > **Heads-up:** after `build:mobile`, `frontend/dist` contains the *mobile* bundle.
-> Run a plain `npm run build` again before deploying `dist` to a server.
+> Run a plain `pnpm build` again before deploying `dist` to a server.
 
 ## App icons & splash screens
 
@@ -80,7 +82,7 @@ npx @capacitor/assets generate --iconBackgroundColor '#0c0e12' --splashBackgroun
 
 ## Distribution — deliberately no app stores
 
-openGym's mobile app is not on the Play Store or App Store, and that's a choice: no store
+TGym's mobile app is not on the Play Store or App Store, and that's a choice: no store
 accounts, no store rules, no yearly fees between you and an open-source app.
 
 ### Android — sideload the APK
@@ -90,7 +92,7 @@ The official signed APK is in three places, all the same file:
 - **[opengym.duarte-santos.ch](https://opengym.duarte-santos.ch)** — the download page.
 - **[GitLab's package registry](https://gitlab.com/DuarteSantos8/opengym/-/packages)** — every
   build under `opengym-android/<version>/`, with a `.sha256` beside it. Direct link, no login:
-  `https://gitlab.com/api/v4/projects/85678327/packages/generic/opengym-android/<version>/openGym-<version>.apk`
+  `https://gitlab.com/api/v4/projects/85678327/packages/generic/opengym-android/<version>/TGym-<version>.apk`
 - **[The GitLab release](https://gitlab.com/DuarteSantos8/opengym/-/releases)** for that version,
   which links to the two above.
 
@@ -98,7 +100,7 @@ Android asks you to allow installs from the browser the first time — that's st
 app outside the Play Store. Check the `.sha256` if you got the file from anywhere else.
 
 Both come out of CI: the `build:apk` job in [`.gitlab-ci.yml`](../.gitlab-ci.yml) runs
-`npm run build:mobile` and `./gradlew assembleRelease`, then `zipalign`s and signs the result
+`pnpm build:mobile` and `./gradlew assembleRelease`, then `zipalign`s and signs the result
 with the release key. The key lives in *protected* CI variables (`ANDROID_KEYSTORE_B64`,
 `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`), so it only exists on `main` and on `v*`
 tags — a merge request from a fork can build an APK, but gets an unsigned one and never sees
@@ -108,7 +110,7 @@ what the release links to.
 To build and sign your own:
 
 ```sh
-cd frontend && npm run build:mobile
+cd frontend && pnpm build:mobile
 cd android && ./gradlew assembleRelease            # → app/build/outputs/apk/release/app-release-unsigned.apk
 
 # one-time: create a keystore. KEEP IT — updates must be signed with the same key,
@@ -117,7 +119,7 @@ keytool -genkeypair -keystore my.keystore -alias opengym -keyalg RSA -validity 1
 
 # align + sign (zipalign/apksigner ship with the Android SDK build-tools)
 zipalign -f -p 4 app-release-unsigned.apk aligned.apk
-apksigner sign --ks my.keystore --ks-key-alias opengym --out openGym.apk aligned.apk
+apksigner sign --ks my.keystore --ks-key-alias opengym --out TGym.apk aligned.apk
 ```
 
 ### iPhone — what's actually possible
@@ -139,7 +141,7 @@ that would simply install. Your free options:
   reads `version` out of it), so the two drifting apart shows up as a misnamed file.
 - Tagging `vX.Y.Z` is what ships everything: images, APK, release notes. Don't push a version
   tag you don't mean to release — `v*` tags are protected for that reason.
-- **License:** openGym is AGPL-3.0, which by itself sits badly with app-store terms of
+- **License:** TGym is AGPL-3.0, which by itself sits badly with app-store terms of
   service. `NOTICE.md` carries an app-store exception (an additional permission under
   AGPL §7) granted by the copyright holder — relevant only if store distribution ever happens.
 - The app requests notification permission only when the workout-day reminder is switched

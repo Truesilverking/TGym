@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.15.46
+
+- Persistent Settings choice for automatic Back-off reps: Same reps copies the Top range; Increased reps adds +2 to both limits (default).
+- New sessions and live preference changes use one shared resolver. Pending automatic rows update immediately; manual/performed values, load reduction and history remain intact.
+- Replace the conflicting per-exercise automatic offset editor with the selected Settings mode; explicit independent Back-off ranges remain available.
+- Add calculation, cascade, backup and offline-profile recovery regression coverage; update development, architecture, mobile and release documentation.
+
+
+
 ## v1.2.11 — 2026-08-25
 
 A correction release. v1.2.10 landed planned warm-ups and notes, and reviewing that release

@@ -252,6 +252,10 @@ export default function Settings() {
       <Row icon="target" iconTint="var(--teal)" title={t('Strict reps')} subtitle={t('Keep repetition controls inside each exercise range.')}>
         <Switch checked={!!S.strictReps} onChange={v => update(s => { s.strictReps = v })} />
       </Row>
+      <Row icon="target" iconTint="var(--teal)" title={t('Back-off repetitions')} subtitle={t('Same reps uses the Top Set range. Increased reps adds 2 to both limits.')}>
+        <Segmented className="seg-inline" options={[{ value: 'same', label: t('Same reps') }, { value: 'increased', label: t('Increased reps') }]}
+          value={S.backoffRepsMode === 'same' ? 'same' : 'increased'} onChange={v => update(s => { s.backoffRepsMode = v })} />
+      </Row>
       {/* Two names for the same judgement, so the column asks in the scale you already think in.
           The (i) sits before the control — you read it on the way to the choice, not after it. */}
       <Row icon="target" iconTint="var(--purple)" title={t('Effort per set')}>

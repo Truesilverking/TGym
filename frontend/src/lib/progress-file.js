@@ -1,3 +1,5 @@
+import { jsPDF } from 'jspdf'
+import { rasterizeReport } from '../components/CalendarExport.jsx'
 import { loadBodyGeometry } from './body-geometry.js'
 import { progressReportPages } from './progress-export.js'
 import { MOBILE, shareBase64 } from './mobile.js'
@@ -5,9 +7,7 @@ import { MOBILE, shareBase64 } from './mobile.js'
 // Build from the exact selected report, not a second all-time calculation.
 export async function buildProgressFile(report, options = {}) {
   if (!report.summary || report.range.error) throw new Error('Invalid report period')
-  const [{ jsPDF }, { rasterizeReport }, bodyGeometry] = await Promise.all([
-    import('jspdf'), import('../components/CalendarExport.jsx'), loadBodyGeometry(),
-  ])
+  const bodyGeometry = await loadBodyGeometry()
   const pdf = new jsPDF({ unit: 'mm', format: 'a4' })
   pdf.setProperties({ title: 'TGym Progress Report', creator: 'TGym' })
   for (const [i, page] of progressReportPages(null, { ...options, report, bodyGeometry }).entries()) {

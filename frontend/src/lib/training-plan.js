@@ -194,8 +194,10 @@ export function repBounds(cfg, role = null) {
 // Legacy unilateral configurations store totals across both sides.
 export function backoffRepOffsetFor(cfg = {}) {
   const factor = cfg.side && !cfg.repsPerSide ? 2 : 1
+  if (cfg.backoffRepsMode === 'same') return 0
+  if (cfg.backoffRepsMode === 'increased') return 2 * factor
   // Old editors persisted zero or inferred an offset from stale range fields.
-  // Automatic Back-offs must increase reps; an independent range is explicit via autoBackoffReps:false.
+  // Without a mode snapshot retain the legacy default/explicit offsets. Independent ranges use autoBackoffReps:false.
   if (Number.isFinite(Number(cfg.backoffRepOffset)) && Number(cfg.backoffRepOffset) > 0) return clamp(Math.round(Number(cfg.backoffRepOffset) / factor), 1, 5) * factor
   return 2 * factor
 }
@@ -277,4 +279,28 @@ export function rirAdvice(sets, cfg) {
   if (actual > range.max) return { kind: 'increase', delta, count: rated.length }
   if (actual < range.min) return { kind: 'reduce', delta, count: rated.length }
   return { kind: 'maintain', delta, count: rated.length }
+}
+
+// Apply the profile preference only to automatic targets; independent ranges stay explicit.
+export function withBackoffRepsMode(cfg = {}, S = {}) {
+  if (cfg.setScheme !== 'topback' || cfg.autoBackoffReps === false) return { ...cfg }
+  return withBackoffRepTargets({ ...cfg, backoffRepsMode: S.backoffRepsMode === 'same' ? 'same' : 'increased' })
+}
+
+export function refreshActiveBackoffReps(active, S) {
+  if (!active) return active
+  for (const entry of active.entries || []) {
+    const cfg = entry.target || {}
+    if (cfg.setScheme !== 'topback' || cfg.autoBackoffReps === false) continue
+    entry.target = withBackoffRepsMode(cfg, S)
+    let top = null
+    for (const row of entry.sets || []) {
+      if (isWarmupRow(row)) { top = null; continue }
+      if (row.role === 'top') top = row
+      else if (row.role === 'backoff' && !row.done && !row.leftDone && !row.rightDone && !row.manualFields?.r && top) {
+        row.r = backoffRepsFor(top.r, entry.target)
+      } else if (row.role !== 'backoff') top = null
+    }
+  }
+  return active
 }

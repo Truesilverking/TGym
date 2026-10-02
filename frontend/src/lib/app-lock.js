@@ -1,3 +1,4 @@
+import { Capacitor } from '@capacitor/core'
 const KEY = 'framegym_device_lock_v1'
 const enc = new TextEncoder()
 
@@ -27,7 +28,7 @@ export function setBiometricEnabled(enabled) {
 const b64url = bytes => btoa(String.fromCharCode(...new Uint8Array(bytes))).replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '')
 const fromB64url = text => Uint8Array.from(atob(String(text).replaceAll('-', '+').replaceAll('_', '/')), c => c.charCodeAt(0))
 async function isNativePlatform() {
-  try { const { Capacitor } = await import('@capacitor/core'); return Capacitor.isNativePlatform() } catch { return false }
+  try { return Capacitor.isNativePlatform() } catch { return false }
 }
 export async function checkDeviceBiometry() {
   try {

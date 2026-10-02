@@ -5,9 +5,9 @@ GitHub is the distribution source. Configure `VITE_GITHUB_OWNER` and `VITE_GITHU
 ## Release procedure
 
 1. Increment `package.json.version`, Android `versionName`, and Android `versionCode`. The code must exceed every published code.
-2. Run `node scripts/check-version.mjs`, the test suite, and all builds.
+2. Run `node scripts/check-version.mjs`, frontend/API/MCP tests, locale/source checks and web/PWA/mobile builds. Verify exact-commit Tests, Android/emulator and PWA Actions before tagging.
 3. Commit, then tag the exact commit with `v<package version>` and push the tag.
-4. The workflow checks version equality, builds and signs Android, creates SHA-256 checksums, publishes the GitHub Release, writes `updates/latest.json`, deploys the PWA to Pages, and optionally sends the FCM topic notification.
+4. The workflow checks version equality, builds and signs Android, creates SHA-256 checksums, publishes the GitHub Release, writes `updates/latest.json`, deploys the PWA to Pages, and requires Firebase configuration and sends the FCM topic notification after public artifact verification.
 
 ## Required GitHub secrets
 
@@ -15,8 +15,8 @@ GitHub is the distribution source. Configure `VITE_GITHUB_OWNER` and `VITE_GITHU
 - `ANDROID_STORE_PASSWORD`
 - `ANDROID_KEY_ALIAS`
 - `ANDROID_KEY_PASSWORD`
-- `FIREBASE_SERVICE_ACCOUNT` and `FIREBASE_PROJECT_ID` when update push is enabled
-- `GOOGLE_SERVICES_JSON_BASE64` containing the Android Firebase configuration when update push is enabled
+- `FIREBASE_SERVICE_ACCOUNT` and `FIREBASE_PROJECT_ID` (required by the current release workflow)
+- `GOOGLE_SERVICES_JSON_BASE64` containing the Android Firebase configuration (required by the current release workflow)
 
 Keep the same Android signing key for every release. Losing or changing it prevents direct APK upgrades.
 

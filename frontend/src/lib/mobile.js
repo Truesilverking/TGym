@@ -1,3 +1,4 @@
+import { createBackup } from './backup.js'
 import { soundEnabled } from './sound-preferences.js'
 import { fmtScheduledDate } from './format.js'
 // Mobile build (VITE_MOBILE=1) — the standalone app-store version (Capacitor native shell).
@@ -147,7 +148,7 @@ export async function writeAutoBackup(state) {
     await Filesystem.writeFile({
       path: `framegym-backup-${todayISO()}.json`,
       directory: Directory.Documents,
-      data: JSON.stringify((await import('./backup.js')).createBackup(state)),
+      data: JSON.stringify(createBackup(state)),
       encoding: Encoding.UTF8,
       recursive: true,
     })

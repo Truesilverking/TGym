@@ -43,7 +43,7 @@ import { GUIDED_PLANS, createGuidedPlan } from './lib/guided-plans.js'
 import { saveImportUndo } from './lib/import-undo.js'
 import { MEASURE_FIELDS, measurementValue } from './lib/stats-insights.js'
 import { sessionTimingSummary } from './lib/stats-insights.js'
-import { withBackoffRepTargets, backoffRepOffsetFor, applyTrainingPlan, calendarDeload, deloadStatus, deloadTargetFor, repRangeEnabled, streakTier, trainingStreak, targetRirRangeFor } from './lib/training-plan.js'
+import { withBackoffRepsMode, backoffRepOffsetFor, applyTrainingPlan, calendarDeload, deloadStatus, deloadTargetFor, repRangeEnabled, streakTier, trainingStreak, targetRirRangeFor } from './lib/training-plan.js'
 import { weightStepFor } from './lib/unit-conversion.js'
 import Heatmap from './components/Heatmap.jsx'
 import LineChart from './components/LineChart.jsx'
@@ -847,7 +847,7 @@ function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial }) {
       // Every set in this exercise becomes a drop-set/rest-pause (buildSets stamps the rows) —
       // decided here, in the plan, not re-decided live each time you train it.
       if (c.intensifier && c.intensifier.type) out.intensifier = c.intensifier
-      onSave(withBackoffRepTargets(out))
+      onSave(withBackoffRepsMode(out, S()))
     }
   }
   return <>
@@ -1044,8 +1044,8 @@ function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial }) {
         <div className="sect-b" style={{ marginBottom: 8 }}><Row icon="repeat" iconTint="var(--blue)" title={t('Automatic back-off reps')} subtitle={t('Back-off reps follow the latest Top Set.')}>
           <Switch checked={c.autoBackoffReps !== false} onChange={v => setC(x => ({ ...x, autoBackoffReps: v }))} />
         </Row></div>
-        {c.autoBackoffReps !== false ? <div className="row cfgrow" style={{ marginBottom: 8 }}>
-          <RepStepper cfg={c} label={t('Back-off rep offset')} value={backoffRepOffsetFor(c)} onChange={v => setC(x => ({ ...x, backoffRepOffset: backoffRepOffsetFor({ ...x, backoffRepOffset: Math.max(storedReps(1, x), v) }) }))} />
+        {c.autoBackoffReps !== false ? <div className="small muted" style={{ marginBottom: 8 }}>
+          {t('Back-off repetitions')}: {t(S().backoffRepsMode === 'same' ? 'Same reps' : 'Increased reps')}. {t('Same reps uses the Top Set range. Increased reps adds 2 to both limits.')}
         </div> : <div className="row cfgrow" style={{ marginBottom: 8 }}>
           <RepStepper cfg={c} label={t('Back-off min reps')} value={c.backoffRepsMin || c.repsMin || c.reps || 1} step={1} decimal={false} onChange={v => setC(x => ({ ...x, backoffRepsMin: Math.max(1, v) }))} />
           <RepStepper cfg={c} label={t('Back-off max reps')} value={c.backoffRepsMax || c.reps || 10} step={1} decimal={false} onChange={v => setC(x => ({ ...x, backoffRepsMax: Math.max(x.backoffRepsMin || 1, v) }))} />
@@ -1551,7 +1551,7 @@ export function beginWorkout(routineId, bw) {
     const plan = nextPrescription(st, cfg, r)
     const step = defaultIncrement(cfg.id, st.unit)
     const prescribed = applyPrescription(buildSets(st, cfg, { step }), plan, step)
-    const target = deloadTargetFor(cfg, deload)
+    const target = deloadTargetFor(withBackoffRepsMode(cfg, st), deload)
     const sets = applyIntensifierPlan(applyTrainingPlan(prescribed, target, step, deload), target)
     const shownPlan = deload.active ? { kind: 'deload', why: ['Deload session — load, working sets and effort are reduced for recovery.'] } : plan
     return { id: cfg.id, sg: cfg.sg, target, plan: shownPlan, sets }

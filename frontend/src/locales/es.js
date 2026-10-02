@@ -1638,4 +1638,9 @@ export default {
  "Add dated InBody results to compare body composition over time.": "Añade resultados InBody con fecha para comparar tu composición corporal.",
  "Choose your theme and preferences. Local tracking works offline once ready; reconnect to check for updates.": "Elige tema y preferencias. El registro local funciona sin conexión cuando está listo; reconecta para buscar actualizaciones."
 , "Automatic targets": "Objetivos autom\u00e1ticos"
+
+  ,"Back-off repetitions": "Repeticiones Back-off"
+  ,"Same reps": "Mismas reps"
+  ,"Increased reps": "Más reps"
+  ,"Same reps uses the Top Set range. Increased reps adds 2 to both limits.": "Mismas reps usa el rango del Top Set. Más reps suma 2 a ambos límites."
 }

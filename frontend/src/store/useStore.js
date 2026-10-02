@@ -1,3 +1,4 @@
+import { refreshActiveBackoffReps } from '../lib/training-plan.js'
 import { create } from 'zustand'
 import { migrateState, STATE_SCHEMA } from '../lib/state-migrations.js'
 import { loadWebState, saveWebState } from '../lib/web-state.js'
@@ -26,7 +27,7 @@ export const DEF = {
   // that a profile which never chose (loaded state is overlaid on DEF, on every path: local,
   // server pull, backup import) still falls back to the `showRir` boolean this replaced and
   // keeps the column it had. See effortOf.
-  reminder: { on: false, time: '08:00', dayTimes: {}, quietStart: '22:00', quietEnd: '07:00', quietOn: false, tz: null }, effort: null, strictReps: false,
+  reminder: { on: false, time: '08:00', dayTimes: {}, quietStart: '22:00', quietEnd: '07:00', quietOn: false, tz: null }, effort: null, strictReps: false, backoffRepsMode: 'increased',
   deload: { on: false, normalWeeks: 6, deloadWeeks: 1, loadPct: 80, setPct: 60, targetRir: 4, startDate: null }, autoBackup: false, streakCelebrations: [],
   cloudSync: { on: false, provider: 'google-drive', clientId: '', authorizedOnce: false, lastBackupAt: null, lastAttemptAt: null, lastFileId: null, needsAuth: false, lastError: null },
   // Equipment profiles (issue: filter Library/picker/routines by what you actually own —
@@ -182,6 +183,7 @@ export const useStore = create((set, get) => {
     update(mut, push = true, userActivity = true) {
       const S = clone(get().S)
       mut(S)
+      if (S.backoffRepsMode !== get().S.backoffRepsMode) S.active = refreshActiveBackoffReps(S.active, S)
       if (S.unit === get().S.unit) S.active = reconcileWorkoutEdit(get().S.active, S.active, Date.now(), userActivity)
       persist(S, push)
     },

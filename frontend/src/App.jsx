@@ -13,7 +13,7 @@ import { setLang, useLang, t } from './lib/i18n.js'
 import { setNav } from './lib/nav.js'
 import { initBackButton } from './lib/back.js'
 import { useWakeLock } from './lib/wakelock.js'
-import { startFlow } from './sheets.jsx'
+import { startFlow, openMeasurementEntry } from './sheets.jsx'
 import Icon from './components/Icon.jsx'
 import TabBar from './components/TabBar.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
@@ -160,8 +160,7 @@ function Shell() {
           return
         }
         if (extra?.type !== 'measurement') return
-        const sheets = await import('./sheets.jsx')
-        if (!disposed) sheets.openMeasurementEntry(extra.metrics?.[0] || 'weight')
+        if (!disposed) openMeasurementEntry(extra.metrics?.[0] || 'weight')
       })
       if (disposed) void handle.remove(); else listener = handle
     }).catch(() => {})
