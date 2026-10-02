@@ -216,3 +216,10 @@ it('materializes corrected ranges for new session/history snapshots without muta
  expect(cfg.backoffRepOffset).toBe(0)
  expect(JSON.parse(JSON.stringify(next))).toEqual(next)
 })
+
+it('honors fixed Top reps even when a legacy routine retains an older range minimum',()=>{
+ const cfg={setScheme:'topback',repRange:false,reps:5,topRepsMin:3,topRepsMax:5,backoffRepOffset:0}
+ expect(repBounds(cfg,'top')).toEqual({min:5,max:5})
+ expect(repBounds(cfg,'backoff')).toEqual({min:7,max:7})
+ expect(deloadTargetFor(cfg,{active:false})).toMatchObject({backoffRepsMin:7,backoffRepsMax:7})
+})

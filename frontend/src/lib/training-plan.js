@@ -177,7 +177,10 @@ export function repBounds(cfg, role = null) {
     const min = Math.min(max, Math.max(1, Math.round(Number(low) || max)))
     return { min, max }
   }
-  if (role === 'top') return range(cfg.topRepsMin || cfg.repsMin, cfg.topRepsMax || cfg.reps)
+  if (role === 'top') {
+    const max = cfg.topRepsMax || cfg.reps
+    return range(cfg.repRange === false ? max : cfg.topRepsMin || cfg.repsMin, max)
+  }
   if (role === 'backoff') {
     if (cfg.autoBackoffReps !== false && cfg.setScheme === 'topback') {
       const top = repBounds(cfg, 'top'), offset = backoffRepOffsetFor(cfg)
