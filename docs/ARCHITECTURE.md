@@ -1,6 +1,6 @@
 # TGym architecture
 
-Current candidate: 1.15.47 / Android83 on `feature/backoff-reps-settings`. Settings owns the persistent `backoffRepsMode` preference: Same reps copies both Top bounds; Increased reps adds two visible reps to both bounds, defaulting to the existing +2 behavior. Session target snapshots materialize the choice; changing it uses `useStore.update` to refresh only pending automatic Back-offs. Completed/partial/manual rows, loads and completed history remain untouched. See `RELEASE-AUDIT-1.15.47.md` for current evidence; reports below are historical.
+Current published release: 1.15.47 / Android83 (source `e9a1125e8c89df323b92b696b6a4c908eadda70e`) on `feature/backoff-reps-settings`. Settings owns the persistent `backoffRepsMode` preference: Same reps copies both Top bounds; Increased reps adds two visible reps to both bounds, defaulting to the existing +2 behavior. Session target snapshots materialize the choice; changing it uses `useStore.update` to refresh only pending automatic Back-offs. Completed/partial/manual rows, loads and completed history remain untouched. See `RELEASE-AUDIT-1.15.47.md` for current evidence; reports below are historical.
 
 The subsequent request to validate every function is tracked in `docs/POST-RELEASE-AUDIT-1.15.31.md`. Follow-up fixes serialize API uploads, preserve active workouts and unsent edits at sign-out, recheck the reviewed cloud snapshot before upload, and allow skipping an incomplete optional PIN. Real-browser auditing also improves theme contrast, keyboard controls, zoom, accessible labels and reduced-motion media. These changes are not included in the published 1.15.31 artifact.
 
@@ -79,7 +79,7 @@ Google Drive backup uses app-data access, a backup file and bounded daily snapsh
 
 ## Android and notifications
 
-Native code is under `frontend/android/app/src/main/`. Application/namespace identity remains `app.framegym.mobile`; the product name is TGym. The candidate is 1.15.47, versionCode 83; min SDK 23, compile/target SDK 35, Gradle 8.11.1 and CI JDK 21. Its exact source commit passed Android build/lint, emulator instrumentation and signed-release validation in GitHub Actions.
+Native code is under `frontend/android/app/src/main/`. Application/namespace identity remains `app.framegym.mobile`; the product name is TGym. The current release is 1.15.47, versionCode 83; min SDK 23, compile/target SDK 35, Gradle 8.11.1 and CI JDK 21. Its exact source commit passed Android build/lint, emulator instrumentation and signed-release validation in GitHub Actions.
 
 `MainActivity` registers Google Drive authentication, update push, installer and workout notification bridges. The foreground workout service uses native chronometers and persisted notification state. Notification taps target the activity with `tgym://workout`; React handles that navigation. This is not proof of a general externally browsable deep-link manifest filter.
 

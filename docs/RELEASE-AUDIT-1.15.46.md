@@ -64,3 +64,5 @@ Pending exact-commit GitHub CI and signed release publication. Do not interpret 
 ## Post-publication finding
 
 Release37015053274 succeeded frome585d1c; APK/Pages hashes, v2 signature/package/code82 and Android/PWA metadata detection passed. A real isolated public PWA45->46 upgrade then found that the46 cache contained45 index.html: the install's cache.addAll reused HTTP-cached HTML. The new worker activated but the old UI remained. History/preferences remained present; no data loss was observed. This invalidates the upgrade acceptance for46. Corrective1.15.47 uses fresh build-specific network requests and canonical cache keys;46 is retained as an immutable historical release. See RELEASE-AUDIT-1.15.47.md for final acceptance.
+
+Corrective1.15.47 was published frome9a1125 and passed actual public45->47 update, offline browser restart and IndexedDB mirror recovery with history/preference preserved.46 is now a superseded prerelease; its tag/assets remain unchanged.

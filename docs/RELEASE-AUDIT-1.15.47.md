@@ -1,6 +1,6 @@
 # TGym 1.15.47 / Android83 - final audit
 
-Candidate branch: `feature/backoff-reps-settings`. Publication and exact commit evidence are appended after checks complete. Date: 2026-10-02.
+Published branch: `feature/backoff-reps-settings`. Runtime/tag source: `e9a1125e8c89df323b92b696b6a4c908eadda70e`. Date: 2026-10-02.
 
 ## Corrective PWA patch
 
@@ -46,7 +46,7 @@ The full frontend suite covers calculations, missing/legacy data, IDs, editing/d
 
 ## Local validation
 
-The Back-off/report/body/tour validations below were performed for46 and remain applicable to unchanged functionality. The47 patch reran the full frontend suite,40 targeted worker/updater/persistence tests, all builds, the synthetic worker activation scenario and the12 Back-off/offline scenarios. Final public upgrade acceptance is appended after47 publication.
+The Back-off/report/body/tour validations below were performed for46 and remain applicable to unchanged functionality. The47 patch reran the full frontend suite,40 targeted worker/updater/persistence tests, all builds, the synthetic worker activation scenario and the12 Back-off/offline scenarios. Final public upgrade acceptance is recorded below.
 
 
 - Frontend: 1,245 tests /127 files passed after implementation and dependency fixes; targeted20 tests passed. API10; MCP37 and plain-Node loadability passed.
@@ -66,7 +66,63 @@ No physical Android/iPhone was tested for this release; no macOS/Xcode native iO
 
 Runtime also includes `frontend/public/sw.js` and worker regressions in `service-worker.test.js`. Runtime: `training-plan.js`, `useStore.js`, `Settings.jsx`, `Workout.jsx`, `sheets.jsx`, `App.jsx`, `app-lock.js`, `mobile.js`, `progress-file.js`. Tests: `backoff-preference.test.js`, `useStore.pwa.test.js`, `ExConfig.per-side.test.jsx`. All12 locale files receive synchronized keys. Version/dependencies: frontend `package.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`, Android `app/build.gradle`, MCP `package-lock.json`. Workflow/config: `.gitignore`, Tests/Android/PWA YAML. Documentation: README, CHANGELOG, Architecture, Mobile, both Releasing guides, Self-hosting, this audit and the workspace checkpoint.
 
-## Publication
+## Publication and real upgrade acceptance
 
-Pending exact-commit GitHub CI and signed47 release publication. Production46 sourcee585d1c passed Tests37014192178/PWA37014192252/Android37014192397 and release37015053274; its stale-HTML upgrade defect is corrected here. Do not interpret candidate checks as final public47 acceptance.
+Published [v1.15.47](https://github.com/Truesilverking/TGym/releases/tag/v1.15.47), Android83, from runtime/tag `e9a1125e8c89df323b92b696b6a4c908eadda70e`. Exact-source [Tests37016627878](https://github.com/Truesilverking/TGym/actions/runs/37016627878), [PWA37016629140](https://github.com/Truesilverking/TGym/actions/runs/37016629140), [Android/emulator37016628222](https://github.com/Truesilverking/TGym/actions/runs/37016628222) and [release37017421276](https://github.com/Truesilverking/TGym/actions/runs/37017421276) succeeded. Release includes signed APK/AAB, checksums, latest.json, Pages deployment, public artifact verification and notification topic submission. Submission acceptance does not prove handset receipt.
 
+GitHub and Pages APK downloads both match SHA-256 `a50e045da70f5f6bd70f9fca7b57621b1c76091ed0f4379f00b08160c385a613`. APK v2 signature verification passed; certificate `8ee233c984615e2b3f6f083dc0c47d148bb8956ff7caca97be0b9a0d260e6082` matches prior releases. Package remains `app.framegym.mobile`, code83/version1.15.47. Public PWA build.json matches the tagged source. Actual app-update.js detects47 from46 in Android/PWA and does not reoffer current47.
+
+The stale-HTTP-cache browser reproduction passed before publication: old cached index.html, fresh47 UI,33 history records, Same reps and offline reload. The actual public profile installed45 before publication, encountered the46 defect, then used the real Check for updates / Update UI to reach47. Displayed version and new Settings control were verified; all pre-existing selected arrays/preferences matched the saved baseline. Offline reload passed. A separate persistent-browser process then reopened offline; deleting the synthetic profile's primary localStorage and reloading recovered its IndexedDB mirror with33 history records and Same reps intact. No real user's browser/profile was changed.
+
+Current PDFs opened and rendered: full24 pages, multiple2, empty/selected1; all-page overview and representative full-size pages visually checked without blank/clipped content. Same report/export code and dependency versions are retained in47.
+
+Release46 is retained unchanged and marked as a superseded prerelease after47 acceptance. Its post-publication defect and corrective evidence are documented separately. The public latest.json points to47, not46. Runtime tags remain immutable; this final documentation update does not move the47 tag.
+
+## Exact modified repository paths
+
+```text
+.github/workflows/android.yml
+.github/workflows/pages.yml
+.github/workflows/test.yml
+.gitignore
+CHANGELOG.md
+README.md
+docs/ARCHITECTURE.md
+docs/MOBILE.md
+docs/RELEASE-AUDIT-1.15.46.md
+docs/RELEASE-AUDIT-1.15.47.md
+docs/RELEASING.md
+docs/SELF_HOSTING.md
+frontend/android/app/build.gradle
+frontend/docs/RELEASING.md
+frontend/package.json
+frontend/pnpm-lock.yaml
+frontend/pnpm-workspace.yaml
+frontend/public/sw.js
+frontend/src/App.jsx
+frontend/src/ExConfig.per-side.test.jsx
+frontend/src/lib/app-lock.js
+frontend/src/lib/backoff-preference.test.js
+frontend/src/lib/mobile.js
+frontend/src/lib/progress-file.js
+frontend/src/lib/service-worker.test.js
+frontend/src/lib/training-plan.js
+frontend/src/locales/de.js
+frontend/src/locales/es.js
+frontend/src/locales/fr.js
+frontend/src/locales/hi.js
+frontend/src/locales/it.js
+frontend/src/locales/ko.js
+frontend/src/locales/pl.js
+frontend/src/locales/pt-BR.js
+frontend/src/locales/pt.js
+frontend/src/locales/ru.js
+frontend/src/locales/tr.js
+frontend/src/locales/zh.js
+frontend/src/sheets.jsx
+frontend/src/store/useStore.js
+frontend/src/store/useStore.pwa.test.js
+frontend/src/views/Settings.jsx
+frontend/src/views/Workout.jsx
+mcp/package-lock.json
+```
