@@ -4,11 +4,11 @@ import vm from 'node:vm'
 const source=readFileSync(new URL('../../public/sw.js',import.meta.url),'utf8').replaceAll('__TGYM_CACHE__','tgym-app-1.15.25-test').replace("['__TGYM_PRECACHE__']",JSON.stringify(['index.html','assets/new.js'])).replace("['__TGYM_MEDIA__']",JSON.stringify(['img/','gif/']))
 function worker({offline=false,failInstall=false,failWrite=false,oldChunk=false,failRead=false,base='https://app.test/',mediaHit=false}={}) {
  const handlers={}, data=new Map([['index.html',new Response('offline shell')]])
- const cache={addAll:()=>failInstall?Promise.reject(Error('offline')):Promise.resolve(),match:async key=>{if(failRead)throw Error('denied');return data.get(typeof key==='string'?key:key.url)},put:vi.fn(async()=>{if(failWrite)throw Error('quota')})}
+ const cache={match:async key=>{if(failRead)throw Error('denied');return data.get(typeof key==='string'?key:key.url)},put:vi.fn(async(key,value)=>{if(failWrite)throw Error('quota');data.set(typeof key==='string'?key:key.url,value.clone())})}
  const mediaCache={match:async()=>mediaHit?new Response('saved image'):undefined,put:vi.fn(async()=>{}),keys:async()=>Array.from({length:43},(_,i)=>'image'+i),delete:vi.fn(async()=>true)}
  const caches={keys:async()=>['tgym-1.15.18-old','tgym-app-1.15.24-old','tgym-app-1.15.25-test','tgym-user-data','unrelated'],delete:vi.fn(),open:async key=>key==='tgym-exercise-media-v1'?mediaCache:key==='tgym-app-1.15.24-old'&&oldChunk?{match:async()=>new Response('old chunk')}:cache}
  const self={location:{origin:new URL(base).origin,href:base+'sw.js'},addEventListener:(name,fn)=>{const previous=handlers[name];handlers[name]=previous?e=>{previous(e);fn(e)}:fn},clients:{claim:vi.fn()},skipWaiting:vi.fn()}
- const fetch=vi.fn(()=>offline?Promise.reject(Error('offline')):Promise.resolve(new Response('network')))
+ const fetch=vi.fn(()=>offline||failInstall?Promise.reject(Error('offline')):Promise.resolve(new Response('network')))
  vm.runInNewContext(source,{self,caches,URL,Response,fetch,console})
  return {handlers,caches,self,cache,fetch,mediaCache,data}
 }
@@ -74,10 +74,22 @@ it('reuses viewed exercise images offline and bounds the optional media cache',a
 it('repairs missing shell assets only against the same deployed build',async()=>{
  for(const sameBuild of [false,true]){
   const w=worker();let done;const port={postMessage:vi.fn()}
-  w.cache.addAll=vi.fn(async()=>w.data.set('assets/new.js',new Response('restored module')))
-  w.fetch.mockResolvedValue(new Response(sameBuild?"const CACHE = 'tgym-app-1.15.25-test'":"const CACHE = 'tgym-app-next'"))
+  w.fetch.mockImplementation(url=>Promise.resolve(new Response(String(url).includes('sw.js')?(sameBuild?"const CACHE = 'tgym-app-1.15.25-test'":"const CACHE = 'tgym-app-next'"):'restored module')))
   w.handlers.message({data:{type:'REPAIR_OFFLINE'},ports:[port],waitUntil:p=>done=p});await done
-  expect(w.cache.addAll).toHaveBeenCalledTimes(sameBuild?1:0)
+  expect(w.cache.put).toHaveBeenCalledTimes(sameBuild?2:0)
   expect(port.postMessage).toHaveBeenLastCalledWith(sameBuild?{ready:true}:{ready:false,update:true})
  }
+})
+it('installs fresh build assets even when HTTP cache contains the previous HTML',async()=>{
+ const w=worker({base:'https://app.test/TGym/'})
+ w.fetch.mockImplementation((url,options)=>Promise.resolve(new Response(options.cache==='no-store'&&new URL(url).searchParams.get('tgymBuild')==='tgym-app-1.15.25-test'?'new build':'old HTTP cache')))
+ let done;w.handlers.install({waitUntil:p=>done=p});await done
+ expect(await w.data.get('index.html').text()).toBe('new build')
+ expect(w.cache.put.mock.calls.map(([key])=>key).sort()).toEqual(['assets/new.js','index.html'])
+ expect(w.fetch.mock.calls.every(([url])=>new URL(url).pathname.startsWith('/TGym/'))).toBe(true)
+})
+it('rejects unavailable new assets without activating the incomplete build',async()=>{
+ const w=worker();w.fetch.mockResolvedValue(new Response('missing',{status:404}))
+ let done;w.handlers.install({waitUntil:p=>done=p});await expect(done).rejects.toThrow('Cannot cache shell asset')
+ expect(w.cache.put).not.toHaveBeenCalled();expect(w.self.skipWaiting).not.toHaveBeenCalled();expect(w.caches.delete).not.toHaveBeenCalled()
 })

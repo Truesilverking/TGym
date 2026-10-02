@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.15.47
+
+- Correct a real PWA upgrade defect found after publishing1.15.46: the new worker could cache HTTP-cached HTML from1.15.45 and keep showing the old UI. Installation/repair now fetches fresh build-specific URLs and stores canonical keys.
+- Preserve profile/history/preferences and the previous worker cache. Add stale-HTTP-cache and failed-asset installation regressions. Includes all1.15.46 Back-off settings and dependency/documentation fixes.
+
 ## 1.15.46
 
 - Persistent Settings choice for automatic Back-off reps: Same reps copies the Top range; Increased reps adds +2 to both limits (default).

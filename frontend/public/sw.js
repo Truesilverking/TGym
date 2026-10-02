@@ -3,7 +3,18 @@ const CACHE = '__TGYM_CACHE__'
 const PRECACHE = ['__TGYM_PRECACHE__']
 const MEDIA_BASES = ['__TGYM_MEDIA__']
 const MEDIA_CACHE = 'tgym-exercise-media-v1'
-self.addEventListener('install', e => e.waitUntil(caches.open(CACHE).then(c=>c.addAll(PRECACHE))))
+// A new worker must not fill its cache with a previous build's HTTP-cached HTML.
+// Keep canonical cache keys while each network request identifies this exact build.
+async function precacheFresh(cache) {
+ await Promise.all(PRECACHE.map(async path=>{
+  const url=new URL(path,self.location.href)
+  url.searchParams.set('tgymBuild',CACHE)
+  const response=await fetch(url,{cache:'no-store'})
+  if(!response.ok)throw Error('Cannot cache shell asset')
+  await cache.put(path,response)
+ }))
+}
+self.addEventListener('install', e => e.waitUntil(caches.open(CACHE).then(precacheFresh)))
 self.addEventListener('message', e => { if(e.data?.type==='SKIP_WAITING') self.skipWaiting() })
 // Keep the previous build for tabs still running its immutable chunks.
 const appCache = key => /^tgym-(?:app-)?[0-9]+\.[0-9]+\.[0-9]+-/.test(key)
@@ -21,7 +32,7 @@ self.addEventListener('message',e=>{
     const response=await fetch(self.location.href,{cache:'no-store'})
     if(!response.ok)throw Error('Cannot verify deployed build')
     if(!(await response.text()).includes("const CACHE = '"+CACHE+"'")){e.ports[0].postMessage({ready:false,update:true});return}
-    await cache.addAll(PRECACHE)
+    await precacheFresh(cache)
    }
    const ready=(await Promise.all(PRECACHE.map(path=>cache.match(path)))).every(Boolean)
    e.ports[0].postMessage({ready})

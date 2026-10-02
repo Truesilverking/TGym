@@ -31,3 +31,7 @@ Run **Resend Android update notification** from GitHub Actions. It reads the alr
 ## Pages and rollback
 
 Enable GitHub Pages with **GitHub Actions** as its source. To roll back, publish a new higher patch version/versionCode containing the reverted code. Do not move an existing release tag or lower Android's versionCode. Mark a bad release as a prerelease and remove its download links only after the replacement exists.
+
+## Real PWA upgrade acceptance
+
+Install the preceding public shell in an isolated persistent browser profile before publication. After deployment, use the real Check for updates / Update UI, confirm the displayed version and current worker's cached HTML/assets, compare history/preferences, then reopen offline. A newer build.json or activated worker alone does not establish that the new UI loaded. Installation/repair bypasses stale HTTP entries with build-specific requests while keeping canonical cache keys.

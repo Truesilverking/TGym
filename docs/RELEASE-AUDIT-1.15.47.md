@@ -1,6 +1,12 @@
-# TGym 1.15.46 / Android82 - final audit
+# TGym 1.15.47 / Android83 - final audit
 
 Candidate branch: `feature/backoff-reps-settings`. Publication and exact commit evidence are appended after checks complete. Date: 2026-10-02.
+
+## Corrective PWA patch
+
+A real production PWA45->46 upgrade discovered that the new46 Service Worker cached old45 index.html through cache.addAll and the browser HTTP cache. The activated worker then served the old UI; history and the seeded preference remained present. This finding supersedes46 upgrade acceptance, despite valid46 APK/signing/metadata and green CI.
+
+Version47 replaces install/repair addAll with fresh network fetches using `cache:no-store` and a build-specific query. Responses are stored under canonical cache keys, preserving offline navigation and previous-tab lazy assets. Missing/failed assets reject installation; the existing worker/profile remains intact. Regression tests distinguish stale HTTP HTML from fresh responses and reject404 assets. The original46 release is immutable;47 uses Android83 and a new signed tag.
 
 ## Change and data flow
 
@@ -40,8 +46,11 @@ The full frontend suite covers calculations, missing/legacy data, IDs, editing/d
 
 ## Local validation
 
-- Frontend: 1,243 tests /127 files passed after implementation and dependency fixes; targeted20 tests passed. API10; MCP37 and plain-Node loadability passed.
-- Frozen-lockfile install, locale keysets (12 x1688), source strings (1077), version1.15.46/code82 and fatigue probes (108000 +14076 comparisons) passed.
+The Back-off/report/body/tour validations below were performed for46 and remain applicable to unchanged functionality. The47 patch reran the full frontend suite,40 targeted worker/updater/persistence tests, all builds, the synthetic worker activation scenario and the12 Back-off/offline scenarios. Final public upgrade acceptance is appended after47 publication.
+
+
+- Frontend: 1,245 tests /127 files passed after implementation and dependency fixes; targeted20 tests passed. API10; MCP37 and plain-Node loadability passed.
+- Frozen-lockfile install, locale keysets (12 x1688), source strings (1077), version1.15.47/code83 and fatigue probes (108000 +14076 comparisons) passed.
 - Web, PWA, mobile assets/sync builds passed. Android assembleRelease/lintRelease passed before and after final asset sync. Lint has zero errors; inherited Android warnings are not hidden.
 - Six real Chromium flows passed: onboarding/offline mirror recovery, workout recovery/finish, routine edit/delete/undo, backup/import/undo, calendar PNG/PDF, activity edit.
 - Twelve Chromium/WebKit Settings/start/switch/reload scenarios passed for4-6,6-8,fixed5 in both modes with three Back-offs. Actual persisted bounds/reps/load verified. Chromium also reloaded the installed shell offline; WebKit verified online reopen then offline writes.
@@ -55,12 +64,9 @@ No physical Android/iPhone was tested for this release; no macOS/Xcode native iO
 
 ## Modified files
 
-Runtime: `training-plan.js`, `useStore.js`, `Settings.jsx`, `Workout.jsx`, `sheets.jsx`, `App.jsx`, `app-lock.js`, `mobile.js`, `progress-file.js`. Tests: `backoff-preference.test.js`, `useStore.pwa.test.js`, `ExConfig.per-side.test.jsx`. All12 locale files receive synchronized keys. Version/dependencies: frontend `package.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`, Android `app/build.gradle`, MCP `package-lock.json`. Workflow/config: `.gitignore`, Tests/Android/PWA YAML. Documentation: README, CHANGELOG, Architecture, Mobile, both Releasing guides, Self-hosting, this audit and the workspace checkpoint.
+Runtime also includes `frontend/public/sw.js` and worker regressions in `service-worker.test.js`. Runtime: `training-plan.js`, `useStore.js`, `Settings.jsx`, `Workout.jsx`, `sheets.jsx`, `App.jsx`, `app-lock.js`, `mobile.js`, `progress-file.js`. Tests: `backoff-preference.test.js`, `useStore.pwa.test.js`, `ExConfig.per-side.test.jsx`. All12 locale files receive synchronized keys. Version/dependencies: frontend `package.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`, Android `app/build.gradle`, MCP `package-lock.json`. Workflow/config: `.gitignore`, Tests/Android/PWA YAML. Documentation: README, CHANGELOG, Architecture, Mobile, both Releasing guides, Self-hosting, this audit and the workspace checkpoint.
 
 ## Publication
 
-Pending exact-commit GitHub CI and signed release publication. Do not interpret candidate checks as a published update.
+Pending exact-commit GitHub CI and signed47 release publication. Production46 sourcee585d1c passed Tests37014192178/PWA37014192252/Android37014192397 and release37015053274; its stale-HTML upgrade defect is corrected here. Do not interpret candidate checks as final public47 acceptance.
 
-## Post-publication finding
-
-Release37015053274 succeeded frome585d1c; APK/Pages hashes, v2 signature/package/code82 and Android/PWA metadata detection passed. A real isolated public PWA45->46 upgrade then found that the46 cache contained45 index.html: the install's cache.addAll reused HTTP-cached HTML. The new worker activated but the old UI remained. History/preferences remained present; no data loss was observed. This invalidates the upgrade acceptance for46. Corrective1.15.47 uses fresh build-specific network requests and canonical cache keys;46 is retained as an immutable historical release. See RELEASE-AUDIT-1.15.47.md for final acceptance.
