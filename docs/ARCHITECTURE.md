@@ -1,6 +1,6 @@
 # TGym architecture
 
-Current published source: `1a4968e` (1.15.43/code79), with exact-commit CI/publication evidence in `docs/RELEASE-AUDIT-1.15.43.md` and scope in `docs/WORKOUT-MEASUREMENTS-TOUR-AUDIT-2026-09-29.md`. Chromium/WebKit responsive, dated measurement and twelve-step tour checks passed; Android emulator checks passed. No physical phone was connected for this release. Older release reports below are historical evidence.
+Current published source: `4bed460` (1.15.45/code81), with Back-off rules, persistence and exact-commit CI/publication evidence in `docs/BACKOFF-REPS-1.15.45.md`. Automatic Back-off targets default to Top min/max +2, preserving manual results and explicit overrides. Chromium/WebKit workflow checks and Android emulator checks passed. Published APK integrity, signing identity and Android/PWA update detection were verified; no physical phone was tested for this release. Older release reports below are historical evidence.
 
 The subsequent request to validate every function is tracked in `docs/POST-RELEASE-AUDIT-1.15.31.md`. Follow-up fixes serialize API uploads, preserve active workouts and unsent edits at sign-out, recheck the reviewed cloud snapshot before upload, and allow skipping an incomplete optional PIN. Real-browser auditing also improves theme contrast, keyboard controls, zoom, accessible labels and reduced-motion media. These changes are not included in the published 1.15.31 artifact.
 
