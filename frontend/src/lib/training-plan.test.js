@@ -168,10 +168,10 @@ it('does not invent a strict target for free reps or cap AMRAP',()=>{
 
 
 describe('Back-off target invariants', () => {
-  it('uses the same defaults in editor, generation and updates, including explicit zero offset', () => {
+  it('uses the same defaults in editor, generation and updates, repairing legacy zero offsets', () => {
     expect(backoffRepOffsetFor({})).toBe(2)
-    expect(backoffRepOffsetFor({topRepsMax:8,backoffRepsMax:8})).toBe(0)
-    expect(backoffRepOffsetFor({backoffRepOffset:0})).toBe(0)
+    expect(backoffRepOffsetFor({topRepsMax:8,backoffRepsMax:8})).toBe(2)
+    expect(backoffRepOffsetFor({backoffRepOffset:0})).toBe(2)
     expect(backoffRepOffsetFor({side:true,backoffRepOffset:8})).toBe(8)
     expect(backoffRepOffsetFor({side:true})).toBe(4)
   })
@@ -190,4 +190,29 @@ describe('Back-off target invariants', () => {
     expect(backoffWeightFor(0,cfg)).toBe(0)
     expect(backoffWeightFor(1.5,{backoffPct:1},2.5)).toBe(0)
   })
+})
+
+
+describe('default Top range +2 Back-off prescription',()=>{
+ it.each([[4,6,6,8],[5,7,7,9],[6,8,8,10],[8,10,10,12],[5,5,7,7],[8,8,10,10]])('%i-%i becomes %i-%i for every Back-off', (min,max,backMin,backMax)=>{
+  const cfg={setScheme:'topback',topRepsMin:min,topRepsMax:max,reps:max,backoffSets:3,backoffPct:10,backoffRepsMin:min,backoffRepsMax:max}
+  expect(repBounds(cfg,'backoff')).toEqual({min:backMin,max:backMax})
+  const rows=applyTrainingPlan([{w:100,r:max}],cfg)
+  expect(rows.slice(1).map(s=>[s.w,s.r])).toEqual(Array(3).fill([90,backMax]))
+ })
+ it('repairs persisted automatic zero while retaining explicit positive offsets and independent ranges',()=>{
+  const cfg={setScheme:'topback',topRepsMin:4,topRepsMax:6,backoffRepOffset:0,backoffRepsMin:4,backoffRepsMax:6}
+  expect(repBounds(cfg,'backoff')).toEqual({min:6,max:8})
+  expect(repBounds({...cfg,backoffRepOffset:3},'backoff')).toEqual({min:7,max:9})
+  expect(repBounds({...cfg,autoBackoffReps:false,backoffRepsMin:10,backoffRepsMax:15},'backoff')).toEqual({min:10,max:15})
+  expect(repBounds({reps:8,repsMin:6},null)).toEqual({min:6,max:8})
+ })
+})
+
+it('materializes corrected ranges for new session/history snapshots without mutating the legacy routine',()=>{
+ const cfg={setScheme:'topback',topRepsMin:6,topRepsMax:8,backoffRepOffset:0,backoffRepsMin:6,backoffRepsMax:8}
+ const next=deloadTargetFor(cfg,{active:false})
+ expect(next).toMatchObject({backoffRepOffset:2,backoffRepsMin:8,backoffRepsMax:10})
+ expect(cfg.backoffRepOffset).toBe(0)
+ expect(JSON.parse(JSON.stringify(next))).toEqual(next)
 })

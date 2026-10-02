@@ -141,7 +141,7 @@ it('shows real set fields in tour practice without creating an active workout or
 })
 
 it('derives Back-off weight and reps, protects manual fields and retains them in reopened history',()=>{
- mount({setScheme:'topback',reps:6,topRepsMin:4,topRepsMax:6,backoffRepOffset:2,backoffPct:10},[{role:'top',w:100,r:6},{role:'backoff',w:90,r:8},{role:'backoff',w:90,r:8}]);
+ mount({setScheme:'topback',reps:6,topRepsMin:4,topRepsMax:6,backoffRepOffset:0,backoffPct:10},[{role:'top',w:100,r:6},{role:'backoff',w:90,r:8},{role:'backoff',w:90,r:8}]);
  type(input('Actual reps'),'5');type(input('Weight (kg)'),'110');
  expect(rows().map(s=>[s.w,s.r])).toEqual([[110,5],[100,7],[100,7]]);
  type(input('Actual reps',1),'6');type(input('Weight (kg)',1),'95');type(input('Actual reps'),'6');type(input('Weight (kg)'),'120');

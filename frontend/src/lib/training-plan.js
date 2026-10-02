@@ -156,6 +156,7 @@ export function applyTrainingPlan(rows, cfg, step = 2.5, deload = null) {
 
 /** A session-only target for a scheduled deload. The saved routine remains untouched. */
 export function deloadTargetFor(cfg, deload) {
+  cfg = withBackoffRepTargets(cfg)
   if (!deload?.active) return { ...cfg }
   const rir = clamp(Number(deload.config?.targetRir) || 4, 0, 10)
   const target = { ...cfg, deload: true, targetRir: rir, targetRirMin: rir, targetRirMax: rir }
@@ -190,9 +191,18 @@ export function repBounds(cfg, role = null) {
 // Legacy unilateral configurations store totals across both sides.
 export function backoffRepOffsetFor(cfg = {}) {
   const factor = cfg.side && !cfg.repsPerSide ? 2 : 1
-  if (cfg.backoffRepOffset != null && Number.isFinite(Number(cfg.backoffRepOffset))) return clamp(Math.round(Number(cfg.backoffRepOffset) / factor), 0, 5) * factor
-  const derived = Number(cfg.backoffRepsMax) - Number(cfg.topRepsMax)
-  return Number.isFinite(derived) && derived >= 0 && derived <= 5 * factor ? Math.round(derived / factor) * factor : 2 * factor
+  // Old editors persisted zero or inferred an offset from stale range fields.
+  // Automatic Back-offs must increase reps; an independent range is explicit via autoBackoffReps:false.
+  if (Number.isFinite(Number(cfg.backoffRepOffset)) && Number(cfg.backoffRepOffset) > 0) return clamp(Math.round(Number(cfg.backoffRepOffset) / factor), 1, 5) * factor
+  return 2 * factor
+}
+
+// Materialize the same range used by the UI in new routine/session snapshots.
+// Completed history and manually logged row values are never rewritten here.
+export function withBackoffRepTargets(cfg = {}) {
+  if (cfg.setScheme !== 'topback' || cfg.autoBackoffReps === false) return { ...cfg }
+  const { min, max } = repBounds(cfg, 'backoff')
+  return { ...cfg, backoffRepOffset: backoffRepOffsetFor(cfg), backoffRepsMin: min, backoffRepsMax: max }
 }
 
 export function backoffWeightFor(value, cfg = {}, step = 2.5) {

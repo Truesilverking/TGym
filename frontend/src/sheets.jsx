@@ -43,7 +43,7 @@ import { GUIDED_PLANS, createGuidedPlan } from './lib/guided-plans.js'
 import { saveImportUndo } from './lib/import-undo.js'
 import { MEASURE_FIELDS, measurementValue } from './lib/stats-insights.js'
 import { sessionTimingSummary } from './lib/stats-insights.js'
-import { backoffRepOffsetFor, applyTrainingPlan, calendarDeload, deloadStatus, deloadTargetFor, repRangeEnabled, streakTier, trainingStreak, targetRirRangeFor } from './lib/training-plan.js'
+import { withBackoffRepTargets, backoffRepOffsetFor, applyTrainingPlan, calendarDeload, deloadStatus, deloadTargetFor, repRangeEnabled, streakTier, trainingStreak, targetRirRangeFor } from './lib/training-plan.js'
 import { weightStepFor } from './lib/unit-conversion.js'
 import Heatmap from './components/Heatmap.jsx'
 import LineChart from './components/LineChart.jsx'
@@ -830,7 +830,7 @@ function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial }) {
         out.topSets = Math.max(1, Math.round(c.topSets) || 1)
         out.backoffSets = Math.max(1, Math.round(c.backoffSets) || 2)
         out.sets = out.topSets + out.backoffSets
-        out.topRepsMin = Math.min(reps, Math.max(1, Math.round(c.topRepsMin) || out.repsMin))
+        out.topRepsMin = out.repsMin
         out.topRepsMax = reps
         out.backoffRepsMin = Math.max(1, Math.round(c.backoffRepsMin) || out.repsMin)
         out.backoffRepsMax = Math.max(out.backoffRepsMin, Math.round(c.backoffRepsMax) || reps)
@@ -847,7 +847,7 @@ function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial }) {
       // Every set in this exercise becomes a drop-set/rest-pause (buildSets stamps the rows) —
       // decided here, in the plan, not re-decided live each time you train it.
       if (c.intensifier && c.intensifier.type) out.intensifier = c.intensifier
-      onSave(out)
+      onSave(withBackoffRepTargets(out))
     }
   }
   return <>
@@ -1045,7 +1045,7 @@ function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial }) {
           <Switch checked={c.autoBackoffReps !== false} onChange={v => setC(x => ({ ...x, autoBackoffReps: v }))} />
         </Row></div>
         {c.autoBackoffReps !== false ? <div className="row cfgrow" style={{ marginBottom: 8 }}>
-          <RepStepper cfg={c} label={t('Back-off rep offset')} value={backoffRepOffsetFor(c)} onChange={v => setC(x => ({ ...x, backoffRepOffset: backoffRepOffsetFor({ ...x, backoffRepOffset: v }) }))} />
+          <RepStepper cfg={c} label={t('Back-off rep offset')} value={backoffRepOffsetFor(c)} onChange={v => setC(x => ({ ...x, backoffRepOffset: backoffRepOffsetFor({ ...x, backoffRepOffset: Math.max(storedReps(1, x), v) }) }))} />
         </div> : <div className="row cfgrow" style={{ marginBottom: 8 }}>
           <RepStepper cfg={c} label={t('Back-off min reps')} value={c.backoffRepsMin || c.repsMin || c.reps || 1} step={1} decimal={false} onChange={v => setC(x => ({ ...x, backoffRepsMin: Math.max(1, v) }))} />
           <RepStepper cfg={c} label={t('Back-off max reps')} value={c.backoffRepsMax || c.reps || 10} step={1} decimal={false} onChange={v => setC(x => ({ ...x, backoffRepsMax: Math.max(x.backoffRepsMin || 1, v) }))} />

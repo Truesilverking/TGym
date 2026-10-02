@@ -1,0 +1,11 @@
+# Back-off repetitions - 1.15.45 / Android81
+
+The automatic Top + Back-off prescription now defaults to Top minimum+2 and maximum+2. Fixed5 becomes7; fixed8 becomes10. All pending Back-offs in the prescription receive the same derived range, while the existing actual-Top rep cascade remains bounded by that range. Weight reduction/rounding is unchanged.
+
+Legacy automatic zero offsets (including zeros persisted by the old editor) and missing offsets resolve to+2 rather than copying the Top range. A positive explicitly configured offset remains an override; autoBackoffReps:false retains independent explicit Back-off limits. Legacy both-side totals scale the visible+2 to4 stored reps. Straight, time and cardio configuration is unaffected.
+
+The editor no longer saves stale topRepsMin after editing the displayed minimum. Saving fixed reps collapses both Top bounds to the fixed value. withBackoffRepTargets materializes automatic Back-off bounds in saved configurations and new session snapshots through deloadTargetFor. Existing completed history/actual rows are not rewritten, and manualFields protection remains intact. No schema/key migration or history rewrite.
+
+Validation:194 targeted tests/4files and full1,235 frontend tests/126files passed; API10; MCP37+Node-loadability; locale/source/version; web/PWA/mobile builds passed. No frontend lint/typecheck scripts exist. Chromium and WebKit each started real sessions for4-6,5-7,6-8,8-10,5fixed,8fixed with three Back-offs, checked saved bounds/load/reps and reload; both edited4-6 into8-10 and confirmed persisted10-12. Existing Workout integration test now starts with the legacyzero offset and verifies manual protection, reopen, finish and history. Clean Android release and lint passed (19s; 0 errors, existing warnings). Final publication evidence is recorded below when completed.
+
+No Pixel is attached for this version; prior1.15.44 hardware evidence is not claimed as a1.15.45 device test. WebKit is not a real iPhone.

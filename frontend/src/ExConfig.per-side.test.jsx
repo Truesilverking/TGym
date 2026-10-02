@@ -61,3 +61,14 @@ it('uses per-side reps for rest-pause plans', () => {
   expect(input('Rest-pause reps').value).toBe('12'); bump('Rest-pause reps'); click('Save')
   expect(saved).toHaveBeenCalledWith(expect.objectContaining({ intensifier: { type: 'restpause', totalReps: 26, restSec: 15 } }))
 })
+
+it('updates both Back-off range limits when the Top range is edited instead of reusing stale topRepsMin',()=>{
+ mount({setScheme:'topback',repRange:true,reps:6,repsMin:4,topRepsMin:4,topRepsMax:6,backoffRepOffset:0,backoffRepsMin:4,backoffRepsMax:6})
+ expect(input('Back-off rep offset').value).toBe('2')
+ type('Maximum reps','10');type('Minimum reps','8');click('Save')
+ expect(saved).toHaveBeenCalledWith(expect.objectContaining({topRepsMin:8,topRepsMax:10,backoffRepsMin:10,backoffRepsMax:12,backoffRepOffset:2}))
+})
+it('saves a fixed Top target with a fixed Back-off target two reps higher',()=>{
+ mount({setScheme:'topback',repRange:false,reps:5,topRepsMin:3,topRepsMax:5})
+ click('Save');expect(saved).toHaveBeenCalledWith(expect.objectContaining({topRepsMin:5,topRepsMax:5,backoffRepsMin:7,backoffRepsMax:7}))
+})
