@@ -109,7 +109,7 @@ async function syncReminderNow(S, interactive = false, requestedKind = null) {
     measurement:{enabled:!!S.measurementReminders?.notifications,validation:measurementReminderValidation(S)},
     deload:{enabled:!!S.deload?.on && S.deload?.notifications !== false,validation:{valid:true,reason:null}},
   }
-  let soundSettings
+  let soundSettings, verified = false
   try {
     const { LocalNotifications } = await import('@capacitor/local-notifications')
     const enabled = reminderKinds.some(kind => families[kind].enabled && families[kind].validation.valid)
@@ -164,12 +164,17 @@ async function syncReminderNow(S, interactive = false, requestedKind = null) {
         pending = (await LocalNotifications.getPending()).notifications || []
       }
     }
+    verified = successful
     return requestedKind && families[requestedKind] ? ['off','configured'].includes(reminderStatus[requestedKind].status) : successful
   } catch (error) {
     const unsupported = ['UNIMPLEMENTED','NOT_IMPLEMENTED'].includes(error?.code)
     for (const kind of reminderKinds) setReminderStatus(kind,unsupported ? 'unsupported' : 'error',[],unsupported ? null : 'Reminder scheduling failed')
     return false
-  } finally { await finishNativeSoundSync(soundSettings) }
+  } finally {
+    // Native cleanup removes old channels and sound files. Preserve them whenever a
+    // failed family may still reference its old alarm, even if the requested one succeeded.
+    if (verified) await finishNativeSoundSync(soundSettings)
+  }
 }
 
 export function notificationSoundOptions(S, native, at = new Date()) {
