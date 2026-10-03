@@ -69,7 +69,7 @@ it('backup and additive migration preserve paused time, partial sides and histor
  const paused=sessionTiming(pauseWorkoutClock(a,a.start+10*min),a.start+10*min)
  const state={storageVersion:2,routines:[],workouts:[{id:'older',start:10,end:20,entries:[]}],active:paused}
  const restored=migrateState(readBackup(serial(createBackup(state))))
- expect(restored.active).toEqual(paused)
+ expect(restored.active).toEqual({...paused,sessionOrigin:{type:'extra',routineId:null}})
  expect(workoutElapsedMs(restored.active,a.start+240*min)).toBe(10*min)
  expect(restored.workouts).toEqual(state.workouts)
 })

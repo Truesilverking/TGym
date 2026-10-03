@@ -8,7 +8,8 @@ import { workoutNotificationPlan, deloadNotificationPlan } from './workout-remin
 import { createBackup, readBackup } from './backup.js'
 import { mergeTGymStates } from './state-merge.js'
 import { isTrainingPaused as serverPaused } from '../../../api/training-pause.js'
-const base=()=>({routines:[{id:'r',name:'Routine'}],week:{1:'r',3:'r',5:'r'},dayPlan:{},scheduleStarted:'2026-01-05',workouts:['05','07','09'].map(d=>({id:d,d:'2026-01-'+d,routineId:'r'})),deload:{on:true,startDate:'2026-01-05',normalWeeks:1,deloadWeeks:1},reminder:{on:true,time:'18:00',nextTime:'19:00'}})
+const activity = [{id:'exercise',sets:[{done:true,r:8}]}]
+const base=()=>({routines:[{id:'r',name:'Routine'}],week:{1:'r',3:'r',5:'r'},dayPlan:{},scheduleStarted:'2026-01-05',workouts:['05','07','09'].map(d=>({id:d,d:'2026-01-'+d,routineId:'r', entries:activity})),deload:{on:true,startDate:'2026-01-05',normalWeeks:1,deloadWeeks:1},reminder:{on:true,time:'18:00',nextTime:'19:00'}})
 const withPause=(start,end)=>({...base(),trainingPauses:[{id:'p',start,end}]})
 const noon=d=>new Date(d+'T12:00:00')
 describe('training break lifecycle',()=>{
@@ -64,11 +65,11 @@ describe('streak, consistency and calendar',()=>{
   expect(nextScheduledWorkout(s,noon('2026-01-12'))).toBe('2026-01-21')
   expect(trainingStreak(s,noon('2026-01-21')).current).toBe(3)
   expect(trainingStreak(s,noon('2026-01-22')).current).toBe(0)
-  s.workouts.push({id:'21',d:'2026-01-21',routineId:'r'})
+  s.workouts.push({id:'21',d:'2026-01-21',routineId:'r', entries:activity})
   expect(trainingStreak(s,noon('2026-01-22')).current).toBe(4)
  })
  it('does not age a saved streak out during a multi-year pause',()=>{
-  const s={...base(),scheduleStarted:'2024-01-08',workouts:[{d:'2024-01-08',routineId:'r'}],trainingPauses:[{id:'p',start:'2024-01-09',end:null}]}
+  const s={...base(),scheduleStarted:'2024-01-08',workouts:[{d:'2024-01-08',routineId:'r', entries:activity}],trainingPauses:[{id:'p',start:'2024-01-09',end:null}]}
   expect(trainingStreak(s,noon('2026-09-23')).current).toBe(1)
  })
 })

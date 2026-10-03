@@ -1643,4 +1643,5 @@ export default {
   ,"Same reps": "Mismas reps"
   ,"Increased reps": "Más reps"
   ,"Same reps uses the Top Set range. Increased reps adds 2 to both limits.": "Mismas reps usa el rango del Top Set. Más reps suma 2 a ambos límites."
+,"Activity counts once per day, including planned and extra sessions.":"La actividad cuenta una vez por día, tanto en sesiones planificadas como adicionales."
 }

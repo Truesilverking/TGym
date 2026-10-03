@@ -848,4 +848,5 @@ export default {
   ,"Same reps": "Same reps"
   ,"Increased reps": "Increased reps"
   ,"Same reps uses the Top Set range. Increased reps adds 2 to both limits.": "Same reps uses the Top Set range. Increased reps adds 2 to both limits."
+,"Activity counts once per day, including planned and extra sessions.":"Aktivität zählt einmal pro Tag, einschließlich geplanter und zusätzlicher Einheiten."
 }

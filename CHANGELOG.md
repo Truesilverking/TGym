@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Capture planned/extra session origin at start and preserve it across exercise edits, finish, reload, backup and synchronization. Adding or substituting exercises never creates extra sessions.
+- Count valid strength, timed and cardio activity once per day for consistency and streaks, including extra sessions. Preserve scheduled missed-day breaks, rest days and pending-today streak behavior.
+- Include today's activity in Home/Stats consistency. Keep planned/missed/extra session counters separate from daily completion; share the same rules with calendars, Progress exports and API reminders.
+- Add session-origin, persistence, browser and screen acceptance coverage; preserve historical routine identities without comparing exercise lists.
+
 ## 1.15.47
 
 - Correct a real PWA upgrade defect found after publishing1.15.46: the new worker could cache HTTP-cached HTML from1.15.45 and keep showing the old UI. Installation/repair now fetches fresh build-specific URLs and stores canonical keys.

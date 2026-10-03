@@ -831,4 +831,5 @@ export default {
   ,"Same reps": "Same reps"
   ,"Increased reps": "Increased reps"
   ,"Same reps uses the Top Set range. Increased reps adds 2 to both limits.": "Same reps uses the Top Set range. Increased reps adds 2 to both limits."
+,"Activity counts once per day, including planned and extra sessions.":"계획된 세션과 추가 세션을 포함하여 활동은 하루에 한 번 계산됩니다."
 }

@@ -17,6 +17,17 @@ afterEach(()=>{act(()=>root.unmount());host.remove();vi.restoreAllMocks();vi.use
 const selectSection=label=>act(()=>{const el=host.querySelectorAll('.progress-controls select')[1];el.value=[...el.options].find(o=>o.textContent===label).value;el.dispatchEvent(new Event('change',{bubbles:true}))})
 const generate=async()=>{act(()=>[...host.querySelectorAll('button')].find(b=>b.textContent.includes('Export Progress Report')).click());await act(async()=>[...host.querySelectorAll('button')].find(b=>b.textContent.includes('Generate and download')).click())}
 const mount=()=>{act(()=>root.render(<MemoryRouter><ProgressReport/></MemoryRouter>));selectSection('Body Progress')}
+it('uses daily activity and stable session origin in Progress and its export',async()=>{
+ const d='2026-09-26',w={id:'planned',d,routineId:'r',sessionOrigin:{type:'planned',routineId:'r'},entries:['changed','added1','added2','added3'].map(id=>({id,sets:[{done:true,r:8,w:50}]}))}
+ mock.S={trainingStartDate:d,routines:[{id:'r',name:'Routine',ex:[]}],week:{6:['r']},workouts:[w]}
+ mount();selectSection('Training consistency')
+ const tile=label=>[...host.querySelectorAll('.progress-summary>div')].find(el=>el.querySelector('span').textContent===label)?.querySelector('b').textContent
+ expect(tile('Planned')).toBe('1');expect(tile('Extra')).toBe('0');expect(tile('Active days')).toBe('1');expect(tile('Completion')).toBe('100 %')
+ mock.S={...mock.S,workouts:[w,{...w,id:'extra',routineId:null,sessionOrigin:{type:'extra',routineId:null}}]}
+ act(()=>root.render(<MemoryRouter><ProgressReport/></MemoryRouter>))
+ expect(tile('Extra')).toBe('1');expect(tile('Active days')).toBe('1');expect(tile('Completion')).toBe('100 %')
+ await generate();expect(mock.build.mock.calls[0][0].summary).toMatchObject({activeDays:1,planned:1,extra:1,rate:1})
+})
 it('changes periods, renders sufficient/insufficient data and exports the selected range',async()=>{
  mount();expect(host.textContent).toContain('+5 cm');expect(host.textContent).toContain('+16.7%')
  act(()=>{const el=host.querySelector('select');el.value='1';el.dispatchEvent(new Event('change',{bubbles:true}))})

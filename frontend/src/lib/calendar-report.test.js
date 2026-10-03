@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest'
 import { calendarReportPages, reportFilename, REPORT_COLORS } from './calendar-report.js'
-const S = { routines: [{ id: 'r', name: 'PRIVATE ROUTINE' }], week: { 1: 'r', 3: 'r', 5: 'r' }, dayPlan: {}, workouts: [{ id: 'w', d: '2026-09-02', routineId: 'r', name: 'PRIVATE ROUTINE' }] }
+const S = { routines: [{ id: 'r', name: 'PRIVATE ROUTINE' }], week: { 1: 'r', 3: 'r', 5: 'r' }, dayPlan: {}, workouts: [{ id: 'w', d: '2026-09-02', routineId: 'r', name: 'PRIVATE ROUTINE' , entries:[{id:'exercise',sets:[{done:true,r:8}]}]}] }
 const anchor = new Date(2026, 8, 16, 12)
 const parse = svg => new DOMParser().parseFromString(svg, 'image/svg+xml')
 describe('dedicated consistency reports', () => {

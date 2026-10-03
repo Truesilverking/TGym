@@ -60,7 +60,7 @@ it('moves the next workout immediately after matching completion and omits recen
   act(() => root.render(useUI.getState().sheets.at(-1).render(() => {})))
   const card = () => [...host.querySelectorAll('.card')].find(el => el.textContent.includes('Next scheduled workout'))
   expect(card().textContent).toContain('Wednesday')
-  act(() => useStore.getState().update(S => S.workouts.push({ id: 'w', d: '2026-09-16', routineId: 'r', name: 'Older name', entries: [] })))
+  act(() => useStore.getState().update(S => S.workouts.push({ id: 'w', d: '2026-09-16', routineId: 'r', name: 'Older name', entries:[{id:'exercise',sets:[{done:true,r:8}]}] })))
   expect(card().textContent).toContain('Friday')
   expect(host.querySelector('.recent-streak-item .ss')).toBeNull()
   expect(host.querySelector('.recent-streak-item').getAttribute('aria-label')).toContain('Completed')

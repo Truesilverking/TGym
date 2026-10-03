@@ -9,7 +9,7 @@ describe('completed workout boundary', () => {
     }
     const completed = buildCompletedWorkout(active, { end: 2000, prs: [] })
     expect(completed).toEqual({
-      id: 'active-1', d: '2026-08-08', start: 1000, end: 2000, routineId: 'routine-1', name: 'Push', bw: 80,
+      id: 'active-1', d: '2026-08-08', start: 1000, end: 2000, sessionOrigin:{type:'planned',routineId:'routine-1'}, routineId: 'routine-1', name: 'Push', bw: 80,
       entries: [{ id: '0025', sets: [{ done: true, w: 60, r: 8 }], topW: 60, target: { sets: 1, reps: 8 } }],
       manualFinishedAt:2000,sessionStartedAt:1000,lastActivityAt:1000,accumulatedActiveDuration:1000,sessionStatus:"completed",endedAt:2000,finishReason:"manual",
       prs: []

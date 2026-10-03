@@ -18,21 +18,23 @@ export function consistencyDays(S, start, end, now = new Date()) {
     const planned = plan.total > 0
     const workouts = byDay[iso] || []
     const missed = plan.skipped + (iso < today ? plan.pending.length : 0)
-    days.push({ iso, routineId, planned, workouts, extra:plan.extra, plan,
+    days.push({ iso, routineId, planned, workouts, active:plan.active, extra:plan.extra, plan,
       status: planned ? plan.completed === plan.total ? 'completed' : iso < today || plan.skipped === plan.total ? 'missed' : 'pending' : 'rest',
-      counts:{planned:plan.total,completed:plan.completed,missed,pending:iso < today ? 0 : plan.pending.length} })
+      counts:{planned:plan.total+plan.unscheduledPlanned,completed:plan.completed+plan.unscheduledPlanned,missed,pending:iso < today ? 0 : plan.pending.length} })
   }
   return days
 }
 export function consistencyStats(S, start, end, now = new Date()) {
   const days = consistencyDays(S, start, end, now)
-  const result = { planned: 0, completed: 0, missed: 0, pending: 0, extra: 0 }
+  const result = { planned: 0, completed: 0, missed: 0, pending: 0, extra: 0, activeDays:0, missedDays:0 }
   for (const day of days) {
     for (const key of ['planned','completed','missed','pending']) result[key] += day.counts?.[key] || 0
     result.extra += day.extra || 0
+    if (day.active) result.activeDays++
+    else if (day.planned && (day.iso < isoOf(now) || day.plan.skipped === day.plan.total)) result.missedDays++
   }
-  const evaluated = result.completed + result.missed
-  return { ...result, rate: evaluated ? result.completed / evaluated : null }
+  const evaluated = result.activeDays + result.missedDays
+  return { ...result, rate: evaluated ? result.activeDays / evaluated : null }
 }
 export function nextScheduledWorkout(S, now = new Date()) {
   const state = safeState(S), today = isoOf(now), workouts = loggedWorkouts(S)

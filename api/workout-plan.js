@@ -1,4 +1,5 @@
 import { isTrainingPaused } from './training-pause.js'
+import { hasWorkoutActivity, sessionOrigin } from './session-activity.js'
 // The API ships independently of the frontend; preserve the same ordered-plan semantics.
 export function nextRoutineId(S, iso) {
   if (isTrainingPaused(S,iso) || S.scheduleStarted && iso < S.scheduleStarted) return null
@@ -8,12 +9,12 @@ export function nextRoutineId(S, iso) {
   const workouts=(S.workouts || []).filter(w=>{
     if(!w || w.d!==iso || w.active || w.cancelled || w.canceled || w.id!=null && w.id===S.active?.id || ['active','cancelled','canceled'].includes(w.status) || ['cancelled','canceled'].includes(w.finishReason))return false
     if(w.id!=null){if(seen.has(w.id))return false;seen.add(w.id)}
-    return true
+    return hasWorkoutActivity(w)
   })
   for(const id of ids){
     const r=S.routines?.find(r=>r.id===id)
     if(!r || r.scheduledFrom && iso<r.scheduledFrom)continue
-    const w=workouts.find(w=>!matched.has(w) && (w.routineId===id || !w.routineId && w.name===r.name))
+    const w=workouts.find(w=>!matched.has(w) && sessionOrigin(w,S.routines).type==='planned' && sessionOrigin(w,S.routines).routineId===id)
     if(w){matched.add(w);continue}
     if(!S.daySkipped?.[iso]?.includes(id))return id
   }

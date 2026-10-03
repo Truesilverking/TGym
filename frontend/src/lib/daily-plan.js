@@ -1,4 +1,5 @@
 import { isTrainingPaused } from './training-pause.js'
+import { hasWorkoutActivity, sessionOrigin } from './session-activity.js'
 
 // Accept legacy scalar assignments everywhere, including imports not yet migrated.
 export const routineIds = value => [...new Set((Array.isArray(value) ? value : value && value !== 'rest' ? [value] : []).filter(id => typeof id === 'string' && id && id !== 'rest'))]
@@ -8,7 +9,10 @@ export function scheduledRoutineIds(S, date) {
   const ids = routineIds(override !== undefined ? override : S.week?.[new Date(date + 'T12:00:00').getDay()])
   return ids.filter(id => (S.routines || []).some(r => r.id === id && (!r.scheduledFrom || date >= r.scheduledFrom)))
 }
-export const matchesScheduled = (w, id, routines) => w.routineId === id || (!w.routineId && routines.some(r => r.id === id && r.name === w.name))
+export const matchesScheduled = (w, id, routines) => {
+  const origin = sessionOrigin(w, routines)
+  return origin.type === 'planned' && origin.routineId === id
+}
 export function loggedWorkouts(S) {
   const seen = new Set()
   return (S.workouts || []).filter(w => {
@@ -18,7 +22,7 @@ export function loggedWorkouts(S) {
   })
 }
 export function dailyPlan(S, date) {
-  const workouts = loggedWorkouts(S).filter(w => w.d === date), matched = new Set()
+  const workouts = loggedWorkouts(S).filter(w => w.d === date && hasWorkoutActivity(w)), matched = new Set()
   const items = scheduledRoutineIds(S,date).map((id,index) => {
     const routine = S.routines.find(r => r.id === id)
     const session = workouts.find(w => !matched.has(w) && matchesScheduled(w,id,S.routines))
@@ -27,7 +31,10 @@ export function dailyPlan(S, date) {
   })
   return {date, items, total:items.length, completed:items.filter(i=>i.status==='completed').length,
     skipped:items.filter(i=>i.status==='skipped').length, pending:items.filter(i=>i.status==='pending'),
-    extra:workouts.filter(w=>!matched.has(w)).length}
+    active:workouts.length > 0,
+    plannedSessions:workouts.filter(w=>sessionOrigin(w,S.routines).type==='planned').length,
+    unscheduledPlanned:workouts.filter(w=>!matched.has(w) && sessionOrigin(w,S.routines).type==='planned').length,
+    extra:workouts.filter(w=>sessionOrigin(w,S.routines).type==='extra').length}
 }
 export const nextDailyRoutine = (S,date) => dailyPlan(S,date).pending[0]?.routine || null
 export function skipDailyRoutine(S,date,id) {

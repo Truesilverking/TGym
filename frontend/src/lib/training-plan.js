@@ -6,7 +6,7 @@ import { isWarmupRow, modeForSet } from './workout-model.js'
 
 const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n))
 const atNoon = iso => new Date(iso + 'T12:00:00')
-/** A gym-safe streak: only scheduled training days advance it; rest days neither add nor break. */
+/** Activity days advance the streak; only missed scheduled days break it. */
 export function trainingStreak(S, now = new Date()) {
   S = statisticsState(S, isoOf(now))
   const safe = { ...S, routines: S.routines || [], workouts: S.workouts || [], week: S.week || {}, dayPlan: S.dayPlan || {} }
@@ -19,24 +19,23 @@ export function trainingStreak(S, now = new Date()) {
     if (iso < startIso) continue
     const plan = dailyPlan(safe,iso)
     const routineId = plan.items[0]?.id
-    const workouts = safe.workouts.filter(w => w.d === iso)
     if (!routineId) {
-      if (workouts.length) rows.push({ iso, status: 'extra', planned: false })
+      if (plan.active) rows.push({ iso, status: 'completed', planned: false })
       continue
     }
-    const completed = plan.completed === plan.total
+    const completed = plan.active
     // Today is still available to complete. It must not erase yesterday's streak at noon.
     const status = completed ? 'completed' : iso === endIso ? 'pending' : 'missed'
     rows.push({ iso, routineId, status, planned: true })
   }
   let current = 0, best = 0, run = 0
-  rows.filter(r => r.planned).forEach(r => {
+  rows.forEach(r => {
     if (r.status === 'completed') { run++; best = Math.max(best, run) }
     else if (r.status === 'missed') run = 0
   })
   for (let i = rows.length - 1; i >= 0; i--) {
     const r = rows[i]
-    if (!r.planned || r.status === 'pending') continue
+    if (r.status === 'pending') continue
     if (r.status !== 'completed') break
     current++
   }

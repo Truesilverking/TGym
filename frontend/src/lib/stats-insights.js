@@ -81,7 +81,7 @@ export function sessionTimingSummary(workouts) {
 }
 
 export function routineConsistency(S, days = 56, now = new Date()) {
-  const end = new Date(now); end.setDate(end.getDate() - 1)
+  const end = new Date(now)
   const start = new Date(end); start.setDate(start.getDate() - days + 1)
   return consistencyStats(S, isoOf(start), isoOf(end), now)
 }

@@ -1,4 +1,5 @@
-import { scheduledRoutineIds } from './daily-plan.js'
+import { scheduledRoutineIds, loggedWorkouts } from './daily-plan.js'
+import { hasWorkoutActivity } from './session-activity.js'
 // Pure helpers over the state object S (ported 1:1 from the vanilla app).
 import { todayISO, isoOf, weekKey, fmtNum } from './format.js'
 import { isCardio, isBodyweightEq } from './exercises.js'
@@ -444,7 +445,7 @@ export function unitOf(units, idx) { return units.find(u => u.includes(idx)) || 
 
 export function streakWeeks(S) {
   if (!S.workouts.length) return 0
-  const weeks = new Set(S.workouts.map(w => weekKey(w.d)))
+  const weeks = new Set(loggedWorkouts(S).filter(hasWorkoutActivity).map(w => weekKey(w.d)))
   let streak = 0
   const cur = new Date()
   for (let i = 0; i < 520; i++) {

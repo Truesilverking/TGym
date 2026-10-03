@@ -831,4 +831,5 @@ export default {
   ,"Same reps": "Same reps"
   ,"Increased reps": "Increased reps"
   ,"Same reps uses the Top Set range. Increased reps adds 2 to both limits.": "Same reps uses the Top Set range. Increased reps adds 2 to both limits."
+,"Activity counts once per day, including planned and extra sessions.":"नियोजित और अतिरिक्त सत्रों सहित गतिविधि दिन में एक बार गिनी जाती है।"
 }

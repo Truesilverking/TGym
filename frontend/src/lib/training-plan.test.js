@@ -1,16 +1,17 @@
 import { describe, expect, it } from 'vitest'
 import { applyTrainingPlan, backoffRepsFor, backoffWeightFor, calendarDeload, backoffRepOffsetFor, clampReps, defaultDeload, deloadStatus, deloadTargetFor, repBounds, repRangeEnabled, rirAdvice, streakTier, targetRirFor, targetRirRangeFor, trainingStreak } from './training-plan.js'
+const activity = [{id:'exercise',sets:[{done:true,r:8}]}]
 
 const base = { routines: [{ id: 'r', name: 'Push' }], week: { 1: 'r', 3: 'r', 5: 'r' }, dayPlan: {}, workouts: [] }
 describe('trainingStreak', () => {
   it('counts scheduled sessions, ignores rest days and leaves today pending', () => {
     const S = { ...base, workouts: [
-      { d: '2026-08-24', routineId: 'r' }, { d: '2026-08-26', routineId: 'r' }, { d: '2026-08-28', routineId: 'r' },
+      { d: '2026-08-24', routineId: 'r', entries:activity }, { d: '2026-08-26', routineId: 'r', entries:activity }, { d: '2026-08-28', routineId: 'r', entries:activity },
     ] }
     expect(trainingStreak(S, new Date('2026-08-31T16:00:00')).current).toBe(3)
   })
   it('breaks on a missed scheduled workout', () => {
-    const S = { ...base, workouts: [{ d: '2026-08-24', routineId: 'r' }, { d: '2026-08-28', routineId: 'r' }] }
+    const S = { ...base, workouts: [{ d: '2026-08-24', routineId: 'r', entries:activity }, { d: '2026-08-28', routineId: 'r', entries:activity }] }
     expect(trainingStreak(S, new Date('2026-08-29T12:00:00')).current).toBe(1)
   })
   it('uses progressive flame tiers that begin in yellow', () => {

@@ -6,6 +6,7 @@ import { trainingStreak } from './training-plan.js'
 import { calendarReportPages, reportFilename } from './calendar-report.js'
 import { fmtScheduledDate } from './format.js'
 import { createBackup, readBackup } from './backup.js'
+const activity = [{id:'exercise',sets:[{done:true,r:8}]}]
 const today='2026-09-23', now=new Date(today+'T12:00:00')
 const base=()=>({routines:[{id:'r',name:'Pierna & <espalda> ñ'}],week:{1:'r',3:'r',5:'r'},workouts:[],trainingStartDate:'2026-09-15',trainingHistory:{trackedFrom:'2026-09-15',historicalWorkouts:0,workoutsPerWeek:3}})
 describe('training history without fabricated sessions',()=>{
@@ -19,7 +20,7 @@ describe('training history without fabricated sessions',()=>{
   expect(trainingStart(S,today)).toBe('2025-12-31');expect(trackingStart(S,today)).toBe('2025-12-31');expect(S.trainingStartDate).toBeUndefined()
  })
  it('excludes days before the start from calendar, adherence and streaks',()=>{
-  const S=base();S.workouts=[{id:'old',d:'2026-09-14',routineId:'r'},{id:'a',d:'2026-09-16',routineId:'r'}]
+  const S=base();S.workouts=[{id:'old',d:'2026-09-14',routineId:'r', entries:activity},{id:'a',d:'2026-09-16',routineId:'r', entries:activity}]
   expect(calendarDay(S,'2026-09-14',now).status).toBe('untracked')
   expect(consistencyStats(S,'2026-09-01','2026-09-14',now).rate).toBeNull()
   expect(trainingStreak(S,now).rows.every(r=>r.iso>=S.trainingStartDate)).toBe(true)
@@ -27,7 +28,7 @@ describe('training history without fabricated sessions',()=>{
  })
  it('separates estimates from tracked sessions and exact metrics',()=>{
   const S=base();S.trainingStartDate='2025-01-01';S.trainingHistory.historicalWorkouts=200
-  S.workouts=[{id:'a',d:'2026-09-16',routineId:'r'},{id:'a',d:'2026-09-16'},{id:'c',d:'2026-09-18',cancelled:true}]
+  S.workouts=[{id:'a',d:'2026-09-16',routineId:'r', entries:activity},{id:'a',d:'2026-09-16'},{id:'c',d:'2026-09-18',cancelled:true}]
   expect(historySummary(S,today)).toMatchObject({trackedWorkouts:1,historicalWorkouts:200,total:201,scheduledPerWeek:3})
   expect(statisticsState(S,today).workouts).toHaveLength(1)
   expect(calendarDay(S,'2025-01-03',now).status).toBe('untracked')
@@ -60,15 +61,15 @@ describe('training history without fabricated sessions',()=>{
 
 it('exports a large archive without mutation, counting duplicate IDs only once',()=>{
  const S=base();S.trainingStartDate='2024-01-01';S.trainingHistory.trackedFrom='2024-01-01'
- S.workouts=Array.from({length:10000},(_,i)=>({id:String(i),d:'2024-02-29',name:'長い名前 & <ñ>',routineId:'r'}))
+ S.workouts=Array.from({length:10000},(_,i)=>({id:String(i),d:'2024-02-29',name:'長い名前 & <ñ>',routineId:'r', entries:activity}))
  const before=JSON.stringify(S)
  const result=calendarPeriod(S,new Date('2024-02-29T12:00:00'),'year',new Date('2024-12-31T12:00:00'))
- expect(result.days).toHaveLength(366);expect(result.counts.completed).toBe(1);expect(result.stats.extra).toBe(10000)
+ expect(result.days).toHaveLength(366);expect(result.counts.completed).toBe(1);expect(result.stats.extra).toBe(0);expect(result.stats.activeDays).toBe(1)
  expect(JSON.stringify(S)).toBe(before)
 })
 
 it('does not hide recorded sessions when the entered tracking boundary is later',()=>{
- const S=base();S.trainingHistory.trackedFrom='2026-09-23';S.workouts=[{id:'a',d:'2026-09-16',routineId:'r'}]
+ const S=base();S.trainingHistory.trackedFrom='2026-09-23';S.workouts=[{id:'a',d:'2026-09-16',routineId:'r', entries:activity}]
  expect(trackingStart(S,today)).toBe('2026-09-16')
  expect(calendarDay(S,'2026-09-16',now).status).toBe('completed')
  S.trainingStartDate='2026-09-20'

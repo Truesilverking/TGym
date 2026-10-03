@@ -32,6 +32,18 @@ it('boots from the native mirror after WebView storage loss and immediately pers
   expect(native.save).toHaveBeenCalledOnce()
   expect(native.save.mock.calls[0][0].active.timerPausedAt).toBe(432 * minute)
 })
+it('keeps planned and extra origins through native flush and WebView storage recovery',async()=>{
+ native.save.mockResolvedValue(true)
+ const planned={id:'planned',routineId:'r',sessionOrigin:{type:'planned',routineId:'r'},entries:[{id:'added',sets:[{done:true,r:8}]}]}
+ const extra={...planned,id:'extra',routineId:null,sessionOrigin:{type:'extra',routineId:null}}
+ useStore.getState().update(s=>{s.workouts=[planned,extra]})
+ await useStore.getState().flushPersistence()
+ const disk=JSON.parse(JSON.stringify(native.save.mock.calls.at(-1)[0]))
+ localStorage.clear();useStore.setState({S:structuredClone(DEF),ready:false});native.load.mockResolvedValue(disk)
+ await useStore.getState().boot()
+ expect(useStore.getState().S.workouts.map(w=>w.sessionOrigin)).toEqual([planned.sessionOrigin,extra.sessionOrigin])
+ expect(JSON.parse(localStorage.getItem('gym_state_v1')).workouts.map(w=>w.sessionOrigin.type)).toEqual(['planned','extra'])
+})
 
 it('writes final completion and Continue without waiting for the native debounce', () => {
   const active = completed()

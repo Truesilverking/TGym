@@ -3,18 +3,18 @@ import { isTrainingPaused } from '../lib/training-pause.js'
 import { useEffect, useRef } from 'react'
 import { isoOf, todayISO, MONTHS } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
-import { effectiveRoutineId } from '../lib/history.js'
+import { dailyPlan, loggedWorkouts } from '../lib/daily-plan.js'
+import { hasWorkoutActivity } from '../lib/session-activity.js'
 import { deloadStatus } from '../lib/training-plan.js'
 
-// GitHub-style consistency heatmap. Colour answers the useful question for a scheduled
-// routine: was the planned routine actually completed? Extra training still appears, but it
-// does not masquerade as adherence to a different routine.
+// Activity heatmap: origin determines planned/extra colour, independently of edits.
+// Pending scheduled work remains available through the shared daily plan.
 export default function Heatmap({ S, onDay }) {
   const wrapRef = useRef(null)
   useEffect(() => { if (wrapRef.current) wrapRef.current.scrollLeft = wrapRef.current.scrollWidth }, [])
 
   const agg = {}
-  S.workouts.forEach(w => {
+  loggedWorkouts(S).filter(hasWorkoutActivity).forEach(w => {
     const a = agg[w.d] = agg[w.d] || { rows: [] }
     a.rows.push(w)
   })
@@ -37,9 +37,9 @@ export default function Heatmap({ S, onDay }) {
       const key = isoOf(day)
       const a = agg[key]
       const untracked = isUntracked(S,key)
-      const planned = untracked ? null : effectiveRoutineId(S, key)
-      const routine = planned && (S.routines || []).find(r => r.id === planned)
-      const complete = !!planned && !!a?.rows.some(w => w.routineId === planned || (!w.routineId && routine && w.name === routine.name))
+      const plan = dailyPlan(S, key)
+      const planned = !untracked && plan.total > 0
+      const complete = plan.plannedSessions > 0
       const paused = isTrainingPaused(S,key)
       const status = untracked ? ' untracked' : paused && !a?.rows.length ? ' paused' : complete ? ' complete' : a?.rows.length ? ' extra' : planned && day < today ? ' missed' : ''
       const de = deloadStatus(S, key).active

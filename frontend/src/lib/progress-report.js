@@ -11,6 +11,7 @@ import { rirOf } from './effort.js'
 import { EXIDX } from './exercises.js'
 import { musclesOf, MUSCLE_NAME } from './muscles.js'
 import { activityEntries, activityType } from './activities.js'
+import { hasWorkoutActivity } from './session-activity.js'
 import { LB_PER_KG, CM_PER_IN } from './unit-conversion.js'
 
 export const PROGRESS_PERIODS = [['all','Since Start'],['1','1 Month'],['3','3 Months'],['6','6 Months'],['12','1 Year'],['custom','Custom Range']]
@@ -152,7 +153,7 @@ export function buildProgressReport(S, options={}) {
     }
     exercises.push({...group,sessions:recent,records:records.filter(r=>r.key.startsWith(group.key+':')),metrics:metrics.filter(m=>m.points.length),status:recent.length<2?'Insufficient Data':group.mode==='reps'?comparePerformance(recent[0].best,recent.at(-1).best):'Changed'})
   }
-  const dates=[...new Set(workouts.map(w=>w.d))].sort(),timed=validTimedSessions(workouts,{activeId:S.active?.id,now:new Date(options.now||Date.now()).getTime()}),days=dayNumber(end)-dayNumber(start)+1
+  const dates=[...new Set(workouts.filter(hasWorkoutActivity).map(w=>w.d))].sort(),timed=validTimedSessions(workouts,{activeId:S.active?.id,now:new Date(options.now||Date.now()).getTime()}),days=dayNumber(end)-dayNumber(start)+1
   let longest=0,run=0,previous=null
   for(const d of dates){run=previous&&dayNumber(d)-dayNumber(previous)===1?run+1:1;longest=Math.max(longest,run);previous=d}
   const current=dates.at(-1)>=addDays(end,-1)?run:0

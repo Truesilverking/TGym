@@ -89,7 +89,7 @@ export function progressReportPages(S,{t=x=>x,now=new Date(),name=e=>e.n||e.id,f
  })
  if(q?.workouts){
   group(sectionHead('overview'),tileRows([['Total workouts',q.workouts],['Active days',q.activeDays],['Personal Records',report.records.length],['Average workouts per week',q.averagePerWeek],['Total time (min)',q.timedSessions?q.totalMinutes:null],['Average duration (min)',q.averageMinutes]]))
-  group({...sectionHead('consistency'),sub:sectionHead('consistency').sub+' '+t('Adherence uses the available schedule; earlier plans are not reconstructed.')},tileRows([['Scheduled',q.planned],['Completed',q.completed],['Missed',q.missed],['Pending',q.pending],['Completion',q.rate==null?null:q.rate*100,'%'],['Longest active-day streak',q.longestStreak],['Current active-day streak',q.currentStreak]]))
+  group({...sectionHead('consistency'),sub:sectionHead('consistency').sub+' '+t('Adherence uses the available schedule; earlier plans are not reconstructed.')},tileRows([['Active days',q.activeDays],['Planned',q.planned],['Completed',q.completed],['Extra',q.extra],['Missed',q.missed],['Pending',q.pending],['Completion',q.rate==null?null:q.rate*100,'%'],['Longest active-day streak',q.longestStreak],['Current active-day streak',q.currentStreak]]))
   group(sectionHead('duration'),[...tileRows([['Total time (min)',q.timedSessions?q.totalMinutes:null],['Average duration (min)',q.averageMinutes],['Median',q.medianMinutes,'min']]),...metricRows(report.training.filter(m=>m.key==='duration'))])
  }
  for(const r of report.routines||[]){

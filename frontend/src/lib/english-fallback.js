@@ -1575,4 +1575,5 @@ export default {
  "Keep InBody history": "Keep InBody history",
  "Add dated InBody results to compare body composition over time.": "Add dated InBody results to compare body composition over time.",
  "Choose your theme and preferences. Local tracking works offline once ready; reconnect to check for updates.": "Choose your theme and preferences. Local tracking works offline once ready; reconnect to check for updates."
+,"Activity counts once per day, including planned and extra sessions.":"Activity counts once per day, including planned and extra sessions."
 }

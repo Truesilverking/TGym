@@ -6,7 +6,7 @@ import { ZoomCalendar } from '../sheets.jsx'
 import { useUI } from '../store/useUI.js'
 
 const state = () => ({
-  workouts: [{ id: 'w1', d: '2026-09-02', name: 'Upper A' }],
+  workouts: [{ id: 'w1', d: '2026-09-02', name: 'Upper A' , entries:[{id:'exercise',sets:[{done:true,r:8}]}]}],
   routines: [{ id: 'upper', name: 'Upper A' }, { id: 'lower', name: 'Lower B' }],
   week: { 3: 'upper', 4: 'lower' }, dayPlan: {}, scheduleStarted: '2026-09-01',
 })

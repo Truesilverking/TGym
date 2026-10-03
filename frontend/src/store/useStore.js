@@ -14,6 +14,7 @@ import { shouldRestoreNative } from '../lib/native-state.js'
 import { portableState, backupChecksum } from '../lib/backup.js'
 import { sessionTiming } from '../lib/workout-time.js'
 import { reconcileWorkoutEdit, ensureWorkoutCompletionPaused } from '../lib/workout-lifecycle.js'
+import { sessionOrigin } from '../lib/session-activity.js'
 
 const KEY = 'gym_state_v1'
 export const DEF = {
@@ -183,6 +184,14 @@ export const useStore = create((set, get) => {
     update(mut, push = true, userActivity = true) {
       const S = clone(get().S)
       mut(S)
+      // Editing a session cannot change the origin captured before this edit.
+      if (S.active && S.active.id === get().S.active?.id) S.active.sessionOrigin = {...sessionOrigin(get().S.active,get().S.routines)}
+      const previousWorkouts = new Map((get().S.workouts || []).map(w=>[w.id,w]))
+      const routinesChanged = JSON.stringify(S.routines) !== JSON.stringify(get().S.routines)
+      for (const w of S.workouts || []) {
+        const previous = w.id != null && previousWorkouts.get(w.id)
+        if (previous && (previous.sessionOrigin || previous.routineId !== w.routineId || previous.name !== w.name || !previous.routineId && routinesChanged)) w.sessionOrigin = {...sessionOrigin(previous,get().S.routines)}
+      }
       if (S.backoffRepsMode !== get().S.backoffRepsMode) S.active = refreshActiveBackoffReps(S.active, S)
       if (S.unit === get().S.unit) S.active = reconcileWorkoutEdit(get().S.active, S.active, Date.now(), userActivity)
       persist(S, push)

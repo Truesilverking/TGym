@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { calendarPeriod, calendarFilename } from './calendar-data.js'
-const state = { workouts: [{ d:'2026-09-02', name:'Upper' }], routines:[{id:'r',name:'Upper'}], week:{3:'r',4:'r'}, dayPlan:{} }
+const state = { workouts: [{ d:'2026-09-02', name:'Upper' , entries:[{id:'exercise',sets:[{done:true,r:8}]}]}], routines:[{id:'r',name:'Upper'}], week:{3:'r',4:'r'}, dayPlan:{} }
 afterEach(() => vi.useRealTimers())
 describe('calendar export periods', () => {
   it('uses the supplied report date for both cell status and summary', () => {

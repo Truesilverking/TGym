@@ -27,6 +27,7 @@ import StreakFlame from './components/StreakFlame.jsx'
 import CalendarExport from './components/CalendarExport.jsx'
 import { calendarDay } from './lib/calendar-data.js'
 import { consistencyStats, nextScheduledWorkout } from './lib/consistency.js'
+import { startSessionOrigin } from './lib/session-activity.js'
 import { Button, Slider, Switch, Segmented, SelectRow, Row, TextField, MultiSelectRow, NumberField } from './components/ui.jsx'
 import { glyphOf, GLYPH_GROUPS, DEFAULT_GLYPH } from './lib/glyphs.js'
 import { measurementInUnit } from './lib/body-report.js'
@@ -1188,7 +1189,7 @@ function StreakDetail() {
   const st = useStore(s => s.S)
   const streak = trainingStreak(st)
   const next = nextScheduledWorkout(st)
-  const recent = streak.rows.filter(r => r.planned).slice(-20).reverse()
+  const recent = streak.rows.slice(-20).reverse()
   return <>
     <div className={'streak-hero compact streak-main streak-' + streakTier(streak.current)}>
       <StreakFlame value={streak.current} />
@@ -1202,7 +1203,7 @@ function StreakDetail() {
     {next ? <div className="card"><div className="small dim">{t('Next scheduled workout')}</div><div style={{ fontWeight: 600, marginTop: 4 }}>{fmtScheduledDate(next)}</div></div> : <div className="card"><div className="small dim">{t('Next scheduled workout')}</div><div className="muted" style={{ marginTop: 4 }}>{t('No upcoming workout')}</div></div>}
     <h4 className="sec">{t('Consistency calendar')}</h4>
     <ZoomCalendar S={st} onDay={iso => { const rows = st.workouts.filter(w => w.d === iso); if (rows.length) workoutDetailSheet(rows[rows.length - 1]) }} />
-    <h4 className="sec">{t('Recent scheduled days')}</h4>
+    <h4 className="sec">{t('Recent workouts')}</h4>
     <div className="list">{recent.map(r => { const workout = st.workouts.filter(w => w.d === r.iso).at(-1); const routine = st.routines.find(x => x.id === effectiveRoutineId(st, r.iso)); const routineName = workout?.name || routine?.name || ''; return <div className="item recent-streak-item" key={r.iso} aria-label={`${fmtDate(r.iso, true)}, ${t(r.status === 'completed' ? 'Completed' : r.status === 'missed' ? 'Not completed' : 'Pending')}, ${routineName}`}><span className="lrow-i" style={{ color: r.status === 'completed' ? 'var(--green)' : r.status === 'missed' ? 'var(--red)' : 'var(--label-2)' }}><Icon name={r.status === 'completed' ? 'checkCircle' : r.status === 'missed' ? 'xmark' : 'clock'} /></span><div className="grow recent-streak-row"><div className="tt">{fmtDate(r.iso, true)}<span className="recent-routine-name">{routineName}</span></div></div></div>})}</div>
   </>
 }
@@ -1559,7 +1560,7 @@ export function beginWorkout(routineId, bw) {
   const daily = dailyPlan(st,todayISO()), dailyIndex = daily.items.findIndex(item=>item.id===routineId)
   update(s => {
     if (s.daySkipped?.[todayISO()]) s.daySkipped[todayISO()] = routineIds(s.daySkipped[todayISO()]).filter(id=>id!==routineId)
-    s.active = { dailyPlanIndex:dailyIndex, dailyPlanTotal:daily.total, id: uid(), d: todayISO(), start: Date.now(), routineId, name: r ? r.name : t('Freestyle'), bw: bw || null, unit: st.unit, bwUnit: st.unit, cur: 0, deload: deload.active, entries }
+    s.active = { sessionOrigin:startSessionOrigin(r?.id), dailyPlanIndex:dailyIndex, dailyPlanTotal:daily.total, id: uid(), d: todayISO(), start: Date.now(), routineId:r?.id || null, name: r ? r.name : t('Freestyle'), bw: bw || null, unit: st.unit, bwUnit: st.unit, cur: 0, deload: deload.active, entries }
   })
   useUI.getState().stopRest()
   nav('/workout')
