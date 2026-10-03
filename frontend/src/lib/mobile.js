@@ -95,6 +95,18 @@ function samePending(pending, desired) {
   const identities = new Map(pending.map(notice => [notice.id,noticeIdentity(notice)]))
   return pending.length === desired.length && desired.every(notice => identities.get(notice.id) === noticeIdentity(notice))
 }
+async function verifyReminderPending(LocalNotifications, kind, notices) {
+  let pending
+  // iOS resolves schedule/cancel before its notification-center write completes. Poll
+  // read-only at most twice more; never repeat the mutation or hide a persistent mismatch.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt) await new Promise(resolve => setTimeout(resolve,200))
+    try { pending = (await LocalNotifications.getPending()).notifications || [] }
+    catch (error) { throw Object.assign(new Error('Reminder scheduling verification failed'),{pendingReadFailed:true,cause:error}) }
+    if (samePending(pending.filter(notice => ownedReminderIds[kind].includes(notice.id)),notices)) return pending
+  }
+  throw Object.assign(new Error('Reminder scheduling could not be verified'),{pending})
+}
 const lastScheduled = new Map()
 let reminderQueue = Promise.resolve()
 export function syncReminder(S, interactive = false, requestedKind = null) {
@@ -150,8 +162,7 @@ async function syncReminderNow(S, interactive = false, requestedKind = null) {
           setReminderStatus(kind,'syncing')
           await LocalNotifications.cancel({notifications:ownedReminderIds[kind].map(id => ({id}))})
           if (notices.length) await LocalNotifications.schedule({notifications:notices})
-          pending = (await LocalNotifications.getPending()).notifications || []
-          if (!samePending(pending.filter(notice => ownedReminderIds[kind].includes(notice.id)),notices)) throw new Error('Reminder scheduling could not be verified')
+          pending = await verifyReminderPending(LocalNotifications,kind,notices)
         }
         lastScheduled.set(kind,fingerprint)
         setReminderStatus(kind,status,notices,soundError ? 'Reminder scheduling failed' : null,family.validation.valid ? null : family.validation.reason)
@@ -160,8 +171,9 @@ async function syncReminderNow(S, interactive = false, requestedKind = null) {
         lastScheduled.delete(kind)
         setReminderStatus(kind,'error',[],'Reminder scheduling failed')
         successful = false
+        if (error.pendingReadFailed) throw error
         // A failed measurement update must not prevent reconciliation of workout/deload.
-        pending = (await LocalNotifications.getPending()).notifications || []
+        pending = error.pending || (await LocalNotifications.getPending()).notifications || []
       }
     }
     verified = successful
