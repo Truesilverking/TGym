@@ -1,0 +1,23 @@
+.deload-settings-header{display:flex;align-items:center;gap:8px;padding-right:12px}
+.deload-settings-toggle{display:flex;align-items:center;gap:12px;flex:1;min-width:0;min-height:64px;padding:13px 10px 13px 14px;text-align:left;color:var(--label);background:none}
+.deload-settings-toggle:active{background:var(--surface-2)}
+.deload-settings-heading{display:flex;flex-direction:column;gap:4px;flex:1;min-width:0;overflow-wrap:anywhere}
+.deload-settings-title{display:flex;align-items:center;flex-wrap:wrap;gap:7px;font-size:17px;letter-spacing:-.012em;line-height:1.25}
+.deload-settings-state{font-size:11px;font-weight:600;padding:3px 7px;border-radius:8px;background:var(--surface-2);color:var(--label-2)}
+.deload-settings-state.on{background:color-mix(in srgb,var(--orange) 15%,var(--surface));color:var(--label)}
+.deload-settings-summary{font-size:12px;line-height:1.35;color:var(--label-2)}
+.deload-settings-chevron{flex:none;width:16px;color:var(--label-2);transition:transform .16s var(--ease)}
+.deload-settings-chevron.expanded{transform:rotate(180deg)}
+.deload-settings-panel{border-top:var(--hair) solid var(--sep);animation:deload-settings-in .16s ease-out}
+.deload-settings-panel[hidden]{display:none}
+.deload-settings-date{justify-content:space-between;flex-wrap:wrap}
+.deload-settings-date .input{width:150px;max-width:100%;flex:0 1 150px;min-height:44px}
+.deload-settings-date .input[aria-invalid="true"]{border-color:var(--red)}
+.deload-settings-info{font-size:13px;line-height:1.4;color:var(--label-2);padding:12px 14px;margin:0;border-top:var(--hair) solid var(--sep)}
+.deload-settings-error{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:10px 14px;font-size:13px;line-height:1.4;color:var(--red);border-top:var(--hair) solid var(--sep)}
+.deload-settings-error button{min-height:44px;padding:8px;color:var(--acc);font-weight:600;background:none}
+@keyframes deload-settings-in{from{opacity:.75}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){.deload-settings-chevron{transition:none}.deload-settings-panel{animation:none}}
+html[data-reduce-motion="true"] .deload-settings-chevron{transition:none}
+html[data-reduce-motion="true"] .deload-settings-panel{animation:none}
+@media(max-width:360px){.deload-settings-toggle{gap:8px;padding-left:12px}.deload-settings-header{gap:2px;padding-right:10px}}

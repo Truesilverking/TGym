@@ -2,6 +2,7 @@ import { dailyPlan } from './daily-plan.js'
 import { isTrainingPaused, openTrainingPause } from './training-pause.js'
 import { isoOf } from './format.js'
 import { deloadStatus } from './training-plan.js'
+import { validReminderTime } from './measurement-reminders.js'
 
 export const DELOAD_NOTIFICATION_IDS = [3200, 3201]
 export function deloadNotificationPlan(S, now = new Date()) {
@@ -27,8 +28,17 @@ export function deloadNotificationPlan(S, now = new Date()) {
 
 export const WORKOUT_NOTIFICATION_IDS = [100, 101, 102, 103, 104, 105, 106]
 const timeOf = (value, fallback) => /^([01]\d|2[0-3]):[0-5]\d$/.test(value || '') ? value : fallback
+export function workoutReminderValidation(S) {
+  const settings = S.reminder || {}
+  const times = [settings.time, settings.nextTime, ...Object.values(settings.dayTimes || {}), ...(settings.quietOn ? [settings.quietStart, settings.quietEnd] : [])]
+  if (times.some(time => time != null && !validReminderTime(time))) return {valid:false, reason:'Enter a valid time'}
+  const ids = new Set((S.routines || []).map(routine => routine.id))
+  const scheduled = [...Object.values(S.week || {}), ...Object.values(S.dayPlan || {})].flat().some(id => ids.has(id))
+  if (!scheduled) return {valid:false, reason:'Add a workout to your schedule'}
+  return {valid:true, reason:null}
+}
 export function workoutNotificationPlan(state, now = new Date()) {
-  if (isTrainingPaused(state, isoOf(now)) || !state.reminder?.on) return []
+  if (!Number.isFinite(+now) || isTrainingPaused(state, isoOf(now)) || !state.reminder?.on || !workoutReminderValidation(state).valid) return []
   const S = {week:{},dayPlan:{},routines:[],workouts:[],...state}
   const today = isoOf(now), settings = S.reminder
   const pending = date => {

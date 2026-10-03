@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.15.49
+
+- Put the local-data message first in Data and explain optional server, cloud and export transfers.
+- Unify measurement/workout reminder controls, saved schedules, permission/error feedback and independent native reconciliation without replacing unchanged notifications.
+- Collapse Deload week into an accessible accordion without changing its configuration or formulas.
+- Protect in-flight remote restores from newer local preference edits and account changes; add persistence, idempotency and reminder regression coverage.
+
 ## 1.15.48
 
 - Capture planned/extra session origin at start and preserve it across exercise edits, finish, reload, backup and synchronization. Adding or substituting exercises never creates extra sessions.

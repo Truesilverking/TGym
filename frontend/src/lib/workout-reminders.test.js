@@ -1,5 +1,5 @@
 import {describe,it,expect} from 'vitest'
-import {workoutNotificationPlan,deloadNotificationPlan} from './workout-reminders.js'
+import {workoutNotificationPlan,deloadNotificationPlan,workoutReminderValidation} from './workout-reminders.js'
 import {createBackup,readBackup} from './backup.js'
 const now = new Date('2026-09-10T07:00:00')
 const state = () => ({routines:[{id:'a',name:'Upper A'},{id:'b',name:'Lower A'}],week:{4:'a',5:'b'},dayPlan:{},workouts:[],reminder:{on:true,time:'08:00',nextTime:'19:00'}})
@@ -35,6 +35,35 @@ describe('state-aware workout reminders',()=>{
     expect(workoutNotificationPlan(S,now)[0].at.getHours()).toBe(9)
     S.reminder.quietOn=true; S.reminder.quietStart='18:00'; S.reminder.quietEnd='10:00'
     expect(workoutNotificationPlan(S,now)).toEqual([])
+  })
+  it('validates all effective times and requires an actual scheduled routine',()=>{
+    const S=state();S.reminder.time='24:00'
+    expect(workoutReminderValidation(S).reason).toBe('Enter a valid time')
+    expect(workoutNotificationPlan(S,now)).toEqual([])
+    S.reminder.time='08:00';S.reminder.dayTimes={4:'7:30'}
+    expect(workoutReminderValidation(S).valid).toBe(false)
+    S.reminder.dayTimes={};S.week={4:'deleted'}
+    expect(workoutReminderValidation(S).reason).toBe('Add a workout to your schedule')
+    S.dayPlan={'2026-09-12':['b']}
+    expect(workoutReminderValidation(S).valid).toBe(true)
+  })
+  it('retains a pending edited planned workout reminder only until valid completion',()=>{
+    const S=state()
+    S.workouts=[{id:'edited',sessionOrigin:{type:'planned',routineId:'a'},d:'2026-09-10',entries:[{id:'new-exercise',sets:[{done:true,r:8}]}]}]
+    expect(workoutNotificationPlan(S,now).some(notice=>notice.kind==='today')).toBe(false)
+    S.workouts[0].entries[0].sets[0].done=false
+    expect(workoutNotificationPlan(S,now).some(notice=>notice.kind==='today')).toBe(true)
+  })
+  it('uses the local date and weekday at UTC midnight and across the week boundary',()=>{
+    const previous=process.env.TZ
+    try {
+      process.env.TZ='America/Santo_Domingo'
+      const S=state();S.week={0:['a'],1:['b']};S.reminder.time='23:30';S.reminder.nextTime='23:00'
+      const localSunday=new Date('2026-09-14T00:30:00Z')
+      const notices=workoutNotificationPlan(S,localSunday)
+      expect(notices.map(n=>[n.kind,n.date,n.routineId])).toEqual([['today','2026-09-13','a'],['tomorrow','2026-09-14','b']])
+      expect(notices[0].at.toISOString()).toBe('2026-09-14T03:30:00.000Z')
+    } finally {if(previous == null)delete process.env.TZ;else process.env.TZ=previous}
   })
 })
 

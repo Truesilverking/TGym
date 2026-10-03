@@ -252,16 +252,21 @@ export const useStore = create((set, get) => {
       return upload
     },
     async pullState() {
+      const requestedState = get().S
+      const userId = get().user?.id
       try {
         const { state } = await api('/api/data')
+        // A response belongs to the account and local revision that requested it.
+        // Preference-only profiles still contain edits worth protecting.
+        if (get().user?.id !== userId) return
         const S = get().S
         const dirty = localStorage.getItem('gym_dirty') === '1'
-        if (state && (!hasData(S) || ((state._ts || 0) >= (S._ts || 0) && !dirty))) {
+        if (state && S === requestedState && !dirty && (!hasData(S) || (state._ts || 0) >= (S._ts || 0))) {
           const active = S.active
           const next = Object.assign(clone(DEF), state)
           if (active) next.active = active
           persist(next, false)
-        } else if (hasData(S)) { await get().pushState() }
+        } else if (hasData(S) || dirty || S._ts || S !== requestedState) { await get().pushState() }
       } catch (e) { /* offline — keep local */ }
     },
 

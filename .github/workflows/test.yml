@@ -10,7 +10,7 @@ on:
       - 'api/**'
       - '.github/workflows/test.yml'
   push:
-    branches: [main, feature/workout-duration, feature/ui-persistence-audit, feature/training-pause, feature/dashboard-visual-polish, feature/backoff-reps-settings, feature/session-origin-activity]
+    branches: [main, feature/workout-duration, feature/ui-persistence-audit, feature/training-pause, feature/dashboard-visual-polish, feature/backoff-reps-settings, feature/session-origin-activity, feature/settings-reminders-ux]
     paths:
       - 'frontend/**'
       - 'mcp/**'

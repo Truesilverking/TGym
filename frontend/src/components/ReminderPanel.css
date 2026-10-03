@@ -1,0 +1,16 @@
+.settings-reminders>.sect-b{background:none;overflow:visible}
+.reminder-panel{padding:18px;margin:0;background:var(--surface);border:1px solid var(--sep);border-radius:var(--r);min-width:0}
+.reminder-panel+.reminder-panel{margin-top:12px}
+.reminder-heading{display:flex;align-items:flex-start;gap:12px}
+.reminder-heading>div{flex:1;min-width:0}.reminder-heading h3{font-size:16px;line-height:1.4;margin:0;overflow-wrap:anywhere}
+.reminder-heading p{font-size:13px;line-height:1.55;color:var(--label-2);margin:5px 0 0}
+.reminder-heading .sw{flex-shrink:0}.reminder-summary{font-size:13px;line-height:1.55;margin:14px 0 0;overflow-wrap:anywhere}
+.reminder-controls{margin-top:14px}.reminder-controls .lrow{padding-left:0;padding-right:0;flex-wrap:wrap;gap:10px}.reminder-controls .lrow:first-child{border-top:0}
+.reminder-feedback{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12px;line-height:1.55;margin:12px 0 0;padding:10px 12px;border-radius:var(--r-sm);background:var(--surface-2)}
+.reminder-feedback span{flex:1;min-width:160px}.reminder-feedback.warning{border-left:3px solid var(--orange)}.reminder-feedback .btn{min-height:44px}
+.reminder-status{font-size:12px;line-height:1.5;margin:12px 0}.reminder-time{display:grid;gap:6px;min-width:0;font-size:13px;font-weight:600}.reminder-time input{min-height:44px;max-width:100%;min-width:0;width:100%}
+.reminder-times{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0}.reminder-days{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}.reminder-days span{display:inline-flex;align-items:center;gap:4px;background:var(--acc-soft);color:var(--acc);border:1px solid var(--acc);padding:5px 8px;border-radius:var(--r-sm);font-size:12px}.reminder-days svg{width:12px;height:12px}
+.reminder-details{margin-top:14px}.reminder-details>summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-size:13px;font-weight:600;gap:8px}.reminder-details>summary::after{content:'⌄';margin-left:auto}.reminder-details[open]>summary::after{transform:rotate(180deg)}
+.reminder-fields{display:grid;gap:12px;margin-top:12px}.reminder-fields .field{margin:0;min-height:44px}.reminder-metric-toggle{display:flex;align-items:center;gap:12px;justify-content:space-between;margin:14px 0}.reminder-metric-toggle h4{margin:0;font-size:14px}
+.measurement-reminder-categories button{display:flex;gap:6px;align-items:center;justify-content:center;white-space:normal}.measurement-reminder-categories button svg{width:14px;height:14px;flex-shrink:0}.measurement-reminder-record{margin-top:16px}
+@media(max-width:360px){.reminder-panel{padding:14px}.reminder-times{grid-template-columns:1fr}.reminder-heading{gap:8px}.reminder-heading>.lrow-i{display:none}}

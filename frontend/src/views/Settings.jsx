@@ -1,4 +1,3 @@
-import { routineIds } from '../lib/daily-plan.js'
 import { openHealthActivities } from '../components/Activities.jsx'
 import { replayAppTour } from '../components/AppTour.jsx'
 import { openTrainingHistory } from '../components/TrainingHistory.jsx'
@@ -6,15 +5,15 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore, DEF, hasData } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
-import { ACCENTS, todayISO, localTZ, DAYN } from '../lib/format.js'
+import { ACCENTS, todayISO } from '../lib/format.js'
 import { effortOf } from '../lib/history.js'
 import { api, webauthnOK, passkeyLogin, passkeyRegister, IS_ANDROID } from '../lib/api.js'
 import { pushSupported, enablePush, disablePush, sendTestPush } from '../lib/push.js'
 import { wakeLockSupported } from '../lib/wakelock.js'
 import { t, LANGS, INSTR_LANGS } from '../lib/i18n.js'
 import { DEMO, REPO, STANDALONE } from '../lib/demo.js'
-import { MOBILE, shareExport, syncReminder } from '../lib/mobile.js'
-import { measurementRemindersSheet, loadStarterPlan, confirmSheet, importFromApp, equipmentProfileSheet, planImportSheet, planToolsSheet } from '../sheets.jsx'
+import { MOBILE, shareExport } from '../lib/mobile.js'
+import { loadStarterPlan, confirmSheet, importFromApp, equipmentProfileSheet, planImportSheet, planToolsSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
 import { Section, Row, SelectRow, Switch, Segmented, Button } from '../components/ui.jsx'
 import { biometricEnabled, checkDeviceBiometry, deviceLockEnabled, enrollDeviceBiometry, removeDevicePin, setBiometricEnabled, setDevicePin, verifyDevicePin } from '../lib/app-lock.js'
@@ -26,6 +25,10 @@ import { openRestoreSheet } from '../components/RestoreSheet.jsx'
 import { UpdateCheckButton } from '../components/AppUpdate.jsx'
 import { openSoundSettings } from '../components/SoundSettings.jsx'
 import { APP_REPOSITORY, ORIGINAL_OPENGYM_REPOSITORY } from '../lib/app-meta.js'
+import { ReminderStatus } from '../components/ReminderPanel.jsx'
+import MeasurementReminders from '../components/MeasurementReminders.jsx'
+import WorkoutReminderSettings from '../components/WorkoutReminderSettings.jsx'
+import DeloadSettings from '../components/DeloadSettings.jsx'
 
 function BackupSheet({ onExport, onImport }) {
   const autoBackup = useStore(s => !!s.S.autoBackup)
@@ -266,36 +269,16 @@ export default function Settings() {
       </Row>
     </Section>
 
-    <Section title={t('Deload week')} footer={t('The cycle starts on Monday. Training breaks freeze it and shift its dates. Saved workouts stay unchanged. Alerts respect quiet hours.')}>
-      <Row icon="arrowDown" iconTint="var(--orange)" title={t('Scheduled deload')} subtitle={S.deload?.on ? t('{0} normal weeks + {1} deload week', S.deload?.normalWeeks || 6, S.deload?.deloadWeeks || 1) : t('Off')}>
-        <Switch checked={!!S.deload?.on} onChange={v => update(s => { s.deload = { ...DEF.deload, ...(s.deload || {}), on: v, startDate: s.deload?.startDate || todayISO() } })} />
-      </Row>
-      {!!S.deload?.on && <>
-        {MOBILE && <Row icon="bell" title={t('Deload alerts')} subtitle={t('One day before and on the first day.')}><Switch checked={S.deload?.notifications !== false} onChange={async v => {
-          const next = {...S,deload:{...S.deload,notifications:v}}
-          const ok = await syncReminder(next,v)
-          if (v && !ok) { toast(t('Enable notifications in your device settings.')); return }
-          update(s => {s.deload = {...s.deload,notifications:v}})
-        }} /></Row>}
-        <SelectRow title={t('Normal weeks')} value={S.deload?.normalWeeks || 6} onChange={v => update(s => { s.deload = { ...s.deload, normalWeeks: v } })}
-          options={[4, 5, 6, 7, 8, 10, 12].map(v => ({ value: v, label: String(v) }))} />
-        <SelectRow title={t('Deload weeks')} value={S.deload?.deloadWeeks || 1} onChange={v => update(s => { s.deload = { ...s.deload, deloadWeeks: v } })}
-          options={[1, 2].map(v => ({ value: v, label: String(v) }))} />
-        <SelectRow title={t('Training load')} value={S.deload?.loadPct || 80} onChange={v => update(s => { s.deload = { ...s.deload, loadPct: v } })}
-          options={[80, 85, 90, 95].map(v => ({ value: v, label: v + '%' }))} />
-        <SelectRow title={t('Working sets')} value={S.deload?.setPct || 60} onChange={v => update(s => { s.deload = { ...s.deload, setPct: v } })}
-          options={[40, 50, 60, 70, 80].map(v => ({ value: v, label: v + '%' }))} />
-        <SelectRow title={t('Target RIR')} value={S.deload?.targetRir ?? 3.5} onChange={v => update(s => { s.deload = { ...s.deload, targetRir: v } })}
-          options={[3, 3.5, 4, 4.5, 5].map(v => ({ value: v, label: String(v) }))} />
-        <div className="lrow"><span className="lrow-t">{t('Cycle start')}</span><input className="input" style={{ width: 150 }} type="date" value={S.deload?.startDate || todayISO()} onChange={e => update(s => { s.deload = { ...s.deload, startDate: e.target.value } })} /></div>
-      </>}
-    </Section>
+    <DeloadSettings S={S} update={update} toast={toast} reminderStatus={MOBILE && S.deload?.on && S.deload?.notifications !== false ? <ReminderStatus kind="deload" enabled /> : null} />
 
-    {(user || MOBILE) && <NotificationsCard S={S} update={update} toast={toast} />}
+    <Section title={t('Reminders')} className="settings-reminders">
+      <MeasurementReminders settingsOnly />
+      {(MOBILE || !user) && <WorkoutReminderSettings />}
+    </Section>
+    {user && !MOBILE && <PushCard S={S} update={update} toast={toast} />}
 
     <Section title={t('Help')}><Row className="tour-replay" icon="sparkles" title={t('Replay App Tour')} accessory="chevron" onClick={replayAppTour} /></Section>
     <div data-tour="health"><Section title={t('Health')}>
-      <Row icon="history" title={t('Measurement reminders')} accessory="chevron" onClick={() => measurementRemindersSheet()} />
       <Row icon="figureRun" iconTint="var(--red)" title={t('Health & wearables')} subtitle={t('Activities and health data')} accessory="chevron" onClick={openHealthActivities} />
     </Section></div>
 
@@ -338,8 +321,10 @@ export default function Settings() {
 
     {/* ---------- data: fill it, bring things over, back it up, wipe it ---------- */}
     <Section title={t('Data')}>
+      <Row icon="lock" iconTint="var(--acc)" title={t('All Data stays on this device')} subtitle={user
+        ? t('This profile also syncs with your connected server. Cloud backups and exported copies leave this device when you choose them.')
+        : t('Stored locally by default. Connecting a server, enabling cloud backup or sharing an export sends a copy outside this device.')} />
       <Row icon="history" title={t('Training history settings')} accessory="chevron" onClick={openTrainingHistory} />
-      {(MOBILE || STANDALONE) && <Row icon="lock" iconTint="var(--acc)" title={t('All Data stays on this device')} subtitle={t('Data is stored locally by default. Cloud copies are sent only when you enable cloud backup.')} />}
       <Row icon="folder" iconTint="var(--blue)" title={t('Backup')} accessory="chevron" onClick={() => useUI.getState().openSheet(() => <BackupSheet onExport={doExport} onImport={() => authorize(() => fileRef.current?.click())} />)} />
       <Row icon="cloud" iconTint="var(--blue)" title={t('Restore')} subtitle={t('Back up, synchronize or restore your TGym data.')} accessory="chevron" onClick={() => openRestoreSheet(authorize)} />
       <Row icon="folder" iconTint="var(--acc)" title={t('Load Routine')} subtitle={t('Create, import or export routines from one place.')} accessory="chevron" onClick={openLoadRoutine} />
@@ -409,53 +394,10 @@ function effortHelpSheet() {
   </>)
 }
 
-function NotificationsCard({ S, update, toast }) {
-  if (MOBILE) return <MobileReminderCard S={S} update={update} toast={toast} />
-  return <PushCard S={S} update={update} toast={toast} />
-}
-
-// Mobile build: the reminder is a native local notification scheduled on planned weekdays —
-// no push server involved. The schedule itself is (re)synced by the store on every persist;
-// this card only owns the OS permission prompt when the switch turns on.
-function MobileReminderCard({ S, update, toast }) {
-  const setReminder = patch => update(s => { s.reminder = { ...(s.reminder || DEF.reminder), ...patch, tz: localTZ() } })
-  const toggle = async () => {
-    const on = !S.reminder?.on
-    if (on) {
-      const ok = await syncReminder({ ...S, reminder: { ...(S.reminder || DEF.reminder), on: true } }, true)
-      if (!ok) { toast(t('Could not change notification settings')); return }
-    }
-    setReminder({ on })
-  }
-  return (
-    <Section title={t('Notifications')}
-      footer={S.reminder?.on ? t('Reminds you at this time on days that have a routine planned.') : null}>
-      <Row icon="calendar" iconTint="var(--orange)" title={t('Workout day reminder')}>
-        <Switch checked={!!S.reminder?.on} onChange={toggle} />
-      </Row>
-      {S.reminder?.on && (
-        <Row icon="clock" iconTint="var(--purple)" title={t('Reminder time')}>
-          <input type="time" className="timef" value={S.reminder?.time || DEF.reminder.time}
-            onChange={e => setReminder({ time: e.target.value })} />
-        </Row>
-      )}
-      {S.reminder?.on && Object.keys(S.week || {}).filter(day => routineIds(S.week[day]).length).map(day => <Row key={day} icon="clock" iconTint="var(--blue)" title={t(DAYN[Number(day)])}><input type="time" className="timef" value={S.reminder?.dayTimes?.[day] || S.reminder?.time || DEF.reminder.time} onChange={e => setReminder({ dayTimes: { ...(S.reminder?.dayTimes || {}), [day]: e.target.value } })} /></Row>)}
-      {S.reminder?.on && <Row icon="clock" title={t('Next workout reminder')}><input aria-label={t('Next workout reminder')} type="time" className="timef" value={S.reminder.nextTime || '19:00'} onChange={e=>setReminder({nextTime:e.target.value})} /></Row>}
-      <Row icon="moon" iconTint="var(--indigo)" title={t('Quiet hours')}><Switch checked={!!S.reminder?.quietOn} onChange={v => setReminder({ quietOn: v })} /></Row>
-      {S.reminder?.quietOn && <Row icon="clock" title={t('Quiet period')} className="quiet-period-row">
-        <span className="quiet-time-range">
-          <input aria-label={t('Quiet period') + ' — ' + t('Start')} type="time" className="timef" value={S.reminder.quietStart || '22:00'} onChange={e => setReminder({ quietStart: e.target.value })} />
-          <span className="quiet-time-separator" aria-hidden="true">–</span>
-          <input aria-label={t('Quiet period') + ' — ' + t('End')} type="time" className="timef" value={S.reminder.quietEnd || '07:00'} onChange={e => setReminder({ quietEnd: e.target.value })} />
-        </span>
-      </Row>}
-    </Section>
-  )
-}
-
 function PushCard({ S, update, toast }) {
   const [on, setOn] = useState(false)
   const [busy, setBusy] = useState(false)
+  const pending = useRef(false)
   const supported = pushSupported()
 
   useEffect(() => {
@@ -464,12 +406,14 @@ function PushCard({ S, update, toast }) {
   }, [supported])
 
   const toggle = async v => {
+    if (pending.current) return
+    pending.current = true
     setBusy(true)
     try {
       if (!v) { await disablePush(); setOn(false); toast(t('Notifications off')) }
       else { await enablePush(); setOn(true); toast(t('Notifications on')) }
     } catch (e) { toast(e.message || t('Could not change notification settings')) }
-    setBusy(false)
+    pending.current = false; setBusy(false)
   }
   const test = async () => {
     try { await sendTestPush(); toast(t('Test sent — should arrive any second')) }
@@ -493,18 +437,8 @@ function PushCard({ S, update, toast }) {
       <Row icon="bell" iconTint="var(--red)" title={t('Push notifications')} subtitle={t('Rest-timer alerts, even if openGym is closed.')}>
         <Switch checked={on} disabled={busy} onChange={toggle} />
       </Row>
-      {on && (
-        <Row icon="calendar" iconTint="var(--orange)" title={t('Workout day reminder')}>
-          <Switch checked={!!S.reminder?.on} onChange={() => update(s => { s.reminder = { ...(s.reminder || DEF.reminder), on: !s.reminder?.on, tz: localTZ() } })} />
-        </Row>
-      )}
-      {on && S.reminder?.on && (
-        <Row icon="clock" iconTint="var(--purple)" title={t('Reminder time')}>
-          <input type="time" className="timef" value={S.reminder?.time || DEF.reminder.time}
-            onChange={e => update(s => { s.reminder = { ...(s.reminder || DEF.reminder), time: e.target.value, tz: localTZ() } })} />
-        </Row>
-      )}
     </Section>
+    {on && <WorkoutReminderSettings serverReady /> }
     {on && <div style={{ marginTop: -12, marginBottom: 22 }}><Button size="sm" icon="bell" onClick={test}>{t('Send test notification')}</Button></div>}
   </>
 }

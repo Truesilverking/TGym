@@ -14,8 +14,8 @@ import { fmtScheduledDate } from './format.js'
 // web bundles; the Capacitor plugins are only ever imported behind it.
 import { t } from './i18n-core.js'
 import { todayISO, ACCENTS } from './format.js'
-import { measurementNotificationPlan, MEASUREMENT_NOTIFICATION_IDS } from './measurement-reminders.js'
-import { workoutNotificationPlan, WORKOUT_NOTIFICATION_IDS, deloadNotificationPlan, DELOAD_NOTIFICATION_IDS } from './workout-reminders.js'
+import { measurementNotificationPlan, measurementReminderValidation, MEASUREMENT_NOTIFICATION_IDS } from './measurement-reminders.js'
+import { workoutNotificationPlan, workoutReminderValidation, WORKOUT_NOTIFICATION_IDS, deloadNotificationPlan, DELOAD_NOTIFICATION_IDS } from './workout-reminders.js'
 import { syncNativeSounds, finishNativeSoundSync } from './native-sound.js'
 
 export const MOBILE = import.meta.env.VITE_MOBILE === '1'
@@ -65,49 +65,111 @@ export async function saveRemoteFile(data) {
   } catch (e) { /* worst case: onboarding asks again next launch */ }
 }
 
-// (Re)schedule the workout-day reminder: one repeating notification per weekday that has a
-// routine in the weekly plan. Cheap enough to run after any state change — the plan or the
-// reminder time may just have been edited. `interactive` gates the OS permission prompt to
-// the Settings toggle; a background resync never pops a dialog.
+// Reconcile each reminder family with the native pending list. Opening Settings, restoring
+// a profile and foreground checks do not replace unchanged alarms. `interactive` is only
+// passed by an explicit enable/retry action; background reconciliation never asks permission.
+const reminderKinds = ['workout', 'measurement', 'deload']
+const ownedReminderIds = {workout:[...WORKOUT_NOTIFICATION_IDS,3000], measurement:MEASUREMENT_NOTIFICATION_IDS, deload:DELOAD_NOTIFICATION_IDS}
+const reminderListeners = new Set()
+let reminderStatus = Object.fromEntries(reminderKinds.map(kind => [kind,{status:MOBILE ? 'syncing' : 'unsupported',count:0,nextAt:null,error:null,validation:null}]))
+export const getReminderStatus = () => reminderStatus
+export const reminderSyncStatus = kind => reminderStatus[kind]
+export function subscribeReminderStatus(listener) {
+  reminderListeners.add(listener)
+  return () => reminderListeners.delete(listener)
+}
+function setReminderStatus(kind, status, notices = [], error = null, validation = null) {
+  const next = {status,count:status === 'configured' ? notices.length : 0,nextAt:status === 'configured' && notices.length ? notices[0].schedule.at.toISOString() : null,error,validation}
+  if (JSON.stringify(next) === JSON.stringify(reminderStatus[kind])) return
+  reminderStatus = {...reminderStatus,[kind]:next}
+  for (const listener of reminderListeners) listener()
+}
+const stableValue = value => value instanceof Date ? value.toISOString() : Array.isArray(value) ? value.map(stableValue) : value && typeof value === 'object' ? Object.fromEntries(Object.keys(value).sort().map(key => [key,stableValue(value[key])])) : value
+const noticeIdentity = notice => {
+  const at = +new Date(notice.schedule?.at)
+  // Android's pending list can contain Java Date strings with local zone abbreviations
+  // (e.g. AST), which JavaScript cannot parse. Our stable epoch preserves that comparison.
+  return JSON.stringify(stableValue({id:notice.id,title:notice.title,body:notice.body,at:Number.isFinite(at) ? at : notice.extra?.tgymReminderAt,extra:notice.extra || {}}))
+}
+function samePending(pending, desired) {
+  const identities = new Map(pending.map(notice => [notice.id,noticeIdentity(notice)]))
+  return pending.length === desired.length && desired.every(notice => identities.get(notice.id) === noticeIdentity(notice))
+}
+const lastScheduled = new Map()
 let reminderQueue = Promise.resolve()
-export function syncReminder(S, interactive = false) {
+export function syncReminder(S, interactive = false, requestedKind = null) {
   const snapshot = structuredClone(S)
-  reminderQueue = reminderQueue.catch(() => false).then(() => syncReminderNow(snapshot, interactive))
+  reminderQueue = reminderQueue.catch(() => false).then(() => syncReminderNow(snapshot, interactive, requestedKind))
   return reminderQueue
 }
-async function syncReminderNow(S, interactive = false) {
+async function syncReminderNow(S, interactive = false, requestedKind = null) {
+  const now = new Date()
+  const families = {
+    workout:{enabled:!!S.reminder?.on,validation:workoutReminderValidation(S)},
+    measurement:{enabled:!!S.measurementReminders?.notifications,validation:measurementReminderValidation(S)},
+    deload:{enabled:!!S.deload?.on && S.deload?.notifications !== false,validation:{valid:true,reason:null}},
+  }
+  let soundSettings
   try {
     const { LocalNotifications } = await import('@capacitor/local-notifications')
-    const soundSettings = await syncNativeSounds(S)
-    await LocalNotifications.cancel({ notifications: WORKOUT_NOTIFICATION_IDS.map(id => ({ id })) })
-    await LocalNotifications.cancel({ notifications: MEASUREMENT_NOTIFICATION_IDS.map(id => ({id})) })
-    await LocalNotifications.cancel({ notifications: [{id:3000}] })
-    await LocalNotifications.cancel({ notifications: DELOAD_NOTIFICATION_IDS.map(id => ({id})) })
-    const r = S.reminder
-    if (!r?.on && !S.measurementReminders?.notifications && !S.active && !(S.deload?.on && S.deload?.notifications)) { await finishNativeSoundSync(soundSettings); return true }
-    let perm = await LocalNotifications.checkPermissions()
-    if (perm.display !== 'granted' && interactive) perm = await LocalNotifications.requestPermissions()
-    if (perm.display !== 'granted') { await finishNativeSoundSync(soundSettings); return false }
-    const decorate = notices => notices.map(n=>({...n,...notificationSoundOptions(S,soundSettings,n.schedule?.at),smallIcon:'ic_workout_notification',iconColor:ACCENTS[S.accent] || ACCENTS.red}))
-    const deloadNotices = deloadNotificationPlan(S).map(n => ({id:n.id, title:t('Deload week'), body:t('Deload: {0} – {1}. Follow your reduced training targets.',n.start,n.end), schedule:{at:n.at,allowWhileIdle:true},extra:{type:'deload'}}))
-    if (deloadNotices.length) await LocalNotifications.schedule({notifications:decorate(deloadNotices)})
-    const measurementNotices = measurementNotificationPlan(S).map(group => ({
+    const enabled = reminderKinds.some(kind => families[kind].enabled && families[kind].validation.valid)
+    let perm = enabled ? await LocalNotifications.checkPermissions() : {display:'granted'}
+    const requestable = requestedKind ? families[requestedKind]?.enabled && families[requestedKind]?.validation.valid : enabled
+    if (interactive && requestable && ['prompt','prompt-with-rationale'].includes(perm.display)) perm = await LocalNotifications.requestPermissions()
+    let soundError = null
+    if (enabled && perm.display === 'granted') {
+      try { soundSettings = await syncNativeSounds(S) } catch (error) { soundError = error }
+    }
+    const decorate = notices => notices.map(n => {
+      const sound = notificationSoundOptions(S,soundSettings,n.schedule?.at), iconColor = ACCENTS[S.accent] || ACCENTS.red
+      // getPending omits native channel/icon properties, so retain our applied identity in
+      // extra for reconciliation after reopening as well as within the current process.
+      return {...n,...sound,smallIcon:'ic_workout_notification',iconColor,extra:{...n.extra,tgymReminderAt:+n.schedule.at,tgymReminderStyle:JSON.stringify([sound.channelId || null,'ic_workout_notification',iconColor])}}
+    }).sort((a,b)=>+a.schedule.at - +b.schedule.at || a.id - b.id)
+    families.deload.notices = deloadNotificationPlan(S, now).map(n => ({id:n.id, title:t('Deload week'), body:t('Deload: {0} – {1}. Follow your reduced training targets.',n.start,n.end), schedule:{at:n.at,allowWhileIdle:true},extra:{type:'deload'}}))
+    families.measurement.notices = measurementNotificationPlan(S, now).map(group => ({
       id: group.id, title: t('Time to update your measurements'), body: group.labels.map(label => t(label)).join(', '),
       schedule: { at: group.at, allowWhileIdle: true }, extra: { type: 'measurement', metrics: group.metrics },
     }))
-    if (measurementNotices.length) await LocalNotifications.schedule({ notifications: decorate(measurementNotices) })
-    if (!r?.on) { await finishNativeSoundSync(soundSettings); return true }
-    const notifications = workoutNotificationPlan(S).map(notice => ({
+    families.workout.notices = workoutNotificationPlan(S, now).map(notice => ({
       id: notice.id,
       title: t(notice.kind === 'today' ? 'Workout reminder' : 'Next workout reminder'),
       body: (notice.kind === 'today' ? t('You still have {0} scheduled for today.', notice.name) : t('{0} is scheduled for {1}.',notice.name,fmtScheduledDate(notice.date))) + (notice.remaining>1 ? ' · '+t('{0} workouts remaining',notice.remaining) : ''),
       schedule: {at:notice.at,allowWhileIdle:true},
       extra: {type:'workout',routineId:notice.routineId,date:notice.date},
     }))
-    if (notifications.length) await LocalNotifications.schedule({ notifications: decorate(notifications) })
-    await finishNativeSoundSync(soundSettings)
-    return true
-  } catch (e) { return false }
+    let pending = (await LocalNotifications.getPending()).notifications || [], successful = true
+    for (const kind of reminderKinds) {
+      const family = families[kind]
+      const status = !family.enabled ? 'off' : !family.validation.valid ? 'incomplete' : perm.display !== 'granted' ? 'permission-denied' : soundError ? 'error' : 'configured'
+      const notices = status === 'configured' ? decorate(family.notices) : []
+      const fingerprint = JSON.stringify(notices)
+      const owned = pending.filter(notice => ownedReminderIds[kind].includes(notice.id))
+      try {
+        if (!samePending(owned, notices) || (lastScheduled.has(kind) && lastScheduled.get(kind) !== fingerprint)) {
+          setReminderStatus(kind,'syncing')
+          await LocalNotifications.cancel({notifications:ownedReminderIds[kind].map(id => ({id}))})
+          if (notices.length) await LocalNotifications.schedule({notifications:notices})
+          pending = (await LocalNotifications.getPending()).notifications || []
+          if (!samePending(pending.filter(notice => ownedReminderIds[kind].includes(notice.id)),notices)) throw new Error('Reminder scheduling could not be verified')
+        }
+        lastScheduled.set(kind,fingerprint)
+        setReminderStatus(kind,status,notices,soundError ? 'Reminder scheduling failed' : null,family.validation.valid ? null : family.validation.reason)
+        if (family.enabled && status !== 'configured') successful = false
+      } catch (error) {
+        lastScheduled.delete(kind)
+        setReminderStatus(kind,'error',[],'Reminder scheduling failed')
+        successful = false
+        // A failed measurement update must not prevent reconciliation of workout/deload.
+        pending = (await LocalNotifications.getPending()).notifications || []
+      }
+    }
+    return requestedKind && families[requestedKind] ? ['off','configured'].includes(reminderStatus[requestedKind].status) : successful
+  } catch (error) {
+    const unsupported = ['UNIMPLEMENTED','NOT_IMPLEMENTED'].includes(error?.code)
+    for (const kind of reminderKinds) setReminderStatus(kind,unsupported ? 'unsupported' : 'error',[],unsupported ? null : 'Reminder scheduling failed')
+    return false
+  } finally { await finishNativeSoundSync(soundSettings) }
 }
 
 export function notificationSoundOptions(S, native, at = new Date()) {

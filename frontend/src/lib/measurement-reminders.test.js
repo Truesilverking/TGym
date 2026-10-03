@@ -1,10 +1,13 @@
 import { describe, expect, it, vi } from 'vitest'
-import { addReminderInterval, measurementReminders, measurementEventsOn, measurementNotificationPlan, postponeMeasurement, reminderConfig, REMINDER_METRICS, MEASUREMENT_NOTIFICATION_IDS } from './measurement-reminders.js'
+import { addReminderInterval, measurementReminders, measurementEventsOn, measurementNotificationPlan, measurementReminderValidation, postponeMeasurement, reminderConfig, REMINDER_METRICS, MEASUREMENT_NOTIFICATION_IDS } from './measurement-reminders.js'
 import { calendarDay, calendarPeriod } from './calendar-data.js'
 import { trainingStreak } from './training-plan.js'
 import { createBackup, readBackup } from './backup.js'
 import { syncReminder } from './mobile.js'
-const notificationMocks = vi.hoisted(() => ({ cancel: vi.fn(async () => ({})), schedule: vi.fn(async () => ({})), checkPermissions: vi.fn(async () => ({display:'granted'})) }))
+const notificationMocks = vi.hoisted(() => {
+  const pending = new Map()
+  return {cancel:vi.fn(async ({notifications}) => {for (const {id} of notifications) pending.delete(id)}),schedule:vi.fn(async ({notifications}) => {for (const notice of notifications) pending.set(notice.id,notice)}),getPending:vi.fn(async () => ({notifications:[...pending.values()]})),checkPermissions:vi.fn(async () => ({display:'granted'}))}
+})
 vi.mock('@capacitor/local-notifications', () => ({LocalNotifications:notificationMocks}))
 const state = () => ({ routines:[],workouts:[],week:{},dayPlan:{},bodyweight:[{d:'2026-09-10',w:80}],measurements:[], measurementReminders:{time:'08:00',notifications:true,items:{weight:{id:'measurement:weight',enabled:true,intervalValue:1,intervalUnit:'weeks',anchorDate:'2026-09-10'}}} })
 describe('measurement reminders independent from workouts', () => {
@@ -24,6 +27,16 @@ describe('measurement reminders independent from workouts', () => {
     expect(addReminderInterval('2026-03-07',{intervalValue:2,intervalUnit:'days'})).toBe('2026-03-09')
     const at=measurementNotificationPlan(state(),new Date('2026-09-10T12:00:00'))[0].at
     expect(at.getHours()).toBe(8); expect(at.getDate()).toBe(17)
+  })
+  it('schedules local time across an actual DST offset change', () => {
+    const previous=process.env.TZ
+    try {
+      process.env.TZ='America/New_York'
+      const S=state();S.bodyweight=[];S.measurementReminders.items.weight={enabled:true,anchorDate:'2026-03-07',intervalValue:2,intervalUnit:'days'}
+      const notice=measurementNotificationPlan(S,new Date('2026-03-07T07:00:00'))[0]
+      expect(notice.at.toISOString()).toBe('2026-03-09T12:00:00.000Z')
+      expect(notice.at.getHours()).toBe(8)
+    } finally {if(previous == null)delete process.env.TZ;else process.env.TZ=previous}
   })
   it('does not change workout counts, day status or streak', () => {
     const S=state(), without={...S,measurementReminders:{}}
@@ -61,16 +74,28 @@ describe('measurement reminders independent from workouts', () => {
     expect(measurementNotificationPlan(restored,now)).toEqual([])
     expect(restored.bodyweight).toEqual(S.bodyweight)
   })
-  it('cancels owned notification IDs before rescheduling on repeated restore and off', async () => {
+  it('reuses unchanged pending notifications on restore and cancels its own IDs when off', async () => {
     notificationMocks.cancel.mockClear(); notificationMocks.schedule.mockClear()
     const S=state(); S.measurementReminders.items.weight.anchorDate='2090-01-01'; S.bodyweight=[]
     await syncReminder(S); await syncReminder(readBackup(createBackup(S)))
     expect(notificationMocks.cancel).toHaveBeenCalledWith({notifications:MEASUREMENT_NOTIFICATION_IDS.map(id=>({id}))})
     const ids=notificationMocks.schedule.mock.calls.map(([batch])=>batch.notifications.map(n=>n.id))
-    expect(ids[0]).toEqual(ids[1])
+    expect(ids).toEqual([[MEASUREMENT_NOTIFICATION_IDS[0]]])
     notificationMocks.schedule.mockClear(); S.measurementReminders.notifications=false
     await syncReminder(S)
     expect(notificationMocks.schedule).not.toHaveBeenCalled()
+  })
+  it('rejects impossible dates, malformed times and invalid frequencies without scheduling fallback values', () => {
+    const S = state()
+    S.measurementReminders.time = '25:10'
+    expect(measurementReminderValidation(S)).toEqual({valid:false,reason:'Enter a valid time'})
+    expect(measurementNotificationPlan(S,new Date('2026-09-10T07:00:00'))).toEqual([])
+    S.measurementReminders.time = '08:00'; S.measurementReminders.items.weight.intervalValue = 1.5
+    expect(measurementReminderValidation(S).reason).toBe('Enter a valid frequency')
+    S.measurementReminders.items.weight.intervalValue = 1; S.measurementReminders.items.weight.anchorDate = '2026-02-30'
+    expect(measurementReminderValidation(S).reason).toBe('Enter a valid date')
+    S.measurementReminders.items = {}
+    expect(measurementReminderValidation(S).reason).toBe('Choose at least one measurement')
   })
   it('offers exactly three categories without enabling suggested defaults', () => {
     const S = state(); S.measurementReminders.items = {}

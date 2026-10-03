@@ -2,7 +2,7 @@
 name: Validate PWA
 on:
   push:
-    branches: [main, feature/backoff-reps-settings, feature/session-origin-activity]
+    branches: [main, feature/backoff-reps-settings, feature/session-origin-activity, feature/settings-reminders-ux]
     paths: ['frontend/**', '.github/workflows/pages.yml']
   workflow_dispatch:
 permissions:
