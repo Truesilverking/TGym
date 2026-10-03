@@ -1,4 +1,4 @@
-> Current TGym builds use pnpm 10: `pnpm build:mobile` builds assets and synchronizes Capacitor, not an APK. Android compilation requires JDK21/SDK35 and Gradle; iOS requires macOS/Xcode. `gym_state_v1` is mirrored to `framegym-state.json`. Current release evidence is in `RELEASE-AUDIT-1.15.50.md`; platform examples below are not physical-device acceptance evidence.
+> Current TGym builds use pnpm 10: `pnpm build:mobile` builds assets and synchronizes Capacitor, not an APK. Android compilation requires JDK21/SDK35 and Gradle; iOS requires macOS/Xcode. `gym_state_v1` is mirrored to `framegym-state.json`. Current release evidence is in `RELEASE-AUDIT-1.15.51.md`; platform examples below are not physical-device acceptance evidence.
 
 # Building the mobile app (iOS / Android)
 

@@ -49,7 +49,8 @@ Settings -> Check for updates consulta el mecanismo correspondiente a PWA/Androi
 - [Compilación móvil](docs/MOBILE.md)
 - [Self-hosting desde este checkout](docs/SELF_HOSTING.md)
 - [Publicación y verificación](docs/RELEASING.md)
-- [Auditoría de esta actualización](docs/RELEASE-AUDIT-1.15.50.md)
+- [Auditoría de esta actualización](docs/RELEASE-AUDIT-1.15.51.md)
+- [Racha de Inicio y actividad diaria](docs/HOME-STREAK-AUDIT.md)
 - [Revisión funcional de Ajustes y persistencia](docs/SETTINGS-FUNCTIONAL-AUDIT.md)
 
 ## Licencia
