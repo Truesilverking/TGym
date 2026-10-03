@@ -1,11 +1,11 @@
 # Changelog
 
-## 1.15.49
+## 1.15.50
 
 - Put the local-data message first in Data and explain optional server, cloud and export transfers.
 - Unify measurement/workout reminder controls, saved schedules, permission/error feedback and independent native reconciliation without replacing unchanged notifications.
 - Collapse Deload week into an accessible accordion without changing its configuration or formulas.
-- Protect in-flight remote restores from newer local preference edits and account changes; add persistence, idempotency and reminder regression coverage.
+- Preserve the complete remote profile while applying local edits made during initial synchronization; defer partial uploads until that baseline is available, convert units consistently and show failures without claiming success. Add persistence, idempotency and reminder regression coverage.
 
 ## 1.15.48
 

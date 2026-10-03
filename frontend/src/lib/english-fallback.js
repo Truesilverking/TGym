@@ -1,5 +1,6 @@
 // Explicit source-language fallback. Entries in language packs override these values.
 export default {
+  "Server synchronization failed. Your local data was kept.": "Server synchronization failed. Your local data was kept.",
   "Add a workout to your schedule": "Add a workout to your schedule",
   "Check your reminder settings.": "Check your reminder settings.",
   "Checking notification schedule…": "Checking notification schedule…",

@@ -15,6 +15,7 @@ import { portableState, backupChecksum } from '../lib/backup.js'
 import { sessionTiming } from '../lib/workout-time.js'
 import { reconcileWorkoutEdit, ensureWorkoutCompletionPaused } from '../lib/workout-lifecycle.js'
 import { sessionOrigin } from '../lib/session-activity.js'
+import { rebaseEmptyApiProfile } from '../lib/api-bootstrap.js'
 
 const KEY = 'gym_state_v1'
 export const DEF = {
@@ -65,6 +66,7 @@ export const useStore = create((set, get) => {
   let pushTm = null
   let pushQueue = Promise.resolve()
   let saveTm = null
+  let bootstrap = null
 
   // Mobile build: mirror the state into a file in the app's data directory (survives WebView
   // storage eviction) and keep the native reminder schedule in step with the weekly plan.
@@ -163,6 +165,7 @@ export const useStore = create((set, get) => {
     user: (() => { try { return JSON.parse(localStorage.getItem('gym_user')) || null } catch { return null } })(),
     storageError,
     storageWarning: null,
+    serverSyncError: null,
     ready: false,
     needsMobileOnboarding: false,   // mobile build only — set true by boot() on a genuine first launch
     async flushPersistence() {
@@ -220,6 +223,7 @@ export const useStore = create((set, get) => {
     },
 
     setUser(u) {
+      if (u?.id !== get().user?.id) { bootstrap = null; set({ serverSyncError: null }) }
       if (u) { localStorage.setItem('gym_user', JSON.stringify(u)); localStorage.removeItem('gym_guest') }
       else localStorage.removeItem('gym_user')
       set({ user: u })
@@ -227,10 +231,32 @@ export const useStore = create((set, get) => {
 
     async pushState({ strict = false } = {}) {
       if (!get().user) return
+      const userId = get().user.id
       clearTimeout(pushTm)
       pushTm = null
+      // Cached authentication can reconnect before boot starts its first GET.
+      // An empty profile has no proven server baseline to replace yet.
+      if (!hasData(get().S) && bootstrap?.userId !== userId) {
+        if (await get().pullState() === false || get().user?.id !== userId) {
+          if (strict) throw new Error('Server synchronization failed. Your local data was kept.')
+          return false
+        }
+      }
+      const initial = bootstrap?.userId === userId && !bootstrap.ready ? bootstrap : null
+      if (initial) {
+        if (initial.pending) await initial.gate
+        else await get().pullState()
+        if (get().user?.id !== userId || !bootstrap?.ready) {
+          if (strict) throw new Error('Server synchronization failed. Your local data was kept.')
+          return false
+        }
+      }
+      if (get().user?.id !== userId) {
+        if (strict) throw new Error('Session changed while saving')
+        return false
+      }
+      // Capture only after the first read has supplied the complete remote profile.
       const snapshot = get().S
-      const userId = get().user.id
       // Preserve request order. An older autosave must finish before the final
       // sign-out upload, otherwise it could overwrite data after local cleanup.
       const upload = pushQueue.then(async () => {
@@ -240,12 +266,23 @@ export const useStore = create((set, get) => {
         }
         try {
           await api('/api/data', { method: 'PUT', body: JSON.stringify({ state: snapshot }) })
+          if (get().user?.id !== userId) {
+            if (strict) throw new Error('Session changed while saving')
+            return false
+          }
           if (get().S === snapshot) localStorage.removeItem('gym_dirty')
           else {
             localStorage.setItem('gym_dirty', '1')
             if (strict) throw new Error('Local data changed while saving')
+            return false
           }
-        } catch (e) { localStorage.setItem('gym_dirty', '1'); if (strict) throw e }
+          set({ serverSyncError: null })
+          return true
+        } catch (e) {
+          if (get().user?.id === userId) { localStorage.setItem('gym_dirty', '1'); set({ serverSyncError: e.message || 'Server synchronization failed. Your local data was kept.' }) }
+          if (strict) throw e
+          return false
+        }
       })
       // A failed request must not prevent a later retry from reaching the API.
       pushQueue = upload.catch(() => {})
@@ -254,20 +291,44 @@ export const useStore = create((set, get) => {
     async pullState() {
       const requestedState = get().S
       const userId = get().user?.id
+      const previous = bootstrap?.userId === userId && !bootstrap.ready ? bootstrap : null
+      if (previous?.pending) { await previous.gate; return previous.ready }
+      let initial = null
+      if (previous || !hasData(requestedState)) {
+        let release
+        const gate = new Promise(resolve => { release = resolve })
+        initial = bootstrap = { userId, before:previous?.before || clone(localStorage.getItem('gym_dirty') === '1' ? DEF : requestedState), gate, release, pending:true, ready:false }
+      }
+      let upload = false, success = false
       try {
         const { state } = await api('/api/data')
         // A response belongs to the account and local revision that requested it.
         // Preference-only profiles still contain edits worth protecting.
-        if (get().user?.id !== userId) return
+        if (get().user?.id !== userId) return false
         const S = get().S
         const dirty = localStorage.getItem('gym_dirty') === '1'
-        if (state && S === requestedState && !dirty && (!hasData(S) || (state._ts || 0) >= (S._ts || 0))) {
+        if (initial) {
+          if (state) {
+            const next = rebaseEmptyApiProfile(initial.before, S, state, DEF)
+            upload = dirty || backupChecksum(portableState(S)) !== backupChecksum(portableState(initial.before))
+            persist(next, false)
+          } else upload = hasData(S) || dirty || !!S._ts
+        } else if (state && S === requestedState && !dirty && (state._ts || 0) >= (S._ts || 0)) {
           const active = S.active
           const next = Object.assign(clone(DEF), state)
           if (active) next.active = active
           persist(next, false)
-        } else if (hasData(S) || dirty || S._ts || S !== requestedState) { await get().pushState() }
-      } catch (e) { /* offline — keep local */ }
+        } else if (hasData(S) || dirty || S._ts || S !== requestedState) upload = true
+        success = true
+        set({ serverSyncError: null })
+      } catch (e) {
+        if (get().user?.id === userId) set({ serverSyncError: e.message || 'Server synchronization failed. Your local data was kept.' })
+      } finally {
+        if (initial) { initial.ready = success; initial.pending = false; initial.release() }
+      }
+      if (!success) return false
+      if (upload && await get().pushState() === false) return false
+      return true
     },
 
     async signOut() {
@@ -290,7 +351,7 @@ export const useStore = create((set, get) => {
     async connectToServer(url, code) {
       const user = await connect(url, code)   // throws on a bad URL/expired code — caller shows it
       get().setUser(user)
-      await get().pullState()
+      if (await get().pullState() === false) throw new Error('Server synchronization failed. Your local data was kept.')
       syncReminder(get().S)
       set({ needsMobileOnboarding: false })
     },

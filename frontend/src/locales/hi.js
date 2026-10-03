@@ -2,6 +2,7 @@ import english from '../lib/english-fallback.js'
 // Hindi UI strings. Keys are the English source strings (see lib/i18n.js).
 export default {
   ...english,
+  "Server synchronization failed. Your local data was kept.": "सर्वर से सिंक नहीं हो सका। आपका स्थानीय डेटा सुरक्षित रखा गया।",
   // Settings and verified reminder status.
   "Add a workout to your schedule": "अपने शेड्यूल में एक कसरत जोड़ें",
   "Check your reminder settings.": "अपनी रिमाइंडर सेटिंग जाँचें।",

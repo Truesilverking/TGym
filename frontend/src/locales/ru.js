@@ -2,6 +2,7 @@ import english from '../lib/english-fallback.js'
 // Russian UI strings. Keys are the English source strings (see lib/i18n.js).
 export default {
   ...english,
+  "Server synchronization failed. Your local data was kept.": "Не удалось синхронизировать данные с сервером. Ваши локальные данные сохранены.",
   // Settings and verified reminder status.
   "Add a workout to your schedule": "Добавьте тренировку в расписание",
   "Check your reminder settings.": "Проверьте настройки напоминаний.",

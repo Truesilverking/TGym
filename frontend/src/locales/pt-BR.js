@@ -5,6 +5,7 @@ import english from '../lib/english-fallback.js'
 import pt from './pt.js'
 
 export const PT_BR_OVERRIDES = {
+  "Server synchronization failed. Your local data was kept.": "A sincronização com o servidor falhou. Seus dados locais foram mantidos.",
   // Settings and verified reminder status.
   "Add a workout to your schedule": "Adicione um treino ao seu calendário",
   "Check your reminder settings.": "Confira as configurações dos seus lembretes.",

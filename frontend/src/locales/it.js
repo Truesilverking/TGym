@@ -2,6 +2,7 @@ import english from '../lib/english-fallback.js'
 // Italian UI strings. Keys are the English source strings (see lib/i18n.js).
 export default {
   ...english,
+  "Server synchronization failed. Your local data was kept.": "La sincronizzazione con il server non è riuscita. I tuoi dati locali sono stati conservati.",
   // Settings and verified reminder status.
   "Add a workout to your schedule": "Aggiungi un allenamento al calendario",
   "Check your reminder settings.": "Controlla le impostazioni dei promemoria.",

@@ -1,6 +1,7 @@
 import english from '../lib/english-fallback.js'
 // Portuguese UI strings. Keys are the English source strings (see lib/i18n.js).
 export const PT_TRANSLATIONS = {
+  "Server synchronization failed. Your local data was kept.": "A sincronização com o servidor falhou. Os seus dados locais foram mantidos.",
   // Settings and verified reminder status.
   "Add a workout to your schedule": "Adicione um treino ao seu calendário",
   "Check your reminder settings.": "Verifique as definições dos seus lembretes.",

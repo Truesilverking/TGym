@@ -2,6 +2,7 @@ import english from '../lib/english-fallback.js'
 // Simplified Chinese UI strings. Keys are the English source strings (see lib/i18n.js).
 export default {
   ...english,
+  "Server synchronization failed. Your local data was kept.": "服务器同步失败。本地数据已保留。",
   // Settings and verified reminder status.
   "Add a workout to your schedule": "在日程中添加训练",
   "Check your reminder settings.": "请检查提醒设置。",

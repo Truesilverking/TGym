@@ -2,6 +2,7 @@ import english from '../lib/english-fallback.js'
 // Korean UI strings. Keys are the English source strings (see lib/i18n.js).
 export default {
   ...english,
+  "Server synchronization failed. Your local data was kept.": "서버 동기화에 실패했습니다. 기기의 데이터는 보존되었습니다.",
   // Settings and verified reminder status.
   "Add a workout to your schedule": "일정에 운동을 추가하세요",
   "Check your reminder settings.": "알림 설정을 확인하세요.",

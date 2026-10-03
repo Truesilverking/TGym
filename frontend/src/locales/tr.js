@@ -2,6 +2,7 @@ import english from '../lib/english-fallback.js'
 // Turkish UI strings. Keys are the English source strings (see lib/i18n.js).
 export default {
   ...english,
+  "Server synchronization failed. Your local data was kept.": "Sunucuyla eşitleme başarısız oldu. Yerel verileriniz korundu.",
   // Settings and verified reminder status.
   "Add a workout to your schedule": "Programınıza bir antrenman ekleyin",
   "Check your reminder settings.": "Hatırlatıcı ayarlarınızı kontrol edin.",

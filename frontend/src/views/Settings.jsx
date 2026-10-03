@@ -15,7 +15,7 @@ import { DEMO, REPO, STANDALONE } from '../lib/demo.js'
 import { MOBILE, shareExport } from '../lib/mobile.js'
 import { loadStarterPlan, confirmSheet, importFromApp, equipmentProfileSheet, planImportSheet, planToolsSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
-import { Section, Row, SelectRow, Switch, Segmented, Button } from '../components/ui.jsx'
+import { Section, Row, SelectRow, Switch, Segmented, Button, TextField } from '../components/ui.jsx'
 import { biometricEnabled, checkDeviceBiometry, deviceLockEnabled, enrollDeviceBiometry, removeDevicePin, setBiometricEnabled, setDevicePin, verifyDevicePin } from '../lib/app-lock.js'
 import { canUndoImport, consumeImportUndo, saveImportUndo } from '../lib/import-undo.js'
 import { parseTGymJson } from '../lib/json-import.js'
@@ -90,6 +90,9 @@ export default function Settings() {
   const nav = useNavigate()
   const S = useStore(s => s.S)
   const user = useStore(s => s.user)
+  const serverSyncError = useStore(s => s.serverSyncError)
+  const [serverSyncBusy, setServerSyncBusy] = useState(false)
+  const serverSyncPending = useRef(false)
   const { update, replaceState, setUser, pullState, pushState, signOut, signOutAll, resetDemo, disconnectServer } = useStore()
   const toast = useUI(s => s.toast)
   const fileRef = useRef(null)
@@ -146,7 +149,7 @@ export default function Settings() {
     </div>
   </>)
   const signInHere = async () => {
-    try { const u = await passkeyLogin(); setUser(u); await pullState(); toast(t('Welcome back, {0}', u.name)) }
+    try { const u = await passkeyLogin(); setUser(u); const synced = await pullState(); toast(synced === false ? t('Server synchronization failed. Your local data was kept.') : t('Welcome back, {0}', u.name)) }
     catch (e) { if (e.name !== 'NotAllowedError' && e.name !== 'AbortError') toast(e.message || t('Sign-in failed')) }
   }
   const registerHere = () => useUI.getState().openSheet(close => <RegisterInline close={close} setUser={setUser} pushState={pushState} pullState={pullState} toast={toast} />)
@@ -324,6 +327,14 @@ export default function Settings() {
       <Row icon="lock" iconTint="var(--acc)" title={t('All Data stays on this device')} subtitle={user
         ? t('This profile also syncs with your connected server. Cloud backups and exported copies leave this device when you choose them.')
         : t('Stored locally by default. Connecting a server, enabling cloud backup or sharing an export sends a copy outside this device.')} />
+      {user && serverSyncError && <div className="reminder-feedback warning" role="alert">
+        <span>{t('Server synchronization failed. Your local data was kept.')}</span>
+        <Button size="sm" disabled={serverSyncBusy} onClick={async () => {
+          if (serverSyncPending.current) return
+          serverSyncPending.current = true; setServerSyncBusy(true)
+          try { await pullState() } finally { serverSyncPending.current = false; setServerSyncBusy(false) }
+        }}>{t('Sync now')}</Button>
+      </div>}
       <Row icon="history" title={t('Training history settings')} accessory="chevron" onClick={openTrainingHistory} />
       <Row icon="folder" iconTint="var(--blue)" title={t('Backup')} accessory="chevron" onClick={() => useUI.getState().openSheet(() => <BackupSheet onExport={doExport} onImport={() => authorize(() => fileRef.current?.click())} />)} />
       <Row icon="cloud" iconTint="var(--blue)" title={t('Restore')} subtitle={t('Back up, synchronize or restore your TGym data.')} accessory="chevron" onClick={() => openRestoreSheet(authorize)} />
@@ -510,8 +521,8 @@ function RegisterInline({ close, setUser, pushState, pullState, toast }) {
     if (inviteOnly && !code.trim()) { toast(t('An invite code is required')); return }
     try {
       const u = await passkeyRegister(n, code.trim()); setUser(u); close()
-      if (hasData(useStore.getState().S)) { await pushState(); toast(t('Profile created — data moved into it')) }
-      else { await pullState(); toast(t('Welcome, {0}', u.name)) }
+      if (hasData(useStore.getState().S)) { await pushState({strict:true}); toast(t('Profile created — data moved into it')) }
+      else { const synced = await pullState(); toast(synced === false ? t('Server synchronization failed. Your local data was kept.') : t('Welcome, {0}', u.name)) }
     } catch (e) { if (e.name !== 'NotAllowedError' && e.name !== 'AbortError') toast(e.message || t('Registration failed')) }
   }
   return <>
