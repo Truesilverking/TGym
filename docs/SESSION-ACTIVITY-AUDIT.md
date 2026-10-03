@@ -4,7 +4,7 @@ Branch: `feature/session-origin-activity`. Scope: the requested origin, activity
 
 ## Data flow and changes
 
-- `api/session-activity.js` owns pure session-origin/activity rules. Frontend uses an adapter with existing workout-model row mode/phase helpers. API reminders use the same rules; parity tests cover standalone API versus frontend mode handling. Docker COPY instructions include the shared module and reminder dependencies.
+- `api/session-activity.js` owns pure session-origin/activity rules. Frontend uses an adapter with existing workout-model row mode/phase helpers. API reminders use the same rules; GET/PUT profile endpoints persist the workout JSON without stripping origins (active sessions remain device-local); parity tests cover standalone API versus frontend mode handling. Docker COPY instructions include the shared module and reminder dependencies.
 - `beginWorkout` captures `sessionOrigin: {type, routineId}` when the session starts. Prebuilt routine starts are planned; unscheduled freestyle starts are extra. The completed snapshot retains the origin. Active/history edits through `useStore.update` preserve it, including changes to routine identity, name and exercise content.
 - Existing manual/imported activity edits preserve their own session origin instead of attaching the same session to a new pending routine. Serialized local storage, web/native mirrors, portable backups and atomic cloud workout merging retain the field. Legacy active sessions receive an additive origin on restoration; keys, schema number and native package identity stay unchanged.
 - Legacy routine IDs provide stable historical classification. Unique legacy name matches remain compatible; ambiguous names cannot complete a scheduled slot. No exercise-list comparison or historical workout-content rewrite is used.
@@ -35,13 +35,19 @@ Adjacent tests also cover duplicate IDs, empty/pending/warmup-only/canceled acti
 
 - Complete frontend suite: 1264/1264 tests in 130 files. Targeted origin, persistence, screen and calendar checks also passed.
 - API: 11/11 tests. MCP: 37/37 tests plus plain-Node import-graph validation.
-- Web, PWA and mobile asset/synchronization builds passed. Local Android `assembleRelease lintRelease` passed with JDK 21/SDK 35. `build:mobile` itself is not APK compilation. Existing SDK/flatDir and bundle-size warnings remain.
+- Web, PWA and mobile asset/synchronization builds passed. Local Android `assembleRelease lintRelease` passed with JDK 21/SDK 35. `build:mobile` itself is not APK compilation. Android lint reports 18 warnings and zero errors; existing SDK/flatDir and bundle-size warnings remain.
 - Locales: 12 packs, 1689 keys each, synchronized; 1078 used translated strings present; Spanish UI audit passed.
 - Actual isolated browser flow passed in Chromium/Edge and WebKit at 390px: start planned, perform work, add three exercises, reload, finish, inspect Home, start/finish separate freestyle, inspect Home/Stats/Progress and reload. Planned 1, extra 1, active day 1, daily rate 100%, training streak 1. Chromium also passed offline reload. Responsive overflow checks passed at 320/390/768/1280px.
-- Inspected Home and Progress screenshots and a separate Spanish Home rendering: `Planificado 1`, `No completados 0`, `Adicional 0`, `Días activos 1`, `Cumplimiento 100%`, flame count 1. Browser profiles were synthetic and isolated.
+- Inspected Home and Progress screenshots and a separate Spanish Home rendering: `Planificado 1`, `No completados 0`, `Adicional 0`, `Días activos 1`, `Cumplimiento 100%`, flame count 1. Browser profiles were synthetic and isolated. Standalone Vite development was also tested successfully, including the shared module imported from the API directory.
 - Native origin-recovery evidence uses the native-save adapter mock; it is not a physical-phone installation or notification receipt. No physical Android/iPhone validation is claimed. Docker images and iOS native compilation were not executed locally.
 - No frontend lint/typecheck scripts exist; neither is claimed. Storage keys, updater integrity checks, signing material and package identity were not changed.
 
 ## GitHub verification
 
-Remote commit and Tests/PWA/Android workflow results will be recorded after push. No force push, default-branch merge or release tag is part of this code update.
+Runtime commit: [`f4ee04ad3bafc5c43075e72b2c22139473d15512`](https://github.com/Truesilverking/TGym/commit/f4ee04ad3bafc5c43075e72b2c22139473d15512). `git ls-remote` confirmed the branch matched this local commit after push. All three workflows succeeded on that exact source:
+
+- [Tests 37099954603](https://github.com/Truesilverking/TGym/actions/runs/37099954603): frontend/API/MCP checks and web build.
+- [PWA 37099954601](https://github.com/Truesilverking/TGym/actions/runs/37099954601): tests, standalone build and artifact.
+- [Android 37099954600](https://github.com/Truesilverking/TGym/actions/runs/37099954600): mobile build, debug compilation/lint, background notification instrumentation on the emulator and report artifact.
+
+A following documentation-only commit records this evidence without changing the validated runtime source. No force push, default-branch merge or release tag is part of this code update.
