@@ -11,7 +11,8 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { effectiveRoutineId, lastBW, setsDoneActive, effortValue } from '../lib/history.js'
-import { fmtNum, fmtDate, todayISO, isoOf, weekKey, DAYS } from '../lib/format.js'
+import { fmtNum, fmtDate, isoOf, weekKey, DAYS } from '../lib/format.js'
+import { useLocalNow } from '../lib/use-local-now.js'
 import { t, dateLocale } from '../lib/i18n.js'
 import { bwSheet, goalSheet, dayOverrideSheet, startFlow, guidedPlansSheet, bwDeltaColor, streakDetailSheet, sessionTimingSheet, homeCalendarSheet } from '../sheets.jsx'
 import { routineMuscleSheet } from '../components/RoutineMusclePreview.jsx'
@@ -27,22 +28,22 @@ import StreakFlame from '../components/StreakFlame.jsx'
 export default function Home() {
   const nav = useNavigate()
   const S = useStore(s => s.S)
-  const statsState = statisticsState(S)
+  const today = useLocalNow(), todayIso = isoOf(today)
+  const statsState = statisticsState(S,todayIso)
   const [weekOffset, setWeekOffset] = useState(0)
 
-  const today = new Date()
   const nextDate = nextScheduledWorkout(S, today)
   const routine = nextDate ? nextDailyRoutine(S, nextDate) : null
   const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1)
-  const nextLabel = S.active ? t('Today') : nextDate === todayISO() ? t('Today') : nextDate === isoOf(tomorrow) ? t('Tomorrow') : nextDate ? fmtDate(nextDate, true) : t('Next workout')
+  const nextLabel = S.active ? t('Today') : nextDate === todayIso ? t('Today') : nextDate === isoOf(tomorrow) ? t('Tomorrow') : nextDate ? fmtDate(nextDate, true) : t('Next workout')
   const todayOvr = nextDate && S.dayPlan[nextDate] !== undefined
   const bw = lastBW(statsState)
   const prevBW = statsState.bodyweight.length > 1 ? statsState.bodyweight[statsState.bodyweight.length - 2] : null
   const delta = bw && prevBW ? bw.w - prevBW.w : null
   const bmi = bmiFor(bw?.w, S.unit, S.heightCm, S.measurementUnit)
-  const streak = trainingStreak(S)
-  const deload = deloadStatus(S)
-  const paused = isTrainingPaused(S,todayISO())
+  const streak = trainingStreak(S,today)
+  const deload = deloadStatus(S,todayIso)
+  const paused = isTrainingPaused(S,todayIso)
 
   const monday = new Date(today); monday.setDate(today.getDate() - ((today.getDay() + 6) % 7) + weekOffset * 7)
   const strip = []
@@ -51,8 +52,8 @@ export default function Home() {
     const iso = isoOf(d)
     const eff = effectiveRoutineId(S, iso), ovr = S.dayPlan[iso] !== undefined, status = calendarDay(S,iso,today).status, done = status === 'completed'
     const pausedDay = isTrainingPaused(S,iso)
-    const dot = isUntracked(S,iso) ? '' : done ? ' done' : ovr && eff ? ' ovr' : eff ? ' plan' : ''
-    strip.push(<button type="button" key={i} className={'wday' + (pausedDay ? ' paused' : status === 'partial' ? ' partial' : '') + (iso === todayISO() ? ' today' : '')} aria-label={fmtDate(iso,true)} aria-current={iso === todayISO() ? 'date' : undefined} title={pausedDay ? t('Training paused') : undefined} onClick={() => dayOverrideSheet(iso)}>
+    const dot = isUntracked(S,iso,todayIso) ? '' : done ? ' done' : ovr && eff ? ' ovr' : eff ? ' plan' : ''
+    strip.push(<button type="button" key={i} className={'wday' + (pausedDay ? ' paused' : status === 'partial' ? ' partial' : '') + (iso === todayIso ? ' today' : '')} aria-label={fmtDate(iso,true)} aria-current={iso === todayIso ? 'date' : undefined} title={pausedDay ? t('Training paused') : undefined} onClick={() => dayOverrideSheet(iso)}>
       <span className="lbl">{t(DAYS[d.getDay()])}</span><span className="num">{d.getDate()}</span><span className={'dot' + dot} /></button>)
   }
   const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6)
@@ -61,7 +62,7 @@ export default function Home() {
   const bwPoints = statsState.bodyweight.slice(-30).map(b => ({ t: b.t || new Date(b.d).getTime(), y: b.w, d: b.d }))
 
   // today's session shown right under the week strip
-  const onToday = () => { if (S.active) nav('/workout'); else if (routine && nextDate === todayISO()) startFlow(routine.id); else if (routine) dayOverrideSheet(nextDate); else dayOverrideSheet(todayISO()) }
+  const onToday = () => { if (S.active) nav('/workout'); else if (routine && nextDate === todayIso) startFlow(routine.id); else if (routine) dayOverrideSheet(nextDate); else dayOverrideSheet(todayIso) }
 
   return <div className="narrow">
     <div className="hdr hdr-centered">
@@ -92,15 +93,15 @@ export default function Home() {
           </div>
         </div>
         {S.active ? <span className="tag" style={{ color: 'var(--orange)', background: 'color-mix(in srgb,var(--orange) 16%,transparent)' }}>{t('Resume')}</span>
-          : routine ? <span className="tag acc">{t(nextDate === todayISO() ? 'Start' : 'Scheduled')}</span>
+          : routine ? <span className="tag acc">{t(nextDate === todayIso ? 'Start' : 'Scheduled')}</span>
           : <Icon name="plus" className="chev" />}
       </button>
     </div>
 
-    <DailyPlan compact onStart={startFlow}/>
+    <DailyPlan date={todayIso} compact onStart={startFlow}/>
     <TrainingHistory promptOnly />
 
-    <ConsistencyCard S={S} onTimes={sessionTimingSheet} />
+    <ConsistencyCard S={S} now={today} onTimes={sessionTimingSheet} />
 
     {!S.routines.length && !S.active && (
       <div className="card">

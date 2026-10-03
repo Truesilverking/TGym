@@ -2,8 +2,8 @@ import { routineConsistency } from '../lib/stats-insights.js'
 import { t } from '../lib/i18n.js'
 import { Button } from './ui.jsx'
 
-export default function ConsistencyCard({ S, onTimes }) {
-  const stats = routineConsistency(S)
+export default function ConsistencyCard({ S, onTimes, now = new Date() }) {
+  const stats = routineConsistency(S,56,now)
   const percent = stats.rate == null ? null : Math.round(stats.rate * 100)
   return <section className="card consistency-card insight-panel">
     <div className="consistency-heading insight-heading"><div><h2>{t('Consistency')}</h2><p className="muted small">{t('Last 8 weeks')}</p></div><Button className="times-action" icon="timer" onClick={onTimes}>{t('Times')}</Button></div>

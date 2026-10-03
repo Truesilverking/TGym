@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.15.51
+
+- Refresh Home's local date and training streak at midnight, clock/timezone changes and foreground return without writing the profile or altering history.
+- Calculate Home's date-dependent cards from one time snapshot. Preserve valid planned/extra activity, one count per local date, neutral rest/pauses and existing missed-day breaks.
+- Add a synthetic two-planned/three-extra/four-date regression plus completion, history edit/deletion, fresh boot and timezone coverage. The screenshot alone does not identify the user's actual training dates.
+
 ## 1.15.50
 
 - Put the local-data message first in Data and explain optional server, cloud and export transfers.
