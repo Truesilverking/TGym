@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.15.48
 
 - Capture planned/extra session origin at start and preserve it across exercise edits, finish, reload, backup and synchronization. Adding or substituting exercises never creates extra sessions.
 - Count valid strength, timed and cardio activity once per day for consistency and streaks, including extra sessions. Preserve scheduled missed-day breaks, rest days and pending-today streak behavior.
