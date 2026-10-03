@@ -1,6 +1,6 @@
 # TGym architecture
 
-Current published release: 1.15.48 / Android84 (source `91d5d26dd344471a242b5826c8414abfe20bbe34`) on `feature/session-origin-activity`. Session origin is captured at start and retained through edits and persistence. Valid planned/extra activity counts once per day for consistency and training streaks. See `RELEASE-AUDIT-1.15.48.md` and `SESSION-ACTIVITY-AUDIT.md` for current evidence; reports below are historical.
+Current published release: 1.15.50 / Android86 (source `dcdb9b714f02eace1b3d887e7be085128857bbf5`) on `feature/settings-reminders-ux`. Settings places the local-data explanation first, shares reminder controls and shows verified scheduling failures, and collapses deload without changing its formulas. Empty API profiles wait for the complete remote baseline before uploading local edits. See `RELEASE-AUDIT-1.15.50.md` and `SETTINGS-FUNCTIONAL-AUDIT.md` for current evidence; reports below are historical.
 
 The subsequent request to validate every function is tracked in `docs/POST-RELEASE-AUDIT-1.15.31.md`. Follow-up fixes serialize API uploads, preserve active workouts and unsent edits at sign-out, recheck the reviewed cloud snapshot before upload, and allow skipping an incomplete optional PIN. Real-browser auditing also improves theme contrast, keyboard controls, zoom, accessible labels and reduced-motion media. These changes are not included in the published 1.15.31 artifact.
 
@@ -25,6 +25,7 @@ The session-origin/activity correction is included in the published 1.15.48 APK/
 | History | `frontend/src/views/History.jsx`, `frontend/src/lib/history.js` |
 | Statistics | `frontend/src/views/Stats.jsx`, `frontend/src/lib/stats-insights.js` |
 | Library/settings | `frontend/src/views/Library.jsx`, `frontend/src/views/Settings.jsx` |
+| Settings reminders/deload | `frontend/src/components/ReminderPanel.jsx`, `WorkoutReminderSettings.jsx`, `MeasurementReminders.jsx`, `DeloadSettings.jsx` |
 | Calendar, measurements, finish/summary dialogs | `frontend/src/sheets.jsx` |
 | Calendar status/export | `frontend/src/lib/calendar-data.js`, `frontend/src/components/CalendarExport.jsx` |
 | Workout schema/time/lifecycle | `frontend/src/lib/workout-model.js`, `workout-time.js`, `workout-lifecycle.js` |
@@ -40,6 +41,8 @@ Routes are `/home`, `/plan`, `/plan/r/:id`, `/workout`, `/stats`, `/history`, `/
 ## State, models and storage
 
 `useStore` owns `S`. Defaults include units, language/theme, rest/reminder settings, routines, weekly schedule, date overrides, workout history, active workout, exercise preferences, bodyweight, measurements, InBody records and cloud settings. Updates clone the state, reconcile workout edits, write synchronously to localStorage key `gym_state_v1`, then schedule native/server synchronization. `_ts` supports freshness comparisons.
+
+During initial API restoration of an empty profile, `api-bootstrap.js` applies local preference edits over the complete remote profile. Existing unit converters normalize both copies before the delta and active-session overlay. Autosave, reconnect and manual uploads wait for that baseline; failed reads or ambiguous identity merges retain both copies and block partial PUTs. Populated API profiles keep their existing snapshot/freshness policy. This is not general real-time multi-device merging.
 
 - Routines have stable IDs and exercise prescriptions. Schema 3 stores ordered routine-ID arrays in `week` and `dayPlan`; an empty array explicitly means rest. Legacy scalars normalize additively. `daySkipped` records intentional per-date omissions. Daily completion requires every scheduled routine, with one legacy name match consumed only once.
 - Active workouts contain `id`, `d`, `start`, `routineId`, name, unit/bodyweight snapshot, current entry, deload state and entries. Entries refer to exercise IDs and carry prescription/plan, superset grouping and set rows.
@@ -81,7 +84,7 @@ Google Drive backup uses app-data access, a backup file and bounded daily snapsh
 
 ## Android and notifications
 
-Native code is under `frontend/android/app/src/main/`. Application/namespace identity remains `app.framegym.mobile`; the product name is TGym. The current release is 1.15.48, versionCode 84; min SDK 23, compile/target SDK 35, Gradle 8.11.1 and CI JDK 21. Its exact source commit passed Android build/lint, emulator instrumentation and signed-release validation in GitHub Actions.
+Native code is under `frontend/android/app/src/main/`. Application/namespace identity remains `app.framegym.mobile`; the product name is TGym. The current release is 1.15.50, versionCode 86; min SDK 23, compile/target SDK 35, Gradle 8.11.1 and CI JDK 21. Its exact source commit passed Android build/lint, emulator instrumentation and signed-release validation in GitHub Actions.
 
 `MainActivity` registers Google Drive authentication, update push, installer and workout notification bridges. The foreground workout service uses native chronometers and persisted notification state. Notification taps target the activity with `tgym://workout`; React handles that navigation. This is not proof of a general externally browsable deep-link manifest filter.
 

@@ -33,6 +33,8 @@ Settings -> Back-off repetitions ofrece **Same reps** (mismo rango del Top Set) 
 
 Los cambios pasan por `useStore.update` y se guardan en `gym_state_v1`, con espejo IndexedDB en PWA y archivo privado `framegym-state.json` en móvil. La nueva preferencia es aditiva, viaja en backups y no requiere cambiar claves ni reescribir historial. Los datos son locales salvo sincronización/API o backup Drive habilitados por el usuario.
 
+Data comienza con la explicación de almacenamiento local y transferencias opcionales. Los recordatorios de mediciones y entrenamientos tienen controles independientes y muestran permisos, horarios confirmados y errores. Abrir o cerrar Deload week conserva su configuración. La sincronización inicial de un perfil vacío espera la copia remota completa antes de subir cambios.
+
 ## PWA y actualizaciones
 
 Sirve `frontend/dist` tras `pnpm build:pwa` con HTTPS (o localhost). La PWA debe completar la descarga del shell antes de usarse offline. Los medios vistos tienen caché separada; los no descargados pueden mostrar un fallback. El perfil vive fuera de la caché del Service Worker. Borrar los datos del sitio puede eliminar el perfil: conserva backups portables.
@@ -47,7 +49,8 @@ Settings -> Check for updates consulta el mecanismo correspondiente a PWA/Androi
 - [Compilación móvil](docs/MOBILE.md)
 - [Self-hosting desde este checkout](docs/SELF_HOSTING.md)
 - [Publicación y verificación](docs/RELEASING.md)
-- [Auditoría de esta actualización](docs/RELEASE-AUDIT-1.15.47.md)
+- [Auditoría de esta actualización](docs/RELEASE-AUDIT-1.15.50.md)
+- [Revisión funcional de Ajustes y persistencia](docs/SETTINGS-FUNCTIONAL-AUDIT.md)
 
 ## Licencia
 
