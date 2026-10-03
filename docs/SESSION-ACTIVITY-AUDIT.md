@@ -1,6 +1,6 @@
 # Session origin and daily activity correction
 
-Branch: `feature/session-origin-activity`. Scope: the requested origin, activity, consistency and streak correction, with a GitHub code update. Published 1.15.47 APK/PWA artifacts remain the preceding release; this branch does not publish a release tag.
+Branch: `feature/session-origin-activity`. Scope: the requested origin, activity, consistency and streak correction. Published as [1.15.48 / Android84](https://github.com/Truesilverking/TGym/releases/tag/v1.15.48) from `91d5d26dd344471a242b5826c8414abfe20bbe34`. See `RELEASE-AUDIT-1.15.48.md` for artifact and production-upgrade verification.
 
 ## Data flow and changes
 
@@ -50,4 +50,4 @@ Runtime commit: [`f4ee04ad3bafc5c43075e72b2c22139473d15512`](https://github.com/
 - [PWA 37099954601](https://github.com/Truesilverking/TGym/actions/runs/37099954601): tests, standalone build and artifact.
 - [Android 37099954600](https://github.com/Truesilverking/TGym/actions/runs/37099954600): mobile build, debug compilation/lint, background notification instrumentation on the emulator and report artifact.
 
-A following documentation-only commit records this evidence without changing the validated runtime source. No force push, default-branch merge or release tag is part of this code update.
+A subsequent version-only commit publishes the same correction as 1.15.48/code84. Tests, PWA and Android/emulator checks passed on that exact tagged commit before publication. The public Chromium/WebKit flow also passes: editing a planned workout produces planned 1/extra 0; a separate freestyle session produces planned 1/extra 1 while active days and streak remain 1. No force push or default-branch merge was performed.
