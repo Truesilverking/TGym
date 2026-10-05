@@ -31,7 +31,7 @@ The annual overview intentionally summarizes the same year as the three detail p
 - Progress no longer imports a calendar component. Selected section IDs are normalized/deduplicated, empty selections rejected before allocating a PDF, and body assets loaded only for body selection. Existing names, formats, periods and selected body comparisons remain intact.
 - History shares one filter function between the visible list and CSV. Its BOM, quoting/formula protection, per-side reps, row completion, units and shared workout clock remain intact.
 - Calendar generation guards duplicate clicks, source changes and unmounting; save failures retain the file for retry and share cancellation remains a dismissal.
-- No storage/schema, exercise/routine identity, updater/signature checks or native identifiers changed. No version bump, release publication or merge to the default branch is part of this update.
+- No storage/schema, exercise/routine identity, updater/signature checks or native identifiers changed. The initial fix commit `997aa48` did not publish a release. A subsequent explicit request published these fixes as 1.15.52 / Android88; see [RELEASE-AUDIT-1.15.52.md](RELEASE-AUDIT-1.15.52.md). No merge to the default branch was performed.
 
 A global **Export Reports** selector was not added: the current reports have distinct date/filter/format controls, and a second selection dialog would duplicate those controls. Individual report buttons and the existing Progress section selector remain available. Sequential exports create independent files; shared infrastructure never merges their pages.
 
