@@ -42,7 +42,7 @@ export function wrapProgressText(value, width) {
  return rows
 }
 // Flow complete rows onto pages; repeat section context after every page break.
-// Shared by selected-period downloads and the calendar's complete report.
+// Only Progress Report callers supply a progress snapshot and selected sections.
 export function progressReportPages(S,{t=x=>x,now=new Date(),name=e=>e.n||e.id,formatNumber=n=>Number(n.toFixed(1)).toLocaleString(),report=buildProgressReport(S,{now}),sections:chosen=PROGRESS_SECTIONS.map(s=>s[0]),bodySelection={},bodyGeometry}={}) {
  const val=(n,u='')=>n==null?'—':formatNumber(n)+(u?' '+t(u):'')
  const label=m=>m.muscle?t(m.label,t(m.muscle)):t(m.label)

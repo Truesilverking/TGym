@@ -1,6 +1,6 @@
 # Progress Report
 
-The `/progress` route is available from Statistics. It reads history without changing it. `frontend/src/lib/progress-report.js` supplies the interactive cards, HTML export and additional Full Report PDF pages through `progress-export.js`.
+The `/progress` route is available from Statistics. It reads history without changing it. `frontend/src/lib/progress-report.js` supplies its interactive cards and its own HTML/PDF exports through `progress-export.js`. Calendar Full Report and statistics HTML no longer append Progress Report. The historical release notes below describe earlier behavior; the current export contract is documented in `REPORT-EXPORT-AUDIT.md`.
 
 Each metric compares its first and last valid reading within the selected calendar period, bounded by `trainingStartDate`. One reading has insufficient data, not zero change. The absolute change is current minus baseline; relative change is that difference divided by the absolute nonzero baseline. Effort scales, BMI and body-fat percentage omit relative percentages. Body-fat differences use percentage points. Trend is least-squares slope over elapsed days. No aggregate strength percentage or automatic body-composition benefit is invented.
 

@@ -7,7 +7,7 @@ const parse = svg => new DOMParser().parseFromString(svg, 'image/svg+xml')
 describe('dedicated consistency reports', () => {
   it.each(['week', 'month', 'year', 'full'])('keeps %s pages square, bounded and free of routine/measurement content', period => {
     const pages = calendarReportPages(S, anchor, period, 'pdf', { now: anchor })
-    for (const page of period === 'full' ? pages.slice(0,4) : pages) {
+    for (const page of pages) {
       expect(page.svg).not.toContain('PRIVATE ROUTINE')
       expect(page.svg).not.toContain('Measurement')
       const doc = parse(page.svg)
@@ -20,10 +20,15 @@ describe('dedicated consistency reports', () => {
       for (const label of ['Completed', 'Not completed', 'Pending']) expect(doc.documentElement.textContent).toContain(label)
     }
   })
-  it('adds a progress section to Full Report without changing its calendar pages',()=>{
+  it('keeps Full Report exclusively calendar pages for the anchored year',()=>{
     const pages=calendarReportPages(S,anchor,'full','pdf',{now:anchor})
-    expect(pages.length).toBeGreaterThan(4)
-    expect(pages.slice(4).every(p=>p.svg.includes('Progress Report'))).toBe(true)
+    expect(pages).toHaveLength(4)
+    expect(parse(pages[0].svg).querySelectorAll('[data-period="month"]')).toHaveLength(12)
+    const detail=pages.slice(1).flatMap(p=>[...parse(p.svg).querySelectorAll('[data-date]')].map(d=>d.getAttribute('data-date')))
+    expect(detail).toHaveLength(365)
+    expect(new Set(detail).size).toBe(365)
+    expect(detail[0]).toBe('2026-01-01');expect(detail.at(-1)).toBe('2026-12-31')
+    for(const p of pages)expect(p.svg).not.toContain('Progress Report')
   })
   it('renders all twelve months once across year PDF pages and in the PNG overview', () => {
     const pdf = calendarReportPages(S, anchor, 'year', 'pdf'), png = calendarReportPages(S, anchor, 'year', 'png')
