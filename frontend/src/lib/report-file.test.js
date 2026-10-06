@@ -1,12 +1,12 @@
 // @vitest-environment happy-dom
 import { beforeEach, afterEach, expect, it, vi } from 'vitest'
-import { reportPagesFile, saveReportFile, rasterizeReport } from './report-file.js'
+import { reportPagesFile, saveReportFile, saveReportBatch, rasterizeReport } from './report-file.js'
 import { buildProgressFile } from './progress-file.js'
 import { buildProgressReport } from './progress-report.js'
 import { PROGRESS_SECTIONS } from './progress-sections.js'
 
 const mock = vi.hoisted(() => ({ documents: [], share: vi.fn(), mobile: false, geometry: vi.fn(async () => ({})) }))
-vi.mock('./mobile.js', () => ({ get MOBILE() { return mock.mobile }, shareBase64: (...args) => mock.share(...args) }))
+vi.mock('./mobile.js', () => ({ get MOBILE() { return mock.mobile }, shareBase64: (...args) => mock.share(...args), shareReportFiles: (...args) => mock.share(...args) }))
 vi.mock('./body-geometry.js', () => ({ loadBodyGeometry: () => mock.geometry() }))
 vi.mock('jspdf', () => ({ jsPDF: class {
   constructor() { this.images = []; this.pages = 1; mock.documents.push(this) }
@@ -101,4 +101,13 @@ it('releases temporary download URLs after download and preserves caller-owned p
   URL.revokeObjectURL.mockClear()
   await saveReportFile({ ...file, url: 'blob:preview' }); await vi.advanceTimersByTimeAsync(1000)
   expect(URL.revokeObjectURL).not.toHaveBeenCalled()
+})
+
+it('keeps native batch bytes independent and opens a single share sheet',async()=>{
+ mock.mobile=true
+ await saveReportBatch([{name:'streak.pdf',blob:new Blob(['streak'])},{name:'stats.html',blob:new Blob(['<h1>Stats</h1>'])}])
+ expect(mock.share).toHaveBeenCalledOnce()
+ const files=mock.share.mock.calls[0][0]
+ expect(files.map(f=>f.name)).toEqual(['streak.pdf','stats.html'])
+ expect(atob(files[0].base64)).toBe('streak');expect(atob(files[1].base64)).toBe('<h1>Stats</h1>')
 })

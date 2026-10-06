@@ -1,0 +1,16 @@
+.reports-export { display:grid; gap:12px; }
+.reports-export h3,.reports-export p { margin:0; }
+.report-option { border:1px solid var(--sep); border-radius:12px; padding:8px 12px; }
+.report-choice { display:flex; gap:10px; align-items:center; min-height:44px; cursor:pointer; }
+.report-choice small { margin-left:auto; color:var(--label-2); }
+.report-choice input { width:18px; height:18px; flex-shrink:0; accent-color:var(--acc); }
+.report-settings,.report-date-controls { display:grid; gap:10px; }
+.report-settings { padding:8px 0; }
+.report-settings label,.report-date-controls label { display:grid; gap:6px; }
+.report-actions { display:flex; flex-wrap:wrap; gap:8px; position:sticky; bottom:0; padding:10px 0; background:var(--bg); z-index:1; }
+.report-results { list-style:none; padding:0; display:grid; gap:12px; }
+.report-results li { display:flex; gap:8px; align-items:center; }
+.report-results span { flex:1; overflow-wrap:anywhere; min-width:0; }
+.report-results small { display:block; color:var(--label-2); }
+.reports-entry { margin:0 0 16px; }
+.zoomcal-export-wrap { flex-wrap:wrap; gap:8px; }

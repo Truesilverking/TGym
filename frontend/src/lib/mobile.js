@@ -217,6 +217,18 @@ export async function shareBase64(base64, filename) {
   await Share.share({ title: filename, url: w.uri })
 }
 
+// Multiple independent report files in one OS share sheet; never concatenate bytes.
+export async function shareReportFiles(files) {
+  const { Filesystem, Directory } = await import('@capacitor/filesystem')
+  const { Share } = await import('@capacitor/share')
+  const uris = []
+  for (const file of files) {
+    const saved = await Filesystem.writeFile({ path: file.name, directory: Directory.Cache, data: file.base64 })
+    uris.push(saved.uri)
+  }
+  await Share.share({ title: t('Export Reports'), files: uris })
+}
+
 // "Auto-backup on changes" (Settings): a dated snapshot dropped into the Documents folder —
 // visible in Files (iOS) / a file manager (Android), unlike the private mirror nativeSave keeps
 // — so whatever the user points at that folder (a sync app, a manual copy) always has something

@@ -1,5 +1,5 @@
 import { jsPDF } from 'jspdf'
-import { MOBILE, shareBase64 } from './mobile.js'
+import { MOBILE, shareBase64, shareReportFiles } from './mobile.js'
 
 export async function rasterizeReport({ svg, width, height }, mime = 'image/png') {
   const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml;charset=utf-8' }))
@@ -59,4 +59,20 @@ export async function saveReportFile({ blob, name, url }, { share = false } = {}
       if (!url) setTimeout(() => URL.revokeObjectURL(href), 1000)
     }
   }
+}
+
+export async function saveReportBatch(files) {
+  if (!MOBILE) {
+    for (const file of files) await saveReportFile(file)
+    return
+  }
+  const encoded=[]
+  for (const {blob,name} of files) {
+    const base64=await new Promise((resolve,reject)=>{
+      const reader=new FileReader()
+      reader.onload=()=>resolve(reader.result.split(',')[1]);reader.onerror=reject;reader.readAsDataURL(blob)
+    })
+    encoded.push({name,base64})
+  }
+  await shareReportFiles(encoded)
 }

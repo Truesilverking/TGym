@@ -6,10 +6,11 @@ The calendar and statistics exports explicitly appended Progress Report output. 
 
 | Export / entry point | Content source | Period / filters | Format and filename |
 | --- | --- | --- | --- |
-| Calendar dialog: Week | `calendarReportPages` / `calendarPeriod` | Monday-Sunday containing the calendar anchor | PNG/PDF, `TGym-Consistency-Week-YYYY-MM-DD` |
-| Calendar dialog: Month | Same calendar-only builder | Anchored month | PNG/PDF, `TGym-Consistency-YYYY-MM` |
-| Calendar dialog: Year | Same calendar-only builder | Anchored year | One overview PNG or three four-month PDF pages, `TGym-Consistency-YYYY` |
-| Calendar dialog: Full Report | Same calendar-only builder | Anchored year | PDF only: one annual overview and three detail pages, `TGym-Consistency-Report-YYYY` |
+| Export Calendar / Streak | `buildStreakReport` / `trainingStreak` / `streakOfRows` | This/last week, this/last month, selected week/month, year/full, inclusive custom dates | PNG/PDF, `TGym-Streak-FROM_TO`; Full Report and custom spans over 366 days use PDF |
+| Explicit Consistency Report: Week | `calendarReportPages` / `calendarPeriod` | Monday-Sunday containing the calendar anchor | PNG/PDF, `TGym-Consistency-Week-YYYY-MM-DD` |
+| Explicit Consistency Report: Month | Same consistency-only builder | Anchored month | PNG/PDF, `TGym-Consistency-YYYY-MM` |
+| Explicit Consistency Report: Year | Same consistency-only builder | Anchored year | One overview PNG or three four-month PDF pages, `TGym-Consistency-YYYY` |
+| Explicit Consistency Report: Full Report | Same consistency-only builder | Anchored year | PDF only: one annual overview and three detail pages, `TGym-Consistency-Report-YYYY` |
 | Progress Report dialog | Exact `buildProgressReport` snapshot passed to `progressReportPages` | Since Start, 1/3/6 months, 1 year, or custom inclusive dates; selected sections and Before/After records | PDF, `TGym-Progress-Report-FROM_TO`, with single-section or `-selected` suffix |
 | Progress HTML helper | `progressReportHTML` from a progress snapshot | Snapshot's range | Standalone HTML or explicitly requested fragment; no longer included by Stats |
 | Statistics download | `statsReportHTML` from `statisticsState` | Training start through today; complete statistics snapshot, independent of individual chart windows | HTML, `tgym-stats-YYYY-MM-DD.html` |
@@ -33,7 +34,7 @@ The annual overview intentionally summarizes the same year as the three detail p
 - Calendar generation guards duplicate clicks, source changes and unmounting; save failures retain the file for retry and share cancellation remains a dismissal.
 - No storage/schema, exercise/routine identity, updater/signature checks or native identifiers changed. The initial fix commit `997aa48` did not publish a release. A subsequent explicit request published these fixes as 1.15.52 / Android88; see [RELEASE-AUDIT-1.15.52.md](RELEASE-AUDIT-1.15.52.md). No merge to the default branch was performed.
 
-A global **Export Reports** selector was not added: the current reports have distinct date/filter/format controls, and a second selection dialog would duplicate those controls. Individual report buttons and the existing Progress section selector remain available. Sequential exports create independent files; shared infrastructure never merges their pages.
+The initial 1.15.52 fix did not add a global selector. The subsequent explicit request adds **Export Reports** in Stats and the calendar, with report checkboxes, Select All, Download Selected and Download All. Streak is the sole default selection; Consistency is included only by its checkbox, Select All or explicit Download All. Streak, Consistency, Progress, Stats, History, Plan and the explicitly complete backup retain independent builders/files and applicable controls. See [STREAK-EXPORT-AUDIT.md](STREAK-EXPORT-AUDIT.md) for the current data flow, date semantics and validation. Native multiple exports use one share sheet containing separate file URIs; browser exports retain separate downloads.
 
 ## Validation
 

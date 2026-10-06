@@ -25,6 +25,7 @@ import Stepper from './components/Stepper.jsx'
 import Icon from './components/Icon.jsx'
 import StreakFlame from './components/StreakFlame.jsx'
 import CalendarExport from './components/CalendarExport.jsx'
+import ReportsExport from './components/ReportsExport.jsx'
 import { calendarDay } from './lib/calendar-data.js'
 import { consistencyStats, nextScheduledWorkout } from './lib/consistency.js'
 import { startSessionOrigin } from './lib/session-activity.js'
@@ -1415,7 +1416,7 @@ export function ZoomCalendar({ S: st, onDay, initialLevel = 'week', initialAncho
       {includeMeasurements && selectedState.measurements.map(reminder => <Button key={reminder.id} size="sm" onClick={() => openMeasurementEntry(reminder.metric)}>{t(reminder.label)}</Button>)}
       {selectedState.planned && <Button size="sm" onClick={()=>routineMuscleSheet(effectiveRoutineId(st,selected))}>{t('Muscles trained')}</Button>}
     </div>}
-    {!exporting && <div className="zoomcal-export-wrap"><Button className="calendar-export-button" icon="download" onClick={() => ui().openSheet(close => <CalendarExport S={st} anchor={anchor} close={close} />)}>{t('Export Calendar')}</Button></div>}
+    {!exporting && <div className="zoomcal-export-wrap"><Button className="calendar-export-button" icon="download" onClick={() => ui().openSheet(close => <CalendarExport S={st} anchor={anchor} close={close} />)}>{t('Export Calendar')}</Button><Button icon="download" onClick={() => ui().openSheet(close => <CalendarExport S={st} anchor={anchor} close={close} reportType="consistency" />)}>{t('Consistency Report')}</Button><Button icon="download" onClick={() => ui().openSheet(close => <ReportsExport S={st} anchor={anchor} close={close} />)}>{t('Export Reports')}</Button></div>}
   </div>
 }
 

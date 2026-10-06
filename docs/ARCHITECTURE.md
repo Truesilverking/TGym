@@ -28,6 +28,7 @@ The session-origin/activity correction is included in the published 1.15.48 APK/
 | Settings reminders/deload | `frontend/src/components/ReminderPanel.jsx`, `WorkoutReminderSettings.jsx`, `MeasurementReminders.jsx`, `DeloadSettings.jsx` |
 | Calendar, measurements, finish/summary dialogs | `frontend/src/sheets.jsx` |
 | Calendar status/export | `frontend/src/lib/calendar-data.js`, `frontend/src/components/CalendarExport.jsx` |
+| Streak and multiple report exports | `frontend/src/lib/streak-report.js`, `calendar-file.js`, `report-exports.js`, `components/ReportsExport.jsx` |
 | Workout schema/time/lifecycle | `frontend/src/lib/workout-model.js`, `workout-time.js`, `workout-lifecycle.js` |
 | Progression/deload | `frontend/src/lib/progression.js`, `frontend/src/lib/training-plan.js` |
 | Backup/cloud/native restore | `frontend/src/lib/backup.js`, `cloud-sync.js`, `native-state.js`, `mobile.js` |

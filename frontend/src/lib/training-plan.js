@@ -28,6 +28,18 @@ export function trainingStreak(S, now = new Date()) {
     const status = completed ? 'completed' : iso === endIso ? 'pending' : 'missed'
     rows.push({ iso, routineId, status, planned: true })
   }
+  const { current, best } = streakOfRows(rows)
+  const completed = rows.filter(r => r.status === 'completed')
+  const milestones = [7, 14, 30, 50, 100, 180, 365]
+  return {
+    current, best, rows, milestones,
+    lastCompleted: completed.at(-1)?.iso || null,
+    nextMilestone: milestones.find(n => n > current) || Math.ceil((current + 1) / 100) * 100,
+  }
+}
+
+// Shared by Home and historical exports; pending days never break a streak.
+export function streakOfRows(rows) {
   let current = 0, best = 0, run = 0
   rows.forEach(r => {
     if (r.status === 'completed') { run++; best = Math.max(best, run) }
@@ -39,13 +51,7 @@ export function trainingStreak(S, now = new Date()) {
     if (r.status !== 'completed') break
     current++
   }
-  const completed = rows.filter(r => r.status === 'completed')
-  const milestones = [7, 14, 30, 50, 100, 180, 365]
-  return {
-    current, best, rows, milestones,
-    lastCompleted: completed.at(-1)?.iso || null,
-    nextMilestone: milestones.find(n => n > current) || Math.ceil((current + 1) / 100) * 100,
-  }
+  return { current, best }
 }
 
 export function streakTier(value) {

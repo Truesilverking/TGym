@@ -25,7 +25,7 @@ it('forces Full Report to PDF, saves its independent file and releases the previ
   act(() => { const select = host.querySelector('select'); select.value = 'full'; select.dispatchEvent(new Event('change', { bubbles: true })) })
   expect(host.querySelectorAll('select')[1].value).toBe('pdf'); expect(host.querySelectorAll('select')[1].disabled).toBe(true)
   await act(async () => button('Export').click())
-  expect(mock.build.mock.calls[0][0]).toHaveLength(4); expect(mock.build.mock.calls[0][1]).toBe('TGym-Consistency-Report-2026.pdf')
+  expect(mock.build.mock.calls[0][0]).toHaveLength(9); expect(mock.build.mock.calls[0][1]).toBe('TGym-Streak-2026-01-01_2026-12-31.pdf')
   await act(async () => button('Share / save').click())
   expect(mock.save).toHaveBeenCalledWith({ ...file(), url: 'blob:calendar' }, { share: true })
   act(() => root.unmount()); mounted = false
