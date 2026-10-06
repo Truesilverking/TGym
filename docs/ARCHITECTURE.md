@@ -1,6 +1,6 @@
 # TGym architecture
 
-Current published release: 1.15.53 / Android89 (source `20d470a6025447817ff28ba15b58c0f143c9c5ee`) on `feature/streak-report-exports`. Export Calendar uses the actual Streak data and independent date ranges; Consistency requires explicit selection. Export Reports in Stats and the calendar selects separate report files with their own applicable filters. Shared infrastructure only packages and saves files. Home clock refresh and existing Settings/API improvements remain. See `RELEASE-AUDIT-1.15.53.md`, `STREAK-EXPORT-AUDIT.md` and `REPORT-EXPORT-AUDIT.md` for current evidence; earlier release audits are historical.
+Current published release: 1.15.54 / Android90 (source `567a8748e182bee4f2d27a4e88d9c3dcbd9cc344`) on `feature/report-export-locations`. The calendar/streak sheet offers only Export Calendar. Consistency Report opens directly from Home's Consistency section; Stats has no Consistency Report or Export Reports button. Export Reports lives only in Settings → Data, selecting independent files with their own applicable filters. Shared infrastructure only packages and saves files. Home clock refresh and existing Settings/API improvements remain. See `RELEASE-AUDIT-1.15.54.md`, `REPORT-EXPORT-LOCATIONS.md` and `STREAK-EXPORT-AUDIT.md` for current evidence; earlier release audits are historical.
 
 The subsequent request to validate every function is tracked in `docs/POST-RELEASE-AUDIT-1.15.31.md`. Follow-up fixes serialize API uploads, preserve active workouts and unsent edits at sign-out, recheck the reviewed cloud snapshot before upload, and allow skipping an incomplete optional PIN. Real-browser auditing also improves theme contrast, keyboard controls, zoom, accessible labels and reduced-motion media. These changes are not included in the published 1.15.31 artifact.
 
@@ -67,7 +67,7 @@ Completed set rows render read-only summaries until explicitly undone. Per-side 
 
 ## Calendar, history and statistics
 
-The shared calendar sheet supports week/month/multiple-month/year views, date scheduling, deload context and measurement reminders. Calendar export uses dedicated SVG report pages, rasterized at 2x and fitted proportionally into jsPDF pages. Year PDFs have three four-month pages; full reports add a twelve-month overview. Calendar completion and daily consistency use valid activity of either session type. Scheduled routine completion remains a separate counter, matched by the immutable session origin and routine identity.
+The shared calendar sheet supports week/month/multiple-month/year views, date scheduling, deload context and measurement reminders. Export Calendar uses dedicated Streak SVG pages, rasterized at 2x and fitted proportionally into jsPDF pages. The compact Year PDF has three pages; Full Report uses detailed date pages. Consistency has its own explicit export dialog and existing layouts, reached only from Home's Consistency section or explicit global report selection in Settings. Calendar completion and daily consistency use valid activity of either session type. Scheduled routine completion remains a separate counter, matched by the immutable session origin and routine identity.
 
 The `/progress` route has eight independent dashboard sections and compares valid history using a routine → exercise hierarchy. Routine IDs keep edited/deleted plans associated with historical sessions; legacy name-only history stays separate. It aggregates duration, adherence, frequency and volume without changing persisted data. Its pure report builder supplies only Progress Report HTML/PDF exports; calendar and statistics exports never append it. Common rasterization and file saving live in `lib/report-file.js`; see `PROGRESS-REPORT.md` and `REPORT-EXPORT-AUDIT.md`. Dated height history is additive and uses canonical centimetres.
 
@@ -85,7 +85,7 @@ Google Drive backup uses app-data access, a backup file and bounded daily snapsh
 
 ## Android and notifications
 
-Native code is under `frontend/android/app/src/main/`. Application/namespace identity remains `app.framegym.mobile`; the product name is TGym. The current release is 1.15.53, versionCode 89; min SDK 23, compile/target SDK 35, Gradle 8.11.1 and CI JDK 21. Its exact source commit passed Android build/lint, emulator instrumentation and signed-release validation in GitHub Actions.
+Native code is under `frontend/android/app/src/main/`. Application/namespace identity remains `app.framegym.mobile`; the product name is TGym. The current release is 1.15.54, versionCode 90; min SDK 23, compile/target SDK 35, Gradle 8.11.1 and CI JDK 21. Its exact source commit passed Android build/lint, emulator instrumentation and signed-release validation in GitHub Actions.
 
 `MainActivity` registers Google Drive authentication, update push, installer and workout notification bridges. The foreground workout service uses native chronometers and persisted notification state. Notification taps target the activity with `tgym://workout`; React handles that navigation. This is not proof of a general externally browsable deep-link manifest filter.
 
