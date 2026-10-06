@@ -1163,6 +1163,7 @@ body.framegym-private::after{
 .body-weight-title { white-space:nowrap; }
 .consistency-heading p { margin:5px 0 0; }
 .times-action.btn { font-size:16px; min-height:40px; padding:8px 12px; width:auto; }
+.consistency-actions { display:flex; align-items:center; gap:4px; flex:none; }
 .times-metrics .v { font-size:clamp(23px,6.5vw,30px); }
 .times-metrics .l { font-size:14px; }
 .times-title { margin-bottom:16px; }

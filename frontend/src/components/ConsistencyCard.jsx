@@ -6,7 +6,7 @@ export default function ConsistencyCard({ S, onTimes, onExport, now = new Date()
   const stats = routineConsistency(S,56,now)
   const percent = stats.rate == null ? null : Math.round(stats.rate * 100)
   return <section className="card consistency-card insight-panel">
-    <div className="consistency-heading insight-heading"><div><h2>{t('Consistency')}</h2><p className="muted small">{t('Last 8 weeks')}</p></div><Button className="times-action" icon="timer" onClick={onTimes}>{t('Times')}</Button></div>
+    <div className="consistency-heading insight-heading"><div><h2>{t('Consistency')}</h2><p className="muted small">{t('Last 8 weeks')}</p></div><div className="consistency-actions"><Button className="times-action" icon="timer" onClick={onTimes}>{t('Times')}</Button>{onExport && <Button className="times-action consistency-download" icon="download" aria-label={t('Consistency Report')} title={t('Consistency Report')} onClick={onExport} />}</div></div>
     <div className="consistency-summary">
       <dl className="consistency-primary consistency-metrics">
         <div><dt>{t('Active days')}</dt><dd>{stats.activeDays}</dd></div>
@@ -17,6 +17,5 @@ export default function ConsistencyCard({ S, onTimes, onExport, now = new Date()
       <p className="small muted">{t('Activity counts once per day, including planned and extra sessions.')}</p>
     </div>
     <dl className="consistency-secondary consistency-metrics">{[['Planned',stats.planned],['Missed',stats.missed],['Extra',stats.extra]].map(([label,value])=><div key={label}><dt>{t(label)}</dt><dd>{value}</dd></div>)}</dl>
-    {onExport && <Button icon="download" style={{ marginTop: 12 }} onClick={onExport}>{t('Consistency Report')}</Button>}
   </section>
 }
