@@ -1,6 +1,6 @@
 # TGym architecture
 
-Current published release: 1.15.52 / Android88 (source `84710bcba1f8b9f54c5a2969f8f355f31e687bb0`) on `fix/report-export-isolation`. Calendar and statistics exports now contain only their own reports; History CSV respects the visible search and period filters. Shared file infrastructure does not choose or combine report data. Home clock refresh and existing Settings/API improvements remain. See `RELEASE-AUDIT-1.15.52.md` and `REPORT-EXPORT-AUDIT.md` for current evidence; earlier release audits are historical.
+Current published release: 1.15.53 / Android89 (source `20d470a6025447817ff28ba15b58c0f143c9c5ee`) on `feature/streak-report-exports`. Export Calendar uses the actual Streak data and independent date ranges; Consistency requires explicit selection. Export Reports in Stats and the calendar selects separate report files with their own applicable filters. Shared infrastructure only packages and saves files. Home clock refresh and existing Settings/API improvements remain. See `RELEASE-AUDIT-1.15.53.md`, `STREAK-EXPORT-AUDIT.md` and `REPORT-EXPORT-AUDIT.md` for current evidence; earlier release audits are historical.
 
 The subsequent request to validate every function is tracked in `docs/POST-RELEASE-AUDIT-1.15.31.md`. Follow-up fixes serialize API uploads, preserve active workouts and unsent edits at sign-out, recheck the reviewed cloud snapshot before upload, and allow skipping an incomplete optional PIN. Real-browser auditing also improves theme contrast, keyboard controls, zoom, accessible labels and reduced-motion media. These changes are not included in the published 1.15.31 artifact.
 
@@ -85,7 +85,7 @@ Google Drive backup uses app-data access, a backup file and bounded daily snapsh
 
 ## Android and notifications
 
-Native code is under `frontend/android/app/src/main/`. Application/namespace identity remains `app.framegym.mobile`; the product name is TGym. The current release is 1.15.52, versionCode 88; min SDK 23, compile/target SDK 35, Gradle 8.11.1 and CI JDK 21. Its exact source commit passed Android build/lint, emulator instrumentation and signed-release validation in GitHub Actions.
+Native code is under `frontend/android/app/src/main/`. Application/namespace identity remains `app.framegym.mobile`; the product name is TGym. The current release is 1.15.53, versionCode 89; min SDK 23, compile/target SDK 35, Gradle 8.11.1 and CI JDK 21. Its exact source commit passed Android build/lint, emulator instrumentation and signed-release validation in GitHub Actions.
 
 `MainActivity` registers Google Drive authentication, update push, installer and workout notification bridges. The foreground workout service uses native chronometers and persisted notification state. Notification taps target the activity with `tgym://workout`; React handles that navigation. This is not proof of a general externally browsable deep-link manifest filter.
 
