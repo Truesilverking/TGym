@@ -1,12 +1,13 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { routineDurationSummary } from '../lib/stats-insights.js'
 import { fmtDur } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
 import { SelectRow } from './ui.jsx'
 import Icon from './Icon.jsx'
 
-export default function RoutineDuration({ S }) {
+export default function RoutineDuration({ S, exportFilters }) {
   const [days, setDays] = useState(90)
+  useEffect(()=>{if(exportFilters)exportFilters.current.durationRange=days},[exportFilters,days])
   const duration = ms => ms < 60000 ? Math.round(ms / 1000) + 's' : fmtDur(ms)
   const rows = useMemo(()=>routineDurationSummary(S.workouts, {routines:S.routines,activeId:S.active?.id,days}),[S.workouts,S.routines,S.active?.id,days])
   const scale = Math.max(1,...rows.flatMap(row=>[row.meanMs,row.medianMs]))

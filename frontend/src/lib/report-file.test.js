@@ -41,6 +41,22 @@ it('keeps sequential independent files separate with proportional page fitting',
   const [, , x, y, w, h] = mock.documents[1].images[0]
   expect(x).toBe(0); expect(y).toBe(0); expect(w / h).toBeCloseTo(page.width / page.height)
 })
+it('preserves each report page image format and margins inside one combined PDF', async () => {
+  const inset={svg:'<svg/>',width:800,height:1000,imageType:'JPEG',fullPage:false}
+  const full={svg:'<svg/>',width:1000,height:1390,imageType:'PNG',fullPage:true}
+  const inherited={svg:'<svg/>',width:1000,height:1390}
+  const file=await reportPagesFile([inset,full,inherited],'reports.pdf',{imageType:'JPEG',fullPage:false,title:'TGym Reports'})
+  expect(file.blob.type).toBe('application/pdf');expect(mock.documents).toHaveLength(1)
+  const pdf=mock.documents[0]
+  expect(pdf.pages).toBe(3);expect(pdf.images.map(args=>args[1])).toEqual(['JPEG','PNG','JPEG'])
+  expect(pdf.properties.title).toBe('TGym Reports')
+  const [, , insetX,insetY,insetW,insetH]=pdf.images[0]
+  expect(insetX).toBe(10);expect(insetY).toBe(10);expect(insetW).toBe(190);expect(insetH).toBe(237.5)
+  const [, , fullX,fullY,fullW,fullH]=pdf.images[1]
+  expect(fullX).toBe(0);expect(fullY).toBe(0);expect(fullW).toBe(210);expect(fullH).toBe(291.9)
+  expect(fullW/fullH).toBeCloseTo(full.width/full.height)
+  expect(pdf.images[2][3]).toBe(10)
+})
 it('produces PNG bytes and rejects empty or unsupported files', async () => {
   const file = await reportPagesFile([page], 'calendar.png', { format: 'png' })
   expect(file.blob.type).toBe('image/png'); expect(file.blob.size).toBeGreaterThan(0)

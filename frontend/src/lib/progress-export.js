@@ -2,6 +2,7 @@ import { MEASUREMENT_ZONES,measurementMapSvg,CHANGE_STYLES,measurementChange } f
 import { compareBody } from './body-report.js'
 import { buildProgressReport } from './progress-report.js'
 import { PROGRESS_SECTIONS } from './progress-sections.js'
+import { exerciseNameFor as resolveExerciseName } from './i18n-core.js'
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
 function sections(report,t,name) {
  const q=report.summary
@@ -19,7 +20,7 @@ const spark = (m,x,y,w,h) => {
  const stride=Math.max(1,Math.ceil(m.points.length/150)),pts=m.points.filter((_,i)=>i%stride===0||i===m.points.length-1)
  return `<polyline fill="none" stroke="#b51e28" stroke-width="2" points="${pts.map(p=>`${x+(p.t-first)/span*w},${y+h-(p.y-min)/(max-min||1)*h}`).join(' ')}"/>`
 }
-export function progressReportHTML(report,{t=x=>x,exerciseNameFor=e=>e.n||e.id,fmtNum=n=>Number(n.toFixed(1)).toLocaleString(),fmtDate=d=>d,fragment=false}={}) {
+export function progressReportHTML(report,{t=x=>x,state=report.exerciseNameState||{},exerciseNameFor=(exercise,context)=>resolveExerciseName(exercise,state,context),fmtNum=n=>Number(n.toFixed(1)).toLocaleString(),fmtDate=d=>d,fragment=false}={}) {
  const val=(n,u='')=>n==null?'—':esc(fmtNum(n)+' '+t(u))
  let body=`<section class="progress-export"><h1>${esc(t('Progress Report'))}</h1><p>${esc(report.range.start)} → ${esc(report.range.end)}</p><p>${esc(t('Only recorded data. Changes are not automatically improvements.'))}</p>`
  for(const section of sections(report,t,exerciseNameFor)) {
@@ -41,13 +42,56 @@ export function wrapProgressText(value, width) {
  if(line)rows.push(line)
  return rows
 }
+// SVG text has no automatic wrapping. Estimate Arial advances conservatively,
+// including wide uppercase letters and full-width Unicode, rather than counting
+// characters. Keep complete names, splitting a long unbroken word when necessary.
+export function wrapReportText(value, maxWidth, size=18, weight=400) {
+ const bold=weight>=600, budget=Math.max(size,maxWidth)/1.08
+ const upper=bold?[722,722,722,722,667,611,778,722,278,556,722,611,833,722,778,667,778,722,667,611,722,667,944,667,667,611]:[667,667,722,722,667,611,778,722,278,500,667,556,833,722,778,667,778,722,667,611,722,667,944,667,667,611]
+ const lower=bold?[556,611,556,611,556,333,611,611,278,278,556,278,889,611,611,611,611,389,556,333,611,556,778,556,556,500]:[556,556,500,556,556,278,556,556,222,222,500,222,833,556,556,556,556,333,500,278,556,500,722,500,500,500]
+ const advanceCache=new Map()
+ const calculateAdvance=char=>{
+  if(/\p{Mark}/u.test(char))return 0
+  // Emoji fallback fonts can advance beyond the text em (Segoe UI Emoji does).
+  // Astral and flag symbols receive the same conservative allowance.
+  if(/\p{Extended_Pictographic}|\p{Regional_Indicator}/u.test(char)||char.codePointAt(0)>0xffff)return 1.6*size
+  const base=char.normalize('NFD')[0],code=base.charCodeAt(0)
+  if(code>=65&&code<=90)return upper[code-65]/1000*size
+  if(code>=97&&code<=122)return lower[code-97]/1000*size
+  if(code>=48&&code<=57)return .556*size
+  if(/[\s.,:;!'|]/u.test(char))return .278*size
+  if(/[-/()\[\]{}]/u.test(char))return .389*size
+  // CJK and other scripts can occupy the entire em box.
+  return size
+ }
+ const advance=char=>{
+  if(!advanceCache.has(char))advanceCache.set(char,calculateAdvance(char))
+  return advanceCache.get(char)
+ }
+ const space=advance(' '),rows=[];let line='',lineWidth=0
+ for(const word of String(value||'').match(/\S+/g)||[]){
+  const chars=Array.from(word),widths=chars.map(advance),wordWidth=widths.reduce((sum,width)=>sum+width,0)
+  if(line&&lineWidth+space+wordWidth>budget){rows.push(line);line='';lineWidth=0}
+  if(wordWidth<=budget){lineWidth+=(line?space:0)+wordWidth;line+=(line?' ':'')+word;continue}
+  let chunk='',chunkWidth=0
+  for(let i=0;i<chars.length;i++){
+   const char=chars[i],charWidth=widths[i]
+   if(chunk&&chunkWidth+charWidth>budget){rows.push(chunk);chunk='';chunkWidth=0}
+   chunk+=char
+   chunkWidth+=charWidth
+  }
+  if(chunk){lineWidth+=(line?space:0)+chunkWidth;line+=(line?' ':'')+chunk}
+ }
+ if(line)rows.push(line)
+ return rows
+}
 // Flow complete rows onto pages; repeat section context after every page break.
 // Only Progress Report callers supply a progress snapshot and selected sections.
-export function progressReportPages(S,{t=x=>x,now=new Date(),name=e=>e.n||e.id,formatNumber=n=>Number(n.toFixed(1)).toLocaleString(),report=buildProgressReport(S,{now}),sections:chosen=PROGRESS_SECTIONS.map(s=>s[0]),bodySelection={},bodyGeometry}={}) {
+export function progressReportPages(S,{t=x=>x,now=new Date(),name=(exercise,context)=>resolveExerciseName(exercise,report.exerciseNameState||S||{},context),formatNumber=n=>Number(n.toFixed(1)).toLocaleString(),report=buildProgressReport(S,{now}),sections:chosen=PROGRESS_SECTIONS.map(s=>s[0]),bodySelection={},bodyGeometry}={}) {
  const val=(n,u='')=>n==null?'—':formatNumber(n)+(u?' '+t(u):'')
  const label=m=>m.muscle?t(m.label,t(m.muscle)):t(m.label)
  const text=(x,y,s,size=18,color='#17212f',weight=400)=>`<text x="${x}" y="${y}" font-size="${size}" fill="${color}" font-weight="${weight}">${esc(s)}</text>`
- const wrap=(s,width)=>wrapProgressText(s,width)
+ const wrap=(s,width,size=18,weight=400,maxWidth=width*10)=>wrapReportText(s,maxWidth,size,weight)
  const lines=(x,y,rows,size=18,color='#17212f',weight=400)=>rows.map((s,i)=>text(x,y+i*(size+5),s,size,color,weight)).join('')
  const rect=(x,y,w,h)=>`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="12" fill="white" stroke="#dce2e9"/>`
  const enabled=new Set(chosen.filter(id=>PROGRESS_SECTIONS.some(s=>s[0]===id))),rendered=new Set()
@@ -56,7 +100,7 @@ export function progressReportPages(S,{t=x=>x,now=new Date(),name=e=>e.n||e.id,f
  const start=()=>{svg=`<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1390"><rect width="1000" height="1390" fill="#f8fafc"/><g font-family="Arial,sans-serif"><rect width="1000" height="8" fill="#b51e28"/>${text(44,46,'TGym',20,'#b51e28',700)}${text(44,87,t('Progress Report'),30,'#17212f',700)}${text(44,117,report.range.start+' → '+report.range.end,18,'#536174')}`;y=150;hasContent=false}
  const finish=()=>{if(hasContent)pages.push(svg)}
  const next=()=>{finish();start()}
- const headingRows=h=>({title:wrap(h.title,65),sub:wrap(h.sub,90)})
+ const headingRows=h=>({title:wrap(h.title,65,24,700,912),sub:wrap(h.sub,90,18,400,912)})
  const headingHeight=h=>{const r=headingRows(h);return r.title.length*29+r.sub.length*23+24}
  const heading=h=>{const r=headingRows(h);svg+=lines(44,y+24,r.title,24,'#17212f',700);y+=r.title.length*29;svg+=lines(44,y+20,r.sub,18,'#536174');y+=r.sub.length*23+24;hasContent=true}
  // Never orphan a heading or split a card. Continuations always repeat context.
@@ -75,16 +119,16 @@ export function progressReportPages(S,{t=x=>x,now=new Date(),name=e=>e.n||e.id,f
  const q=report.summary
  const sectionHead=id=>{const [,title,sub]=PROGRESS_SECTIONS.find(s=>s[0]===id);return {id,title:t(title),sub:t(sub)}}
  const tileRows=items=>{const rows=[]
-  for(let i=0;i<items.length;i+=3){const cells=items.slice(i,i+3),height=Math.max(...cells.map(([l])=>wrap(t(l),25).length))*23+58
-   rows.push({height:height+10,draw:y=>cells.map(([l,n,u],j)=>{const x=44+j*309;return rect(x,y,295,height)+text(x+16,y+35,val(n,u),28,'#17212f',700)+lines(x+16,y+62,wrap(t(l),25),18,'#536174')}).join('')})
+  for(let i=0;i<items.length;i+=3){const cells=items.slice(i,i+3),height=Math.max(...cells.map(([l])=>wrap(t(l),25,18,400,263).length))*23+58
+   rows.push({height:height+10,draw:y=>cells.map(([l,n,u],j)=>{const x=44+j*309;return rect(x,y,295,height)+text(x+16,y+35,val(n,u),28,'#17212f',700)+lines(x+16,y+62,wrap(t(l),25,18,400,263),18,'#536174')}).join('')})
   }return rows
  }
  const metricRows=items=>pairRows(items,m=>{
-  const title=wrap(label(m),36),change=m.delta==null?t('More data needed'):(m.delta>0?'+':'')+val(m.delta,m.deltaUnit)+(m.percent==null?'':' · '+val(m.percent,'%'))
+  const title=wrap(label(m),36,20,700,416),change=m.delta==null?t('More data needed'):(m.delta>0?'+':'')+val(m.delta,m.deltaUnit)+(m.percent==null?'':' · '+val(m.percent,'%'))
   const details=wrap(change,42),height=(m.points.length>1?150:120)+(title.length-1)*25+(details.length-1)*23
   return {height,draw:(x,y,h)=>{const top=y+title.length*25;return rect(x,y,448,h)+lines(x+16,y+25,title,20,'#17212f',700)+text(x+16,top+33,val(m.last?.y,m.unit),27,'#17212f',700)+text(x+230,top+32,t('Baseline')+': '+val(m.first?.y,m.unit),16,'#536174')+lines(x+16,top+60,details,18,'#b51e28')+spark(m,x+16,y+height-55,414,25)+text(x+16,y+height-15,m.first.d+' → '+m.last.d,16,'#536174')}}
  })
- const recordRows=items=>items.map(p=>{const title=wrap(name(p.exercise),48),detail=wrap(p.d+' · '+t(p.label),60),height=title.length*23+detail.length*21+20
+ const recordRows=items=>items.map(p=>{const title=wrap(name(p.exercise),48,18,700,585),detail=wrap(p.d+' · '+t(p.label),60,16,400,585),height=title.length*23+detail.length*21+20
   return {height:height+8,draw:y=>rect(44,y,912,height)+lines(60,y+25,title,18,'#17212f',700)+lines(60,y+title.length*23+25,detail,16,'#536174')+text(665,y+29,val(p.value,p.unit),23,'#17212f',700)+text(665,y+54,t('Baseline')+': '+val(p.previous,p.unit),16,'#536174')}
  })
  if(q?.workouts){
@@ -103,7 +147,7 @@ export function progressReportPages(S,{t=x=>x,now=new Date(),name=e=>e.n||e.id,f
  const renderBody=()=>{if(body.metrics.length){
   const model={height:380,draw:y=>rect(44,y,912,368)+`<g transform="translate(0 ${y+4})">${measurementMapSvg(bodyGeometry,report.bodyType,body.metrics)}</g>`+body.metrics.map((m,i)=>text(365,y+30+i*25,CHANGE_STYLES[measurementChange(m)].symbol+' '+t(m.label),17,'#536174')+text(690,y+30+i*25,val(m.last,m.unit),19,'#17212f',700)).join('')}
 
-  const comparison=pairRows(body.metrics,m=>{const title=wrap(t(m.label),35),detail=m.delta==null?t('More data needed'):(m.delta>0?'+':'')+val(m.delta,m.unit)+' · '+(m.percent>0?'+':'')+val(m.percent,'%'),height=95+title.length*25;return {height,draw:(x,y,h)=>rect(x,y,448,h)+lines(x+16,y+27,title,20,'#17212f',700)+text(x+16,y+title.length*25+35,val(m.first,m.unit)+' → '+val(m.last,m.unit),23,'#17212f',700)+text(x+16,y+height-38,detail,18,'#b51e28')+text(x+16,y+height-15,body.before.d+' → '+body.after.d,16,'#536174')}})
+  const comparison=pairRows(body.metrics,m=>{const title=wrap(t(m.label),35,20,700,416),detail=m.delta==null?t('More data needed'):(m.delta>0?'+':'')+val(m.delta,m.unit)+' · '+(m.percent>0?'+':'')+val(m.percent,'%'),height=95+title.length*25;return {height,draw:(x,y,h)=>rect(x,y,448,h)+lines(x+16,y+27,title,20,'#17212f',700)+text(x+16,y+title.length*25+35,val(m.first,m.unit)+' → '+val(m.last,m.unit),23,'#17212f',700)+text(x+16,y+height-38,detail,18,'#b51e28')+text(x+16,y+height-15,body.before.d+' → '+body.after.d,16,'#536174')}})
 
   const facts=[[t('First record'),report.bodyRecords[0].d],[t('Current record'),body.after.d],[t('Largest increase'),body.increase?t(body.increase.label)+' · '+val(body.increase.delta,body.increase.unit):'—'],[t('Largest decrease'),body.decrease?t(body.decrease.label)+' · '+val(body.decrease.delta,body.decrease.unit):'—'],[t('No significant change'),body.stable.length?body.stable.map(m=>t(m.label)).join(', '):'—']]
   const factRows=pairRows(facts,([title,v])=>{const rows=wrap(title+': '+v,40);return {height:rows.length*24+12,draw:(x,y)=>lines(x+16,y+22,rows,18)}})

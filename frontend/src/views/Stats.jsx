@@ -4,13 +4,13 @@ import { removeBodyRecord } from '../lib/body-records.js'
 import { HybridSummary } from '../components/Activities.jsx'
 import ExerciseSessions from '../components/ExerciseSessions.jsx'
 import TrainingHistory from '../components/TrainingHistory.jsx'
-import { statsReportHTML } from '../lib/stats-report.js'
-import { saveReportFile } from '../lib/report-file.js'
+import ReportsExport from '../components/ReportsExport.jsx'
 import { statisticsState } from '../lib/training-history.js'
 import ConsistencyCard from '../components/ConsistencyCard.jsx'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
+import { useUI } from '../store/useUI.js'
 import { EXIDX } from '../lib/exercises.js'
 import { lastBW, modeOf, effortOf, metricModeForEntry, metricRowsForEntry, bestWeightForEntry, displayReps } from '../lib/history.js'
 import { fmtNum, fmtDate, todayISO, weekKey } from '../lib/format.js'
@@ -29,16 +29,18 @@ import {
   hasEffort, displayScale, scaleName, toScale, avgRir, effortSummary, effortWeeks,
   effortHistogram, isHardSet, HARD_RIR
 } from '../lib/effort.js'
-import { Button, Segmented, SelectRow } from '../components/ui.jsx'
+import { Button, Check, Segmented, SelectRow } from '../components/ui.jsx'
+import { STATS_SECTIONS, normalizeStatsSections } from '../lib/stats-sections.js'
 import { isWarmupRow } from '../lib/workout-model.js'
 import { MOBILE } from '../lib/mobile.js'
+
 import { bmiBand, bmiFor, MEASURE_FIELDS, measurementValue } from '../lib/stats-insights.js'
 import { trainingStreak } from '../lib/training-plan.js'
 import { effortLabel } from '../lib/history.js'
 
-async function exportStatsReport(S) {
-  const blob = new Blob([statsReportHTML(S)], { type: 'text/html;charset=utf-8' })
-  await saveReportFile({ blob, name: `tgym-stats-${todayISO()}.html` })
+function StatsExerciseLabel({ id, entry, routineId, suffix }) {
+  const state = useStore(s => s.S)
+  return <>{exerciseNameFor(EXIDX[id] || entry || { id }, { state, entry, routineId })}{suffix}</>
 }
 
 // Which muscles the training in a window actually hit — and, the point of the card,
@@ -115,11 +117,12 @@ function fatigueLabel(value) {
   return t(state === 'ready' ? 'Ready' : state === 'recovering' ? 'Recovering' : 'Fatigued')
 }
 
-function MuscleBalance({ S }) {
+function MuscleBalance({ S, exportFilters }) {
   const [view, setView] = useState('balance')
   const [win, setWin] = useState(7)
   const [hard, setHard] = useState(false)
   const [sel, setSel] = useState(null)
+  useEffect(()=>{if(exportFilters)Object.assign(exportFilters.current,{musclesView:view,musclesRange:win,musclesHard:hard,musclesSelected:sel})},[exportFilters,view,win,hard,sel])
   const now = useNow()
   const lang = getLang()
   const workouts = S.workouts
@@ -242,8 +245,9 @@ function MuscleBalance({ S }) {
 // Every number carries how much of the training it speaks for: rating is optional and off by
 // default, so a partly rated history is the normal case, and an average without its
 // denominator would quietly speak for sets that were never rated.
-function EffortCard({ S }) {
+function EffortCard({ S, exportFilters }) {
   const [win, setWin] = useState(90)
+  useEffect(()=>{if(exportFilters)exportFilters.current.effortRange=win},[exportFilters,win])
   const kind = displayScale(S)
   const hd = scaleName(kind)
   const sum = effortSummary(S, win)
@@ -292,18 +296,114 @@ function EffortCard({ S }) {
   </div>
 }
 
+function StatsSections({ selected, onToggle }) {
+  const [open, setOpen] = useState(false)
+  const container = useRef(null)
+  const trigger = useRef(null)
+  const labels = STATS_SECTIONS.filter(([id]) => selected.includes(id)).map(([, label]) => t(label))
+  const summary = labels.length === 1 ? labels[0] : t('{0} sections selected', labels.length)
+
+  useEffect(() => {
+    if (!open) return
+    let frame = 0
+    const dismissOutside = event => {
+      if (!container.current?.contains(event.target)) setOpen(false)
+    }
+    const dismissEscape = event => {
+      if (event.key !== 'Escape') return
+      event.preventDefault()
+      event.stopPropagation()
+      setOpen(false)
+      trigger.current?.focus()
+    }
+    // Fit below the trigger and above the existing fixed controls, including on iOS.
+    const fitMenu = () => {
+      if (!trigger.current || !container.current) return
+      const viewport = window.visualViewport
+      const bottom = (viewport?.offsetTop || 0) + (viewport?.height || window.innerHeight)
+      const clearance = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--bottom-clearance')) || 0
+      let available = bottom - trigger.current.getBoundingClientRect().bottom - clearance - 16
+      if (available < 88) {
+        trigger.current.scrollIntoView({ block: 'start', behavior: 'instant' })
+        available = bottom - trigger.current.getBoundingClientRect().bottom - clearance - 16
+      }
+      container.current.style.setProperty('--stats-menu-height', `${Math.max(0, Math.min(420, available))}px`)
+    }
+    // The shared viewport helper updates fixed-control clearance in an animation frame.
+    // Measure after it settles, including root viewport variables changed during rotation.
+    const scheduleFit = () => {
+      if (!frame) frame = window.requestAnimationFrame(() => { frame = 0; fitMenu() })
+    }
+    const viewportStyles = new MutationObserver(scheduleFit)
+    viewportStyles.observe(document.documentElement, { attributes: true, attributeFilter: ['style'] })
+    const resize = window.ResizeObserver ? new window.ResizeObserver(scheduleFit) : null
+    resize?.observe(trigger.current)
+    fitMenu()
+    scheduleFit()
+    document.addEventListener('pointerdown', dismissOutside, true)
+    document.addEventListener('keydown', dismissEscape, true)
+    window.addEventListener('resize', scheduleFit)
+    document.addEventListener('scroll', scheduleFit, true)
+    window.visualViewport?.addEventListener('resize', scheduleFit)
+    window.visualViewport?.addEventListener('scroll', scheduleFit)
+    return () => {
+      document.removeEventListener('pointerdown', dismissOutside, true)
+      document.removeEventListener('keydown', dismissEscape, true)
+      window.cancelAnimationFrame(frame)
+      viewportStyles.disconnect()
+      resize?.disconnect()
+      window.removeEventListener('resize', scheduleFit)
+      document.removeEventListener('scroll', scheduleFit, true)
+      window.visualViewport?.removeEventListener('resize', scheduleFit)
+      window.visualViewport?.removeEventListener('scroll', scheduleFit)
+    }
+  }, [open])
+
+  return <div className="stats-sections" ref={container}>
+    <label className="stats-sections-label" htmlFor="stats-sections-trigger">{t('Sections')}</label>
+    <button ref={trigger} id="stats-sections-trigger" type="button" className="input lrow tap stats-sections-trigger" aria-label={t('Sections')}
+      aria-expanded={open} aria-controls="stats-sections-menu" onClick={() => setOpen(value => !value)}>
+      <span className="lrow-v" title={labels.join(', ')}>{summary}</span>
+      <Icon name="chevronDown" className="lrow-c" />
+    </button>
+    {open && <div id="stats-sections-menu" className="stats-sections-menu" role="group" aria-label={t('Sections')}>
+      <div className="stats-section-options">
+        {STATS_SECTIONS.map(([id, label]) => <div key={id} className="stats-section-option">
+          <Check id={'stats-section-' + id} checked={selected.includes(id)} onChange={() => onToggle(id)}
+            size={44} aria-label={t(label)} aria-describedby="stats-sections-hint" />
+          <label htmlFor={'stats-section-' + id}>{t(label)}</label>
+        </div>)}
+      </div>
+      <p id="stats-sections-hint" className="small muted">{t('Select at least one section.')}</p>
+    </div>}
+  </div>
+}
+
 // Stats = the analytics hub: all charts, progress and history live here.
 export default function Stats() {
   const nav = useNavigate()
   const rawState = useStore(s => s.S)
   const S = useMemo(() => statisticsState(rawState), [rawState])
   const update = useStore(s => s.update)
+  const selectedSections = normalizeStatsSections(rawState.statsSections)
+  const sectionProps = id => ({ 'data-stats-section': id, hidden: !selectedSections.includes(id) })
+  const toggleSection = id => {
+    if (selectedSections.includes(id) && selectedSections.length === 1) return
+    update(s => {
+      const current = normalizeStatsSections(s.statsSections)
+      if (current.includes(id) && current.length === 1) return
+      s.statsSections = normalizeStatsSections(current.includes(id) ? current.filter(value => value !== id) : [...current, id])
+    })
+  }
   const [range, setRange] = useState(90)
   const [exId, setExId] = useState(null)
   const [exMetric, setExMetric] = useState('top')
   const [bodySelection,setBodySelection]=useState({})
+  const exportFilters=useRef({})
   const measurementRows=useMemo(()=>bodyRecords(S,{start:'0001-01-01',end:todayISO()}),[S])
-  useEffect(()=>setBodySelection({}),[measurementRows])
+  // Preference updates clone the profile; retain comparison dates while records stay the same.
+  const measurementDataKey=useMemo(()=>JSON.stringify(measurementRows),[measurementRows])
+  useEffect(()=>setBodySelection({}),[measurementDataKey])
   const now = Date.now()
   const kind = displayScale(S)
   const hd = scaleName(kind)
@@ -320,7 +420,12 @@ export default function Stats() {
   const bmi = bmiFor(latestWeight?.w, S.unit, S.heightCm, S.measurementUnit)
   const bmiPoints = S.heightCm ? S.bodyweight.map(b => ({ t: b.t || new Date(b.d + 'T12:00:00').getTime(), d: b.d, y: bmiFor(b.w, S.unit, S.heightCm, S.measurementUnit) })).filter(p => p.y) : []
 
-  const nameOf = id => EXIDX[id] ? exerciseNameFor(EXIDX[id]) : (workouts.flatMap(w => w.entries).find(e => e.id === id)?.n || id)
+  const originalNameState = { ...rawState, exerciseNameMode: 'original' }
+  const nameOf = (id, original = false) => {
+    const workout = workouts.find(w => w.entries.some(e => e.id === id))
+    const entry = workout?.entries.find(e => e.id === id)
+    return exerciseNameFor(EXIDX[id] || entry || { id }, { state: original ? originalNameState : rawState, entry, routineId: workout?.routineId })
+  }
   const currentOf = id => {
     for (let i = workouts.length - 1; i >= 0; i--) {
       const en = workouts[i].entries.find(e => e.id === id)
@@ -338,9 +443,9 @@ export default function Stats() {
     }
     return { mx: 0, unit: S.unit }
   }
-  const exHist = [...new Set(workouts.flatMap(w => w.entries.map(e => e.id)))].filter(id => EXIDX[id] || nameOf(id) !== id)
+  const exHist = [...new Set(workouts.flatMap(w => w.entries.map(e => e.id)))].filter(id => EXIDX[id] || nameOf(id, true) !== id)
   const exCurrent = Object.fromEntries(exHist.map(id => [id, currentOf(id)]))
-  exHist.sort((a, b) => exCurrent[b].mx - exCurrent[a].mx || nameOf(a).localeCompare(nameOf(b)))
+  exHist.sort((a, b) => exCurrent[b].mx - exCurrent[a].mx || nameOf(a, true).localeCompare(nameOf(b, true)))
   const curEx = exId && exHist.includes(exId) ? exId : exHist[0] || null
   // A completed reps work row is authoritative for strength metrics, even when the parent
   // target also contains timed/cardio work. Entries without reps rows use their selected mode.
@@ -420,26 +525,29 @@ export default function Stats() {
 
   return <>
     <div className="hdr"><div><h1>{t('Stats')}</h1><div className="sub">{t('Progress & history')}</div></div>
-      <div className="row" style={{ gap: 3 }}><button className="iconbtn" onClick={() => exportStatsReport(S)} aria-label={t('Export Stats report')} title={t('Export Stats report')}><Icon name="download" /></button>{!MOBILE && <button className="iconbtn" onClick={() => window.print()} aria-label={t('Print / Save as PDF')} title={t('Print / Save as PDF')}><Icon name="clipboard" /></button>}<button className="iconbtn" onClick={() => nav('/progress')} aria-label={t('Progress Report')} title={t('Progress Report')}><Icon name="chart" /></button><button className="iconbtn" data-tour="history" onClick={() => nav('/history')} aria-label={t('History')}><Icon name="history" /></button><button className="iconbtn" data-tour="inbody" onClick={inBodySheet} aria-label={t('InBody history')} title={t('InBody history')}><Icon name="person" /></button></div></div>
+      <div className="row" style={{ gap: 3 }}><button className="iconbtn" onClick={() => useUI.getState().openSheet(close => <ReportsExport S={rawState} pdf statsFilters={{...exportFilters.current,bodyweightRange:range,exId:curEx,exMetric,measurementSelection:bodySelection}} close={close} />)} aria-label={t('Export Reports')} title={t('Export Reports')}><Icon name="download" /></button>{!MOBILE && <button className="iconbtn" onClick={() => window.print()} aria-label={t('Print / Save as PDF')} title={t('Print / Save as PDF')}><Icon name="clipboard" /></button>}<button className="iconbtn" onClick={() => nav('/progress')} aria-label={t('Progress Report')} title={t('Progress Report')}><Icon name="chart" /></button><button className="iconbtn" data-tour="history" onClick={() => nav('/history')} aria-label={t('History')}><Icon name="history" /></button><button className="iconbtn" data-tour="inbody" onClick={inBodySheet} aria-label={t('InBody history')} title={t('InBody history')}><Icon name="person" /></button></div></div>
 
-    <TrainingHistory />
-    <div className="tiles">
-      <div className="tile"><div className="l"><Icon name="dumbbell" />{t('Recorded workouts')}</div><div className="v">{workouts.length}</div></div>
-      <div className="tile"><div className="l"><Icon name="calendar" />{t('This month')}</div><div className="v">{monthW}</div></div>
-      <div className="tile"><div className="l"><Icon name="flame" />{t('Training streak')}</div><div className="v">{streak.current}</div></div>
-      <div className="tile"><div className="l"><Icon name="scale" />{t('Weight 30d')}</div><div className="v" style={{ fontSize: 22, color: bwDelta30 === null ? 'inherit' : bwDeltaColor(bwDelta30, (lastBW(S) || {}).w || 0) }}>{bwDelta30 === null ? '—' : (bwDelta30 > 0 ? '+' : '') + fmtNum(bwDelta30) + ' ' + S.unit}</div></div>
+    <StatsSections selected={selectedSections} onToggle={toggleSection} />
 
+    <div {...sectionProps('history')}>
+      <TrainingHistory />
+      <div className="tiles">
+        <div className="tile"><div className="l"><Icon name="dumbbell" />{t('Recorded workouts')}</div><div className="v">{workouts.length}</div></div>
+        <div className="tile"><div className="l"><Icon name="calendar" />{t('This month')}</div><div className="v">{monthW}</div></div>
+        <div className="tile"><div className="l"><Icon name="flame" />{t('Training streak')}</div><div className="v">{streak.current}</div></div>
+        <div className="tile"><div className="l"><Icon name="scale" />{t('Weight 30d')}</div><div className="v" style={{ fontSize: 22, color: bwDelta30 === null ? 'inherit' : bwDeltaColor(bwDelta30, (lastBW(S) || {}).w || 0) }}>{bwDelta30 === null ? '—' : (bwDelta30 > 0 ? '+' : '') + fmtNum(bwDelta30) + ' ' + S.unit}</div></div>
+      </div>
     </div>
 
-    <div data-tour="progress"><ConsistencyCard S={S} onTimes={sessionTimingSheet} /></div>
+    <div {...sectionProps('consistency')} data-tour="progress"><ConsistencyCard S={S} onTimes={sessionTimingSheet} /></div>
 
-    <HybridSummary S={S} />
-    <RoutineDuration S={S} />
-    {workouts.length > 0 && <MuscleBalance S={S} />}
-    {hasEffort(S) && <EffortCard S={S} />}
+    <div {...sectionProps('overview')}><HybridSummary S={S} exportFilters={exportFilters} /></div>
+    <div {...sectionProps('duration')}><RoutineDuration S={S} exportFilters={exportFilters} /></div>
+    {workouts.length > 0 && <div {...sectionProps('muscles')}><MuscleBalance S={S} exportFilters={exportFilters} /></div>}
+    {hasEffort(S) && <div {...sectionProps('effort')}><EffortCard S={S} exportFilters={exportFilters} /></div>}
 
     <div className="cols">
-      <div className="card">
+      <div className="card" {...sectionProps('bodyweight')}>
         <div className="row between" style={{ marginBottom: 8 }}>
           <h2 className="body-weight-title">{t('Body Weight')}</h2>
           <div className="row" style={{ gap: 8 }}>
@@ -452,7 +560,7 @@ export default function Stats() {
         <div className="chart"><LineChart points={bwPts} h={160} unit={S.unit} goal={S.targetW} /></div>
       </div>
 
-      <div className="card">
+      <div className="card" {...sectionProps('measurements')}>
         <div className="row between" style={{ marginBottom: 10 }}><h2 data-tour="measurements" style={{ margin: 0 }}>{t('Body measurements')}</h2><Button size="sm" icon="plus" onClick={() => measurementsSheet()}>{t('Log')}</Button></div>
         {measures.length ? <>
           <ProgressBody records={measurementRows} selection={bodySelection} onSelection={setBodySelection} body={S.body}/>
@@ -463,7 +571,7 @@ export default function Stats() {
         </> : <div className="muted small">{t('No measurements logged yet.')}</div>}
       </div>
 
-      <div className="card">
+      <div className="card" {...sectionProps('bmi')}>
         <div className="row between" style={{ marginBottom: 10 }}><h2 style={{ margin: 0 }}>{t('BMI — Body Mass Index')}</h2><Button size="sm" icon="scale" onClick={heightSheet}>{S.heightCm ? fmtNum(S.heightCm) + ' ' + (S.measurementUnit || 'cm') : t('Add height')}</Button></div>
         {bmi ? <><div className="row" style={{ alignItems: 'baseline', gap: 10 }}><div className="big">{fmtNum(bmi)}</div><span className="tag acc">{t(bmiBand(bmi))}</span></div>
           <div className="small muted" style={{ marginTop: 6 }}>{t('Calculated from {0} and {1} {2}.', fmtNum(latestWeight.w) + ' ' + S.unit, fmtNum(S.heightCm), S.measurementUnit || 'cm')}</div>
@@ -472,12 +580,17 @@ export default function Stats() {
           : <div className="muted small">{!S.heightCm ? t('Add your height to calculate BMI from your latest body weight.') : t('Log your body weight to calculate BMI.')}</div>}
       </div>
 
-      <div className="card exercise-progress insight-panel">
+      <div className="card exercise-progress insight-panel" {...sectionProps('exercise')}>
         <h2>{t('Exercise progress')}</h2>
         {exHist.length ? <>
           <div className="sect-b" style={{ marginBottom: 10 }}>
             <SelectRow title={t('Exercise')} sheetTitle={t('Exercise progress')} value={curEx} onChange={setExId} stackedValue
-              options={exHist.map(id => ({ value: id, label: nameOf(id) + (exCurrent[id].mx ? ' ' + '—' + ' ' + fmtNum(exCurrent[id].mx) + ' ' + exCurrent[id].unit : '') }))} />
+              options={exHist.map(id => {
+                const workout = workouts.find(w => w.entries.some(e => e.id === id))
+                const entry = workout?.entries.find(e => e.id === id)
+                return { value: id, label: <StatsExerciseLabel id={id} entry={entry} routineId={workout?.routineId}
+                  suffix={exCurrent[id].mx ? ' — ' + fmtNum(exCurrent[id].mx) + ' ' + exCurrent[id].unit : ''} /> }
+              })} />
           </div>
           {exOpts.length > 1 && <Segmented className="seg-range" value={onEff ? 'effort' : onE1 ? 'e1rm' : 'top'} onChange={setExMetric} options={exOpts} />}
           <div className="chart">
@@ -500,12 +613,12 @@ export default function Stats() {
       </div>
     </div>
 
-    {workouts.length > 0 && <>
+    {workouts.length > 0 && <div {...sectionProps('recent')}>
       <div className="row between" style={{ marginBottom: 10 }}>
         <h4 className="sec" style={{ margin: 0 }}>{t('Recent workouts')}</h4>
         <Button size="sm" variant="ghost" trailingIcon="chevronRight" data-tour="history" onClick={() => nav('/history')}>{t('All')} {workouts.length}</Button>
       </div>
       <div className="list">{[...workouts].reverse().slice(0, 6).map(w => <WorkoutRow key={w.id} w={w} onClick={() => workoutDetailSheet(w)} />)}</div>
-    </>}
+    </div>}
   </>
 }

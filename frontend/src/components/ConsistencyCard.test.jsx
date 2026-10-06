@@ -20,7 +20,7 @@ it('offers the direct report only when the section supplies an export action and
  expect(downloads).toHaveLength(1);expect(downloads[0].textContent).toBe('')
  expect(downloads[0].querySelector('svg')).not.toBeNull()
  expect(downloads[0].parentElement.className).toBe('consistency-actions')
- expect(downloads[0].previousElementSibling.textContent).toBe('Times')
+ expect(downloads[0].nextElementSibling.textContent).toBe('Times')
  expect(host.textContent).not.toContain('Consistency Report')
  expect(host.querySelector('.consistency-summary').outerHTML+host.querySelector('.consistency-secondary').outerHTML).toBe(metrics)
  act(()=>downloads[0].click())

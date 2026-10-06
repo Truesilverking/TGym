@@ -7,6 +7,7 @@
 .report-settings,.report-date-controls { display:grid; gap:10px; }
 .report-settings { padding:8px 0; }
 .report-settings label,.report-date-controls label { display:grid; gap:6px; }
+.report-settings .report-choice { display:flex; gap:10px; }
 .report-actions { display:flex; flex-wrap:wrap; gap:8px; position:sticky; bottom:0; padding:10px 0; background:var(--bg); z-index:1; }
 .report-results { list-style:none; padding:0; display:grid; gap:12px; }
 .report-results li { display:flex; gap:8px; align-items:center; }

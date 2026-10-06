@@ -50,6 +50,24 @@ it('keeps unsent preferences made before a pull even without training records', 
   expect(JSON.parse(api.mock.calls[1][1].body).state.unit).toBe('lb')
 })
 
+it.each([undefined, ['history', 'consistency']])('preserves a Stats-only section selection during initial cloud restoration (previous %j)', async previous => {
+  if (previous) useStore.setState({ S: { ...structuredClone(DEF), statsSections: previous } })
+  const { pulling, respond } = pendingPull()
+  useStore.getState().update(s => { s.statsSections = ['exercise'] })
+  const remote = { ...cloudProfile(), statsSections: ['history', 'consistency'] }
+  respond(remote)
+  expect(await pulling).toBe(true)
+
+  expect(useStore.getState().S.statsSections).toEqual(['exercise'])
+  expect(JSON.parse(localStorage.getItem('gym_state_v1')).statsSections).toEqual(['exercise'])
+  const uploaded = JSON.parse(api.mock.calls.find(([, options]) => options?.method === 'PUT')[1].body).state
+  expect(uploaded.statsSections).toEqual(['exercise'])
+  expect(uploaded.workouts).toEqual(remote.workouts)
+  expect(uploaded.routines).toEqual(remote.routines)
+  expect(remote.statsSections).toEqual(['history', 'consistency'])
+  expect(useStore.getState().serverSyncError).toBeNull()
+})
+
 it('restores existing cloud history after sign-out left a newer clean empty local snapshot', async () => {
   // clearLocalSession persists DEF with a new timestamp after a successful sign-out.
   useStore.getState().replaceState(structuredClone(DEF), false)

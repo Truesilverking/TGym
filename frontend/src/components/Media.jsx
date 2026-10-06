@@ -63,7 +63,8 @@ export default function Media({ ex, id, compact, minimizable }) {
   const [requestedPlayback, setRequestedPlayback] = useState(null)
   const playing = requestedPlayback ?? !reduced
   useEffect(() => setRequestedPlayback(null), [ex.id, reduced])
-  const gifSize = useStore(s => s.S.gifSize)
+  const S = useStore(s => s.S)
+  const gifSize = S.gifSize
   const update = useStore(s => s.update)
   if (!ex.gif && !customAnimation) return ex.img ? <div className={'exmedia' + (compact ? ' compact' : '')}><MediaImage decoding="async" src={imgSrc(ex)} alt={exerciseNameFor(ex)} /></div> : null
   const source = playing ? (customAnimation ? ex.img : gifSrc(ex)) : (customAnimation ? poster : imgSrc(ex))

@@ -161,14 +161,16 @@ export const useUI = create((set, get) => ({
      finish; the elapsed time is what actually gets logged, so stopping at 0:38 of a 0:45
      hold records 0:38 rather than crediting the full target. A natural finish already
      plays its work alert; callers must not replace it with the set-completed cue. */
-  startWork(sec, label, onDone, userInitiated = true) {
+  startWork(sec, label, onDone, userInitiated = true, getLabel = null) {
     get().stopWork()
     get().stopRest()
     const total = Math.max(1, Math.round(sec) || 1)
     const endsAt = Date.now() + total * 1000
     useStore.getState().update(s=>{ if(s.active) { if(userInitiated) { s.active=resumeWorkoutClock(s.active); s.active=recordWorkoutActivity(s.active) }; s.active.workEndsAt=endsAt } })
     workDone = onDone
-    set({ work: { left: total, total, endsAt, label } })
+    // The optional reader keeps exercise presentation live when names/preferences change.
+    // It is ephemeral UI state; the timer deadline and completion callback stay untouched.
+    set({ work: { left: total, total, endsAt, label, getLabel } })
     workTick = () => {
       const wk = get().work
       if (!wk) return

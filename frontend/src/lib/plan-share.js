@@ -222,11 +222,11 @@ function units(ex) {
   return out
 }
 
-function routineHTML(r, unit) {
+function routineHTML(r, unit, S) {
   const rows = units(r.ex).map(u => {
     const items = u.map(e => {
-      const ex = EXIDX[e.id]
-      const name = ex ? exerciseNameFor(ex) : t('Unknown exercise')
+      const ex = (S.customEx || []).find(exercise => exercise.id === e.id) || EXIDX[e.id]
+      const name = ex ? exerciseNameFor(ex, S, { entry: e, routine: r, routineId: r.id }) : t('Unknown exercise')
       const part = ex && ex.bp && ex.bp !== 'cardio' ? `<span class="part">${esc(ex.bp)}</span>` : ''
       const note = e.note ? `<div class="ex-note">${esc(e.note)}</div>` : ''
       return `<div class="ex"><div class="ex-row"><div class="ex-n">${esc(name)}${part}</div><div class="ex-s">${esc(scheme(e, unit))}</div></div>${note}</div>`
@@ -257,7 +257,7 @@ export function planPrintHTML(S, owner) {
   const unit = S.unit || 'kg'
   const routines = (S.routines || []).filter(r => r.ex && r.ex.length)
   const body = routines.length
-    ? routines.map(r => routineHTML(r, unit)).join('')
+    ? routines.map(r => routineHTML(r, unit, S)).join('')
     : `<p class="none">${esc(t('No routines yet.'))}</p>`
   const sub = [owner, todayISO()].filter(Boolean).map(esc).join(' · ')
   return `<!doctype html><html><head><meta charset="utf-8">

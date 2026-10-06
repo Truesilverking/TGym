@@ -39,10 +39,27 @@ export const instrFor = ex => (instr && instr[ex.id]) || ex.st || []
 // Built-in catalogue names use the active localized title. The canonical English title is
 // still included by exerciseNameSearchText, so localization never makes an exercise harder
 // to find. User-created exercises have no entry and keep their exact chosen name.
-export const exerciseNameFor = ex => {
-  const translated = exerciseNames && ex && exerciseNames[ex.id]
-  if (!translated) return ex?.n || ''
+export const originalExerciseNameFor = (ex, S = {}, context = {}) => {
+  const entry = context?.entry
+  const id = ex?.id ?? entry?.id
+  const saved = (S?.customEx || []).find(e => e.id === id)
+  const snapshot = entry?.n || entry?.muscleSnapshot?.n
+  const base = saved || (ex?.missing && snapshot ? { id, n: snapshot } : ex)
+  const translated = exerciseNames && base && !base.custom && exerciseNames[id]
+  if (!translated) return base?.n || snapshot || id || ''
   return translated
+}
+
+export const exerciseNameModeOf = S => S?.exerciseNameMode === 'original' ? 'original' : 'aliases'
+
+// Presentation only: aliases remain keyed by the exercise ID, never by their text.
+// Explicit state keeps pure calculations and generated reports independent of browser state.
+export function exerciseNameFor(ex, S = {}, context = {}) {
+  const entry = context?.entry
+  const id = ex?.id ?? entry?.id
+  const alias = S?.exerciseAliases?.[id]
+  if (exerciseNameModeOf(S) === 'aliases' && typeof alias === 'string' && alias.trim()) return alias.trim()
+  return originalExerciseNameFor(ex, S, context)
 }
 
 // Search both the localized and canonical English title without changing persisted data.

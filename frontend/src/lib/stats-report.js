@@ -4,7 +4,8 @@ import { statisticsState, historySummary } from './training-history.js'
 import { EXIDX } from './exercises.js'
 import { lastBW, setLabel } from './history.js'
 import { fmtNum, fmtDate, fmtVol, todayISO } from './format.js'
-import { t, exerciseNameFor, getLang } from './i18n.js'
+import { t, getLang } from './i18n.js'
+import { exerciseNameFor } from './i18n-core.js'
 import { bmiFor, MEASURE_FIELDS, routineConsistency } from './stats-insights.js'
 import { trainingStreak } from './training-plan.js'
 import { workoutElapsedMs } from './workout-time.js'
@@ -19,7 +20,7 @@ export function statsReportHTML(S) {
   const measureHead = MEASURE_FIELDS.map(([, label]) => `<th>${esc(t(label))}</th>`).join('')
   const measureRows = [...(S.measurements || [])].reverse().map(m => `<tr>${td(fmtDate(m.d, true))}${MEASURE_FIELDS.map(([key]) => td(measurementInUnit(m, key, S.measurementUnit || 'cm') ?? '—')).join('')}</tr>`).join('')
   const weightRows = [...(S.bodyweight || [])].reverse().map(b => `<tr>${td(fmtDate(b.d, true))}${td(`${fmtNum(b.w)} ${S.unit}`)}${td(bmiFor(b.w, S.unit, S.heightCm, S.measurementUnit) || '—')}</tr>`).join('')
-  const workoutRows = [...(S.workouts || [])].reverse().map(w => `<tr>${td(fmtDate(w.d, true))}${td(w.name)}${td(Math.max(0, Math.round(workoutElapsedMs(w) / 60000)) + ' min')}${td(fmtVol(w.vol || 0, S.unit))}${td((w.entries || []).map(e => `${EXIDX[e.id] ? exerciseNameFor(EXIDX[e.id]) : (e.n || e.id)}: ${(e.sets || []).filter(s => s.done).map(s => setLabel(e.id, s, e.target)).join(', ')}`).join(' | '))}</tr>`).join('')
+  const workoutRows = [...(S.workouts || [])].reverse().map(w => `<tr>${td(fmtDate(w.d, true))}${td(w.name)}${td(Math.max(0, Math.round(workoutElapsedMs(w) / 60000)) + ' min')}${td(fmtVol(w.vol || 0, S.unit))}${td((w.entries || []).map(e => `${exerciseNameFor((S.customEx || []).find(ex => ex.id === e.id) || EXIDX[e.id] || { id: e.id, n: e.n || e.exercise?.n || e.muscleSnapshot?.n || e.id }, S, { entry: e, routineId: w.routineId })}: ${(e.sets || []).filter(s => s.done).map(s => setLabel(e.id, s, e.target)).join(', ')}`).join(' | '))}</tr>`).join('')
   const inbodyFields = [['weight','Weight'],['skeletalMuscle','Skeletal muscle mass'],['bodyFatMass','Body fat mass'],['bodyFatPct','Body fat percentage'],['bmi','BMI'],['visceralFat','Visceral fat level'],['bodyWater','Total body water'],['protein','Protein'],['minerals','Minerals'],['bmr','Basal metabolic rate'],['score','InBody score']]
   const inbodyRows = [...(S.inbody || [])].reverse().map(r => `<tr>${td(fmtDate(r.d, true))}${inbodyFields.map(([key]) => td(r[key] ?? '—')).join('')}</tr>`).join('')
   const activity = hybridSummary(S.workouts)

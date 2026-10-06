@@ -109,7 +109,7 @@ export default function RoutineEdit() {
           exConfigSheet(ex, e, cfg => edit(x => { x[i] = { id: x[i].id, sg: x[i].sg, ...cfg } }), () => edit(x => { x.splice(i, 1); cleanupSg(x) }), r)
         }}>
           <Thumb ex={ex} />
-          <div className="grow"><div className="tt capitalize">{exerciseNameFor(ex)}</div>{S.exerciseAliases?.[ex.id] && <div className="ss">{t('Alias')}: {S.exerciseAliases[ex.id]}</div>}<div className="ss">{exLine(e, S.unit)}</div>
+          <div className="grow"><div className="tt capitalize">{exerciseNameFor(ex, { entry: e, routineId: r.id })}</div><div className="ss">{exLine(e, S.unit)}</div>
             {e.note && <div className="small dim" style={{ marginTop: 2 }}>{e.note}</div>}</div>
           {noEquip && <span className="tag" style={{ color: 'var(--orange)', borderColor: 'var(--orange)' }} title={t('Needs {0} — not in your active profile', t(ex.eq))}><Icon name="warning" /></span>}
         </button>

@@ -4,15 +4,20 @@
 // subscription hook `useLang`.
 
 import { useSyncExternalStore } from 'react'
+import { exerciseNameState } from './exercise-name-state.js'
 import {
   LANGS, INSTR_LANGS, EXERCISE_NAME_LANGS, DATE_LOCALES,
-  getLang, dateLocale, t, instrFor, exerciseNameFor, exerciseNameSearchText, getVersion, _setLangState
+  getLang, dateLocale, t, instrFor, exerciseNameFor as resolveExerciseName, originalExerciseNameFor as resolveOriginalName,
+  exerciseNameModeOf, exerciseNameSearchText, getVersion, _setLangState
 } from './i18n-core.js'
 
 export {
   LANGS, INSTR_LANGS, EXERCISE_NAME_LANGS, DATE_LOCALES,
-  getLang, dateLocale, t, instrFor, exerciseNameFor, exerciseNameSearchText
+  getLang, dateLocale, t, instrFor, exerciseNameModeOf, exerciseNameSearchText
 }
+
+export const exerciseNameFor = (ex, context = {}) => resolveExerciseName(ex, context.state || exerciseNameState(), context)
+export const originalExerciseNameFor = (ex, context = {}) => resolveOriginalName(ex, context.state || exerciseNameState(), context)
 
 // Vite code-splits locale, instruction and exercise-name packs via import.meta.glob. They are
 // lazy, so the production bundle ships English only until another language is selected.

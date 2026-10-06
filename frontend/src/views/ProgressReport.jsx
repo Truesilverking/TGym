@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { buildProgressReport, PROGRESS_PERIODS } from '../lib/progress-report.js'
 import { t, exerciseNameFor } from '../lib/i18n.js'
+import { exerciseNameFor as reportExerciseNameFor } from '../lib/i18n-core.js'
 import { fmtNum, fmtDate, todayISO } from '../lib/format.js'
 import { Button } from '../components/ui.jsx'
 import ProgressBody from '../components/ProgressBody.jsx'
@@ -69,7 +70,7 @@ export default function ProgressReport() {
   const exportReport=async()=>{
     if(exporting.current)return
     exporting.current=true;setBusy(true);setError('');setExportOpen(false)
-    try{const result=await buildProgressFile(report,{t,name:exerciseNameFor,formatNumber:fmtNum,sections:exportSections,bodySelection});if(mounted.current&&currentReport.current===report){const ready={...result,url:URL.createObjectURL(result.blob)};setFile(ready);try{await saveProgressFile(ready)}catch(e){if(e?.name!=='AbortError'&&e?.message!=='Share canceled')setError(t('Could not export. Try again.'))}}}
+    try{const result=await buildProgressFile(report,{t,name:(exercise,context)=>reportExerciseNameFor(exercise,S,context),formatNumber:fmtNum,sections:exportSections,bodySelection});if(mounted.current&&currentReport.current===report){const ready={...result,url:URL.createObjectURL(result.blob)};setFile(ready);try{await saveProgressFile(ready)}catch(e){if(e?.name!=='AbortError'&&e?.message!=='Share canceled')setError(t('Could not export. Try again.'))}}}
     catch{setError(t('Could not export. Try again.'))}
     finally{exporting.current=false;setBusy(false)}
   }

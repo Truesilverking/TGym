@@ -2,6 +2,13 @@ import english from '../lib/english-fallback.js'
 // Spanish UI strings. Keys are the English source strings (see lib/i18n.js).
 export default {
   ...english,
+  "Exercise names": "Nombres de ejercicios",
+  "My aliases": "Mis apodos",
+  "Original names": "Nombres originales",
+  "Original name": "Nombre original",
+  "Choose which names appear throughout TGym. Missing aliases use the original name; your aliases are kept.": "Elige los nombres que muestra TGym. Sin apodo se usa el original; tus apodos siempre se conservan.",
+  "Sections": "Secciones",
+  "{0} sections selected": "{0} seleccionadas",
   "Server synchronization failed. Your local data was kept.": "La sincronización con el servidor falló. Tus datos locales se conservaron.",
   "Add a workout to your schedule": "Añade un entrenamiento a tu calendario",
   "Check your reminder settings.": "Revisa la configuración del recordatorio.",
@@ -1692,4 +1699,6 @@ export default {
 ,"Downloaded":"Descargado"
 ,"Canceled":"Cancelado"
 ,"Full backup":"Copia de seguridad completa"
+,"Selected dashboards download as one PDF.":"Los dashboards seleccionados se descargan en un solo PDF."
+,"Uses the current Stats filters.":"Usa los filtros actuales de Stats."
 }

@@ -48,8 +48,9 @@ export function ActivityEditor({close, existing, routineId: initialRoutine, plan
     {error && <p role="alert" className="activity-error">{error}</p>}<Button type="submit" data-activity-save="true" variant="primary" disabled={busy}>{t(busy?'Saving…':committed?'Retry saving':'Save')}</Button>
   </form>
 }
-export function HybridSummary({S}) {
+export function HybridSummary({S,exportFilters}) {
   const [period,setPeriod]=useState('30'), cutoff=period==='all'?'':isoOf(new Date(Date.now()-Number(period)*86400000)), data=hybridSummary(S.workouts.filter(w=>!cutoff || w.d>=cutoff))
+  useEffect(()=>{if(exportFilters)exportFilters.current.overviewPeriod=period},[exportFilters,period])
   return <section className="card hybrid-summary"><div className="row between"><h2>{t('Training overview')}</h2><Button size="sm" onClick={openHealthActivities}>{t('Activities')}</Button></div><Segmented value={period} onChange={setPeriod} options={[{value:'30',label:t('30 days')},{value:'90',label:t('90 days')},{value:'all',label:t('All')}]} /><div className="activity-metrics">{[['Strength sessions',data.strength],['Runs',data.running],['Other cardio',data.cardio],['Recovery sessions',data.recovery],['Active days',data.days],['Total time (min)',Math.round(data.minutes)],['Distance (km)',fmtNum(data.distanceKm)]].map(([label,value])=><span key={label}><small>{t(label)}</small><b>{value}</b></span>)}</div>{data.ratedActivities>0 && <p className="dim small">{t('Activity effort load (minutes × RPE)')}: {Math.round(data.load)} · {t('{0} rated activities',data.ratedActivities)}</p>}<p className="dim small">{t('Hybrid sessions may appear in several categories. Total time and active days are counted once. Activity effort is separate from strength volume.')}</p></section>
 }
 export function HealthActivities() {

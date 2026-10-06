@@ -1,5 +1,12 @@
 // Explicit source-language fallback. Entries in language packs override these values.
 export default {
+  "Exercise names": "Exercise names",
+  "My aliases": "My aliases",
+  "Original names": "Original names",
+  "Original name": "Original name",
+  "Choose which names appear throughout TGym. Missing aliases use the original name; your aliases are kept.": "Choose which names appear throughout TGym. Missing aliases use the original name; your aliases are kept.",
+  "Sections": "Sections",
+  "{0} sections selected": "{0} sections selected",
   "Server synchronization failed. Your local data was kept.": "Server synchronization failed. Your local data was kept.",
   "Add a workout to your schedule": "Add a workout to your schedule",
   "Check your reminder settings.": "Check your reminder settings.",
@@ -1603,4 +1610,6 @@ export default {
  "Add dated InBody results to compare body composition over time.": "Add dated InBody results to compare body composition over time.",
  "Choose your theme and preferences. Local tracking works offline once ready; reconnect to check for updates.": "Choose your theme and preferences. Local tracking works offline once ready; reconnect to check for updates."
 ,"Activity counts once per day, including planned and extra sessions.":"Activity counts once per day, including planned and extra sessions."
+,"Selected dashboards download as one PDF.":"Selected dashboards download as one PDF."
+,"Uses the current Stats filters.":"Uses the current Stats filters."
 }

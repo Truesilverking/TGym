@@ -1,4 +1,5 @@
 import { refreshActiveBackoffReps } from '../lib/training-plan.js'
+import { bindExerciseNameState } from '../lib/exercise-name-state.js'
 import { create } from 'zustand'
 import { migrateState, STATE_SCHEMA } from '../lib/state-migrations.js'
 import { loadWebState, saveWebState } from '../lib/web-state.js'
@@ -38,7 +39,7 @@ export const DEF = {
   // Standing per-exercise notes, keyed by exercise id: the gym-specific facts that are true
   // every time you do the movement ("seat 4, pin 7"). Distinct from a routine's `note`, which
   // belongs to one exercise in one plan, and from a session note, which belongs to one day.
-  exNotes: {}, exerciseAliases: {}, exerciseGoals: {}, avoidedExercises: {},
+  exNotes: {}, exerciseAliases: {}, exerciseNameMode: 'aliases', exerciseGoals: {}, avoidedExercises: {},
 }
 const clone = o => JSON.parse(JSON.stringify(o))
 
@@ -467,5 +468,7 @@ export const useStore = create((set, get) => {
     }
   }
 })
+
+bindExerciseNameState(() => useStore.getState().S)
 
 export { hasData }

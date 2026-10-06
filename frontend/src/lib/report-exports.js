@@ -1,21 +1,51 @@
 import { buildCalendarExport, buildConsistencyExport } from './calendar-file.js'
 import { buildProgressReport } from './progress-report.js'
-import { buildProgressFile } from './progress-file.js'
+import { buildProgressFile, buildProgressPages } from './progress-file.js'
+import { streakReportPages } from './streak-report.js'
+import { calendarReportPages } from './calendar-report.js'
+import { statsReportPages } from './stats-pdf.js'
+import { loadBodyGeometry } from './body-geometry.js'
 import { statsReportHTML } from './stats-report.js'
 import { historyCsv } from './history-export.js'
 import { buildPlanBundle } from './plan-share.js'
 import { createBackup } from './backup.js'
-import { saveReportFile, saveReportBatch } from './report-file.js'
+import { reportPagesFile, saveReportFile, saveReportBatch } from './report-file.js'
 import { MOBILE } from './mobile.js'
 import { isoOf } from './format.js'
 import { validDate } from './training-history.js'
+import { exerciseNameFor } from './i18n-core.js'
 
 // Each builder owns its content. This registry only selects independent files.
 export const REPORT_EXPORTS = [['streak','Streak Report'],['consistency','Consistency Report'],['progress','Progress Report'],['stats','Stats'],['history','Workout history'],['plan','Plan'],['backup','Full backup']]
+export const PDF_REPORT_EXPORTS = REPORT_EXPORTS.filter(([id])=>['streak','consistency','progress','stats'].includes(id))
 export function selectedReports(ids) {
   return REPORT_EXPORTS.map(([id])=>id).filter(id=>ids.includes(id))
 }
+export async function buildDashboardReportPages(id, S, settings = {}, options = {}) {
+  options={name:(exercise,context)=>exerciseNameFor(exercise,S,context),...options}
+  const now=options.now || new Date(),today=isoOf(now)
+  if(['streak','consistency'].includes(id)&&!validDate(settings.anchor??today))throw Error('Choose a valid date range.')
+  const anchor=new Date((settings.anchor??today)+'T12:00:00')
+  if(id==='streak')return streakReportPages(S,{...options,...settings,now,anchor,period:settings.period||'this-week',format:'pdf'}).map(page=>({...page,imageType:'JPEG',fullPage:false}))
+  if(id==='consistency')return calendarReportPages(S,anchor,settings.period||'month','pdf',{...options,now}).map(page=>({...page,imageType:'JPEG',fullPage:false}))
+  if(id==='progress')return (await buildProgressPages(buildProgressReport(S,{...settings,now}),options)).map(page=>({...page,fullPage:true}))
+  if(id==='stats'){
+    const bodyGeometry=!settings.sections||settings.sections.some(id=>['muscles','measurements'].includes(id))?await loadBodyGeometry():undefined
+    return statsReportPages(S,{...options,...settings,now,bodyGeometry})
+  }
+  throw Error('Unknown report')
+}
+export async function buildDashboardReports(S, ids, settings = {}, options = {}, build = buildDashboardReportPages) {
+  const selection=PDF_REPORT_EXPORTS.map(([id])=>id).filter(id=>ids.includes(id))
+  if(!selection.length)throw Error('Select at least one report.')
+  const pages=[]
+  for(const id of selection)pages.push(...await build(id,S,settings[id],options))
+  const name=`TGym-Reports-${isoOf(options.now||new Date())}${selection.length===1?'-'+selection[0]:''}.pdf`
+  const file=await reportPagesFile(pages,name,{title:'TGym Reports'})
+  return [{id:'reports',reportIds:selection,...file}]
+}
 export async function buildReportFile(id, S, settings = {}, options = {}) {
+  options={name:(exercise,context)=>exerciseNameFor(exercise,S,context),...options}
   const now = options.now || new Date(), today = isoOf(now)
   if (['streak','consistency'].includes(id) && !validDate(settings.anchor ?? today)) throw Error('Choose a valid date range.')
   const date = new Date((settings.anchor ?? today)+'T12:00:00')
@@ -29,6 +59,7 @@ export async function buildReportFile(id, S, settings = {}, options = {}) {
   throw Error('Unknown report')
 }
 export async function buildSelectedReports(S, ids, settings = {}, options = {}, build = buildReportFile) {
+  if(options.combinePDF)return buildDashboardReports(S,ids,settings,options)
   const selection = selectedReports(ids)
   if(!selection.length)throw Error('Select at least one report.')
   const files=[]
@@ -41,7 +72,7 @@ export async function buildSelectedReports(S, ids, settings = {}, options = {}, 
 }
 export async function saveSelectedReports(files, ids, save = saveReportFile) {
   const selection=selectedReports(ids), results=[]
-  const chosen=files.filter(file=>selection.includes(file.id))
+  const chosen=files.filter(file=>file.id==='reports'?file.reportIds?.length&&file.reportIds.every(id=>selection.includes(id)):selection.includes(file.id))
   if(MOBILE && chosen.length>1 && save===saveReportFile) {
     try { await saveReportBatch(chosen);return chosen.map(({id})=>({id,status:'saved'})) }
     catch(error) { return chosen.map(({id})=>({id,status:error?.name==='AbortError'||error?.message==='Share canceled'?'canceled':'failed'})) }

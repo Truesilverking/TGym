@@ -1,5 +1,11 @@
 # Report export entry locations
 
+The 1.15.56 update replaces the existing Stats header download action with Export Reports and removes that row from Settings. The circle, glyph and position stay unchanged. The selector offers Streak, Consistency, Progress and Stats dashboards; confirmation downloads one PDF assembled from only the chosen pages. Stats adds its existing eleven section choices, initially all selected independently of `statsSections`. Current Stats filters are captured without writing profile preferences. Canceling or closing before confirmation does not build or save files. Existing Calendar, Consistency and Progress controls, Print/Save as PDF, backup/restore and data file formats are unchanged. Home's Consistency download icon now precedes Times, retaining its existing action.
+
+`report-exports.js` routes dashboard pages through the original Streak/Consistency/Progress builders and the read-only Stats PDF projection. `reportPagesFile` preserves each report's original page fitting/image format inside the combined file. No existing report builder appends content from another report, and the old direct Stats HTML action has been removed from the header.
+
+The following records describe the earlier published releases.
+
 The 1.15.54 change relocates entry points without changing report data, filters, builders or save behavior:
 
 | Entry | Location | Existing flow |

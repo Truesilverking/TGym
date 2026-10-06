@@ -194,5 +194,8 @@ export function buildProgressReport(S, options={}) {
     return {...r,count:rows.length,activeDays:keys.size,averagePerWeek:rows.length/(days/7),averageMinutes:avg(durations),medianMinutes:median(durations),timedSessions:durations.length,volume:sum(rows.map(s=>s.volume)),planned,completed,missed,pending,unknown,rate:!unknown&&evaluated?completed/evaluated:null,metrics:metrics.filter(m=>m.points.length),exercises:exercises.filter(e=>e.routineKey===r.key),records:records.filter(p=>p.routineKey===r.key)}
   })
   const visibleBody=body.filter(m=>m.points.length),highlights=[...visibleBody,...exercises.flatMap(e=>e.metrics.filter(m=>m.key==='w').map(m=>({...m,exercise:e.exercise,routineKey:e.routineKey})))].filter(m=>m.delta!=null&&Math.abs(m.delta)>1e-8).sort((a,b)=>Math.abs(b.percent||0)-Math.abs(a.percent||0)).slice(0,4)
-  return {range,unit,measureUnit,bodyType:S.body==='female'?'female':'male',bodyRecords:bodyRecords(S,range),body:visibleBody,routines,exercises,training:workouts.length?training.filter(m=>m.points.length):[],activities,records:records.sort((a,b)=>b.t-a.t),highlights,summary,weekly}
+  // Presentation preferences belong to this read-only report snapshot. Async PDF
+  // generation must not pick up a later nickname edit or display-mode change.
+  const exerciseNameState = { exerciseNameMode: S.exerciseNameMode, exerciseAliases: { ...S.exerciseAliases } }
+  return {range,unit,measureUnit,bodyType:S.body==='female'?'female':'male',bodyRecords:bodyRecords(S,range),body:visibleBody,routines,exercises,training:workouts.length?training.filter(m=>m.points.length):[],activities,records:records.sort((a,b)=>b.t-a.t),highlights,summary,weekly,exerciseNameState}
 }

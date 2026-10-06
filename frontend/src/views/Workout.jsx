@@ -67,6 +67,22 @@ function Elapsed({ workout }) {
   return <span>{t}</span>
 }
 
+function SupersetRemoveChoices({ indices, workout, onSelect }) {
+  const S = useStore(s => s.S)
+  const active = S.active?.id === workout.id ? S.active : workout
+  return <div>
+    <h3>{t('Remove exercise')}</h3>
+    <div className="muted small" style={{ marginBottom: 12 }}>{t('Which exercise in this superset do you want to remove?')}</div>
+    <div className="list">{indices.map(idx => {
+      const entry = active.entries[idx]
+      return entry && <div key={idx} className="item" onClick={() => onSelect(idx)}>
+        <div className="grow"><div className="tt">{exerciseNameFor(exOr(entry.id), { entry, routineId: active.routineId })}</div></div>
+        <Icon name="chevronRight" />
+      </div>
+    })}</div>
+  </div>
+}
+
 /* ---------- one exercise block (reps: weight×reps · time: a held duration · cardio: duration+speed) ---------- */
 function ExerciseBlock({ preview, entryIdx, compact, onToggle, onField, onAddSet, onRemoveSet, onAddWarmup, onRemoveSetAt, onStartTimed, onPairPrev, onPairNext, onSubstitute }) {
   const stored = useStore(s => s.S)
@@ -189,13 +205,13 @@ function ExerciseBlock({ preview, entryIdx, compact, onToggle, onField, onAddSet
   return <>
     <Media ex={ex} key={entry.id} compact={compact} minimizable />
     <div className="row between exercise-heading" style={{ marginBottom: 6 }}>
-      <div><div style={{ fontSize: compact ? 17 : 20, fontWeight: 600, letterSpacing: '-.02em', textTransform: 'capitalize', lineHeight: 1.2 }}>{exerciseNameFor(ex)}</div>{S.exerciseAliases?.[ex.id] && <div className="small dim">{t('Alias')}: {S.exerciseAliases[ex.id]}</div>}</div>
+      <div className="grow"><div style={{ fontSize: compact ? 17 : 20, fontWeight: 600, letterSpacing: '-.02em', textTransform: 'capitalize', lineHeight: 1.2, overflowWrap: 'anywhere' }}>{exerciseNameFor(ex, { entry, routineId: S.active.routineId })}</div></div>
       <div className="row" style={{ gap: 2, flex: 'none' }}>
         {!compact && <button className="iconbtn" aria-label={t('Substitute for this workout')} title={t('Substitute for this workout')} onClick={onSubstitute}><Icon name="shuffle" /></button>}
         <button className="iconbtn" aria-label={t('Note')} title={t('Note')}
           style={entry.note ? { color: 'var(--acc)' } : undefined}
           onClick={() => exerciseNoteSheet(entryIdx)}><Icon name="pencil" /></button>
-        <button className="iconbtn" aria-label={t('Details')} onClick={() => exerciseDetailSheet(ex)}><Icon name="info" /></button>
+        <button className="iconbtn" aria-label={t('Details')} onClick={() => exerciseDetailSheet(ex, { entry, routineId: S.active.routineId })}><Icon name="info" /></button>
       </div>
     </div>
     {!compact && (onPairPrev || onPairNext) && <div className="workout-pair-actions" data-tour="supersets">
@@ -440,7 +456,7 @@ function ActiveWorkout() {
     if (!e) return
     const hasDone = (e.sets || []).some(s => s.done)
     confirmSheet({
-      title: t('Remove {0}?', exerciseNameFor(exOr(e.id))),
+      title: t('Remove {0}?', exerciseNameFor(exOr(e.id), { entry: e, routineId: A.routineId })),
       message: hasDone
         ? t('The sets you logged for this exercise in this session will be lost.')
         : t('This removes the exercise from your current session.'),
@@ -450,16 +466,7 @@ function ActiveWorkout() {
   const removeExerciseSheet = () => {
     if (unit.length > 1) {
       useUI.getState().openSheet(close => (
-        <div>
-          <h3>{t('Remove exercise')}</h3>
-          <div className="muted small" style={{ marginBottom: 12 }}>{t('Which exercise in this superset do you want to remove?')}</div>
-          <div className="list">
-            {unit.map(idx => <div key={idx} className="item" onClick={() => { close(); confirmRemoveExercise(idx) }}>
-              <div className="grow"><div className="tt">{exerciseNameFor(exOr(A.entries[idx]?.id))}</div></div>
-              <Icon name="chevronRight" />
-            </div>)}
-          </div>
-        </div>
+        <SupersetRemoveChoices indices={unit} workout={A} onSelect={idx => { close(); confirmRemoveExercise(idx) }} />
       ))
     } else confirmRemoveExercise(cur)
   }
@@ -476,7 +483,8 @@ function ActiveWorkout() {
     const e = A.entries[idx]
     const cardio = modeAt(idx) === 'cardio'
     const seconds = cardio ? Math.max(60, Math.round((e.sets[i].min || 20) * 60)) : (e.sets[i].sec || 45)
-    const name = exerciseNameFor(exOr(e.id))
+    const getName = () => exerciseNameFor(exOr(e.id), { entry: useStore.getState().S.active?.entries?.[idx] || e, routineId: A.routineId })
+    const name = getName()
     if (!cardio && isPerSide(e.target)) {
       useUI.getState().startWork(seconds, `${name} · ${t('Left side')}`, (leftSec, {timedOut=false}={}) => {
         if(generation !== timedGeneration.current || useStore.getState().S.active?.id !== A.id) return
@@ -489,16 +497,16 @@ function ActiveWorkout() {
             if(generation !== timedGeneration.current || useStore.getState().S.active?.id !== A.id) return
             mutEntry(idx, en => { en.sets[i].rightSec = rightSec; en.sets[i].side = true }, !timedOut)
             if (!useStore.getState().S.active.entries[idx].sets[i].done) toggle(idx, i, { playSound: !timedOut, userActivity: !timedOut, completedAt })
-          }, false)
+          }, false, () => `${getName()} · ${t('Right side')}`)
         }, 700)
-      })
+      }, true, () => `${getName()} · ${t('Left side')}`)
       return
     }
     useUI.getState().startWork(seconds, name, (elapsed, { timedOut = false, completedAt } = {}) => {
       if(generation !== timedGeneration.current || useStore.getState().S.active?.id !== A.id) return
       mutEntry(idx, en => { if (cardio) en.sets[i].min = Math.round(elapsed / 6) / 10; else en.sets[i].sec = elapsed }, !timedOut)
       if (!useStore.getState().S.active.entries[idx].sets[i].done) toggle(idx, i, { playSound: !timedOut, userActivity: !timedOut, completedAt })
-    })
+    }, true, getName)
   }
 
   const substituteExercise = idx => {

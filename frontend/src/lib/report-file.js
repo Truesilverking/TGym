@@ -28,9 +28,10 @@ export async function reportPagesFile(pages, name, { format = 'pdf', imageType =
   if (title) pdf.setProperties({ title, creator: 'TGym' })
   for (const [i, page] of pages.entries()) {
     if (i) pdf.addPage()
-    const data = await rasterizeReport(page, imageType === 'JPEG' ? 'image/jpeg' : 'image/png')
-    const scale = Math.min((fullPage ? 210 : 190) / page.width, (fullPage ? 297 : 277) / page.height)
-    pdf.addImage(data, imageType, (210 - page.width * scale) / 2, fullPage ? 0 : 10, page.width * scale, page.height * scale, undefined, imageType === 'PNG' ? 'FAST' : undefined)
+    const pageImageType = page.imageType ?? imageType, pageFull = page.fullPage ?? fullPage
+    const data = await rasterizeReport(page, pageImageType === 'JPEG' ? 'image/jpeg' : 'image/png')
+    const scale = Math.min((pageFull ? 210 : 190) / page.width, (pageFull ? 297 : 277) / page.height)
+    pdf.addImage(data, pageImageType, (210 - page.width * scale) / 2, pageFull ? 0 : 10, page.width * scale, page.height * scale, undefined, pageImageType === 'PNG' ? 'FAST' : undefined)
   }
   return { name, blob: pdf.output('blob') }
 }

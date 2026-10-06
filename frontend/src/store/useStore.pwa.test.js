@@ -43,3 +43,43 @@ it('persists Back-off preference and pending targets through offline reopen/upda
  expect(useStore.getState().S.active.entries[0].sets.map(s=>s.r)).toEqual([6,6,9])
  expect(useStore.getState().S.workouts).toEqual(history)
 })
+
+it('restores a single nondefault Stats section from the offline PWA mirror',async()=>{
+ const history=[{id:'saved',d:'2026-10-05',entries:[{id:'exercise',sets:[{r:8,w:40,done:true}]}]}]
+ useStore.setState({S:{...structuredClone(DEF),workouts:history,bodyweight:[{d:'2026-10-05',w:80}]}})
+ useStore.getState().update(s=>{s.statsSections=['bodyweight']})
+ await useStore.getState().flushPersistence()
+ expect(JSON.parse(localStorage.getItem('gym_state_v1')).statsSections).toEqual(['bodyweight'])
+ expect(disk.value.statsSections).toEqual(['bodyweight'])
+ localStorage.clear();useStore.setState({S:structuredClone(DEF),ready:false})
+ await useStore.getState().boot()
+ expect(useStore.getState().S.statsSections).toEqual(['bodyweight'])
+ expect(JSON.parse(localStorage.getItem('gym_state_v1')).statsSections).toEqual(['bodyweight'])
+ expect(useStore.getState().S.workouts).toEqual(history)
+ expect(useStore.getState().S.bodyweight).toEqual([{d:'2026-10-05',w:80}])
+})
+
+it.each(['aliases','original'])('restores exercise name mode %s offline without altering names or training records',async mode=>{
+ const active={id:'live-name-mode',start:Date.now(),lastMeaningfulWorkoutActivityAt:Date.now(),routineId:'routine',entries:[{id:'exercise-one',alias:'Routine nickname',sets:[{w:40,r:8,done:false}]}]}
+ const protectedData={exerciseAliases:{'exercise-one':'Shared nickname','exercise-two':'Shared nickname'},customEx:[{id:'custom-exercise',n:'My base exercise'}],routines:[{id:'routine',name:'Routine',ex:[{id:'exercise-one',alias:'Routine nickname',sets:3,reps:8}]}],workouts:[{id:'completed',d:'2026-10-05',entries:[{id:'exercise-one',sets:[{w:40,r:8,done:true}]}]}],active}
+ useStore.setState({S:{...structuredClone(DEF),...structuredClone(protectedData)}})
+ useStore.getState().update(s=>{s.exerciseNameMode=mode})
+ await useStore.getState().flushPersistence()
+ expect(JSON.parse(localStorage.getItem('gym_state_v1')).exerciseNameMode).toBe(mode)
+ expect(disk.value.exerciseNameMode).toBe(mode)
+ expect(useStore.getState().S).toMatchObject(protectedData)
+ localStorage.clear();useStore.setState({S:structuredClone(DEF),ready:false});await useStore.getState().boot()
+ expect(useStore.getState().S.exerciseNameMode).toBe(mode)
+ expect(JSON.parse(localStorage.getItem('gym_state_v1')).exerciseNameMode).toBe(mode)
+ expect(useStore.getState().S).toMatchObject(protectedData)
+})
+
+it('uses aliases initially for an older offline profile without erasing its nickname or history',async()=>{
+ const old={...structuredClone(DEF),_ts:123,exerciseAliases:{'exercise-one':'Stored nickname'},workouts:[{id:'saved',entries:[{id:'exercise-one',sets:[{r:8,w:40,done:true}]}]}]}
+ delete old.exerciseNameMode
+ disk.value=old
+ await useStore.getState().boot()
+ expect(useStore.getState().S.exerciseNameMode).toBe('aliases')
+ expect(useStore.getState().S.exerciseAliases).toEqual(old.exerciseAliases)
+ expect(useStore.getState().S.workouts).toEqual(old.workouts)
+})

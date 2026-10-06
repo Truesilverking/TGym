@@ -54,7 +54,7 @@ export default function Library() {
         const best = bestWeightFor(S, e.id)
         return <div key={e.id} className="item" onClick={() => exerciseDetailSheet(e)}>
           <Thumb ex={e} />
-          <div className="grow"><div className="tt capitalize">{exerciseNameFor(e)}</div>{S.exerciseAliases?.[e.id] && <div className="ss">{t('Alias')}: {S.exerciseAliases[e.id]}</div>}<div className="ss capitalize">{t(e.tg || e.bp)} · {t(e.eq)}</div></div>
+          <div className="grow"><div className="tt capitalize">{exerciseNameFor(e)}</div><div className="ss capitalize">{t(e.tg || e.bp)} · {t(e.eq)}</div></div>
           {S.avoidedExercises?.[e.id] && <span className="tag" style={{ color: 'var(--orange)' }}>{t('Avoiding')}</span>}
           {best > 0 && <span className="tag acc">{fmtNum(best)}</span>}
           <Button size="sm" variant="tinted" icon="plus" onClick={ev => { ev.stopPropagation(); addToRoutineSheet(e) }}>{t('Routine')}</Button>

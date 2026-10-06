@@ -238,6 +238,18 @@ h4.sec{
   box-shadow:var(--panel-shadow);padding:var(--pad);margin-bottom:14px;
 }
 .card .big{font-size:30px;font-weight:600;letter-spacing:-.026em;line-height:1.1}
+/* Stats keeps hidden cards mounted so their independent filters survive toggling. */
+[data-stats-section][hidden]{display:none!important}
+.stats-sections{position:relative;width:min(100%,400px);margin:0 auto 16px;z-index:40}
+.stats-sections-label{display:block;margin-bottom:6px;font-size:12px;color:var(--label-2)}
+.stats-sections-trigger{min-height:48px;gap:10px}
+.stats-sections-trigger .lrow-v{flex:1;max-width:none;font-size:17px;color:var(--label);text-align:left}
+.stats-sections-menu{position:absolute;top:calc(100% + 8px);left:0;width:100%;max-height:var(--stats-menu-height,420px);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:12px;border:1px solid var(--panel-edge);border-radius:var(--r);background:var(--bg-el);box-shadow:var(--panel-shadow)}
+.stats-section-options{display:grid;grid-template-columns:1fr;gap:8px}
+.stats-section-option{display:flex;align-items:center;gap:8px;min-width:0}
+.stats-section-option .chk{flex:none}
+.stats-section-option label{display:flex;align-items:center;min-height:44px;min-width:0;flex:1;cursor:pointer;overflow-wrap:anywhere}
+.stats-sections p{margin:10px 0 0}
 .streak-yellow{--streak-color:#ffd60a;--streak-color-2:#ff9f0a}.streak-orange{--streak-color:#ff9f0a;--streak-color-2:#ff6b00}.streak-redgold{--streak-color:#ff453a;--streak-color-2:#ffd60a}.streak-blue{--streak-color:#0a84ff;--streak-color-2:#64d2ff}.streak-purple{--streak-color:#bf5af2;--streak-color-2:#ff375f}.streak-legend{--streak-color:#ff375f;--streak-color-2:#5e5ce6}
 .streak-card{display:block;width:100%;text-align:left;color:var(--label);background:linear-gradient(145deg,color-mix(in srgb,var(--streak-color) 20%,var(--surface)),color-mix(in srgb,var(--streak-color-2) 8%,var(--surface)));border:1px solid color-mix(in srgb,var(--streak-color) 48%,transparent);transition:transform var(--fast) var(--ease),border-color var(--med),background var(--med)}
 .streak-card:active{transform:scale(.985)}

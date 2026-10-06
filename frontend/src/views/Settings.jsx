@@ -10,7 +10,7 @@ import { effortOf } from '../lib/history.js'
 import { api, webauthnOK, passkeyLogin, passkeyRegister, IS_ANDROID } from '../lib/api.js'
 import { pushSupported, enablePush, disablePush, sendTestPush } from '../lib/push.js'
 import { wakeLockSupported } from '../lib/wakelock.js'
-import { t, LANGS, INSTR_LANGS } from '../lib/i18n.js'
+import { t, LANGS, INSTR_LANGS, exerciseNameModeOf } from '../lib/i18n.js'
 import { DEMO, REPO, STANDALONE } from '../lib/demo.js'
 import { MOBILE, shareExport } from '../lib/mobile.js'
 import { loadStarterPlan, confirmSheet, importFromApp, equipmentProfileSheet, planImportSheet, planToolsSheet } from '../sheets.jsx'
@@ -29,7 +29,6 @@ import { ReminderStatus } from '../components/ReminderPanel.jsx'
 import MeasurementReminders from '../components/MeasurementReminders.jsx'
 import WorkoutReminderSettings from '../components/WorkoutReminderSettings.jsx'
 import DeloadSettings from '../components/DeloadSettings.jsx'
-import ReportsExport from '../components/ReportsExport.jsx'
 
 function BackupSheet({ onExport, onImport }) {
   const autoBackup = useStore(s => !!s.S.autoBackup)
@@ -207,6 +206,10 @@ export default function Settings() {
           subtitle: INSTR_LANGS.includes(k) ? null : t("Exercise instructions aren't available in this language yet — they stay in English."),
         }))}
       />
+      <SelectRow icon="dumbbell" iconTint="var(--purple)" title={t('Exercise names')}
+        value={exerciseNameModeOf(S)} onChange={v => update(s => { s.exerciseNameMode = v })}
+        options={[{ value: 'aliases', label: t('My aliases') }, { value: 'original', label: t('Original names') }]} />
+      <p className="sect-f" style={{ margin: '8px 16px 12px' }}>{t('Choose which names appear throughout TGym. Missing aliases use the original name; your aliases are kept.')}</p>
       <Row icon="scale" iconTint="var(--teal)" title={t('Weight unit')}>
         <Segmented className="seg-inline"
           options={[{ value: 'kg', label: 'kg' }, { value: 'lb', label: 'lb' }]}
@@ -337,7 +340,6 @@ export default function Settings() {
         }}>{t('Sync now')}</Button>
       </div>}
       <Row icon="history" title={t('Training history settings')} accessory="chevron" onClick={openTrainingHistory} />
-      <Row icon="download" iconTint="var(--blue)" title={t('Export Reports')} subtitle={t('Each report downloads as a separate file.')} accessory="chevron" onClick={() => useUI.getState().openSheet(close => <ReportsExport S={S} close={close} />)} />
       <Row icon="folder" iconTint="var(--blue)" title={t('Backup')} accessory="chevron" onClick={() => useUI.getState().openSheet(() => <BackupSheet onExport={doExport} onImport={() => authorize(() => fileRef.current?.click())} />)} />
       <Row icon="cloud" iconTint="var(--blue)" title={t('Restore')} subtitle={t('Back up, synchronize or restore your TGym data.')} accessory="chevron" onClick={() => openRestoreSheet(authorize)} />
       <Row icon="folder" iconTint="var(--acc)" title={t('Load Routine')} subtitle={t('Create, import or export routines from one place.')} accessory="chevron" onClick={openLoadRoutine} />

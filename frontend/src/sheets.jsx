@@ -17,7 +17,7 @@ import { activeProfile, exAvailable, ALL_EQUIPMENT, newProfile } from './lib/equ
 import { fmtDate, fmtNum, fmtVol, fmtDur, durPart, todayISO, isoOf, uid, exCount, DAYN, MONTHS_LONG, ACCENTS } from './lib/format.js'
 import { lastEntryFor, bestWeightFor, buildSets, effectiveRoutineId, workoutVolume, setsDone, setsDoneActive, lastBW, supersetUnits, unitOf, setLabel, defaultConfig, cleanupSg, modeOf, effortOf, isBw, isPerSide, displayReps, storedReps, displayRepConfig, workSetsDone, applyIntensifierPlan, MAX_PLANNED_WARMUPS, NOTE_MAX } from './lib/history.js'
 import { playAppSound, vibrate } from './lib/sound.js'
-import { t, instrFor, exerciseNameFor, getLang, INSTR_LANGS, dateLocale } from './lib/i18n.js'
+import { t, instrFor, exerciseNameFor, originalExerciseNameFor, getLang, INSTR_LANGS, dateLocale } from './lib/i18n.js'
 import { nav } from './lib/nav.js'
 import { starterRoutines } from './lib/starter.js'
 import Media, { Thumb } from './components/Media.jsx'
@@ -432,7 +432,7 @@ function OneRM({ ex }) {
   </>
 }
 
-function ExerciseDetail({ ex, close }) {
+function ExerciseDetail({ ex, context = {}, close }) {
   const st = useStore(s => s.S)
   const updateStore = useStore(s => s.update)
   const [alias, setAlias] = useState(st.exerciseAliases?.[ex.id] || '')
@@ -441,7 +441,8 @@ function ExerciseDetail({ ex, close }) {
   const last = lastEntryFor(st, ex.id)
   const best = bestWeightFor(st, ex.id)
   return <>
-    <h3 className="capitalize">{exerciseNameFor(ex)}</h3>
+    <h3 className="capitalize">{exerciseNameFor(ex, context)}</h3>
+    <Row title={t('Original name')} subtitle={originalExerciseNameFor(ex, context)} />
     <div className="row" style={{ gap: 8, marginBottom: 10 }}>
       <input className="input" style={{ flex: 1 }} maxLength={60} placeholder={t('Personal alias (optional)')} value={alias} onChange={e => setAlias(e.target.value)} />
       <Button size="sm" icon="pencil" onClick={() => {
@@ -470,7 +471,7 @@ function ExerciseDetail({ ex, close }) {
     {instrFor(ex).length > 0 &&<><h4 className="sec">{t('How to')}{!INSTR_LANGS.includes(getLang()) && <span className="dim" style={{ textTransform: 'none', letterSpacing: 0 }}> · {t('instructions in English')}</span>}</h4><ol className="steps-list">{instrFor(ex).map((s, i) => <li key={i}>{s}</li>)}</ol></>}
   </>
 }
-export const exerciseDetailSheet = ex => ui().openSheet(close => <ExerciseDetail ex={ex} close={close} />)
+export const exerciseDetailSheet = (ex, context) => ui().openSheet(close => <ExerciseDetail ex={ex} context={context} close={close} />)
 
 /* ============================ add to routine ============================ */
 function AddToRoutine({ ex, close }) {
@@ -543,7 +544,7 @@ function CustomExForm({ existing, prefill, onDone, close }) {
     if (!bp) { toast(t('Pick a body part')); return }
     const dup = allExercises(S()).map(e => ({ e, score: similarName(e.n, name) })).filter(x => x.e.id !== (existing || {}).id && x.score >= .95).sort((a, b) => b.score - a.score)[0]?.e
     if (dup && !allowDuplicate) {
-      confirmSheet({ title: t('Possible duplicate'), message: t('“{0}” is very similar to an existing exercise: “{1}”. You can still add it if they are different.', name, dup.n), confirmText: t('Add anyway'), onConfirm: () => save(true) })
+      confirmSheet({ title: t('Possible duplicate'), message: t('“{0}” is very similar to an existing exercise: “{1}”. You can still add it if they are different.', name, originalExerciseNameFor(dup)), confirmText: t('Add anyway'), onConfirm: () => save(true) })
       return
     }
     const d = desc.trim().slice(0, 1000)
@@ -595,7 +596,7 @@ export const customExSheet = (existing, onDone, prefill) => ui().openSheet(close
 export function deleteCustomEx(ex, afterDelete) {
   if (S().active?.entries.some(e => e.id === ex.id)) { toast(t('Finish your current workout first')); return }
   confirmSheet({
-    title: t('Delete “{0}”?', ex.n),
+    title: t('Delete “{0}”?', exerciseNameFor(ex)),
     message: t('It will be removed from your routines. Already-logged workouts keep their sets.'),
     confirmText: t('Delete'), danger: true,
     onConfirm: () => {
@@ -677,7 +678,7 @@ function ExercisePicker({ onPick, close, options = {} }) {
         <div className="grow"><div className="tt">{t('Create your own exercise')}</div><div className="ss">{t('name + body part, no animation')}</div></div><Icon name="plus" className="chev" />
       </div>}
       {f.slice(0, shown).map(e => <div key={e.id} className="item" onClick={() => onPick(e)}>
-        <Thumb ex={e} /><div className="grow"><div className="tt capitalize">{exerciseNameFor(e)}</div>{st.exerciseAliases?.[e.id] && <div className="ss">{t('Alias')}: {st.exerciseAliases[e.id]}</div>}<div className="ss capitalize">{t(e.tg || e.bp)} · {t(e.eq)}</div></div>
+        <Thumb ex={e} /><div className="grow"><div className="tt capitalize">{exerciseNameFor(e)}</div><div className="ss capitalize">{t(e.tg || e.bp)} · {t(e.eq)}</div></div>
         {usage[e.id] && <span className="tag acc"><Icon name="starFill" /></span>}<Icon name="plus" className="chev" />
       </div>)}
       {f.length === 0 && bp === '★' && <div className="empty">{t('Nothing chosen yet — add exercises and they’ll show up here.')}</div>}
@@ -852,7 +853,7 @@ function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial }) {
     }
   }
   return <>
-    <h3 className="capitalize">{exerciseNameFor(ex)}</h3>
+    <h3 className="capitalize">{exerciseNameFor(ex, { entry: existing, routineId: routine?.id })}</h3>
     <Media ex={ex} />
     {/* The same tags the exercise detail sheet shows, secondaries included: choosing what goes
         into a plan is exactly when "what else does this hit" matters, and until now that was
@@ -1345,8 +1346,8 @@ function WorkoutDetail({ w: original, close }) {
       const ex = EXIDX[e.id]
       return <div key={i} className="row" style={{ marginBottom: 12, alignItems: 'flex-start' }}>
         {ex && <Thumb ex={ex} />}
-        <div className="grow"><div className="tt capitalize" style={{ fontWeight: 600 }}>{ex ? exerciseNameFor(ex) : (e.n || e.id)} {w.prs && w.prs.includes(e.id) && <span className="pr"><Icon name="trophy" />PR</span>}</div>
-          {e.substitutedFor && <div className="small dim">{t('Substituted for {0}', exerciseNameFor(exOr(e.substitutedFor)))}</div>}
+        <div className="grow"><div className="tt capitalize" style={{ fontWeight: 600 }}>{exerciseNameFor(ex || e, { entry: e, routineId: w.routineId })} {w.prs && w.prs.includes(e.id) && <span className="pr"><Icon name="trophy" />PR</span>}</div>
+          {e.substitutedFor && <div className="small dim">{t('Substituted for {0}', exerciseNameFor(exOr(e.substitutedFor), { routineId: w.routineId }))}</div>}
           {editing ? <div className="workout-edit-sets">{e.sets.map((set, si) => <div className="workout-edit-set" key={si}>
             <div className="edit-set-number">{t('Set')} {si + 1}</div>
             {modeOf({ ...(e.target || {}), id: e.id }) === 'cardio' ? <><label><span>{t('Duration (min)')}</span><NumberField value={set.min} decimal={false} onChange={v => setDraftEntries(rows => rows.map((row, ri) => ri !== i ? row : { ...row, sets: row.sets.map((x, xi) => xi === si ? { ...x, min: v } : x) }))} /></label><label><span>{t('Speed (km/h)')}</span><NumberField value={set.speed} onChange={v => setDraftEntries(rows => rows.map((row, ri) => ri !== i ? row : { ...row, sets: row.sets.map((x, xi) => xi === si ? { ...x, speed: v } : x) }))} /></label></> : <><label><span>{t('Weight ({0})', st.unit)}</span><NumberField value={set.w || 0} onChange={v => setDraftEntries(rows => rows.map((row, ri) => ri !== i ? row : { ...row, sets: row.sets.map((x, xi) => xi === si ? { ...x, w: v } : x) }))} /></label><label><span>{set.sec != null ? t('Seconds') : t('Reps')}</span><NumberField value={set.r ?? set.sec ?? 0} decimal={false} onChange={v => setDraftEntries(rows => rows.map((row, ri) => ri !== i ? row : { ...row, sets: row.sets.map((x, xi) => xi === si ? { ...x, ...(x.sec != null ? { sec: v } : { r: v }) } : x) }))} /></label></>}
@@ -1602,7 +1603,7 @@ function TopWeight({ entryIdx, close }) {
     } else toast(t('Tracked — next time starts at {0}', fmtNum(S().exWeights[entry.id].w) + ' ' + st.unit))
   }
   return <>
-    <h3 className="capitalize row" style={{ gap: 8 }}><Icon name="checkCircle" style={{ color: 'var(--acc)' }} />{t('{0} done', exerciseNameFor(ex))}</h3>
+    <h3 className="capitalize row" style={{ gap: 8 }}><Icon name="checkCircle" style={{ color: 'var(--acc)' }} />{t('{0} done', exerciseNameFor(ex, { entry, routineId: A.routineId }))}</h3>
     <div className="muted small">{t('Confirm the weight you worked with — your highest becomes the default next time.')}{!unitDone && unit.length > 1 ? ' ' + t('Then finish the superset partner.') : ''}</div>
     <WeightInput value={v} setValue={setV} unit={st.unit} />
     <div style={{ height: 10 }} />
@@ -1656,7 +1657,7 @@ function ExerciseNote({ entryIdx, close }) {
   }
 
   return <>
-    <h3 className="capitalize">{exerciseNameFor(ex)}</h3>
+    <h3 className="capitalize">{exerciseNameFor(ex, { entry, routineId: A.routineId })}</h3>
     <div className="small muted" style={{ marginBottom: 6 }}>{t('This session')}</div>
     <textarea className="input" rows={3} maxLength={NOTE_MAX} value={note}
       placeholder={t('How it went, what to change — kept with today’s workout.')}
@@ -1753,8 +1754,14 @@ function FinishSummary({ w, prs, e1prs = [], milestone = null, close }) {
       <div className="tile"><div className="l">{t('PRs')}</div><div className="v" style={{ fontSize: 20 }}>{prs.length || '—'}</div></div>
     </div>
     {(prs.length > 0 || e1prs.length > 0) && <div style={{ textAlign: 'left', marginBottom: 12 }}>
-      {prs.map(id => <div key={id} className="small accent capitalize row" style={{ gap: 5 }}><Icon name="trophy" style={{ fontSize: 13 }} />{t('New PR:')} {EXIDX[id] ? exerciseNameFor(EXIDX[id]) : id}</div>)}
-      {e1prs.map(p => <div key={p.id} className="small accent capitalize row" style={{ gap: 5 }}><Icon name="chartLine" style={{ fontSize: 13 }} />{t('Best estimated 1RM:')} {EXIDX[p.id] ? exerciseNameFor(EXIDX[p.id]) : p.id} · {fmtNum(p.est)} {st.unit}</div>)}
+      {prs.map(id => {
+        const entry = w.entries?.find(e => e.id === id)
+        return <div key={id} className="small accent capitalize row" style={{ gap: 5 }}><Icon name="trophy" style={{ fontSize: 13 }} />{t('New PR:')} {exerciseNameFor(EXIDX[id] || entry || { id }, { entry, routineId: w.routineId })}</div>
+      })}
+      {e1prs.map(p => {
+        const entry = w.entries?.find(e => e.id === p.id)
+        return <div key={p.id} className="small accent capitalize row" style={{ gap: 5 }}><Icon name="chartLine" style={{ fontSize: 13 }} />{t('Best estimated 1RM:')} {exerciseNameFor(EXIDX[p.id] || entry || { id: p.id }, { entry, routineId: w.routineId })} · {fmtNum(p.est)} {st.unit}</div>
+      })}
     </div>}
     <h4 className="sec" style={{ textAlign: 'left' }}>{t('What you just trained')}</h4>
     <BodyMap load={loadOfWorkouts([w])} body={st.body} />

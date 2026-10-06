@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useUI } from '../store/useUI.js'
+import { useStore } from '../store/useStore.js'
 import { t } from '../lib/i18n.js'
 import { Button } from './ui.jsx'
 
@@ -12,6 +13,7 @@ const clock = sec => Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '
 export default function RestTimer() {
   const timer = useUI(s => s.timer)
   const work = useUI(s => s.work)
+  useStore(s => s.S)
   const { addRest, stopRest, finishWorkEarly, stopWork } = useUI()
   const on = work || timer
   // The bar is fixed above the tab bar and floats over whatever is beneath it — during a
@@ -22,12 +24,13 @@ export default function RestTimer() {
   }, [!!on])
   if (!on) return null
   const pct = (on.left / on.total) * 100
+  const workLabel = work?.getLabel?.() ?? work?.label
 
   if (work) return (
     <div id="timer" className="working">
       <div className="t">{clock(work.left)}</div>
       <div className="grow">
-        {work.label && <div className="lbl">{work.label}</div>}
+        {workLabel && <div className="lbl">{workLabel}</div>}
         <div className="bar"><i style={{ width: pct + '%' }} /></div>
       </div>
       <Button size="sm" onClick={stopWork}>{t('Cancel')}</Button>
