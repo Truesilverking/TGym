@@ -29,6 +29,7 @@ import { ReminderStatus } from '../components/ReminderPanel.jsx'
 import MeasurementReminders from '../components/MeasurementReminders.jsx'
 import WorkoutReminderSettings from '../components/WorkoutReminderSettings.jsx'
 import DeloadSettings from '../components/DeloadSettings.jsx'
+import ReportsExport from '../components/ReportsExport.jsx'
 
 function BackupSheet({ onExport, onImport }) {
   const autoBackup = useStore(s => !!s.S.autoBackup)
@@ -336,6 +337,7 @@ export default function Settings() {
         }}>{t('Sync now')}</Button>
       </div>}
       <Row icon="history" title={t('Training history settings')} accessory="chevron" onClick={openTrainingHistory} />
+      <Row icon="download" iconTint="var(--blue)" title={t('Export Reports')} subtitle={t('Each report downloads as a separate file.')} accessory="chevron" onClick={() => useUI.getState().openSheet(close => <ReportsExport S={S} close={close} />)} />
       <Row icon="folder" iconTint="var(--blue)" title={t('Backup')} accessory="chevron" onClick={() => useUI.getState().openSheet(() => <BackupSheet onExport={doExport} onImport={() => authorize(() => fileRef.current?.click())} />)} />
       <Row icon="cloud" iconTint="var(--blue)" title={t('Restore')} subtitle={t('Back up, synchronize or restore your TGym data.')} accessory="chevron" onClick={() => openRestoreSheet(authorize)} />
       <Row icon="folder" iconTint="var(--acc)" title={t('Load Routine')} subtitle={t('Create, import or export routines from one place.')} accessory="chevron" onClick={openLoadRoutine} />

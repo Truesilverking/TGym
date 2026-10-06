@@ -171,6 +171,14 @@ async function tick(milliseconds) {
 const lastMap = () => mocks.maps.at(-1)
 const expectPressed = button => expect(button?.getAttribute('aria-pressed')).toBe('true')
 
+it('keeps relocated export entries out of Stats while preserving its existing report controls',async()=>{
+ resetFixture();await mountStats()
+ expect(container.textContent).not.toContain('Export Reports')
+ expect(container.textContent).not.toContain('Consistency Report')
+ expect(container.querySelector('[aria-label="Export Stats report"]')).not.toBeNull()
+ expect(container.querySelector('[aria-label="Progress Report"]')).not.toBeNull()
+})
+
 beforeEach(() => {
   vi.useFakeTimers()
   vi.setSystemTime(BASE_NOW)

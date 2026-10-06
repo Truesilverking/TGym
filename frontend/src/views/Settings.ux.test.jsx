@@ -93,6 +93,20 @@ it('keeps the privacy row first during preference changes, navigation, persisted
   expect(native.sync).not.toHaveBeenCalled()
 })
 
+it('opens the existing multi-report selector once from Data without changing the profile',async()=>{
+ const before=JSON.stringify(useStore.getState().S)
+ const rows=[...section('Data').querySelectorAll('button')].filter(b=>b.querySelector('.lrow-t')?.textContent==='Export Reports')
+ expect(rows).toHaveLength(1)
+ await click(rows[0]);expect(useUI.getState().sheets).toHaveLength(1)
+ const sheet=document.createElement('div'),sheetRoot=createRoot(sheet)
+ await act(async()=>sheetRoot.render(useUI.getState().sheets[0].render(()=>{})))
+ expect(sheet.querySelector('h3').textContent).toBe('Export Reports')
+ expect(sheet.querySelectorAll('.report-option input[type=checkbox]')).toHaveLength(7)
+ expect(sheet.textContent).toContain('Download Selected');expect(sheet.textContent).toContain('Download All')
+ expect(JSON.stringify(useStore.getState().S)).toBe(before)
+ await act(async()=>sheetRoot.unmount());useUI.getState().closeAll()
+})
+
 it('explains actual external transfers for local and server-connected profiles without moving Data content', async () => {
   expect(firstData().textContent).toContain('Connecting a server, enabling cloud backup or sharing an export sends a copy outside this device.')
   await act(async () => useStore.setState({ user: { id: 'paired-user', name: 'Synthetic profile' } }))

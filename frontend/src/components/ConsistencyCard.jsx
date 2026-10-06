@@ -2,7 +2,7 @@ import { routineConsistency } from '../lib/stats-insights.js'
 import { t } from '../lib/i18n.js'
 import { Button } from './ui.jsx'
 
-export default function ConsistencyCard({ S, onTimes, now = new Date() }) {
+export default function ConsistencyCard({ S, onTimes, onExport, now = new Date() }) {
   const stats = routineConsistency(S,56,now)
   const percent = stats.rate == null ? null : Math.round(stats.rate * 100)
   return <section className="card consistency-card insight-panel">
@@ -17,5 +17,6 @@ export default function ConsistencyCard({ S, onTimes, now = new Date() }) {
       <p className="small muted">{t('Activity counts once per day, including planned and extra sessions.')}</p>
     </div>
     <dl className="consistency-secondary consistency-metrics">{[['Planned',stats.planned],['Missed',stats.missed],['Extra',stats.extra]].map(([label,value])=><div key={label}><dt>{t(label)}</dt><dd>{value}</dd></div>)}</dl>
+    {onExport && <Button icon="download" style={{ marginTop: 12 }} onClick={onExport}>{t('Consistency Report')}</Button>}
   </section>
 }

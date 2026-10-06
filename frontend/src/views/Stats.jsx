@@ -1,5 +1,3 @@
-import ReportsExport from '../components/ReportsExport.jsx'
-import { useUI } from '../store/useUI.js'
 import ProgressBody from '../components/ProgressBody.jsx'
 import { bodyRecords,measurementInUnit } from '../lib/body-report.js'
 import { removeBodyRecord } from '../lib/body-records.js'
@@ -423,7 +421,6 @@ export default function Stats() {
   return <>
     <div className="hdr"><div><h1>{t('Stats')}</h1><div className="sub">{t('Progress & history')}</div></div>
       <div className="row" style={{ gap: 3 }}><button className="iconbtn" onClick={() => exportStatsReport(S)} aria-label={t('Export Stats report')} title={t('Export Stats report')}><Icon name="download" /></button>{!MOBILE && <button className="iconbtn" onClick={() => window.print()} aria-label={t('Print / Save as PDF')} title={t('Print / Save as PDF')}><Icon name="clipboard" /></button>}<button className="iconbtn" onClick={() => nav('/progress')} aria-label={t('Progress Report')} title={t('Progress Report')}><Icon name="chart" /></button><button className="iconbtn" data-tour="history" onClick={() => nav('/history')} aria-label={t('History')}><Icon name="history" /></button><button className="iconbtn" data-tour="inbody" onClick={inBodySheet} aria-label={t('InBody history')} title={t('InBody history')}><Icon name="person" /></button></div></div>
-    <div className="reports-entry"><Button icon="download" variant="primary" onClick={()=>useUI.getState().openSheet(close=><ReportsExport S={S} close={close}/>)}>{t('Export Reports')}</Button></div>
 
     <TrainingHistory />
     <div className="tiles">

@@ -12,6 +12,20 @@ let root,host,S
 beforeEach(()=>{globalThis.IS_REACT_ACT_ENVIRONMENT=true;vi.useFakeTimers();vi.setSystemTime(new Date('2026-09-28T12:00:00'));localStorage.clear();S={...structuredClone(DEF),lang:'en',trainingStartDate:'2026-07-15',routines:[{id:'upper',name:'Upper A',ex:[]},{id:'lower',name:'Lower A',ex:[]}],week:{1:['upper'],2:['lower']}};useStore.setState({S,user:null});useUI.setState({sheets:[]});host=document.createElement('div');document.body.append(host);root=createRoot(host)})
 afterEach(()=>{act(()=>root.unmount());host.remove();vi.clearAllTimers();vi.useRealTimers();vi.clearAllMocks()})
 const mount=()=>act(()=>root.render(<MemoryRouter><Home/></MemoryRouter>))
+it('opens the explicit consistency report from its own section without a global export shortcut',()=>{
+ mount();const before=JSON.stringify(useStore.getState().S)
+ const section=host.querySelector('.consistency-card')
+ const buttons=[...section.querySelectorAll('button')].filter(b=>b.textContent==='Consistency Report')
+ expect(buttons).toHaveLength(1);expect(host.textContent).not.toContain('Export Reports')
+ act(()=>buttons[0].click());expect(useUI.getState().sheets).toHaveLength(1)
+ const dialog=useUI.getState().sheets[0].render(()=>{})
+ expect(dialog.props.reportType).toBe('consistency');expect(dialog.props.S).toBe(S)
+ expect(dialog.props.anchor).toEqual(new Date('2026-09-28T12:00:00'))
+ const sheet=document.createElement('div'),sheetRoot=createRoot(sheet)
+ act(()=>sheetRoot.render(dialog));expect(sheet.querySelector('h3').textContent).toBe('Consistency Report')
+ expect(JSON.stringify(useStore.getState().S)).toBe(before)
+ act(()=>sheetRoot.unmount());useUI.getState().closeAll()
+})
 it('reflects today activity and the daily streak without marking added exercises as extras',()=>{
  S.trainingStartDate='2026-09-28';S.workouts=[{id:'planned',d:'2026-09-28',routineId:'upper',sessionOrigin:{type:'planned',routineId:'upper'},entries:['replaced','added1','added2','added3'].map(id=>({id,sets:[{done:true,r:8,w:50}]}))}];useStore.setState({S});mount()
  const metric=label=>[...host.querySelectorAll('dt')].find(el=>el.textContent===label)?.nextElementSibling.textContent

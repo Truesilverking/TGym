@@ -12,5 +12,4 @@
 .report-results li { display:flex; gap:8px; align-items:center; }
 .report-results span { flex:1; overflow-wrap:anywhere; min-width:0; }
 .report-results small { display:block; color:var(--label-2); }
-.reports-entry { margin:0 0 16px; }
 .zoomcal-export-wrap { flex-wrap:wrap; gap:8px; }

@@ -7,6 +7,8 @@ import TrainingHistory from '../components/TrainingHistory.jsx'
 import { TrainingPauseAction } from '../components/TrainingPauseCard.jsx'
 import { isTrainingPaused } from '../lib/training-pause.js'
 import ConsistencyCard from '../components/ConsistencyCard.jsx'
+import CalendarExport from '../components/CalendarExport.jsx'
+import { useUI } from '../store/useUI.js'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
@@ -101,7 +103,7 @@ export default function Home() {
     <DailyPlan date={todayIso} compact onStart={startFlow}/>
     <TrainingHistory promptOnly />
 
-    <ConsistencyCard S={S} now={today} onTimes={sessionTimingSheet} />
+    <ConsistencyCard S={S} now={today} onTimes={sessionTimingSheet} onExport={() => useUI.getState().openSheet(close => <CalendarExport S={S} anchor={today} close={close} reportType="consistency" />)} />
 
     {!S.routines.length && !S.active && (
       <div className="card">
