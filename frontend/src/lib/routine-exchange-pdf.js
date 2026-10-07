@@ -2,6 +2,7 @@ import { routineExchangeRows } from './routine-exchange.js'
 import { reportPagesFile } from './report-file.js'
 import { displayReps, modeOf } from './history.js'
 import { restSeconds } from './rest-policy.js'
+import { policyFor, defaultIncrement } from './progression.js'
 
 const esc = value => String(value ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;')
 // Wrapping is by Unicode codepoint, including long unbroken names/notes. Every line is paginated.
@@ -77,7 +78,8 @@ export function routinePDFPages(data) {
         add(text)
         if (top) add(`  Top association: ${top} | Load reduction ${pct}% | Reps ${automatic ? rule : 'independent range'}`)
       })
-      if (e.prog && e.prog !== 'off') add(`Progression: ${e.prog}${e.inc ? ` | Increment ${e.inc} ${modeOf(e) === 'time' ? 's' : data.unit}` : ''}`)
+      const mode = modeOf(e), policy = policyFor(e, routine, mode)
+      if (policy !== 'off') add(`Progression: ${policy} | Increment ${e.inc || (mode === 'time' ? 5 : defaultIncrement(e.id, data.unit))} ${mode === 'time' ? 's' : data.unit}`)
       if (e.intensifier) add(`Intensity technique: ${e.intensifier.type} | ${JSON.stringify(e.intensifier)}`)
       if (e.sg) add(`Superset move rest: ${restSeconds({ state: data.rules, routine, target: e, phase: 'supersetMove' })} s | Round rest: ${restSeconds({ state: data.rules, routine, target: e, phase: 'supersetRound' })} s`)
       count += 12

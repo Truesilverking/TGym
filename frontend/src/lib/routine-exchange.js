@@ -107,7 +107,10 @@ export function validateRoutineExchange(raw, S = {}, { exerciseMappings = {} } =
       for (const key of ['topSets', 'backoffSets']) number(e[key], 1, 99, 'Series', erow, key, true)
       for (const key of ['weight', 'inc', 'sec', 'min', 'speed']) number(e[key], 0, 1000000, 'Series', erow, key)
       for (const key of ['targetRir', 'targetRirMin', 'targetRirMax', 'topRir', 'topRirMin', 'topRirMax', 'backoffRir', 'backoffRirMin', 'backoffRirMax']) number(e[key], 0, 10, 'Series', erow, key)
-      for (const [lo, hi] of [['repsMin', 'reps'], ['topRepsMin', 'topRepsMax'], ['backoffRepsMin', 'backoffRepsMax'], ['targetRirMin', 'targetRirMax'], ['topRirMin', 'topRirMax'], ['backoffRirMin', 'backoffRirMax']]) if (e[lo] != null && e[hi] != null && e[lo] > e[hi] && !(e.repRange === false && lo === 'repsMin')) errors.push(issue('Series', erow, `${lo} / ${hi}`, 'Minimum exceeds maximum'))
+      for (const [lo, hi] of [['repsMin', 'reps'], ['topRepsMin', 'topRepsMax'], ['backoffRepsMin', 'backoffRepsMax'], ['targetRirMin', 'targetRirMax'], ['topRirMin', 'topRirMax'], ['backoffRirMin', 'backoffRirMax']]) {
+        const ignoredLegacyBounds = e.repRange === false && ['repsMin', 'topRepsMin'].includes(lo) || lo === 'backoffRepsMin' && e.setScheme === 'topback' && e.autoBackoffReps !== false
+        if (e[lo] != null && e[hi] != null && e[lo] > e[hi] && !ignoredLegacyBounds) errors.push(issue('Series', erow, `${lo} / ${hi}`, 'Minimum exceeds maximum'))
+      }
       for (const key of ['side', 'repsPerSide', 'bodyweight', 'repRange', 'strictReps', 'autoBackoffReps', 'amrap']) if (e[key] != null && typeof e[key] !== 'boolean') errors.push(issue('Ejercicios de rutina', erow, key, 'Expected boolean'))
       for (const key of ['restSec', 'afterRestSec', 'warmupRestSec', 'supersetMoveRestSec', 'supersetRoundRestSec']) number(e[key], 0, 86400, 'Series', erow, key, true)
       if (e.mode != null && !['reps', 'time', 'cardio'].includes(e.mode)) errors.push(issue('Series', erow, 'Modo', 'Unknown exercise mode'))
@@ -230,7 +233,7 @@ export function routineExchangeRows(data) {
     rows.Rutinas.push([routine.id, routine.name, ri + 1, JSON.stringify(scheduleFor(data, 'week', routine.id)), JSON.stringify(scheduleFor(data, 'dayPlan', routine.id)), routine.note || ''])
     for (const [ei, e] of routine.ex.entries()) {
       const instance = `${routine.id}:${ei + 1}`, ex = source.get(e.id), mode = modeOf(e)
-      rows['Ejercicios de rutina'].push([instance, routine.id, ex?.selector || `${ex?.n || e.id} [${e.id}]`, ei + 1, e.sg || '', e.note || '', mode, !!e.side, !!e.repsPerSide, e.prog || 'off'])
+      rows['Ejercicios de rutina'].push([instance, routine.id, ex?.selector || `${ex?.n || e.id} [${e.id}]`, ei + 1, e.sg || '', e.note || '', mode, !!e.side, !!e.repsPerSide, e.prog || ''])
       const effective = { ...e, ...(e.backoffRepsMode == null && data.rules.backoffRepsMode ? { backoffRepsMode: data.rules.backoffRepsMode } : {}) }
       const groups = [...Array.from({ length: mode === 'cardio' ? 0 : e.warmupSets || 0 }, () => 'Warm-up'), ...(e.setScheme === 'topback' ? [...Array.from({ length: e.topSets || 1 }, () => 'Top'), ...Array.from({ length: e.backoffSets || 2 }, () => 'Back-off')] : Array.from({ length: e.sets || 1 }, () => 'Working'))]
       groups.forEach((type, index) => {
@@ -261,7 +264,7 @@ export async function createRoutineWorkbook(data, { signal } = {}) {
     ['Back-off', 'Top asociado = Instancia:Top. same = mismas reps; increased = +2 a ambos límites (respeta reps por lado); legacy:N conserva excepción heredada. Automático false permite un rango independiente. Peso se deriva del Top y reducción.'],
     ['Supersets', 'Use el mismo identificador en al menos dos ejercicios consecutivos de una rutina.'],
     ['Programación', 'Semana (JSON): {"1":0,"3":1}; días 0=domingo…6=sábado, valor=posición de la rutina ese día. Fechas (JSON): {"2026-10-08":0}. {} significa sin programación.'],
-    ['Opcionales', 'Notas, Superset, RIR, Por lado, Reps por lado, Progresión. Reglas avanzadas existentes viajan en metadatos para conservarlas; los cambios en columnas editables tienen prioridad.'],
+    ['Opcionales', 'Notas, Superset, RIR, Por lado, Reps por lado, Progresión (vacía = seguir la rutina; off = desactivada). Reglas avanzadas existentes viajan en metadatos; los cambios en columnas editables tienen prioridad.'],
     ['Añadir filas', 'Copie una fila y cambie Instancia/Orden según corresponda. Las listas se aplican hasta la fila 10001; copie la validación si amplía más. IDs de rutina e instancia son identificadores propios, no IDs de catálogo.'],
     ['Importación', 'Guarde como .xlsx. TGym valida todo, muestra errores por hoja/fila/campo, pide correspondencias/conflictos y guarda atómicamente tras confirmar. También acepta JSON versionado y planes antiguos v1.'],
     ['Importante', 'No borre hojas ni encabezados. No use fórmulas ni enlaces externos. PDF es de lectura y no se importa.']
