@@ -18,6 +18,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
+      - name: Read release notification policy
+        id: notification_policy
+        shell: bash
+        run: |
+          test "$(git rev-parse "${GITHUB_REF}^{commit}")" = "$GITHUB_SHA"
+          TGYM_NOTIFY=true
+          if [ "$(git cat-file -t "$GITHUB_REF")" = tag ]; then
+            TGYM_TAG_MESSAGE="$(git cat-file tag "$GITHUB_REF" | sed '1,/^$/d')"
+            if printf '%s\n' "$TGYM_TAG_MESSAGE" | sed 's/\r$//' | grep -Fx '[skip-update-notifications]' > /dev/null; then
+              TGYM_NOTIFY=false
+            fi
+          fi
+          printf 'send=%s\n' "$TGYM_NOTIFY" >> "$GITHUB_OUTPUT"
+          printf 'Release update notifications enabled: %s\n' "$TGYM_NOTIFY"
       - uses: pnpm/action-setup@v4
         with: { version: 10 }
       - uses: actions/setup-node@v4
@@ -119,6 +133,7 @@ jobs:
           REPOSITORY: ${{ github.repository }}
         run: node frontend/scripts/verify-published-update.mjs
       - name: Notify update topic
+        if: ${{ success() && steps.notification_policy.outputs.send == 'true' }}
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}

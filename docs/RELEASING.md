@@ -17,6 +17,11 @@ FCM credentials are tested without sending a notification before publication.
 Failures are not ignored. A failed notification does not mean an APK release was not created;
 inspect the exact failing step before retrying to avoid duplicate notifications.
 
+For a publication without update notifications, use an annotated version tag whose message
+contains the exact line `[skip-update-notifications]`. Only the final FCM send is skipped;
+credential validation, artifact checks and publication still run. Normal annotated tags and
+lightweight tags retain notification delivery, even when a commit message contains the marker.
+
 Required secrets: ANDROID_KEYSTORE_BASE64, ANDROID_STORE_PASSWORD, ANDROID_KEY_ALIAS,
 ANDROID_KEY_PASSWORD, GOOGLE_SERVICES_JSON_BASE64, FIREBASE_SERVICE_ACCOUNT,
 FIREBASE_PROJECT_ID. Never replace the signing key to fix a build.
