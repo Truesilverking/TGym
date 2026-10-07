@@ -1,10 +1,12 @@
 import { Capacitor, registerPlugin } from '@capacitor/core'
 import { workoutElapsedMs, inactivityDeadline } from './workout-time.js'
+import { reconcileWorkoutClock } from './workout-lifecycle.js'
 import { isWarmupRow } from './workout-model.js'
 import { t, getLang } from './i18n-core.js'
 const native = registerPlugin('WorkoutNotification')
 export function workoutNotificationState(active, rest, now=Date.now()) {
   if (!active || active.end != null) return {active:false}
+  active=reconcileWorkoutClock(active,now)
   const paused=active.timerPausedAt != null
   rest=rest ?? active.restTimer
   const entry=(active.entries || [])[active.cur || 0]
@@ -18,7 +20,9 @@ export function workoutNotificationState(active, rest, now=Date.now()) {
     elapsedMs:workoutElapsedMs(active,now),workoutLabel:es?'ENTRENO':t('Workout').toUpperCase(),restLabel:es?'DESCANSO':t('Rest').toUpperCase(),
     setNumber,setLabel:setNumber ? `${es?'SERIE':t('Set').toUpperCase()} ${setNumber}` : '',
     restEndsAt:rest?.endsAt > now ? rest.endsAt : 0,
-    autoFinishAt:active.routineCompletedAt!=null?inactivityDeadline(active):0}
+    pauseReason:active.pauseReason ?? null,
+    pauseLabel:t('Workout paused after inactivity'),
+    autoPauseAt:paused?0:inactivityDeadline(active,now)}
 }
 let queue=Promise.resolve()
 let permissionRequested=false

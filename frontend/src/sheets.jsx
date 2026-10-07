@@ -35,6 +35,7 @@ import BodyMap from './components/BodyMap.jsx'
 import { exerciseMuscleSnapshot, loadOfWorkouts, MUSCLES, MUSCLE_NAME, normalizeMuscleGroups, hasExplicitMuscleMetadata } from './lib/muscles.js'
 import { parseImport, mergeImport } from './lib/import-csv.js'
 import { buildPlanBundle, parsePlan, mergePlan, printPlan } from './lib/plan-share.js'
+import RoutineExchange from './components/RoutineExchange.jsx'
 import { estimate1RM, best1RM, is1RMRecord, REP_CAP } from './lib/onerm.js'
 import { nextPrescription, applyPrescription, policyFor, defaultIncrement, POLICIES_FOR, POLICY_NAME, POLICY_DESC, MAX_BW_SETS } from './lib/progression.js'
 import { MOBILE, shareExport } from './lib/mobile.js'
@@ -49,7 +50,7 @@ import { weightStepFor } from './lib/unit-conversion.js'
 import Heatmap from './components/Heatmap.jsx'
 import LineChart from './components/LineChart.jsx'
 import { pauseWorkoutClock, resumeWorkoutClock, workoutElapsedMs, correctWorkoutDuration } from './lib/workout-time.js'
-import { effectiveWorkoutComplete, resumeAutoFinished, workoutResolution, ensureWorkoutCompletionPaused } from './lib/workout-lifecycle.js'
+import { effectiveWorkoutComplete, resumeAutoFinished, ensureWorkoutCompletionPaused } from './lib/workout-lifecycle.js'
 import { routineMuscleSheet } from './components/RoutineMusclePreview.jsx'
 import { effortValue } from './lib/history.js'
 
@@ -1101,7 +1102,7 @@ export const glyphPicker = (current, onPick) => {
 }
 
 /* ============================ share / print / import a plan ============================ */
-export const planToolsSheet = () => ui().openSheet(close => <PlanTools close={close} />)
+export const planToolsSheet = () => ui().openSheet(close => <RoutineExchange close={close} />)
 
 function PlanTools({ close }) {
   const st = useStore(s => s.S)
@@ -1531,16 +1532,14 @@ export function WorkoutRow({ w, onClick }) {
 
 /* ============================ workout lifecycle ============================ */
 export function startFlow(routineId) {
-  const resolution=workoutResolution(S().active,Date.now(),true)
-  if(resolution)doFinishWorkout({...resolution,silent:true})
+  useStore.getState().reconcileActiveClock()
   if (S().active) {nav('/workout');return}
   if (routineId === undefined) routineId = nextDailyRoutine(S(),todayISO())?.id || null
   if(isTrainingPaused(S(),todayISO())) return ui().openSheet(close=><TrainingPauseCard onSaved={close} />)
   bwSheet({ required: true, onDone: bw => beginWorkout(routineId, bw) })
 }
 export function beginWorkout(routineId, bw) {
-  const resolution=workoutResolution(S().active,Date.now(),true)
-  if(resolution)doFinishWorkout({...resolution,silent:true})
+  useStore.getState().reconcileActiveClock()
   const st = S()
   if (st.active) {nav('/workout');return}
   if(isTrainingPaused(st,todayISO())) return ui().openSheet(close=><TrainingPauseCard onSaved={close} />)
@@ -1722,7 +1721,7 @@ function WorkoutComplete({ close }) {
   return <div style={{ textAlign: 'center', padding: '8px 0' }}>
     <div style={{ fontSize: 44, display: 'flex', justifyContent: 'center', color: 'var(--acc)' }}><Icon name="checkCircle" /></div>
     <h3 style={{ margin: '8px 0' }}>{t("That's the whole workout!")}</h3>
-    <div className="muted small" style={{ marginBottom: 16 }}>{t('Timer frozen. Finish now or continue. After 10 minutes, this session saves at its completion time.')}</div>
+    <div className="muted small" style={{ marginBottom: 16 }}>{t('Timer paused. Reviewing this screen does not count as training. Finish or continue when ready.')}</div>
     <Button variant="primary" icon="flag" onClick={() => { close(); finishWorkout() }}>{t('Finish workout')}</Button>
     <div style={{ height: 8 }} />
     <Button onClick={() => { resumeActiveWorkoutClock(); close(); useUI.getState().toast(t('Keep going — tap “+ Add exercise” below')) }}>{t('Continue workout')}</Button>
@@ -1730,10 +1729,45 @@ function WorkoutComplete({ close }) {
 }
 let completionDecision = null
 export const workoutCompleteSheet = () => {
+  if(S().active?.pauseReason==='inactivity')return workoutInactivitySheet()
+  if(S().active?.pauseReason==='manual')return null
   if (completionDecision && ui().sheets.some(sheet=>sheet.id===completionDecision.id)) return completionDecision
   pauseActiveWorkoutClock()
   completionDecision = ui().openSheet(close => <WorkoutComplete close={close} />, { kind: 'center', onClose:()=>{completionDecision=null} })
   return completionDecision
+}
+
+function WorkoutInactivity({ close }) {
+  const active=useStore(s=>s.S.active)
+  const [duration,setDuration]=useState(()=>String(Math.round(workoutElapsedMs(S().active)/6000)/10))
+  const [error,setError]=useState('')
+  useEffect(()=>{if(!active || active.pauseReason!=='inactivity')close()},[active?.id,active?.pauseReason])
+  if(!active)return null
+  return <>
+    <h3>{t('Workout paused after inactivity')}</h3>
+    <p className="small muted">{t('The timer paused 30 minutes after your last interaction. Your sets are preserved. Review the duration, then continue or finish.')}</p>
+    <p>{t('Duration')}: {fmtDur(workoutElapsedMs(active))}</p>
+    <label>{t('Duration (minutes)')}<input className="input" type="number" min="0.1" step="0.1" value={duration} onChange={event=>setDuration(event.target.value)}/></label>
+    {error&&<p role="alert">{error}</p>}
+    <Button onClick={()=>{
+      const corrected=correctWorkoutDuration(S().active,duration)
+      if(!corrected){setError(t('Enter a valid duration ending before now.'));return}
+      update(s=>{if(s.active?.id===corrected.id)s.active=corrected})
+      setError('');toast(t('Workout updated'))
+    }}>{t('Save duration')}</Button>
+    <div style={{height:12}}/>
+    <Button variant="primary" onClick={()=>{resumeActiveWorkoutClock();close();nav('/workout')}}>{t('Continue workout')}</Button>
+    <div style={{height:8}}/>
+    <Button onClick={()=>finishWorkout()}>{t('Finish workout')}</Button>
+  </>
+}
+let inactivityDecision=null
+export const workoutInactivitySheet=()=>{
+  if(S().active?.pauseReason!=='inactivity')return null
+  if(inactivityDecision&&ui().sheets.some(sheet=>sheet.id===inactivityDecision.id))return inactivityDecision
+  // A rest deadline remains persisted. Only the duration clock pauses at inactivity.
+  inactivityDecision=ui().openSheet(close=><WorkoutInactivity close={close}/>,{kind:'center',locked:true,onClose:()=>{inactivityDecision=null}})
+  return inactivityDecision
 }
 
 function FinishSummary({ w, prs, e1prs = [], milestone = null, close }) {
@@ -1775,8 +1809,9 @@ export function finishWorkout() {
   if (!A) return
   const done = setsDoneActive(A)
   const total = A.entries.reduce((n, e) => n + e.sets.length, 0)
-  if (!done) { pauseActiveWorkoutClock(); confirmSheet({ title: t('Nothing logged yet'), message: t('You haven’t checked off any sets. Finish the workout anyway?'), confirmText: t('Finish anyway'), onConfirm: doFinishWorkout, onCancel: resumeActiveWorkoutClock }); return }
-  if (done < total) { pauseActiveWorkoutClock(); confirmSheet({ title: t('Finish early?'), message: t(total - done === 1 ? '{0} set still unchecked. Finish the workout now?' : '{0} sets still unchecked. Finish the workout now?', total - done), confirmText: t('Finish workout'), onConfirm: doFinishWorkout, onCancel: resumeActiveWorkoutClock }); return }
+  const cancel = A.timerPausedAt != null ? () => {} : resumeActiveWorkoutClock
+  if (!done) { pauseActiveWorkoutClock(); confirmSheet({ title: t('Nothing logged yet'), message: t('You haven’t checked off any sets. Finish the workout anyway?'), confirmText: t('Finish anyway'), onConfirm: doFinishWorkout, onCancel: cancel }); return }
+  if (done < total) { pauseActiveWorkoutClock(); confirmSheet({ title: t('Finish early?'), message: t(total - done === 1 ? '{0} set still unchecked. Finish the workout now?' : '{0} sets still unchecked. Finish the workout now?', total - done), confirmText: t('Finish workout'), onConfirm: doFinishWorkout, onCancel: cancel }); return }
   doFinishWorkout()
 }
 export function doFinishWorkout(options = {}) {

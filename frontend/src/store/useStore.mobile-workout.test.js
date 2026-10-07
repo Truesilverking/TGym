@@ -32,6 +32,18 @@ it('boots from the native mirror after WebView storage loss and immediately pers
   expect(native.save).toHaveBeenCalledOnce()
   expect(native.save.mock.calls[0][0].active.timerPausedAt).toBe(432 * minute)
 })
+
+it('offline native reopen pauses an unfinished session at the persisted thirty-minute boundary', async () => {
+  const active={id:'unfinished',start:360*minute,lastUserInteractionAt:400*minute,entries:[{id:'ex',sets:[{done:true,r:8,doneAt:400*minute},{done:false,r:8}]}]}
+  native.load.mockResolvedValue({...structuredClone(DEF),_ts:400*minute,active})
+  native.save.mockResolvedValue(true)
+  await useStore.getState().boot()
+  const saved=JSON.parse(localStorage.getItem('gym_state_v1'))
+  expect(saved.active).toMatchObject({id:active.id,timerPausedAt:430*minute,pauseReason:'inactivity',accumulatedActiveDuration:70*minute})
+  expect(saved.active.entries).toEqual(active.entries)
+  expect(saved.workouts).toEqual([])
+  expect(native.save.mock.calls.at(-1)[0].active.timerPausedAt).toBe(430*minute)
+})
 it('keeps planned and extra origins through native flush and WebView storage recovery',async()=>{
  native.save.mockResolvedValue(true)
  const planned={id:'planned',routineId:'r',sessionOrigin:{type:'planned',routineId:'r'},entries:[{id:'added',sets:[{done:true,r:8}]}]}

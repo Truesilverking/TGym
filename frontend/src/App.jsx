@@ -38,8 +38,7 @@ import OfflineStatus from './components/OfflineStatus.jsx'
 import AppTour from './components/AppTour.jsx'
 import { backupToGoogleDrive, cloudBackupDue } from './lib/cloud-sync.js'
 import { MOBILE, syncReminder } from './lib/mobile.js'
-import { workoutResolution } from './lib/workout-lifecycle.js'
-import { doFinishWorkout } from './sheets.jsx'
+import { workoutInactivitySheet } from './sheets.jsx'
 import { syncWorkoutNotification } from './lib/workout-notification.js'
 import { installViewportLayout } from './lib/viewport.js'
 import { syncSystemAppearance } from './lib/system-appearance.js'
@@ -125,25 +124,36 @@ function Shell() {
   },[ready,navigate])
   useEffect(()=>{
     if (!ready) return
-    const check=(recover=false)=>{
-      const resolution=workoutResolution(useStore.getState().S.active,Date.now(),recover)
-      if(resolution)doFinishWorkout(resolution)
+    const check=()=>{
+      const active=useStore.getState().reconcileActiveClock()
+      if(active?.pauseReason==='inactivity')workoutInactivitySheet()
     }
-    const foreground=()=>{if(document.visibilityState==='visible')check(true)}
+    const foreground=()=>{if(document.visibilityState==='visible')check()}
     const interact=event=>{
-      if(event.target?.closest?.('.app-tour, .tour-replay'))return
       if(!event.isTrusted || document.visibilityState==='hidden' || !event.target?.closest?.('#app, [role="dialog"], #tabbar'))return
       const active=useStore.getState().S.active
       if(!active)return
-      if(workoutResolution(active,Date.now(),false)){event.preventDefault();event.stopImmediatePropagation();check();return}
-      useStore.getState().update(s=>{if(s.active)s.active.lastUserInteractionAt=Date.now()},false,false)
+      const reconciled=useStore.getState().reconcileActiveClock()
+      if(active.timerPausedAt == null && reconciled?.pauseReason==='inactivity'){event.preventDefault();event.stopImmediatePropagation();workoutInactivitySheet();return}
+      useStore.getState().recordInteraction()
     }
-    check(true)
-    const events=['pointerdown','keydown']
+    const beforeInput=event=>{
+      if(!event.isTrusted || document.visibilityState==='hidden' || !event.target?.closest?.('#app, [role="dialog"], #tabbar'))return
+      const active=useStore.getState().S.active
+      if(!active)return
+      const reconciled=useStore.getState().reconcileActiveClock()
+      if(active.timerPausedAt == null && reconciled?.pauseReason==='inactivity'){event.preventDefault();event.stopImmediatePropagation();workoutInactivitySheet()}
+    }
+    check()
+    const events=['pointerdown','keydown','wheel']
     events.forEach(type=>document.addEventListener(type,interact,true))
-    const timer=setInterval(()=>check(false),1000)
+    // Capture only repairs an overdue clock. Record input in bubble, after React's
+    // controlled onChange has read the DOM value; an earlier store write would reset it.
+    document.addEventListener('input',beforeInput,true)
+    document.addEventListener('input',interact)
+    const timer=setInterval(check,1000)
     document.addEventListener('visibilitychange',foreground)
-    return ()=>{clearInterval(timer);events.forEach(type=>document.removeEventListener(type,interact,true));document.removeEventListener('visibilitychange',foreground)}
+    return ()=>{clearInterval(timer);events.forEach(type=>document.removeEventListener(type,interact,true));document.removeEventListener('input',beforeInput,true);document.removeEventListener('input',interact);document.removeEventListener('visibilitychange',foreground)}
   },[ready])
   useEffect(() => {
     if (!MOBILE) return

@@ -2,6 +2,9 @@ import english from '../lib/english-fallback.js'
 // Spanish UI strings. Keys are the English source strings (see lib/i18n.js).
 export default {
   ...english,
+  "Workout paused after inactivity": "Entrenamiento pausado por inactividad",
+  "The timer paused 30 minutes after your last interaction. Your sets are preserved. Review the duration, then continue or finish.": "El cronómetro se pausó 30 minutos después de tu última interacción. Tus series se conservan. Revisa la duración y luego continúa o finaliza.",
+  "Timer paused. Reviewing this screen does not count as training. Finish or continue when ready.": "Cronómetro pausado. Revisar esta pantalla no cuenta como entrenamiento. Finaliza o continúa cuando quieras.",
   "Exercise names": "Nombres de ejercicios",
   "My aliases": "Mis apodos",
   "Original names": "Nombres originales",
@@ -1701,4 +1704,31 @@ export default {
 ,"Full backup":"Copia de seguridad completa"
 ,"Selected dashboards download as one PDF.":"Los dashboards seleccionados se descargan en un solo PDF."
 ,"Uses the current Stats filters.":"Usa los filtros actuales de Stats."
+,"Import / Export routines":"Importar / Exportar rutinas"
+,"Routines and exercise prescriptions only. Workout results are kept separately.":"Solo rutinas y objetivos de ejercicios. Los resultados registrados se conservan aparte."
+,"Prepare {0} selected routines as {1}.":"Preparar {0} rutinas seleccionadas en {1}."
+,"Prepare export":"Preparar exportación"
+,"Export progress":"Progreso de exportación"
+,"Could not save. Download again.":"No se pudo guardar. Vuelve a descargar."
+,"Import routines":"Importar rutinas"
+,"Use Excel or JSON. Download the template, choose exercises from its catalog lists, and review before saving.":"Usa Excel o JSON. Descarga la plantilla, elige ejercicios de sus listas de catálogo y revisa antes de guardar."
+,"Download Excel template":"Descargar plantilla Excel"
+,"Choose Excel / JSON":"Elegir Excel / JSON"
+,"Review import":"Revisar importación"
+,"{0} routines · {1} exercises":"{0} rutinas · {1} ejercicios"
+,"Legacy plan v1 converted. No unknown exercise is removed automatically.":"Plan antiguo v1 convertido. Ningún ejercicio desconocido se elimina automáticamente."
+,"Fix these errors before importing:":"Corrige estos errores antes de importar:"
+,"Map unknown exercise: {0}":"Asociar ejercicio desconocido: {0}"
+,"Choose an exercise":"Elige un ejercicio"
+,"Conflict: {0}":"Conflicto: {0}"
+,"Choose how to import":"Elige cómo importar"
+,"Convert weights to my current unit":"Convertir pesos a mi unidad actual"
+,"Keep existing":"Conservar existente"
+,"Replace existing":"Reemplazar existente"
+,"Import a separate copy":"Importar una copia aparte"
+,"Apply imported schedule (preserves other routines)":"Aplicar programación importada (conserva otras rutinas)"
+,"Apply imported default rest, effort and Back-off preferences":"Aplicar preferencias importadas de descanso, esfuerzo y Back-off"
+,"Confirm saves the complete valid import at once. Existing history and active workouts are preserved.":"Confirmar guarda toda la importación válida de una vez. Se conservan el historial y la sesión activa."
+,"Confirm import":"Confirmar importación"
+,"Cancel import":"Cancelar importación"
 }

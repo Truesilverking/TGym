@@ -1,0 +1,12 @@
+.routine-exchange { display: flex; flex-direction: column; gap: 10px; }
+.routine-exchange label { display: flex; flex-direction: column; gap: 5px; }
+.routine-exchange .routine-exchange-choice { flex-direction: row; align-items: center; gap: 9px; overflow-wrap: anywhere; }
+.routine-exchange-choice input { flex: 0 0 auto; accent-color: var(--acc); }
+.routine-exchange-choice span { flex: 1; }
+.routine-exchange-choice small { color: var(--label-3); }
+.routine-exchange-routines { max-height: 230px; overflow-y: auto; display: grid; gap: 8px; }
+.routine-exchange-result, .routine-exchange-preview { border: 1px solid var(--sep); border-radius: 12px; padding: 12px; overflow-wrap: anywhere; }
+.routine-exchange-preview { display: grid; gap: 10px; }
+.routine-exchange-preview ul { padding-left: 20px; }
+.routine-exchange-preview select { width: 100%; min-width: 0; }
+.routine-exchange progress { width: 100%; accent-color: var(--acc); }

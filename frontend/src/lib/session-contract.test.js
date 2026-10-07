@@ -2,7 +2,7 @@ import {createBackup,readBackup} from './backup.js'
 import {migrateState} from './state-migrations.js'
 import {describe,it,expect} from 'vitest'
 import {inactivityState,inactivityDeadline,recordWorkoutActivity,pauseWorkoutClock,resumeWorkoutClock,sessionTiming,workoutElapsedMs} from './workout-time.js'
-import {reconcileWorkoutEdit,resumeAutoFinished,ensureWorkoutCompletionPaused,workoutResolution} from './workout-lifecycle.js'
+import {reconcileWorkoutEdit,resumeAutoFinished,ensureWorkoutCompletionPaused,reconcileWorkoutClock} from './workout-lifecycle.js'
 import {buildCompletedWorkout} from './finish-workout.js'
 import {toggleSetSide} from './workout-model.js'
 import {workoutVolume,sideReps,repStep} from './history.js'
@@ -14,13 +14,14 @@ describe('timestamp session contract across suspend/refresh/update',()=>{
   const a=active();a.entries[0].sets[0]=toggleSetSide(a.entries[0].sets[0],'left')
   const saved=serial(recordWorkoutActivity(a,18*60*min+10*min))
   expect(inactivityState(saved,18*60*min+39*min)).toBe('none')
-  expect(inactivityState(saved,23*60*min)).toBe('none')
-  const w=buildCompletedWorkout(saved,workoutResolution(saved,23*60*min,true))
-  expect(w.end).toBe((18*60+10)*min)
-  expect(w.sessionStatus).toBe('abandoned')
-  expect(w.accumulatedActiveDuration).toBe(10*min)
-  expect(w.entries[0].sets).toEqual(a.entries[0].sets)
-  expect(w.lastActivityAt).toBe((18*60+10)*min)
+  expect(inactivityState(saved,23*60*min)).toBe('pause')
+  const resumed=reconcileWorkoutClock(saved,23*60*min)
+  expect(resumed.timerPausedAt).toBe((18*60+40)*min)
+  expect(sessionTiming(resumed,23*60*min).sessionStatus).toBe('paused')
+  expect(workoutElapsedMs(resumed,23*60*min)).toBe(40*min)
+  expect(resumed.entries[0].sets).toEqual(a.entries[0].sets)
+  expect(resumed.end).toBeUndefined()
+  expect(resumed.lastActivityAt).toBe((18*60+10)*min)
  })
  it('freezes completion, continues accumulated time and never revives an ended record',()=>{
   const a=active(), end=a.start+10*min

@@ -151,3 +151,26 @@ it('cancels bulk routine deletion, then deletes and undoes without changing hist
   expect(useStore.getState().S.workouts).toEqual(before.workouts)
   noRenderFailures()
 })
+
+it('records trusted recovery input after controlled onChange and persists the reviewed duration', async () => {
+  const now=Date.now(),minute=60000
+  mirror.value={...structuredClone(DEF),lang:'en',hasCompletedOnboarding:true,hasCompletedAppTour:true,sound:false,
+    active:{id:'recovery-input',d:todayISO(),start:now-45*minute,name:'Recovery input',lastUserInteractionAt:now-40*minute,timerPausedAt:now-10*minute,pauseReason:'inactivity',entries:[{id:'0025',target:{mode:'reps'},sets:[{done:false,w:20,r:8}]}]}}
+  await mount()
+  const field=host.querySelector('.center input[type="number"]')
+  expect(field.value).toBe('35')
+  vi.setSystemTime(now+1000)
+  await act(()=>{
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(field,'40')
+    const input=new Event('input',{bubbles:true})
+    Object.defineProperty(input,'isTrusted',{value:true})
+    field.dispatchEvent(input)
+  })
+  expect(field.value).toBe('40')
+  expect(useStore.getState().S.active.lastUserInteractionAt).toBe(now+1000)
+  await click('Save duration')
+  expect(useStore.getState().S.active.accumulatedActiveDuration).toBe(40*minute)
+  expect(useStore.getState().S.active.pauseReason).toBe('inactivity')
+  expect(useStore.getState().S.workouts).toEqual([])
+  noRenderFailures()
+})

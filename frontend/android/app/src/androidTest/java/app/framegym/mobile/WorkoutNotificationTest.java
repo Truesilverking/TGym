@@ -60,7 +60,7 @@ public class WorkoutNotificationTest {
             });
 
             org.json.JSONObject paused=new org.json.JSONObject(context.getSharedPreferences("tgym_workout_live",0).getString("state","{}"));
-            paused.put("paused",true).put("elapsedMs",3723000).put("restEndsAt",0).put("autoFinishAt",0).put("workoutLabel","Workout paused").put("openLabel","Resume");
+            paused.put("paused",true).put("elapsedMs",3723000).put("restEndsAt",0).put("autoPauseAt",0).put("workoutLabel","Workout paused").put("openLabel","Resume");
             context.startService(new Intent(context,WorkoutNotificationService.class).putExtra("state",paused.toString()));
             SystemClock.sleep(500);
             StatusBarNotification frozen=notification();
@@ -90,11 +90,25 @@ public class WorkoutNotificationTest {
                 }
             });
             assertEquals(1,java.util.Arrays.stream(((NotificationManager)context.getSystemService(Context.NOTIFICATION_SERVICE)).getActiveNotifications()).filter(n->n.getId()==3100).count());
-            // The deadline clears the service even with no further WebView updates.
-            paused.put("autoFinishAt",System.currentTimeMillis()+300);
+            // The inactivity deadline freezes the same live notification even when the
+            // WebView sends no more updates. An old completion field has no effect.
+            long cutoff=System.currentTimeMillis()+300;
+            long effectiveDuration=paused.getLong("elapsedMs")+cutoff-paused.getLong("observedAt");
+            paused.put("autoPauseAt",cutoff).put("autoFinishAt",cutoff).put("pauseLabel","Workout paused after inactivity");
             context.startService(new Intent(context,WorkoutNotificationService.class).putExtra("state",paused.toString()));
             SystemClock.sleep(800);
-            assertNull("Inactivity removes the live notification",notification());
+            assertNotNull("Inactivity keeps the session notification visible",notification());
+            org.json.JSONObject idle=new org.json.JSONObject(context.getSharedPreferences("tgym_workout_live",0).getString("state","{}"));
+            assertTrue(idle.getBoolean("paused"));
+            assertEquals("inactivity",idle.getString("pauseReason"));
+            assertEquals(cutoff,idle.getLong("observedAt"));
+            assertEquals(effectiveDuration,idle.getLong("elapsedMs"));
+            StatusBarNotification inactive=notification();
+            InstrumentationRegistry.getInstrumentation().runOnMainSync(()->{
+                View view=inactive.getNotification().bigContentView.apply(context,new FrameLayout(context));
+                assertEquals(View.GONE,view.findViewById(R.id.workout_clock).getVisibility());
+                assertEquals(View.VISIBLE,view.findViewById(R.id.workout_duration).getVisibility());
+            });
 
         } finally { context.stopService(service); }
         SystemClock.sleep(1000);

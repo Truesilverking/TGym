@@ -23,7 +23,7 @@ import { glyphOf } from '../lib/glyphs.js'
 import { setSideState, toggleSetSide, isWarmupRow, isDropSet, isRestPauseSet, dropsOf, clustersOf, addDrop, addCluster, removeDropAt, removeClusterAt, setDropAt, setClusterAt, nextDropWeight, nextBurstReps } from '../lib/workout-model.js'
 import { restSeconds } from '../lib/rest-policy.js'
 import { withBackoffRepsMode, seedPlannedRir, applyTrainingPlan, clampReps, deloadStatus, deloadTargetFor, repBounds, rirAdvice, targetRirFor, targetRirRangeFor } from '../lib/training-plan.js'
-import { pauseWorkoutClock, resumeWorkoutClock, workoutElapsedMs } from '../lib/workout-time.js'
+import { pauseWorkoutClock, resumeWorkoutClock, workoutElapsedMs, lastWorkoutInteraction } from '../lib/workout-time.js'
 import { effectiveWorkoutComplete } from '../lib/workout-lifecycle.js'
 import { effortValue, rirRangeLabel } from '../lib/history.js'
 
@@ -63,7 +63,7 @@ function Elapsed({ workout }) {
   useEffect(() => {
     const tick = () => { const s = Math.floor(workoutElapsedMs(workout) / 1000); setT(Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0')) }
     tick(); const iv = setInterval(tick, 1000); return () => clearInterval(iv)
-  }, [workout.start, workout.timerPausedAt, workout.pausedDurationMs, workout.end])
+  }, [workout.start, workout.timerPausedAt, workout.pausedDurationMs, workout.end, workout.lastUserInteractionAt, workout.lastMeaningfulTrainingActivityAt, workout.lastMeaningfulWorkoutActivityAt])
   return <span>{t}</span>
 }
 
@@ -375,7 +375,7 @@ function ActiveWorkout() {
   useEffect(() => {
     if (restoredDecision.current) return
     restoredDecision.current = true
-    if (A.timerPausedAt != null && effectiveWorkoutComplete(A)) workoutCompleteSheet()
+    if (A.timerPausedAt != null && A.pauseReason !== 'manual' && A.pauseReason !== 'inactivity' && effectiveWorkoutComplete(A)) workoutCompleteSheet()
   }, [])
   const routine = S.routines.find(r => r.id === A.routineId) || {}
   const restFor = (idx, setIndex, phase = 'set') => restSeconds({ state: S, routine, target: A.entries[idx]?.target || {}, setIndex, warmup: isWarmupRow(A.entries[idx]?.sets?.[setIndex]), phase })
@@ -638,7 +638,8 @@ function ActiveWorkout() {
       api('/api/activity', { method: 'POST', body: JSON.stringify({
         active, name: A2.name, exIdx: ui + 1, exTotal: u.length,
         setsDone: setsDoneActive(A2), setsTotal: tot, startedAt: A2.start,
-        pausedDurationMs: A2.pausedDurationMs || 0, timerPausedAt: A2.timerPausedAt ?? null
+        pausedDurationMs: A2.pausedDurationMs || 0, timerPausedAt: A2.timerPausedAt ?? null,
+        lastUserInteractionAt: lastWorkoutInteraction(A2)
       }) }).catch(() => {})
     }
     ping(true)

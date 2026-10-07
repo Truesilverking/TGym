@@ -62,9 +62,17 @@ public class WorkoutNotificationService extends Service {
     }
     private void render(){
         handler.removeCallbacks(refresh);
-        long now=System.currentTimeMillis(), elapsed=Math.max(0,state.optLong("elapsedMs")+(state.optBoolean("paused")?0:now-state.optLong("observedAt",now)));
-        long autoAt=state.optLong("autoFinishAt",0);
-        if(autoAt>0 && now>=autoAt){stopForeground(true);stopSelf();return;}
+        long now=System.currentTimeMillis(), autoAt=state.optLong("autoPauseAt",0);
+        if(!state.optBoolean("paused") && autoAt>0 && now>=autoAt){
+            // Freeze at the original input deadline even after process suspension. The
+            // WebView reconciles that same timestamp on return; no history is created here.
+            try {
+                long frozen=Math.max(0,state.optLong("elapsedMs")+Math.max(0,autoAt-state.optLong("observedAt",autoAt)));
+                state.put("elapsedMs",frozen).put("observedAt",autoAt).put("paused",true).put("pauseReason","inactivity");
+                getSharedPreferences(CHANNEL,0).edit().putString("state",state.toString()).apply();
+            } catch(Exception error){android.util.Log.e("TGymWorkoutNotification","Unable to persist timer pause",error);}
+        }
+        long elapsed=Math.max(0,state.optLong("elapsedMs")+(state.optBoolean("paused")?0:Math.max(0,now-state.optLong("observedAt",now))));
         NotificationManager manager=(NotificationManager)getSystemService(NOTIFICATION_SERVICE);
         if(Build.VERSION.SDK_INT>=26){
             NotificationChannel channel=new NotificationChannel(CHANNEL,"TGym · Workout",NotificationManager.IMPORTANCE_LOW);
@@ -77,7 +85,7 @@ public class WorkoutNotificationService extends Service {
         RemoteViews content=timerView(R.layout.workout_notification,elapsed,rest);
         Notification notice=new NotificationCompat.Builder(this,CHANNEL)
             .setSmallIcon(R.drawable.ic_workout_notification).setContentTitle(state.optString(rest>0?"restLabel":"workoutLabel","WORKOUT"))
-            .setContentText((rest>0?duration(rest)+" · ":"")+state.optString("workoutLabel","WORKOUT")+" "+duration(elapsed)+" · "+state.optString("setLabel",""))
+            .setContentText((rest>0?duration(rest)+" · ":"")+state.optString("workoutLabel","WORKOUT")+" "+duration(elapsed)+" · "+("inactivity".equals(state.optString("pauseReason"))?state.optString("pauseLabel","Workout paused"):state.optString("setLabel","")))
             .setCustomContentView(content)
             .setCustomBigContentView(timerView(R.layout.workout_notification_expanded,elapsed,rest))
             .setColor(notificationColor()).setStyle(new NotificationCompat.DecoratedCustomViewStyle())

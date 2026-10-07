@@ -8,7 +8,7 @@ describe('native workout notification clock payload',()=>{
   })
   it('freezes at completion until explicitly resumed and removes terminal sessions',()=>{
     const a={start:1000,timerPausedAt:6000}
-    expect(workoutNotificationState(a,null,600000)).toMatchObject({elapsedMs:5000,paused:true,autoFinishAt:0})
+    expect(workoutNotificationState(a,null,600000)).toMatchObject({elapsedMs:5000,paused:true,autoPauseAt:0})
     expect(workoutNotificationState(null,null)).toEqual({active:false})
     expect(workoutNotificationState({...a,end:6000},null)).toEqual({active:false})
   })
@@ -21,7 +21,7 @@ it('updates only the current phase set without resetting timers or exposing exer
  for(const key of ['name','exercise','context','progressLabel','dailyLabel','openLabel'])expect(running).not.toHaveProperty(key)
  a.entries[0].sets[2].done=true
  expect(workoutNotificationState(a,{endsAt:70000},now+1000)).toMatchObject({setNumber:3,elapsedMs:50000,restEndsAt:70000})
- expect(workoutNotificationState({...a,timerPausedAt:40000},null,now)).toMatchObject({paused:true,elapsedMs:39000,autoFinishAt:0})
+ expect(workoutNotificationState({...a,timerPausedAt:40000},null,now)).toMatchObject({paused:true,elapsedMs:39000,autoPauseAt:0})
  a.entries[0].sets[3].done=true
  expect(workoutNotificationState({...a,timerPausedAt:40000},null,now).setNumber).toBe(3)
  expect(workoutNotificationState({...a,end:40000},null,now)).toEqual({active:false})

@@ -15,7 +15,7 @@ public class WorkoutNotificationTestActivity extends Activity {
             JSONObject payload=new JSONObject().put("active",true).put("name","QA Workout")
                 .put("workoutLabel","Workout").put("restLabel","Rest").put("restDoneLabel","Done").put("accentColor","#BF5AF2").put("elapsedMs",3720000)
                 .put("setLabel","SET 2").put("setNumber",2)
-                .put("observedAt",now).put("paused",false).put("restEndsAt",now+5000).put("autoFinishAt",now+60000);
+                .put("observedAt",now).put("paused",false).put("restEndsAt",now+5000).put("autoPauseAt",now+60000);
             ContextCompat.startForegroundService(this,new Intent(this,WorkoutNotificationService.class).putExtra("state",payload.toString()));
         } catch(Exception ignored) {}
         getWindow().getDecorView().postDelayed(this::finish,250);

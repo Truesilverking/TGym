@@ -37,7 +37,7 @@ export function buildCompletedWorkout(active, { end = Date.now(), prs = [], reas
     sessionStartedAt: timing.sessionStartedAt, lastActivityAt: timing.lastActivityAt, accumulatedActiveDuration: timing.accumulatedActiveDuration,
     sessionStatus: timing.sessionStatus, endedAt: timing.endedAt, finishReason: reason,
     ...(timing.pausedDurationMs ? { pausedDurationMs: timing.pausedDurationMs } : {}),
-    ...Object.fromEntries(['routineCompletedAt','lastMeaningfulTrainingActivityAt','lastMeaningfulWorkoutActivityAt','lastUserInteractionAt'].filter(key=>active[key]!=null).map(key=>[key,active[key]])),
+    ...Object.fromEntries(['routineCompletedAt','lastMeaningfulTrainingActivityAt','lastMeaningfulWorkoutActivityAt','lastUserInteractionAt','pauseReason','durationCorrectedAt','originalTimerPausedAt','originalDurationMs'].filter(key=>timing[key]!=null).map(key=>[key,timing[key]])),
     ...(!['inactivity','abandoned','auto_completed'].includes(reason)?{manualFinishedAt:end}:{}),
     routineId: active.routineId,
     sessionOrigin: { ...sessionOrigin(active) },

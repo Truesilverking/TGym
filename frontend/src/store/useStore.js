@@ -13,8 +13,8 @@ import { MOBILE, nativeLoad, nativeSave, syncReminder, writeAutoBackup } from '.
 import { loadRemote, chooseLocal, forgetRemote, connect } from '../lib/remote.js'
 import { shouldRestoreNative } from '../lib/native-state.js'
 import { portableState, backupChecksum } from '../lib/backup.js'
-import { sessionTiming } from '../lib/workout-time.js'
-import { reconcileWorkoutEdit, ensureWorkoutCompletionPaused } from '../lib/workout-lifecycle.js'
+import { sessionTiming, recordWorkoutInteraction } from '../lib/workout-time.js'
+import { reconcileWorkoutEdit, reconcileWorkoutClock } from '../lib/workout-lifecycle.js'
 import { sessionOrigin } from '../lib/session-activity.js'
 import { rebaseEmptyApiProfile } from '../lib/api-bootstrap.js'
 
@@ -49,7 +49,7 @@ function loadState() {
     const raw = localStorage.getItem(KEY)
     if (raw) {
       const S = Object.assign(clone(DEF), migrateState(JSON.parse(raw), { onboarded: localStorage.getItem('framegym_onboarded_v1') === '1' }))
-      const active = sessionTiming(ensureWorkoutCompletionPaused(S.active))
+      const active = sessionTiming(reconcileWorkoutClock(S.active))
       if (active !== S.active) {
         S.active = active
         // Preserve freshness until boot has compared the native mirror.
@@ -86,7 +86,7 @@ export const useStore = create((set, get) => {
   const persist = (S, push = true) => {
     if (storageError) throw new Error(storageError)
     S = migrateState(S, { onboarded: !!get().S.hasCompletedOnboarding, toured: !!get().S.hasCompletedAppTour })
-    S.active = sessionTiming(ensureWorkoutCompletionPaused(S.active))
+    S.active = sessionTiming(reconcileWorkoutClock(S.active))
     const clockChanged = S.active?.timerPausedAt !== get().S.active?.timerPausedAt || S.active?.timerContinuedAt !== get().S.active?.timerContinuedAt
     if (S.cloudSync?.on && backupChecksum(portableState(S)) !== backupChecksum(portableState(get().S))) {
       S.cloudSync = { ...S.cloudSync, dirtyAt: Date.now() }
@@ -121,7 +121,7 @@ export const useStore = create((set, get) => {
   // kills the app.
   const flushOnBackground = () => {
     const S = get().S
-    const active = sessionTiming(ensureWorkoutCompletionPaused(S.active))
+    const active = sessionTiming(reconcileWorkoutClock(S.active))
     if (active !== S.active) persist({ ...S, active })
     if (MOBILE && saveTm) {
       clearTimeout(saveTm)
@@ -199,6 +199,18 @@ export const useStore = create((set, get) => {
       if (S.backoffRepsMode !== get().S.backoffRepsMode) S.active = refreshActiveBackoffReps(S.active, S)
       if (S.unit === get().S.unit) S.active = reconcileWorkoutEdit(get().S.active, S.active, Date.now(), userActivity)
       persist(S, push)
+    },
+    reconcileActiveClock(now = Date.now()) {
+      const before = get().S.active
+      const active = reconcileWorkoutClock(before, now)
+      if (active !== before) get().update(s => { if (s.active?.id === before?.id) s.active = active }, true, false)
+      return get().S.active
+    },
+    recordInteraction(now = Date.now()) {
+      // Reconcile before extending the deadline: returning after suspension cannot
+      // silently erase the interval in which this session should have been paused.
+      get().reconcileActiveClock(now)
+      if (get().S.active) get().update(s => { s.active = recordWorkoutInteraction(s.active, now) }, true, false)
     },
     replaceState(S, push = false) { persist(clone(S), push) },
 

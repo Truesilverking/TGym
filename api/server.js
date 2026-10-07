@@ -806,6 +806,7 @@ const routes = {
         startedAt: +body.startedAt || Date.now(),
         pausedDurationMs: Number.isFinite(body.pausedDurationMs) ? Math.max(0, body.pausedDurationMs) : 0,
         timerPausedAt: Number.isFinite(body.timerPausedAt) ? body.timerPausedAt : null,
+        lastUserInteractionAt: Number.isFinite(body.lastUserInteractionAt) && body.lastUserInteractionAt >= (+body.startedAt || 0) && body.lastUserInteractionAt <= Date.now() ? body.lastUserInteractionAt : null,
         updatedAt: Date.now()
       });
     } else presence.delete(user.id);

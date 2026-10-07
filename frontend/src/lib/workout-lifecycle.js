@@ -1,6 +1,6 @@
 import { isWarmupRow } from './workout-model.js'
 import { uid, isoOf } from './format.js'
-import { pauseWorkoutClock, resumeWorkoutClock, sessionTiming, recordWorkoutActivity, inactivityState, lastTrainingBoundary, STALE_SESSION_MS } from './workout-time.js'
+import { pauseWorkoutClock, resumeWorkoutClock, sessionTiming, recordWorkoutActivity, inactivityState, inactivityDeadline } from './workout-time.js'
 
 export function effectiveWorkoutComplete(active) {
   const rows = (active?.entries || []).flatMap(e=>e.sets || []).filter(s=>!isWarmupRow(s))
@@ -9,7 +9,7 @@ export function effectiveWorkoutComplete(active) {
 // Repair at restore/background boundaries using recorded activity, never time away.
 // Explicit Continue remains running until another completion or stale recovery.
 export function ensureWorkoutCompletionPaused(active, now=Date.now()) {
-  if (!active || active.end != null || active.pauseReason === 'manual' || active.timerContinuedAt != null || !effectiveWorkoutComplete(active)) return active
+  if (!active || active.end != null || ['manual','inactivity'].includes(active.pauseReason) || active.timerContinuedAt != null || !effectiveWorkoutComplete(active)) return active
   if (active.routineCompletedAt != null && active.timerPausedAt != null) return active
   const timestamps = (active.entries || []).flatMap(e=>e.sets || []).filter(s=>!isWarmupRow(s) && s.done).map(s=>s.doneAt)
   const start = Number(active.start) || 0
@@ -23,10 +23,10 @@ export function reconcileWorkoutEdit(before, after, now=Date.now(), userActivity
   if (!after || after.end != null) return after
   if (!before || before.id !== after.id) return recordWorkoutActivity(after,after.lastMeaningfulTrainingActivityAt ?? after.lastMeaningfulWorkoutActivityAt ?? now)
   if (activitySignature(before) === activitySignature(after)) return after
-  let next = userActivity ? recordWorkoutActivity(after,now) : {...after}
-  if(userActivity && before.pauseReason==='manual')next=resumeWorkoutClock(next,now)
+  const overdue = !userActivity && workoutResolution(before,now)
+  let next = userActivity ? recordWorkoutActivity(after,now) : overdue ? pauseWorkoutClock(after,overdue.pauseAt,'inactivity') : {...after}
   const addedExercise=(after.entries || []).length>(before.entries || []).length
-  if (effectiveWorkoutComplete(before) && (!effectiveWorkoutComplete(after) || addedExercise)) next=resumeWorkoutClock(next,now)
+  if (userActivity && before.pauseReason !== 'manual' && before.pauseReason !== 'inactivity' && effectiveWorkoutComplete(before) && (!effectiveWorkoutComplete(after) || addedExercise)) next=resumeWorkoutClock(next,now)
   if (!effectiveWorkoutComplete(before) && effectiveWorkoutComplete(after)) next=markRoutineComplete(next,userActivity ? now : Math.min(now,Math.max(Number(next.start)||0,...next.entries.flatMap(e=>e.sets||[]).map(s=>Number(s.doneAt)||0))))
   return next
 }
@@ -48,17 +48,20 @@ export function resumeAutoFinished(state, id, now=Date.now()) {
 
 export function markRoutineComplete(active, at=Date.now()) {
   if (!active || active.end != null) return active
+  if (active.timerPausedAt != null && ['manual','inactivity'].includes(active.pauseReason)) return active
   const next=pauseWorkoutClock(active,at)
   return {...next,routineCompletedAt:next.routineCompletedAt ?? next.timerPausedAt ?? at,pauseReason:'completion'}
 }
-// Stale recovery is evaluated at restoration/foreground/new-session boundaries,
-// never by a running idle interval. Four hours beyond real work/rest is conservative.
-export function workoutResolution(active, now=Date.now(), recoverStale=false) {
+// The same deadline applies in foreground, lock, suspend, reopen and offline restore.
+// Resolution pauses the current session. It never creates a completed history row.
+export function workoutResolution(active, now=Date.now()) {
   if (!active || active.end != null) return null
   const repaired=ensureWorkoutCompletionPaused(active,now)
-  if(inactivityState(repaired,now)==='finish')return {reason:'auto_completed',end:repaired.routineCompletedAt}
-  if(!recoverStale || repaired.timerPausedAt!=null || repaired.routineCompletedAt!=null) return null
-  if(Number(repaired.workEndsAt)>now || Number(repaired.restTimer?.endsAt)>now)return null
-  const end=lastTrainingBoundary(repaired,now)
-  return now-end>=STALE_SESSION_MS ? {reason:'abandoned',end} : null
+  return inactivityState(repaired,now)==='pause' ? {reason:'inactivity',pauseAt:inactivityDeadline(repaired,now)} : null
+}
+export function reconcileWorkoutClock(active, now=Date.now()) {
+  if (active?.end == null && active?.timerPausedAt != null && !active.pauseReason) active={...active,pauseReason:active.routineCompletedAt != null || effectiveWorkoutComplete(active) ? 'completion' : 'manual'}
+  const repaired=ensureWorkoutCompletionPaused(active,now)
+  const resolution=workoutResolution(repaired,now)
+  return resolution ? pauseWorkoutClock(repaired,resolution.pauseAt,resolution.reason) : repaired
 }

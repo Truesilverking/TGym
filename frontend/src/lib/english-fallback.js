@@ -1,5 +1,8 @@
 // Explicit source-language fallback. Entries in language packs override these values.
 export default {
+  "Workout paused after inactivity": "Workout paused after inactivity",
+  "The timer paused 30 minutes after your last interaction. Your sets are preserved. Review the duration, then continue or finish.": "The timer paused 30 minutes after your last interaction. Your sets are preserved. Review the duration, then continue or finish.",
+  "Timer paused. Reviewing this screen does not count as training. Finish or continue when ready.": "Timer paused. Reviewing this screen does not count as training. Finish or continue when ready.",
   "Exercise names": "Exercise names",
   "My aliases": "My aliases",
   "Original names": "Original names",

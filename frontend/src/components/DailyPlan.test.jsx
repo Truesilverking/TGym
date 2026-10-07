@@ -47,11 +47,11 @@ it('runs three sessions through Later, reopen and Continue with independent cloc
  vi.setSystemTime(new Date(date+'T11:04:00'));act(()=>useStore.getState().update(s=>{s.active.entries[0].sets.forEach(row=>row.done=true)}));act(()=>doFinishWorkout());reopen();expect(dailyPlan(state(),date)).toMatchObject({completed:3,total:3});expect(new Set(state().workouts.map(w=>w.id)).size).toBe(3);expect(state().workouts.map(w=>workoutElapsedMs(w))).toEqual([120000,180000,60000]);expect(button('Continue')).toBeUndefined()
 })
 
-it('keeps incomplete sessions open and resolves stale history before starting the next workout',()=>{
+it('keeps an inactive incomplete session paused without silently starting another workout',()=>{
  act(()=>beginWorkout('a'));vi.setSystemTime(new Date(date+'T10:05:00'));act(()=>useStore.getState().update(s=>{s.active.entries[0].sets.forEach(row=>row.done=true)}));act(()=>doFinishWorkout());vi.setSystemTime(new Date(date+'T11:00:00'));act(()=>beginWorkout('b'))
- const second=state().active;expect(inactivityState(second,Date.now()+30*60000)).toBe('none')
+ const second=state().active;expect(inactivityState(second,Date.now()+30*60000)).toBe('pause')
  vi.setSystemTime(new Date(date+'T11:05:00'));act(()=>useStore.getState().update(s=>{s.active.entries[0].sets[0].r=9}))
  vi.setSystemTime(new Date(date+'T16:00:00'));act(()=>beginWorkout('c'));const third=state().active.id
- act(()=>beginWorkout('c'));reopen();expect(state().active.id).toBe(third);expect(state().workouts).toHaveLength(2)
- expect(state().workouts[1]).toMatchObject({routineId:'b',finishReason:'abandoned'});expect(workoutElapsedMs(state().workouts[1])).toBe(300000);expect(state().active.routineId).toBe('c')
+ act(()=>beginWorkout('c'));reopen();expect(state().active.id).toBe(third);expect(state().active.id).toBe(second.id);expect(state().workouts).toHaveLength(1)
+ expect(state().active).toMatchObject({routineId:'b',pauseReason:'inactivity'});expect(workoutElapsedMs(state().active)).toBe(35*60000)
 })
