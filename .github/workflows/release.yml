@@ -22,10 +22,12 @@ jobs:
         id: notification_policy
         shell: bash
         run: |
-          test "$(git rev-parse "${GITHUB_REF}^{commit}")" = "$GITHUB_SHA"
+          TGYM_POLICY_REF=refs/tgym/release-policy
+          git fetch --no-tags --no-recurse-submodules origin "+${GITHUB_REF}:${TGYM_POLICY_REF}"
+          test "$(git rev-parse "${TGYM_POLICY_REF}^{commit}")" = "$GITHUB_SHA"
           TGYM_NOTIFY=true
-          if [ "$(git cat-file -t "$GITHUB_REF")" = tag ]; then
-            TGYM_TAG_MESSAGE="$(git cat-file tag "$GITHUB_REF" | sed '1,/^$/d')"
+          if [ "$(git cat-file -t "$TGYM_POLICY_REF")" = tag ]; then
+            TGYM_TAG_MESSAGE="$(git cat-file tag "$TGYM_POLICY_REF" | sed '1,/^$/d')"
             if printf '%s\n' "$TGYM_TAG_MESSAGE" | sed 's/\r$//' | grep -Fx '[skip-update-notifications]' > /dev/null; then
               TGYM_NOTIFY=false
             fi

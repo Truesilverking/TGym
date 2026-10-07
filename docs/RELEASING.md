@@ -1,7 +1,7 @@
 # TGym releases and verification
 
 The production version comes from frontend/package.json and must match Android versionName.
-Android versionCode must increase. Current published release: 1.15.56 / 92. See RELEASE-AUDIT-1.15.56.md for publication and notification evidence.
+Android versionCode must increase. Current published release: 1.15.57 / 93. See RELEASE-AUDIT-1.15.57.md for publication and notification evidence.
 Run frontend/scripts/check-version.mjs before tagging.
 
 ## Single publication
@@ -20,7 +20,9 @@ inspect the exact failing step before retrying to avoid duplicate notifications.
 For a publication without update notifications, use an annotated version tag whose message
 contains the exact line `[skip-update-notifications]`. Only the final FCM send is skipped;
 credential validation, artifact checks and publication still run. Normal annotated tags and
-lightweight tags retain notification delivery, even when a commit message contains the marker.
+lightweight tags retain the existing FCM send, even when a commit message contains the marker.
+The policy reads the original remote tag in an isolated ref, since Actions checkout can replace
+its local tag with the commit; a missing tag or a different source commit stops publication.
 
 Required secrets: ANDROID_KEYSTORE_BASE64, ANDROID_STORE_PASSWORD, ANDROID_KEY_ALIAS,
 ANDROID_KEY_PASSWORD, GOOGLE_SERVICES_JSON_BASE64, FIREBASE_SERVICE_ACCOUNT,

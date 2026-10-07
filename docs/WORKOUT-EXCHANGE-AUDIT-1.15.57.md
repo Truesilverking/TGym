@@ -2,6 +2,8 @@
 
 Requested on 2026-10-07: accurate Finish/Continue and 30-minute inactivity clocks, plus routine PDF/XLSX/JSON exchange and an editable catalogue-backed Excel template. This candidate is prepared for installation in the owner's TGym and isolated TGym QA packages. It does not publish a release, Pages update or update notification.
 
+Subsequent publication was explicitly requested after physical-phone acceptance. See [RELEASE-AUDIT-1.15.57.md](RELEASE-AUDIT-1.15.57.md) for the immutable release source, actual public artifact/PWA verification and the notification-control incident. The candidate results below describe the earlier installation phase.
+
 ## Data flow
 
 The persisted workout timestamps and accumulated pause duration remain authoritative through `workout-time.js`. Completion freezes immediately; explicit Continue excludes review time and permits additional session exercises without editing the original routine. Trusted app input extends the inactivity deadline, while timers and background work do not. Suspension/reload/offline reconciliation pauses the same active session at the original input+30-minute timestamp. Manual/completion/inactivity reasons remain distinct; inactivity never saves history or resumes automatically. Audited duration correction reaches completed history, statistics, routine averages and Progress through the same helper. Native notifications freeze at the matching deadline. Existing historical sessions and storage/package identifiers retain compatibility.
