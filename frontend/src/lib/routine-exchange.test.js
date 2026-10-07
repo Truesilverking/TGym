@@ -87,6 +87,14 @@ describe('routine exchange identities, validation and atomic import', () => {
     const data = createRoutineExchange(fixture()); data.catalog.push(null); data.routines.push(null)
     expect(validateRoutineExchange(data, empty()).errors).toEqual(expect.arrayContaining([expect.objectContaining({ sheet: 'Catálogo' }), expect.objectContaining({ sheet: 'Rutinas' })]))
   })
+  it('preserves inactive legacy minimum fields while validating the effective fixed/automatic targets', () => {
+    const S = fixture(), e = S.routines[0].ex[0]
+    e.repRange = false; e.repsMin = 99; e.topRepsMin = 99; e.backoffRepsMin = 99; e.backoffRepsMax = 1
+    const data = createRoutineExchange(S), checked = validateRoutineExchange(data, empty())
+    expect(checked.errors).toEqual([]); expect(checked.data.routines[1].ex[0]).toEqual(e)
+    const rows = routineExchangeRows(data).Series.filter(row => row[0] === 'r1:1')
+    expect(rows.find(row => row[2] === 'Top').slice(3, 5)).toEqual([8, 8]); expect(rows.find(row => row[2] === 'Back-off').slice(3, 5)).toEqual([10, 10])
+  })
   it('converts weight units explicitly and leaves timed increments in seconds', () => {
     const data = createRoutineExchange(fixture()), S = { ...empty(), unit: 'lb' }, checked = validateRoutineExchange(data, S)
     expect(() => applyRoutineExchange(S, checked)).toThrow()
