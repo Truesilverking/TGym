@@ -2,6 +2,14 @@ import english from '../lib/english-fallback.js'
 // Simplified Chinese UI strings. Keys are the English source strings (see lib/i18n.js).
 export default {
   ...english,
+  "Training days in this streak": "本次连续记录的训练天数",
+  "Complete today's workout to keep your streak.": "完成今天的训练以保持连续记录。",
+  "No workout scheduled today — streak preserved.": "今天没有计划训练：连续记录保持不变。",
+  "Training paused — streak preserved.": "训练已暂停：连续记录保持不变。",
+  "Streak interrupted. Complete a workout to start a new one.": "连续记录已中断。完成一次训练以开始新记录。",
+  "Complete a workout to start a streak.": "完成一次训练以开始连续记录。",
+  "Completed training days, counted once per day. Scheduled rest days preserve the streak.": "完成训练的天数按日期每天最多计数一次。计划休息日保持连续记录。",
+  "Week and month equivalents use completed training days: 7 per week and 30 per month.": "周和月的等值按完成训练的天数计算：每周7天，每月30天。",
   "{0} weeks of consistency!": "坚持了 {0} 周！",
   "You are building a lasting habit. Keep it going!": "你正在养成持久的习惯。继续加油！",
   "Next milestone: {0} weeks": "下一个目标：{0} 周",

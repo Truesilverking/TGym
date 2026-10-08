@@ -117,7 +117,7 @@ it('dismisses the milestone independently of the ordinary saved-workout summary'
   act(() => host.querySelector('[aria-label="Close celebration"]').click())
   expect(celebration()).toBeNull(); expect(number()).toBe('14')
   expect(host.textContent).toContain('Workout complete!'); expect(host.textContent).toContain('Duration')
-  expect(host.querySelector('.workout-summary-streak.active .streak-flame-fill').getAttribute('y')).toBe('0')
+  expect(host.querySelector('.workout-summary-streak.active .streak-flame-fill').getAttribute('opacity')).toBe('1')
   expect(useUI.getState().sheets.at(-1).id).toBe(sheetId)
   expect(state()).toEqual(saved); expect(persisted().streakMilestoneLedger).toEqual(saved.streakMilestoneLedger)
 })
@@ -160,7 +160,7 @@ it.each(['delete-history', 'remove-confirmed-activity'])('invalidates an open cl
   const current = kind === 'delete-history' ? 0 : 13
   expect(number()).toBe(String(current)); expect(celebration()).toBeNull()
   expect(host.querySelector('.workout-summary-streak .streak-flame').classList.contains(current ? 'active' : 'inactive')).toBe(true)
-  expect(host.querySelector('.workout-summary-streak .streak-flame-fill').getAttribute('height')).toBe(current ? '24' : '0')
+  expect(host.querySelector('.workout-summary-streak .streak-flame-fill').getAttribute('opacity')).toBe(current ? '1' : '0')
   expect(ledger()).toEqual(claimedLedger)
   act(() => useStore.getState().update(s => { s.workouts = originalHistory }))
   expect(number()).toBe('14'); expect(celebration()).toBeNull()

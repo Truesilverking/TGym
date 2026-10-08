@@ -24,6 +24,7 @@ import Media, { Thumb } from './components/Media.jsx'
 import Stepper from './components/Stepper.jsx'
 import Icon from './components/Icon.jsx'
 import StreakFlame from './components/StreakFlame.jsx'
+import StreakStatus from './components/StreakStatus.jsx'
 import WorkoutSummaryStreak from './components/WorkoutSummaryStreak.jsx'
 import StreakMilestoneCelebration from './components/StreakMilestoneCelebration.jsx'
 import { evaluateStreakMilestones, isCurrentStreakMilestone } from './lib/streak-milestones.js'
@@ -1193,15 +1194,18 @@ export const dayAssignSheet = day => ui().openSheet(close => <DayAssign day={day
 
 function StreakDetail() {
   const st = useStore(s => s.S)
-  const streak = trainingStreak(st)
-  const next = nextScheduledWorkout(st)
+  const now = useLocalNow()
+  const streak = trainingStreak(st, now)
+  const next = nextScheduledWorkout(st, now)
   const recent = streak.rows.slice(-20).reverse()
   return <>
-    <div className={'streak-hero compact streak-main streak-' + streakTier(streak.current)}>
+    <div className={'streak-hero compact streak-main streak-' + streakTier(streak.current)} data-streak-state={streak.state}>
       <StreakFlame value={streak.current} />
       <div className="streak-number">{streak.current}</div>
-      <div className="streak-main-label">{t('Training Days in a Row')}</div>
+      <div className="streak-main-label">{t('Training days in this streak')}</div>
     </div>
+    <StreakStatus streak={streak} className="small muted" />
+    <p className="small muted">{t('Completed training days, counted once per day. Scheduled rest days preserve the streak.')}</p>
     <div className="tiles" style={{ margin: '14px 0' }}>
       <div className="tile"><div className="l">{t('Best streak')}</div><div className="v">{streak.best}</div></div>
       <div className="tile"><div className="l">{t('Next milestone')}</div><div className="v">{streak.nextMilestone}</div></div>
@@ -1786,7 +1790,7 @@ function FinishSummary({ w, prs, e1prs = [], presentation, close }) {
   const next = w.d === todayISO() ? nextDailyRoutine(st,w.d) : null
   return <div className="workout-complete-summary" style={{ textAlign: 'center', padding: '8px 0' }}>
     <StreakMilestoneCelebration claim={!dismissed && validClaim ? claim : null} onDismiss={() => setDismissed(true)} />
-    <WorkoutSummaryStreak value={streak.current} />
+    <WorkoutSummaryStreak streak={streak} />
     <div style={{ fontSize: 44, display: 'flex', justifyContent: 'center', color: 'var(--acc)' }}><Icon name="trophy" /></div>
     <h3 style={{ margin: '8px 0' }}>{t(['abandoned','auto_completed'].includes(w.finishReason) ? 'Session recovered' : 'Workout complete!')}</h3>
     {['abandoned','auto_completed'].includes(w.finishReason) && <><p className="small muted">{t('Saved using recorded training time. Review or correct the duration in History.')}</p><Button onClick={()=>{close();workoutDetailSheet(w)}}>{t('Edit duration')}</Button></>}

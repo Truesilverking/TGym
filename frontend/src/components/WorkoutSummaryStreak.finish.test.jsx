@@ -47,7 +47,7 @@ it('shows the first active-day streak only after successful save, without requir
   act(() => doFinishWorkout())
   expect(state().active).toBeNull(); expect(state().workouts).toHaveLength(1)
   expect(JSON.parse(localStorage.getItem('gym_state_v1')).workouts).toHaveLength(1)
-  expect(number()).toBe('1'); expect(host.querySelector('.streak-flame-fill').getAttribute('y')).toBe('0')
+  expect(number()).toBe('1'); expect(host.querySelector('.streak-flame-fill').getAttribute('opacity')).toBe('1')
   expect(host.querySelector('.streak-celebration')).toBeNull()
 })
 it('uses the persisted post-save total for an ordinary four-day streak', () => {

@@ -36,6 +36,9 @@ import { MOBILE } from '../lib/mobile.js'
 
 import { bmiBand, bmiFor, MEASURE_FIELDS, measurementValue } from '../lib/stats-insights.js'
 import { trainingStreak } from '../lib/training-plan.js'
+import { useLocalNow } from '../lib/use-local-now.js'
+import StreakFlame from '../components/StreakFlame.jsx'
+import StreakStatus from '../components/StreakStatus.jsx'
 import { effortLabel } from '../lib/history.js'
 
 function StatsExerciseLabel({ id, entry, routineId, suffix }) {
@@ -404,7 +407,8 @@ export default function Stats() {
   // Preference updates clone the profile; retain comparison dates while records stay the same.
   const measurementDataKey=useMemo(()=>JSON.stringify(measurementRows),[measurementRows])
   useEffect(()=>setBodySelection({}),[measurementDataKey])
-  const now = Date.now()
+  const localNow = useLocalNow()
+  const now = localNow.getTime()
   const kind = displayScale(S)
   const hd = scaleName(kind)
 
@@ -414,7 +418,7 @@ export default function Stats() {
   const bwDelta30 = bw30.length > 1 ? bw30[bw30.length - 1].w - bw30[0].w : null
   const workouts = S.workouts
   const monthW = workouts.filter(w => String(w.d || '').slice(0, 7) === todayISO().slice(0, 7)).length
-  const streak = trainingStreak(S)
+  const streak = trainingStreak(rawState, localNow)
   const measures = [...(S.measurements || [])].sort((a, b) => String(a.d||'').localeCompare(String(b.d||'')))
   const latestWeight = lastBW(S)
   const bmi = bmiFor(latestWeight?.w, S.unit, S.heightCm, S.measurementUnit)
@@ -534,7 +538,7 @@ export default function Stats() {
       <div className="tiles">
         <div className="tile"><div className="l"><Icon name="dumbbell" />{t('Recorded workouts')}</div><div className="v">{workouts.length}</div></div>
         <div className="tile"><div className="l"><Icon name="calendar" />{t('This month')}</div><div className="v">{monthW}</div></div>
-        <div className="tile"><div className="l"><Icon name="flame" />{t('Training streak')}</div><div className="v">{streak.current}</div></div>
+        <div className="tile stats-streak" data-streak-state={streak.state}><div className="l"><StreakFlame value={streak.current} />{t('Training days in this streak')}</div><div className="v">{streak.current}</div><StreakStatus streak={streak} className="small muted" /></div>
         <div className="tile"><div className="l"><Icon name="scale" />{t('Weight 30d')}</div><div className="v" style={{ fontSize: 22, color: bwDelta30 === null ? 'inherit' : bwDeltaColor(bwDelta30, (lastBW(S) || {}).w || 0) }}>{bwDelta30 === null ? '—' : (bwDelta30 > 0 ? '+' : '') + fmtNum(bwDelta30) + ' ' + S.unit}</div></div>
       </div>
     </div>

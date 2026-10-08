@@ -2,6 +2,14 @@ import english from '../lib/english-fallback.js'
 // Russian UI strings. Keys are the English source strings (see lib/i18n.js).
 export default {
   ...english,
+  "Training days in this streak": "Тренировочные дни в этой серии",
+  "Complete today's workout to keep your streak.": "Завершите сегодняшнюю тренировку, чтобы сохранить серию.",
+  "No workout scheduled today — streak preserved.": "Сегодня тренировка не запланирована: серия сохраняется.",
+  "Training paused — streak preserved.": "Тренировки приостановлены: серия сохраняется.",
+  "Streak interrupted. Complete a workout to start a new one.": "Серия прервана. Завершите тренировку, чтобы начать новую.",
+  "Complete a workout to start a streak.": "Завершите тренировку, чтобы начать серию.",
+  "Completed training days, counted once per day. Scheduled rest days preserve the streak.": "Завершённые тренировочные дни считаются один раз за дату. Запланированный отдых сохраняет серию.",
+  "Week and month equivalents use completed training days: 7 per week and 30 per month.": "Эквиваленты недель и месяцев основаны на завершённых тренировочных днях: 7 на неделю и 30 на месяц.",
   "{0} weeks of consistency!": "{0} нед. постоянства!",
   "You are building a lasting habit. Keep it going!": "Ты создаёшь устойчивую привычку. Продолжай в том же духе!",
   "Next milestone: {0} weeks": "Следующая цель: {0} нед.",

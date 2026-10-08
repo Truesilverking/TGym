@@ -19,7 +19,7 @@ export default function StreakMilestoneCelebration({ claim, onDismiss }) {
   }
 
   return <section className={`streak-milestone-celebration streak-${visual.tier}`} aria-labelledby={titleId}>
-    <StreakFlame value={value} filled />
+    <StreakFlame value={value} />
     <div className="streak-milestone-celebration-copy" role="status">
       <div id={titleId} className="streak-milestone-celebration-title" role="heading" aria-level="3">{t('{0} weeks of consistency!', claim.weeks)}</div>
       <p>{t('You are building a lasting habit. Keep it going!')}</p>

@@ -5,6 +5,14 @@ import english from '../lib/english-fallback.js'
 import pt from './pt.js'
 
 export const PT_BR_OVERRIDES = {
+  "Training days in this streak": "Dias de treino nesta sequência",
+  "Complete today's workout to keep your streak.": "Conclua o treino de hoje para manter sua sequência.",
+  "No workout scheduled today — streak preserved.": "Sem treino programado hoje: sua sequência é preservada.",
+  "Training paused — streak preserved.": "Treino em pausa: sua sequência é preservada.",
+  "Streak interrupted. Complete a workout to start a new one.": "Sequência interrompida. Conclua um treino para começar outra.",
+  "Complete a workout to start a streak.": "Conclua um treino para começar uma sequência.",
+  "Completed training days, counted once per day. Scheduled rest days preserve the streak.": "Dias de treino concluídos, contados uma vez por data. Os descansos programados preservam a sequência.",
+  "Week and month equivalents use completed training days: 7 per week and 30 per month.": "Equivalências baseadas em dias de treino concluídos: 7 por semana e 30 por mês.",
   "{0} weeks of consistency!": "{0} semanas de constância!",
   "You are building a lasting habit. Keep it going!": "Você está criando um hábito duradouro. Continue assim!",
   "Next milestone: {0} weeks": "Próximo marco: {0} semanas",

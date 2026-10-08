@@ -3,6 +3,7 @@ import { isTrainingPaused, pausedDaysBetween, calendarDateForTrainingDay, dayNum
 import { trackingStart, statisticsState, isUntracked } from './training-history.js'
 import { isoOf, todayISO } from './format.js'
 import { isWarmupRow, modeForSet } from './workout-model.js'
+import { STREAK_CONFIG, streakMilestonesThrough } from './streak-milestones.js'
 
 const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n))
 const atNoon = iso => new Date(iso + 'T12:00:00')
@@ -12,12 +13,13 @@ export function trainingStreak(S, now = new Date()) {
   const safe = { ...S, routines: S.routines || [], workouts: S.workouts || [], week: S.week || {}, dayPlan: S.dayPlan || {} }
   const endIso = isoOf(now)
   const startIso = trackingStart(safe, endIso)
+  const todayPlan = dailyPlan(safe, endIso)
   const rows = []
   for (let i = Math.max(0, dayNumber(endIso) - dayNumber(startIso)); i >= 0; i--) {
     const d = new Date(now); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() - i)
     const iso = isoOf(d)
     if (iso < startIso) continue
-    const plan = dailyPlan(safe,iso)
+    const plan = iso === endIso ? todayPlan : dailyPlan(safe,iso)
     const routineId = plan.items[0]?.id
     if (!routineId) {
       if (plan.active) rows.push({ iso, status: 'completed', planned: false })
@@ -30,11 +32,27 @@ export function trainingStreak(S, now = new Date()) {
   }
   const { current, best } = streakOfRows(rows)
   const completed = rows.filter(r => r.status === 'completed')
-  const milestones = [7, 14, 30, 50, 100, 180, 365]
+  const lastCompleted = completed.at(-1)?.iso || null
+  const lastMissed = rows.filter(r => r.status === 'missed').at(-1)?.iso || null
+  const active = current > 0
+  const todayStatus = endIso < startIso ? 'untracked' : todayPlan.active ? 'completed'
+    : isTrainingPaused(safe, endIso) ? 'paused' : todayPlan.total ? 'pending' : 'rest'
+  // Today's plan and the surviving run are separate: rest or pause cannot relight
+  // an interrupted run, while an unfinished today cannot break an existing one.
+  const state = active ? todayStatus === 'completed' ? 'active' : todayStatus
+    : lastCompleted && lastMissed > lastCompleted ? 'interrupted' : 'inactive'
+  const deadline = new Date(now)
+  deadline.setHours(24, 0, 0, 0)
+  const reachedMilestones = streakMilestonesThrough(current)
+  const nextMilestoneWeeks = reachedMilestones.length
+    ? reachedMilestones.at(-1).weeks * STREAK_CONFIG.milestoneMultiplier : STREAK_CONFIG.firstMilestoneWeeks
+  const nextMilestone = nextMilestoneWeeks * STREAK_CONFIG.daysPerWeek
   return {
-    current, best, rows, milestones,
-    lastCompleted: completed.at(-1)?.iso || null,
-    nextMilestone: milestones.find(n => n > current) || Math.ceil((current + 1) / 100) * 100,
+    current, best, rows, date: endIso, state, active, todayStatus,
+    pendingUntil: todayStatus === 'pending' ? +deadline : null,
+    lastCompleted, lastMissed,
+    milestones: [...reachedMilestones.map(m => m.days), nextMilestone],
+    nextMilestone, nextMilestoneWeeks,
   }
 }
 

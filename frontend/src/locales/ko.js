@@ -2,6 +2,14 @@ import english from '../lib/english-fallback.js'
 // Korean UI strings. Keys are the English source strings (see lib/i18n.js).
 export default {
   ...english,
+  "Training days in this streak": "현재 연속 기록의 운동일",
+  "Complete today's workout to keep your streak.": "오늘 운동을 완료해 연속 기록을 이어 가세요.",
+  "No workout scheduled today — streak preserved.": "오늘 예정된 운동이 없어요: 연속 기록이 유지돼요.",
+  "Training paused — streak preserved.": "운동 일시 중지: 연속 기록이 유지돼요.",
+  "Streak interrupted. Complete a workout to start a new one.": "연속 기록이 끊겼어요. 운동을 완료해 새 기록을 시작하세요.",
+  "Complete a workout to start a streak.": "운동을 완료해 연속 기록을 시작하세요.",
+  "Completed training days, counted once per day. Scheduled rest days preserve the streak.": "완료한 운동일을 날짜마다 한 번만 계산해요. 예정된 휴식일에는 연속 기록이 유지돼요.",
+  "Week and month equivalents use completed training days: 7 per week and 30 per month.": "완료한 운동일 기준으로 7일은 1주, 30일은 1개월에 해당해요.",
   "{0} weeks of consistency!": "{0}주간 꾸준히 해냈어요!",
   "You are building a lasting habit. Keep it going!": "오래가는 습관을 만들고 있어요. 계속해 보세요!",
   "Next milestone: {0} weeks": "다음 목표: {0}주",

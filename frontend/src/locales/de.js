@@ -2,6 +2,14 @@ import english from '../lib/english-fallback.js'
 // German UI strings. Keys are the English source strings (see lib/i18n.js).
 export default {
   ...english,
+  "Training days in this streak": "Trainingstage in dieser Serie",
+  "Complete today's workout to keep your streak.": "Schließe das heutige Training ab, um deine Serie zu halten.",
+  "No workout scheduled today — streak preserved.": "Heute kein Training geplant: Deine Serie bleibt erhalten.",
+  "Training paused — streak preserved.": "Training pausiert: Deine Serie bleibt erhalten.",
+  "Streak interrupted. Complete a workout to start a new one.": "Serie unterbrochen. Schließe ein Training ab, um neu zu beginnen.",
+  "Complete a workout to start a streak.": "Schließe ein Training ab, um eine Serie zu starten.",
+  "Completed training days, counted once per day. Scheduled rest days preserve the streak.": "Abgeschlossene Trainingstage, einmal pro Datum gezählt. Geplante Ruhetage erhalten die Serie.",
+  "Week and month equivalents use completed training days: 7 per week and 30 per month.": "Wochen- und Monatsäquivalente basieren auf abgeschlossenen Trainingstagen: 7 pro Woche und 30 pro Monat.",
   "{0} weeks of consistency!": "{0} Wochen Beständigkeit!",
   "You are building a lasting habit. Keep it going!": "Du baust eine dauerhafte Gewohnheit auf. Bleib dran!",
   "Next milestone: {0} weeks": "Nächster Meilenstein: {0} Wochen",

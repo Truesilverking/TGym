@@ -25,6 +25,7 @@ import { glyphOf } from '../lib/glyphs.js'
 import { bmiBand, bmiFor } from '../lib/stats-insights.js'
 import { deloadStatus, streakTier, trainingStreak } from '../lib/training-plan.js'
 import StreakFlame from '../components/StreakFlame.jsx'
+import { streakStatusText } from '../components/StreakStatus.jsx'
 
 // Home = what to do now + a quick glance. Deep charts & history live in Stats.
 export default function Home() {
@@ -68,7 +69,7 @@ export default function Home() {
 
   return <div className="narrow">
     <div className="hdr hdr-centered">
-      <button className={'header-streak streak-' + streakTier(streak.current)} onClick={streakDetailSheet} aria-label={t('Training streak')}><StreakFlame value={streak.current} /><b>{streak.current}</b></button>
+      <button className={'header-streak streak-' + streakTier(streak.current)} data-streak-state={streak.state} onClick={streakDetailSheet} aria-label={`${t('Training days in this streak')}: ${streak.current}. ${streakStatusText(streak)}`} title={streakStatusText(streak)}><StreakFlame value={streak.current} /><b>{streak.current}</b></button>
       <div className="hdr-center"><h1>{t('Training')}</h1><div className="sub">{today.toLocaleDateString(dateLocale(), { weekday: 'long', day: 'numeric', month: 'long' })}</div></div>
       <button className="iconbtn" onClick={() => nav('/settings')} aria-label={t('Settings')}><Icon name="gear" /></button>
     </div>

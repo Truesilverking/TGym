@@ -20,6 +20,23 @@ describe('trainingStreak', () => {
     expect(streakTier(14)).toBe('redgold')
     expect(streakTier(100)).toBe('legend')
   })
+  it.each([
+    [0, 14, 2], [7, 14, 2], [13, 14, 2], [14, 28, 4], [27, 28, 4],
+    [28, 56, 8], [30, 56, 8], [56, 112, 16], [224, 448, 64], [448, 896, 128],
+  ])('uses the shared week-equivalent milestone sequence after %i activity dates', (count, nextMilestone, nextMilestoneWeeks) => {
+    const date = new Date('2026-01-01T12:00:00')
+    const workouts = Array.from({ length: count }, (_, i) => {
+      const day = new Date(date)
+      day.setDate(day.getDate() + i)
+      const d = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`
+      return { id: 'synthetic-' + i, d, entries: activity }
+    })
+    date.setDate(date.getDate() + count)
+    const streak = trainingStreak({ ...base, week: {}, trainingStartDate: '2026-01-01', workouts }, date)
+    expect(streak).toMatchObject({ current: count, nextMilestone, nextMilestoneWeeks })
+    expect(streak.milestones.at(-1)).toBe(nextMilestone)
+    expect(streak.milestones.every(value => value % 14 === 0 && Number.isInteger(Math.log2(value / 14)))).toBe(true)
+  })
 })
 
 describe('deloadStatus', () => {

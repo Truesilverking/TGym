@@ -2,6 +2,14 @@ import english from '../lib/english-fallback.js'
 // Hindi UI strings. Keys are the English source strings (see lib/i18n.js).
 export default {
   ...english,
+  "Training days in this streak": "इस सिलसिले में प्रशिक्षण के दिन",
+  "Complete today's workout to keep your streak.": "अपना सिलसिला बनाए रखने के लिए आज का प्रशिक्षण पूरा करें।",
+  "No workout scheduled today — streak preserved.": "आज कोई प्रशिक्षण निर्धारित नहीं है: आपका सिलसिला बना रहता है।",
+  "Training paused — streak preserved.": "प्रशिक्षण विराम: आपका सिलसिला बना रहता है।",
+  "Streak interrupted. Complete a workout to start a new one.": "सिलसिला टूट गया। नया सिलसिला शुरू करने के लिए प्रशिक्षण पूरा करें।",
+  "Complete a workout to start a streak.": "सिलसिला शुरू करने के लिए प्रशिक्षण पूरा करें।",
+  "Completed training days, counted once per day. Scheduled rest days preserve the streak.": "पूरे किए गए प्रशिक्षण के दिन, हर तारीख पर एक बार गिने जाते हैं। निर्धारित आराम सिलसिला बनाए रखता है।",
+  "Week and month equivalents use completed training days: 7 per week and 30 per month.": "सप्ताह और महीने के समतुल्य पूरे किए गए प्रशिक्षण के दिनों पर आधारित हैं: प्रति सप्ताह 7 और प्रति माह 30।",
   "{0} weeks of consistency!": "{0} हफ़्तों की निरंतरता!",
   "You are building a lasting habit. Keep it going!": "आप एक टिकाऊ आदत बना रहे हैं। ऐसे ही आगे बढ़ें!",
   "Next milestone: {0} weeks": "अगला पड़ाव: {0} हफ़्ते",

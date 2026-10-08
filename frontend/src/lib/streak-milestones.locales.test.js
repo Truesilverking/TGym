@@ -2,7 +2,7 @@ import { expect, it } from 'vitest'
 import english from './english-fallback.js'
 
 const packs = import.meta.glob('../locales/*.js', { eager: true, import: 'default' })
-const keys = ['{0} weeks of consistency!', 'You are building a lasting habit. Keep it going!', 'Next milestone: {0} weeks', 'Close celebration', '1 week', '{0} weeks', '1 month', '{0} months', '1 day']
+const keys = ['{0} weeks of consistency!', 'You are building a lasting habit. Keep it going!', 'Next milestone: {0} weeks', 'Close celebration', '1 week', '{0} weeks', '1 month', '{0} months', '1 day', "Training days in this streak", "Complete today's workout to keep your streak.", "No workout scheduled today — streak preserved.", "Training paused — streak preserved.", "Streak interrupted. Complete a workout to start a new one.", "Complete a workout to start a streak.", "Completed training days, counted once per day. Scheduled rest days preserve the streak.", "Week and month equivalents use completed training days: 7 per week and 30 per month."]
 const placeholders = text => (text.match(/\{\d+\}/g) || []).sort()
 
 it.each(Object.entries(packs))('translates all recognition and period strings in %s', (name, pack) => {

@@ -1,6 +1,14 @@
 import english from '../lib/english-fallback.js'
 // Portuguese UI strings. Keys are the English source strings (see lib/i18n.js).
 export const PT_TRANSLATIONS = {
+  "Training days in this streak": "Dias de treino nesta sequência",
+  "Complete today's workout to keep your streak.": "Conclua o treino de hoje para manter a sua sequência.",
+  "No workout scheduled today — streak preserved.": "Sem treino programado hoje: a sua sequência mantém-se.",
+  "Training paused — streak preserved.": "Treino em pausa: a sua sequência mantém-se.",
+  "Streak interrupted. Complete a workout to start a new one.": "Sequência interrompida. Conclua um treino para iniciar outra.",
+  "Complete a workout to start a streak.": "Conclua um treino para iniciar uma sequência.",
+  "Completed training days, counted once per day. Scheduled rest days preserve the streak.": "Dias de treino concluídos, contados uma vez por data. Os descansos programados preservam a sequência.",
+  "Week and month equivalents use completed training days: 7 per week and 30 per month.": "Equivalências baseadas em dias de treino concluídos: 7 por semana e 30 por mês.",
   "{0} weeks of consistency!": "{0} semanas de constância!",
   "You are building a lasting habit. Keep it going!": "Estás a criar um hábito duradouro. Continua assim!",
   "Next milestone: {0} weeks": "Próximo marco: {0} semanas",

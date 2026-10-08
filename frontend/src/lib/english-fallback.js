@@ -1,5 +1,13 @@
 // Explicit source-language fallback. Entries in language packs override these values.
 export default {
+  "Training days in this streak": "Training days in this streak",
+  "Complete today's workout to keep your streak.": "Complete today's workout to keep your streak.",
+  "No workout scheduled today — streak preserved.": "No workout scheduled today — streak preserved.",
+  "Training paused — streak preserved.": "Training paused — streak preserved.",
+  "Streak interrupted. Complete a workout to start a new one.": "Streak interrupted. Complete a workout to start a new one.",
+  "Complete a workout to start a streak.": "Complete a workout to start a streak.",
+  "Completed training days, counted once per day. Scheduled rest days preserve the streak.": "Completed training days, counted once per day. Scheduled rest days preserve the streak.",
+  "Week and month equivalents use completed training days: 7 per week and 30 per month.": "Week and month equivalents use completed training days: 7 per week and 30 per month.",
   "{0} weeks of consistency!": "{0} weeks of consistency!",
   "You are building a lasting habit. Keep it going!": "You are building a lasting habit. Keep it going!",
   "Next milestone: {0} weeks": "Next milestone: {0} weeks",

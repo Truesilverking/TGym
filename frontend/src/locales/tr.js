@@ -2,6 +2,14 @@ import english from '../lib/english-fallback.js'
 // Turkish UI strings. Keys are the English source strings (see lib/i18n.js).
 export default {
   ...english,
+  "Training days in this streak": "Bu serideki antrenman günleri",
+  "Complete today's workout to keep your streak.": "Serini korumak için bugünkü antrenmanı tamamla.",
+  "No workout scheduled today — streak preserved.": "Bugün planlı antrenman yok: serin korunur.",
+  "Training paused — streak preserved.": "Antrenman duraklatıldı: serin korunur.",
+  "Streak interrupted. Complete a workout to start a new one.": "Seri kesildi. Yeni bir seri başlatmak için bir antrenman tamamla.",
+  "Complete a workout to start a streak.": "Bir seri başlatmak için bir antrenman tamamla.",
+  "Completed training days, counted once per day. Scheduled rest days preserve the streak.": "Tamamlanan antrenman günleri, her tarihte bir kez sayılır. Planlı dinlenme günleri seriyi korur.",
+  "Week and month equivalents use completed training days: 7 per week and 30 per month.": "Hafta ve ay karşılıkları tamamlanan antrenman günlerine dayanır: hafta başına 7, ay başına 30.",
   "{0} weeks of consistency!": "{0} haftalık istikrar!",
   "You are building a lasting habit. Keep it going!": "Kalıcı bir alışkanlık oluşturuyorsun. Böyle devam et!",
   "Next milestone: {0} weeks": "Sonraki hedef: {0} hafta",

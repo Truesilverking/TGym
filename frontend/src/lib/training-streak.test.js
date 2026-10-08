@@ -142,6 +142,142 @@ describe('training streak uses daily activity independently of session classific
   })
 })
 
+describe('shared training streak state', () => {
+  it('is active after any valid completed activity today, regardless of remaining scheduled routines', () => {
+    const S = fixture()
+    S.routines.push({ id: 'another-r', name: 'Another synthetic routine' })
+    S.dayPlan = { '2026-10-01': ['synthetic-r', 'another-r'] }
+    expect(dailyPlan(S, '2026-10-01')).toMatchObject({ completed: 0, total: 2, active: true })
+    expect(trainingStreak(S, new Date('2026-10-01T20:00:00'))).toMatchObject({
+      current: 4, active: true, state: 'active', date: '2026-10-01', todayStatus: 'completed',
+      lastCompleted: '2026-10-01', lastMissed: null, pendingUntil: null,
+    })
+  })
+
+  it('keeps a surviving run active while a scheduled today is still pending', () => {
+    const S = { ...fixture(), trainingPauses: [] }
+    expect(trainingStreak(S, new Date('2026-10-02T12:00:00'))).toMatchObject({
+      current: 4, active: true, state: 'pending', todayStatus: 'pending',
+      pendingUntil: +new Date('2026-10-03T00:00:00'),
+    })
+  })
+
+  it('distinguishes a neutral rest date from a paused training date without changing the counter', () => {
+    const S = fixture()
+    expect(trainingStreak(S, now)).toMatchObject({ current: 4, active: true, state: 'paused', todayStatus: 'paused', pendingUntil: null })
+    S.trainingPauses = []
+    S.week[5] = []
+    expect(trainingStreak(S, now)).toMatchObject({ current: 4, active: true, state: 'rest', todayStatus: 'rest', pendingUntil: null })
+  })
+
+  it('recognizes recorded activity even if its date is inside a training pause', () => {
+    const S = fixture()
+    S.workouts.push(session('paused-activity', '2026-10-03'))
+    expect(trainingStreak(S, now)).toMatchObject({ current: 5, active: true, state: 'active', todayStatus: 'completed', pendingUntil: null })
+  })
+
+  it('does not relight a broken run on a rest day, during a pause, or while the next workout is pending', () => {
+    const S = { ...fixture(), trainingPauses: [] }
+    expect(trainingStreak(S, now)).toMatchObject({
+      current: 0, active: false, state: 'interrupted', todayStatus: 'rest',
+      lastCompleted: '2026-10-01', lastMissed: '2026-10-02', pendingUntil: null,
+    })
+    S.trainingPauses = [{ id: 'after-miss', start: '2026-10-03', end: '2026-10-05' }]
+    expect(trainingStreak(S, now)).toMatchObject({ current: 0, active: false, state: 'interrupted', todayStatus: 'paused' })
+    expect(trainingStreak(S, new Date('2026-10-05T12:00:00'))).toMatchObject({
+      current: 0, active: false, state: 'interrupted', todayStatus: 'pending',
+      pendingUntil: +new Date('2026-10-06T00:00:00'),
+    })
+  })
+
+  it('starts a new active run after an interruption without losing the earlier best', () => {
+    const S = { ...fixture(), trainingPauses: [] }
+    S.workouts.push(session('new-run', '2026-10-03'))
+    expect(trainingStreak(S, now)).toMatchObject({
+      current: 1, best: 4, active: true, state: 'active', todayStatus: 'completed',
+      lastCompleted: '2026-10-03', lastMissed: '2026-10-02',
+    })
+  })
+
+  it('keeps an empty profile inactive rather than claiming an interrupted streak', () => {
+    const S = { ...fixture(), workouts: [], trainingPauses: [], trainingStartDate: '2026-10-02' }
+    expect(trainingStreak(S, new Date('2026-10-02T12:00:00'))).toMatchObject({
+      current: 0, active: false, state: 'inactive', todayStatus: 'pending', lastCompleted: null,
+    })
+    expect(trainingStreak(S, now)).toMatchObject({
+      current: 0, active: false, state: 'inactive', todayStatus: 'rest', lastCompleted: null, lastMissed: '2026-10-02',
+    })
+    S.trainingPauses = [{ id: 'empty-pause', start: '2026-10-03', end: null }]
+    expect(trainingStreak(S, now)).toMatchObject({ current: 0, active: false, state: 'inactive', todayStatus: 'paused' })
+  })
+
+  it('keeps a first invalid or unfinished workout inactive on its scheduled date', () => {
+    const S = { ...fixture(), trainingPauses: [], trainingStartDate: '2026-10-02', workouts: [session('warmup-only', '2026-10-02')] }
+    S.workouts[0].entries[0].sets[0].warmup = true
+    S.active = session('unfinished', '2026-10-02')
+    S.workouts.push(structuredClone(S.active))
+    expect(trainingStreak(S, new Date('2026-10-02T12:00:00'))).toMatchObject({ current: 0, active: false, state: 'inactive', todayStatus: 'pending' })
+  })
+
+  it('does not invent a current date or a deadline before tracking begins', () => {
+    const S = { ...fixture(), trainingStartDate: '2026-10-10' }
+    expect(trainingStreak(S, now)).toMatchObject({
+      current: 0, active: false, state: 'inactive', todayStatus: 'untracked', date: '2026-10-03',
+      rows: [], lastCompleted: null, lastMissed: null, pendingUntil: null,
+    })
+  })
+
+  it('preserves neutral gaps of any length without a schedule and counts each activity date once', () => {
+    const S = {
+      ...fixture(), week: {}, trainingPauses: [], trainingStartDate: '2026-01-01',
+      workouts: [session('jan', '2026-01-01'), session('sep', '2026-09-01'), session('sep-extra', '2026-09-01')],
+    }
+    const reopened = freeze(JSON.parse(JSON.stringify(S)))
+    expect(trainingStreak(reopened, now)).toMatchObject({
+      current: 2, best: 2, active: true, state: 'rest', todayStatus: 'rest', lastMissed: null,
+    })
+    expect(trainingStreak(reopened, now).rows).toEqual([
+      { iso: '2026-01-01', status: 'completed', planned: false },
+      { iso: '2026-09-01', status: 'completed', planned: false },
+    ])
+    expect(reopened).toEqual(S)
+  })
+
+  it('preserves the existing skipped-routine deadline rather than treating a skip as activity', () => {
+    const S = { ...fixture(), trainingPauses: [], daySkipped: { '2026-10-02': ['synthetic-r'] } }
+    expect(dailyPlan(S, '2026-10-02')).toMatchObject({ skipped: 1, total: 1, active: false })
+    expect(trainingStreak(S, new Date('2026-10-02T23:59:59'))).toMatchObject({ current: 4, state: 'pending' })
+    expect(trainingStreak(S, now)).toMatchObject({ current: 0, state: 'interrupted', lastMissed: '2026-10-02' })
+  })
+
+  it('recomputes after deleting and restoring history without persisting presentation fields', () => {
+    const S = { ...fixture(), trainingPauses: [] }
+    const completed = session('friday', '2026-10-02')
+    S.workouts.push(completed)
+    expect(trainingStreak(S, now)).toMatchObject({ current: 5, state: 'rest', active: true })
+    S.workouts = S.workouts.filter(w => w.id !== completed.id)
+    expect(trainingStreak(S, now)).toMatchObject({ current: 0, state: 'interrupted', active: false })
+    S.workouts.push(completed)
+    const before = JSON.stringify(S)
+    expect(trainingStreak(freeze(S), now)).toMatchObject({ current: 5, state: 'rest', active: true })
+    expect(JSON.stringify(S)).toBe(before)
+    expect(S).not.toHaveProperty('todayStatus')
+  })
+
+  it.each([
+    ['warmup-only', { entries: [{ sets: [row({ warmup: true })] }] }],
+    ['zero repetitions', { entries: [{ sets: [row({ r: 0 })] }] }],
+    ['unconfirmed repetitions', { entries: [{ sets: [row({ done: false })] }] }],
+    ['cancelled', { finishReason: 'cancelled' }],
+    ['active', { active: true }],
+    ['future', { d: '2026-10-03' }],
+  ])('does not complete pending today with a %s session', (_label, patch) => {
+    const S = { ...fixture(), trainingPauses: [] }
+    S.workouts.push({ ...session('invalid-friday', '2026-10-02'), ...patch })
+    expect(trainingStreak(S, new Date('2026-10-02T12:00:00'))).toMatchObject({ current: 4, state: 'pending', todayStatus: 'pending' })
+  })
+})
+
 const trainingModule = new URL('./training-plan.js', import.meta.url).href
 const finishModule = new URL('./finish-workout.js', import.meta.url).href
 const formatModule = new URL('./format.js', import.meta.url).href
@@ -165,7 +301,9 @@ const inTimezone = (timezone, S, instant) => {
     console.log(JSON.stringify({
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       today: isoOf(now), startCalendar: isoOf(start), finishCalendar: isoOf(end),
-      recordedDate: completed.d, current: streak.current,
+      recordedDate: completed.d, current: streak.current, state: streak.state,
+      active: streak.active, todayStatus: streak.todayStatus, pendingUntil: streak.pendingUntil,
+      remainingMs: streak.pendingUntil == null ? null : streak.pendingUntil - +now,
       rows: streak.rows.map(row => row.iso), preserved: JSON.stringify(S) === before,
     }))
   `
@@ -194,6 +332,30 @@ describe('training streak date and timezone semantics', () => {
     expect(inTimezone('America/New_York', S, '2026-11-02T17:00:00Z')).toMatchObject({
       today: '2026-11-02', current: 4,
       rows: ['2026-10-30', '2026-10-31', '2026-11-01', '2026-11-02'], preserved: true,
+    })
+  })
+
+  it.each([
+    ['2026-03-07', '2026-03-08T05:00:00Z', '2026-03-09T04:00:00Z', 23],
+    ['2026-10-31', '2026-11-01T04:00:00Z', '2026-11-02T05:00:00Z', 25],
+  ])('uses the next local midnight for the pending deadline across DST from %s', (previous, instant, deadline, hours) => {
+    const S = {
+      ...fixture(), week: { 0: ['synthetic-r'] }, trainingPauses: [], trainingStartDate: previous,
+      workouts: [session('before-dst', previous)],
+    }
+    expect(inTimezone('America/New_York', S, instant)).toMatchObject({
+      current: 1, active: true, state: 'pending', todayStatus: 'pending',
+      pendingUntil: Date.parse(deadline), remainingMs: hours * 3600000, preserved: true,
+    })
+  })
+
+  it('changes a pending date into a missed date only at the local midnight deadline', () => {
+    const S = { ...fixture(), trainingPauses: [] }
+    expect(inTimezone('America/Santo_Domingo', S, '2026-10-03T03:59:59.999Z')).toMatchObject({
+      today: '2026-10-02', current: 4, active: true, state: 'pending', remainingMs: 1,
+    })
+    expect(inTimezone('America/Santo_Domingo', S, '2026-10-03T04:00:00.000Z')).toMatchObject({
+      today: '2026-10-03', current: 0, active: false, state: 'interrupted', todayStatus: 'rest', pendingUntil: null,
     })
   })
 })
