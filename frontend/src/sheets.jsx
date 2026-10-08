@@ -24,6 +24,10 @@ import Media, { Thumb } from './components/Media.jsx'
 import Stepper from './components/Stepper.jsx'
 import Icon from './components/Icon.jsx'
 import StreakFlame from './components/StreakFlame.jsx'
+import WorkoutSummaryStreak from './components/WorkoutSummaryStreak.jsx'
+import StreakMilestoneCelebration from './components/StreakMilestoneCelebration.jsx'
+import { evaluateStreakMilestones, isCurrentStreakMilestone } from './lib/streak-milestones.js'
+import { useLocalNow } from './lib/use-local-now.js'
 import CalendarExport from './components/CalendarExport.jsx'
 import { calendarDay } from './lib/calendar-data.js'
 import { consistencyStats, nextScheduledWorkout } from './lib/consistency.js'
@@ -1770,14 +1774,19 @@ export const workoutInactivitySheet=()=>{
   return inactivityDecision
 }
 
-function FinishSummary({ w, prs, e1prs = [], milestone = null, close }) {
+function FinishSummary({ w, prs, e1prs = [], presentation, close }) {
   const st = useStore(s => s.S)
+  const now = useLocalNow()
+  const streak = trainingStreak(st, now)
+  const [claim] = useState(() => presentation?.shown ? null : presentation?.claim)
+  const [dismissed, setDismissed] = useState(false)
+  const validClaim = claim && isCurrentStreakMilestone(claim, streak, st, now)
+  useEffect(() => { if (claim && presentation) presentation.shown = true }, [claim, presentation])
+  useEffect(() => { if (claim && !validClaim) setDismissed(true) }, [claim, validClaim])
   const next = w.d === todayISO() ? nextDailyRoutine(st,w.d) : null
-  return <div style={{ textAlign: 'center', padding: '8px 0' }}>
-    {milestone && <div className={'streak-celebration streak-' + streakTier(milestone)}>
-      <StreakFlame value={milestone} />
-      <div><b>{t('{0}-workout streak!', milestone)}</b><span>{t('Your consistency is paying off. Keep the flame alive!')}</span></div>
-    </div>}
+  return <div className="workout-complete-summary" style={{ textAlign: 'center', padding: '8px 0' }}>
+    <StreakMilestoneCelebration claim={!dismissed && validClaim ? claim : null} onDismiss={() => setDismissed(true)} />
+    <WorkoutSummaryStreak value={streak.current} />
     <div style={{ fontSize: 44, display: 'flex', justifyContent: 'center', color: 'var(--acc)' }}><Icon name="trophy" /></div>
     <h3 style={{ margin: '8px 0' }}>{t(['abandoned','auto_completed'].includes(w.finishReason) ? 'Session recovered' : 'Workout complete!')}</h3>
     {['abandoned','auto_completed'].includes(w.finishReason) && <><p className="small muted">{t('Saved using recorded training time. Review or correct the duration in History.')}</p><Button onClick={()=>{close();workoutDetailSheet(w)}}>{t('Edit duration')}</Button></>}
@@ -1818,6 +1827,8 @@ export function doFinishWorkout(options = {}) {
   const st = S()
   const A = ensureWorkoutCompletionPaused(st.active)
   if (!A) return
+  const now = new Date()
+  const beforeStreak = trainingStreak(st, now)
   const prs = []
   const e1prs = []
   A.entries.forEach(e => {
@@ -1837,6 +1848,8 @@ export function doFinishWorkout(options = {}) {
   delete w.restTimer
   w.vol = workoutVolume(w)
   if (['inactivity','abandoned','auto_completed'].includes(options.reason)) { w.resumeSnapshot=structuredClone(A) }
+  let saved = false
+  let claim = null
   update(s => {
     if (s.active?.id !== A.id || s.workouts.some(row=>row.id===w.id)) return
     w.entries.forEach(e => {
@@ -1845,15 +1858,18 @@ export function doFinishWorkout(options = {}) {
     })
     s.workouts.push(w)
     s.active = null
+    // Claim in the same persisted transaction as Finish: a failed save cannot
+    // consume a celebration, and the native/server mirrors receive the ledger.
+    const result = evaluateStreakMilestones(trainingStreak(s, now), s, {
+      now, beforeState: st, beforeStreak, completedWorkoutId: w.id,
+      explicitCompletion: !options.silent && ['completed','manual'].includes(w.finishReason),
+      silent: !!options.silent || !['completed','manual'].includes(w.finishReason),
+    })
+    s.streakMilestoneLedger = result.ledger
+    claim = result.claim
+    saved = true
   })
-  const after = S()
-  const streak = trainingStreak(after)
-  const celebrated = after.streakCelebrations || []
-  const milestone = streak.milestones.includes(streak.current) && !celebrated.includes(streak.current) ? streak.current : null
-  if (milestone) {
-    update(s => { s.streakCelebrations = [...new Set([...(s.streakCelebrations || []), milestone])] })
-    if (after.vibration !== false) vibrate([70, 45, 100, 45, 160])
-  }
+  if (!saved) return
   useStore.getState().autoBackupNow()
   useUI.getState().stopRest()
   useUI.getState().stopWork()
@@ -1862,5 +1878,8 @@ export function doFinishWorkout(options = {}) {
   void clearWorkoutNotification()
   if(options.silent)return w
   completionDecision?.close()
-  ui().openSheet(close => <><FinishSummary w={w} prs={prs} e1prs={e1prs} milestone={milestone} close={close} />{['inactivity','abandoned','auto_completed'].includes(w.finishReason) && <Button onClick={()=>{update(s=>resumeAutoFinished(s,w.id));close();nav('/workout')}}>{t('Continue in a new session')}</Button>}</>, { kind: 'center', locked: true })
+  // A sheet renderer can be remounted while the app stays open. Persisted claims
+  // protect reloads; this presentation token also prevents replay on that remount.
+  const presentation = { claim, shown: false }
+  ui().openSheet(close => <><FinishSummary w={w} prs={prs} e1prs={e1prs} presentation={presentation} close={close} />{['inactivity','abandoned','auto_completed'].includes(w.finishReason) && <Button onClick={()=>{update(s=>resumeAutoFinished(s,w.id));close();nav('/workout')}}>{t('Continue in a new session')}</Button>}</>, { kind: 'center', locked: true })
 }

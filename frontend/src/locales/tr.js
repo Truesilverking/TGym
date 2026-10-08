@@ -2,6 +2,15 @@ import english from '../lib/english-fallback.js'
 // Turkish UI strings. Keys are the English source strings (see lib/i18n.js).
 export default {
   ...english,
+  "{0} weeks of consistency!": "{0} haftalık istikrar!",
+  "You are building a lasting habit. Keep it going!": "Kalıcı bir alışkanlık oluşturuyorsun. Böyle devam et!",
+  "Next milestone: {0} weeks": "Sonraki hedef: {0} hafta",
+  "Close celebration": "Kutlamayı kapat",
+  "1 week": "1 hafta",
+  "{0} weeks": "{0} hafta",
+  "1 month": "1 ay",
+  "{0} months": "{0} ay",
+  "1 day": "1 gün",
   "Server synchronization failed. Your local data was kept.": "Sunucuyla eşitleme başarısız oldu. Yerel verileriniz korundu.",
   // Settings and verified reminder status.
   "Add a workout to your schedule": "Programınıza bir antrenman ekleyin",

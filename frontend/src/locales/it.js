@@ -2,6 +2,15 @@ import english from '../lib/english-fallback.js'
 // Italian UI strings. Keys are the English source strings (see lib/i18n.js).
 export default {
   ...english,
+  "{0} weeks of consistency!": "{0} settimane di costanza!",
+  "You are building a lasting habit. Keep it going!": "Stai creando un’abitudine duratura. Continua così!",
+  "Next milestone: {0} weeks": "Prossimo traguardo: {0} settimane",
+  "Close celebration": "Chiudi celebrazione",
+  "1 week": "1 settimana",
+  "{0} weeks": "{0} settimane",
+  "1 month": "1 mese",
+  "{0} months": "{0} mesi",
+  "1 day": "1 giorno",
   "Server synchronization failed. Your local data was kept.": "La sincronizzazione con il server non è riuscita. I tuoi dati locali sono stati conservati.",
   // Settings and verified reminder status.
   "Add a workout to your schedule": "Aggiungi un allenamento al calendario",

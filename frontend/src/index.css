@@ -1499,3 +1499,8 @@ button:focus-visible,[role="button"]:focus-visible,summary:focus-visible,a:focus
 @media(prefers-reduced-motion:reduce){.workout-notes-content{animation:none}.workout-notes summary svg{transition:none}}
 
 .exercise-history-context .first-history{display:flex;align-items:flex-start;gap:6px}.exercise-history-context .first-history svg{flex:none;margin-top:2px}
+
+/* Actual repetitions are centered against the entire set card, including bodyweight rows. */
+.sets-card .set-console.set-reps-console{grid-template-columns:repeat(2,minmax(0,1fr))}
+.set-reps-console>.set-metric{width:min(100%,18rem);justify-self:center}
+.set-reps-console>.set-actual-reps,.set-reps-console:not(.set-support-pair)>.set-metric{grid-column:1/-1}

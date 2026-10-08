@@ -172,6 +172,10 @@ function ExerciseBlock({ preview, entryIdx, compact, onToggle, onField, onAddSet
   const kind = hasRirTarget && (cfg.deload || !preferredEffort || preferredEffort === 'none') ? 'rir' : preferredEffort
   const eff = EFFORT[kind]
   const col3 = mode === 'reps' && eff ? { ...eff, eff: kind, dec: true, opt: true, hd: t(eff.hd) } : null
+  const metricCols = [col1, col2, col3].filter(Boolean)
+  // Keep the actual-reps block on its own centered row, after load/effort controls.
+  const resultCols = mode === 'reps' ? [...metricCols.filter(col => col.f !== 'r'), repCol] : metricCols
+  const supportPair = mode === 'reps' && metricCols.filter(col => col.f !== 'r').length === 2
   // The effort column walks its own scale — see stepEffort. Weight and reps step up from 0
   // with no ceiling, as they always did.
   const bump = (s, i, col, dir) => {
@@ -184,7 +188,7 @@ function ExerciseBlock({ preview, entryIdx, compact, onToggle, onField, onAddSet
   // as every other +/- field in the app.
   const displayValidation = (s, i) => Object.fromEntries(Object.entries(actualRepValidation(entry, s, i)).map(([key, value]) => [key, displayReps(value, cfg)]))
   const cell = (s, i, col, cls) => (
-    <div className={'set-metric ' + cls}><label htmlFor={`workout-${entryIdx}-${i}-${col.f}`}>{col.hd}{col.eff === 'rir' && targetRirRangeFor(cfg,s.role) && <small>{rirRangeLabel(targetRirRangeFor(cfg,s.role))}</small>}</label><div className={'stp' + (col.eff === 'rir' && s[col.f] != null && s[col.f] !== '' && Number(s[col.f]) === 0 ? ' effort-failure' : '')}>
+    <div key={col.f} className={'set-metric ' + cls + (col.f === 'r' ? ' set-actual-reps' : '')}><label htmlFor={`workout-${entryIdx}-${i}-${col.f}`}>{col.hd}{col.eff === 'rir' && targetRirRangeFor(cfg,s.role) && <small>{rirRangeLabel(targetRirRangeFor(cfg,s.role))}</small>}</label><div className={'stp' + (col.eff === 'rir' && s[col.f] != null && s[col.f] !== '' && Number(s[col.f]) === 0 ? ' effort-failure' : '')}>
       <button type="button" aria-label={t('Decrease')} onClick={() => bump(s, i, col, -1)}><Icon name="minus" /></button>
       <span className="val"><NumberField retainInvalid key={`${entryIdx}-${i}-${col.f}`} id={`workout-${entryIdx}-${i}-${col.f}`} data-nodrag validation={col.f === 'r' ? displayValidation(s,i) : col.eff ? {max: col.max, step: col.step} : ['min','sec'].includes(col.f) ? {min: 1} : {}} decimal={col.dec} nullable={col.opt} value={col.f === 'r' ? displayReps(s.r, cfg) ?? '' : s[col.f] ?? ''}
         displayValue={col.eff && s[col.f] != null && s[col.f] !== '' ? effortValue(col.eff, s[col.f]) : undefined} aria-label={col.hd}
@@ -281,7 +285,7 @@ function ExerciseBlock({ preview, entryIdx, compact, onToggle, onField, onAddSet
               {dropsOf(s).map((d,di)=><span key={`d${di}`}>{t('Drop {0}',di+1)} · {Number(d.w).toLocaleString(dateLocale(), {maximumFractionDigits: 10})} {S.unit} × {displayReps(d.r, cfg)} {t('reps')}</span>)}
               {clustersOf(s).map((c,ci)=><span key={`c${ci}`}>{t('Burst {0}',ci+1)} · {displayReps(c.r, cfg)} {t('reps')} · {c.restSec}s</span>)}
             </div>}
-          </div> : <div data-tour={i===Math.max(0,entry.sets.findIndex(row=>!isWarmupRow(row)))?'sets':undefined} className={'setrow set-console' + (currentSet === i ? ' current' : '') + (col3 ? ' eff3' : '')}>
+          </div> : <div data-tour={i===Math.max(0,entry.sets.findIndex(row=>!isWarmupRow(row)))?'sets':undefined} className={'setrow set-console' + (currentSet === i ? ' current' : '') + (mode === 'reps' ? ' set-reps-console' + (supportPair ? ' set-support-pair' : '') : '')}>
             <div className="set-console-head">
               <span className="set-number">{t('Set')} {phaseNum}</span>
               <span className="set-state">{t(currentSet === i ? 'Current' : 'Pending')}</span>
@@ -298,9 +302,7 @@ function ExerciseBlock({ preview, entryIdx, compact, onToggle, onField, onAddSet
               !s.manualFields?.w && t('Weight'),
               cfg.autoBackoffReps !== false && !s.manualFields?.r && t('reps'),
             ].filter(Boolean).join(' + ') || t('Manual')}</div>}
-            {cell(s, i, col1, 'w')}
-            {col2 && cell(s, i, col2, 'r')}
-            {col3 && cell(s, i, col3, 'eff')}
+            {resultCols.map(col => cell(s, i, col, col.eff ? 'eff' : col === col1 ? 'w' : 'r'))}
           </div>}
           {/* Drop-sets and rest-pause bursts extend this same row — no long rest, no new set.
               A planned exercise arrives with these already filled in (applyIntensifierPlan);

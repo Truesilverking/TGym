@@ -2,6 +2,15 @@ import english from '../lib/english-fallback.js'
 // Spanish UI strings. Keys are the English source strings (see lib/i18n.js).
 export default {
   ...english,
+  "{0} weeks of consistency!": "¡{0} semanas de constancia!",
+  "You are building a lasting habit. Keep it going!": "Estás creando un hábito duradero. ¡Sigue así!",
+  "Next milestone: {0} weeks": "Siguiente hito: {0} semanas",
+  "Close celebration": "Cerrar celebración",
+  "1 week": "1 semana",
+  "{0} weeks": "{0} semanas",
+  "1 month": "1 mes",
+  "{0} months": "{0} meses",
+  "1 day": "1 día",
   "Workout paused after inactivity": "Entrenamiento pausado por inactividad",
   "The timer paused 30 minutes after your last interaction. Your sets are preserved. Review the duration, then continue or finish.": "El cronómetro se pausó 30 minutos después de tu última interacción. Tus series se conservan. Revisa la duración y luego continúa o finaliza.",
   "Timer paused. Reviewing this screen does not count as training. Finish or continue when ready.": "Cronómetro pausado. Revisar esta pantalla no cuenta como entrenamiento. Finaliza o continúa cuando quieras.",

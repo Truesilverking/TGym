@@ -1,6 +1,15 @@
 import english from '../lib/english-fallback.js'
 // Portuguese UI strings. Keys are the English source strings (see lib/i18n.js).
 export const PT_TRANSLATIONS = {
+  "{0} weeks of consistency!": "{0} semanas de constância!",
+  "You are building a lasting habit. Keep it going!": "Estás a criar um hábito duradouro. Continua assim!",
+  "Next milestone: {0} weeks": "Próximo marco: {0} semanas",
+  "Close celebration": "Fechar celebração",
+  "1 week": "1 semana",
+  "{0} weeks": "{0} semanas",
+  "1 month": "1 mês",
+  "{0} months": "{0} meses",
+  "1 day": "1 dia",
   "Server synchronization failed. Your local data was kept.": "A sincronização com o servidor falhou. Os seus dados locais foram mantidos.",
   // Settings and verified reminder status.
   "Add a workout to your schedule": "Adicione um treino ao seu calendário",

@@ -1,5 +1,15 @@
 // Explicit source-language fallback. Entries in language packs override these values.
 export default {
+  "{0} weeks of consistency!": "{0} weeks of consistency!",
+  "You are building a lasting habit. Keep it going!": "You are building a lasting habit. Keep it going!",
+  "Next milestone: {0} weeks": "Next milestone: {0} weeks",
+  "Close celebration": "Close celebration",
+  "1 week": "1 week",
+  "{0} weeks": "{0} weeks",
+  "1 month": "1 month",
+  "{0} months": "{0} months",
+  "1 day": "1 day",
+  "{0} days": "{0} days",
   "Workout paused after inactivity": "Workout paused after inactivity",
   "The timer paused 30 minutes after your last interaction. Your sets are preserved. Review the duration, then continue or finish.": "The timer paused 30 minutes after your last interaction. Your sets are preserved. Review the duration, then continue or finish.",
   "Timer paused. Reviewing this screen does not count as training. Finish or continue when ready.": "Timer paused. Reviewing this screen does not count as training. Finish or continue when ready.",

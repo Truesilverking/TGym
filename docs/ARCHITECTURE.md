@@ -1,6 +1,6 @@
 # TGym architecture
 
-Current published release: 1.15.56 / Android92 (source `415f4a715d2b1cb89140ac915cd4416a924856e1`). See `RELEASE-AUDIT-1.15.56.md`. The calendar/streak sheet offers only Export Calendar. Consistency Report opens from the single download icon immediately before Times in Home's Consistency header; the card has no report text link. Stats reuses its existing header download circle for Export Reports, removed from Settings → Data. Its dashboard selector confirms one PDF containing only the selected Streak, Consistency, Progress and/or Stats reports. Stats report sections are selectable independently of their visibility preferences, with current Stats filters captured as ephemeral export options. Shared infrastructure packages selected report pages and saves the file. The current 1.15.57 / Android93 candidate adds the workout clock and routine exchange rules described below; a local candidate does not change the published update manifest.
+Published baseline: 1.15.57 / Android93 (source `7f5a090af06427e6962e8b4a3ac05975181cfe71`). See `RELEASE-AUDIT-1.15.57.md`. The calendar/streak sheet offers only Export Calendar. Consistency Report opens from the single download icon immediately before Times in Home's Consistency header; the card has no report text link. Stats reuses its existing header download circle for Export Reports, removed from Settings → Data. Its dashboard selector confirms one PDF containing only the selected Streak, Consistency, Progress and/or Stats reports. Stats report sections are selectable independently of their visibility preferences, with current Stats filters captured as ephemeral export options. Shared infrastructure packages selected report pages and saves the file. The 1.15.58 / Android94 source adds centered actual repetitions and the workout-summary streak recognition described below; local version metadata alone does not change the published update manifest.
 
 The subsequent request to validate every function is tracked in `docs/POST-RELEASE-AUDIT-1.15.31.md`. Follow-up fixes serialize API uploads, preserve active workouts and unsent edits at sign-out, recheck the reviewed cloud snapshot before upload, and allow skipping an incomplete optional PIN. Real-browser auditing also improves theme contrast, keyboard controls, zoom, accessible labels and reduced-motion media. These changes are not included in the published 1.15.31 artifact.
 
@@ -89,7 +89,7 @@ Google Drive backup uses app-data access, a backup file and bounded daily snapsh
 
 ## Android and notifications
 
-Native code is under `frontend/android/app/src/main/`. Application/namespace identity remains `app.framegym.mobile`; the product name is TGym. The published release is 1.15.56, versionCode 92, and the candidate is 1.15.57, versionCode 93; min SDK 23, compile/target SDK 35, Gradle 8.11.1 and CI JDK 21. Published release evidence and candidate/device validation are recorded separately.
+Native code is under `frontend/android/app/src/main/`. Application/namespace identity remains `app.framegym.mobile`; the product name is TGym. The published baseline is 1.15.57, versionCode 93, and this source is 1.15.58, versionCode 94; min SDK 23, compile/target SDK 35, Gradle 8.11.1 and CI JDK 21. Published release evidence and candidate/device validation are recorded separately.
 
 `MainActivity` registers Google Drive authentication, update push, installer and workout notification bridges. The foreground workout service uses native chronometers and persisted notification state. Notification taps target the activity with `tgym://workout`; React handles that navigation. This is not proof of a general externally browsable deep-link manifest filter.
 
@@ -126,6 +126,14 @@ The Prompt 1/2 audit led to shared ConsistencyCard and consistency calculations,
 ## Routine presentation order (1.15.41)
 
 `lib/routine-order.js` keeps display order in the optional `routineOrder` ID array. Additive migration normalizes IDs without changing routine records, schedules or workout history. RoutineList persists through `useStore.update`; backups retain the field and cloud merge handles conflicting orders atomically. Schedule selection continues to use daily-plan/consistency helpers, never this display order.
+
+## Workout-summary streak recognition (1.15.58)
+
+The owner clarified that the existing streak counter is the authority: 7 means a week equivalent and 30 a month equivalent. These are labels for active dates, not complete calendar weeks, calendar months or session totals. `lib/streak-milestones.js` centralizes these divisors and the doubling sequence: 2, 4, 8, 16, 32, 64… week equivalents, reached at counters 14, 28, 56, 112, 224, 448…. Existing schedule/rest/pause and local-date continuity rules remain unchanged, including once-per-date counting without a schedule.
+
+`doFinishWorkout` evaluates the streak after adding a valid completed workout and clearing the active session in the same `useStore.update` transaction. The optional `streakMilestoneLedger` records consumed thresholds and observed workout/date anchors per continuity episode; native/web mirrors, optional API state and portable backups retain it. Old `streakCelebrations` data is preserved but its global day thresholds are not reinterpreted as weekly claims. Only an explicit successful Finish that adds a new activity date can claim the highest pending milestone. Silent/recovered saves do not present or consume a claim. Reconciliation absorbs edited-history threshold growth and retains prior consumed anchors across deletions/restorations; a real missed scheduled date starts a fresh episode.
+
+`WorkoutSummaryStreak` always reuses `StreakFlame`, with an optional full-fill mode for active summaries and neutral zero. It preserves the counter and description, adding the agreed period equivalent. `StreakMilestoneCelebration` is a separate inline, dismissible, static recognition card, with localized title/message/next target. Its persisted claim and the sheet's single-presentation token prevent replay on reload or remount. The live summary rechecks history and local time; a deleted claim or broken streak cannot keep an obsolete celebration visible. App/OS reduced-motion preferences also apply to the ordinary flame.
 
 ## Stable session origin and activity
 

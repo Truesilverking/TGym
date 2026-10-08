@@ -2,6 +2,15 @@ import english from '../lib/english-fallback.js'
 // Korean UI strings. Keys are the English source strings (see lib/i18n.js).
 export default {
   ...english,
+  "{0} weeks of consistency!": "{0}주간 꾸준히 해냈어요!",
+  "You are building a lasting habit. Keep it going!": "오래가는 습관을 만들고 있어요. 계속해 보세요!",
+  "Next milestone: {0} weeks": "다음 목표: {0}주",
+  "Close celebration": "축하 메시지 닫기",
+  "1 week": "1주",
+  "{0} weeks": "{0}주",
+  "1 month": "1개월",
+  "{0} months": "{0}개월",
+  "1 day": "1일",
   "Server synchronization failed. Your local data was kept.": "서버 동기화에 실패했습니다. 기기의 데이터는 보존되었습니다.",
   // Settings and verified reminder status.
   "Add a workout to your schedule": "일정에 운동을 추가하세요",

@@ -2,6 +2,15 @@ import english from '../lib/english-fallback.js'
 // Simplified Chinese UI strings. Keys are the English source strings (see lib/i18n.js).
 export default {
   ...english,
+  "{0} weeks of consistency!": "坚持了 {0} 周！",
+  "You are building a lasting habit. Keep it going!": "你正在养成持久的习惯。继续加油！",
+  "Next milestone: {0} weeks": "下一个目标：{0} 周",
+  "Close celebration": "关闭庆祝消息",
+  "1 week": "1 周",
+  "{0} weeks": "{0} 周",
+  "1 month": "1 个月",
+  "{0} months": "{0} 个月",
+  "1 day": "1 天",
   "Server synchronization failed. Your local data was kept.": "服务器同步失败。本地数据已保留。",
   // Settings and verified reminder status.
   "Add a workout to your schedule": "在日程中添加训练",

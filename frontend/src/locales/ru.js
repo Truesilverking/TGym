@@ -2,6 +2,15 @@ import english from '../lib/english-fallback.js'
 // Russian UI strings. Keys are the English source strings (see lib/i18n.js).
 export default {
   ...english,
+  "{0} weeks of consistency!": "{0} нед. постоянства!",
+  "You are building a lasting habit. Keep it going!": "Ты создаёшь устойчивую привычку. Продолжай в том же духе!",
+  "Next milestone: {0} weeks": "Следующая цель: {0} нед.",
+  "Close celebration": "Закрыть поздравление",
+  "1 week": "1 неделя",
+  "{0} weeks": "{0} нед.",
+  "1 month": "1 месяц",
+  "{0} months": "{0} мес.",
+  "1 day": "1 день",
   "Server synchronization failed. Your local data was kept.": "Не удалось синхронизировать данные с сервером. Ваши локальные данные сохранены.",
   // Settings and verified reminder status.
   "Add a workout to your schedule": "Добавьте тренировку в расписание",

@@ -2,6 +2,15 @@ import english from '../lib/english-fallback.js'
 // Hindi UI strings. Keys are the English source strings (see lib/i18n.js).
 export default {
   ...english,
+  "{0} weeks of consistency!": "{0} हफ़्तों की निरंतरता!",
+  "You are building a lasting habit. Keep it going!": "आप एक टिकाऊ आदत बना रहे हैं। ऐसे ही आगे बढ़ें!",
+  "Next milestone: {0} weeks": "अगला पड़ाव: {0} हफ़्ते",
+  "Close celebration": "उपलब्धि संदेश बंद करें",
+  "1 week": "1 हफ़्ता",
+  "{0} weeks": "{0} हफ़्ते",
+  "1 month": "1 महीना",
+  "{0} months": "{0} महीने",
+  "1 day": "1 दिन",
   "Server synchronization failed. Your local data was kept.": "सर्वर से सिंक नहीं हो सका। आपका स्थानीय डेटा सुरक्षित रखा गया।",
   // Settings and verified reminder status.
   "Add a workout to your schedule": "अपने शेड्यूल में एक कसरत जोड़ें",
