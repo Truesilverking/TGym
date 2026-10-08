@@ -1156,7 +1156,7 @@ body.framegym-private::after{
 .zoomcal-actions-row .btn { flex:1 1 auto; min-width:0; }
 .zoomcal-export-wrap { display:flex; justify-content:center; margin-top:12px; }
 .streak-main { gap:clamp(4px,1.5vw,9px); }
-.streak-main-label { margin-left:0; font-size:clamp(14px,3.8vw,18px); font-weight:600; white-space:nowrap; }
+.streak-main-label { flex:1; margin-left:0; font-size:clamp(14px,3.8vw,18px); font-weight:600; white-space:normal; overflow:visible; overflow-wrap:anywhere; }
 .streak-main.compact>.streak-flame { width:clamp(30px,9vw,42px); height:clamp(30px,9vw,42px); }
 .streak-main.compact .streak-number { font-size:clamp(28px,9vw,42px); }
 .recent-streak-item .lrow-i { align-self:center; }
