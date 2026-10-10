@@ -34,7 +34,7 @@ export default function RoutineExchange({ close }) {
   const download = async () => {
     if (working.current || !file) return
     working.current = true; setBusy(true); setError('')
-    try { await saveReportFile(file, { share: true }); if (mounted.current) setProgress(100) }
+    try { await saveReportFile(file); if (mounted.current) setProgress(100) }
     catch (e) { if (e.name !== 'AbortError' && mounted.current) setError(t('Could not save. Download again.')) }
     finally { working.current = false; if (mounted.current) setBusy(false) }
   }

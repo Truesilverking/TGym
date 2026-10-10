@@ -53,16 +53,18 @@ jobs:
           VITE_GITHUB_REPO: ${{ github.event.repository.name }}
           VITE_APP_DISTRIBUTION: github
         run: pnpm run build:mobile
-      - run: ./gradlew assembleRelease :app:lintRelease
+      - run: ./gradlew assembleRelease bundleRelease :app:lintRelease
         working-directory: frontend/android
-      - name: Validate signed APK and prepare isolated artifact
+      - name: Validate signed APK/AAB and prepare isolated artifact
         shell: bash
         run: |
           VERSION="$(node -p "require('./frontend/package.json').version")"
           CODE="$(grep -oP 'versionCode\s+\K\d+' frontend/android/app/build.gradle)"
           mkdir -p candidate
           APK="candidate/TGym-Android-v${VERSION}.apk"
+          AAB="candidate/TGym-Android-v${VERSION}.aab"
           cp frontend/android/app/build/outputs/apk/release/app-release.apk "$APK"
+          cp frontend/android/app/build/outputs/bundle/release/app-release.aab "$AAB"
           APKSIGNER="$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)"
           "$APKSIGNER" verify --print-certs "$APK" > candidate/signature.txt
           CERT_SHA="$(node frontend/scripts/signing-certificate.mjs candidate/signature.txt)"
@@ -71,9 +73,10 @@ jobs:
           "$AAPT" dump badging "$APK" > candidate/package.txt
           grep -F "package: name='app.framegym.mobile' versionCode='${CODE}' versionName='${VERSION}'" candidate/package.txt
           ! grep -q '^application-debuggable' candidate/package.txt
+          jarsigner -verify "$AAB"
           APK_SHA="$(sha256sum "$APK" | cut -d' ' -f1)"
           jq -n --arg version "$VERSION" --argjson code "$CODE" --arg sha "$APK_SHA" --arg cert "$CERT_SHA" --arg commit "$GITHUB_SHA" '{version:$version,versionCode:$code,commit:$commit,sha256:$sha,certificateSha256:$cert,published:false}' > candidate/candidate.json
-          (cd candidate && sha256sum *.apk > checksums.txt)
+          (cd candidate && sha256sum *.apk *.aab > checksums.txt)
       - uses: actions/upload-artifact@v4
         with:
           name: signed-android-candidate

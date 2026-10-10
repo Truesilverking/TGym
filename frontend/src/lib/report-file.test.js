@@ -109,6 +109,30 @@ it('preserves browser Share/save and direct Download as distinct actions', async
   await saveReportFile(file, { share: true }); expect(share).toHaveBeenCalledOnce(); expect(click).not.toHaveBeenCalled()
   await saveReportFile(file); expect(click).toHaveBeenCalledOnce(); expect(document.querySelector('a')).toBeNull()
 })
+it.each([
+  ['routines.json', 'application/json'],
+  ['routines.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
+  ['routines.pdf', 'application/pdf']
+])('downloads %s directly even when the browser advertises a failing share service', async (name, type) => {
+  const canShare = vi.fn(() => true), share = vi.fn().mockRejectedValue(new DOMException('Windows share failed', 'DataError'))
+  vi.stubGlobal('navigator', { canShare, share })
+  const downloads = []
+  vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function () { downloads.push({ name: this.download, href: this.href }) })
+  const blob = new Blob([Uint8Array.of(0, 80, 75, 255)], { type })
+  await saveReportFile({ blob, name })
+  expect(downloads).toEqual([{ name, href: 'blob:report' }])
+  expect(URL.createObjectURL).toHaveBeenCalledWith(blob)
+  expect(canShare).not.toHaveBeenCalled(); expect(share).not.toHaveBeenCalled()
+  expect(document.querySelector('a')).toBeNull()
+})
+it('keeps direct routine downloads on the native binary sharing path in Capacitor', async () => {
+  mock.mobile = true
+  const bytes = Uint8Array.of(80, 75, 3, 4, 0, 255, 128)
+  await saveReportFile({ blob: new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), name: 'routines.xlsx' })
+  const [base64, name] = mock.share.mock.calls[0]
+  expect(name).toBe('routines.xlsx')
+  expect(Uint8Array.from(atob(base64), char => char.charCodeAt(0))).toEqual(bytes)
+})
 it('releases temporary download URLs after download and preserves caller-owned preview URLs', async () => {
   vi.useFakeTimers(); vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
   const file = { blob: new Blob(['data']), name: 'report.html' }

@@ -24,12 +24,17 @@ beforeEach(() => {
   host = document.createElement('div'); document.body.append(host); root = createRoot(host); close = vi.fn()
 })
 afterEach(() => { act(() => root.unmount()); host.remove() })
-it('confirms selected routines and format before explicit download, including retry', async () => {
-  render(); change(host.querySelector('select'), 'xlsx'); await act(async () => button('Prepare export').click())
-  expect(mock.build).toHaveBeenCalledWith(mock.S, ['r'], 'xlsx', expect.objectContaining({ template: false }))
-  expect(mock.save).not.toHaveBeenCalled(); expect(host.textContent).toContain('TGym-routines.json')
+it.each(['json', 'xlsx', 'pdf'])('prepares %s before direct download and retains the same file for retry', async format => {
+  const file = { name: `TGym-routines.${format}`, blob: new Blob(['fixture']) }
+  mock.build.mockResolvedValue(file)
+  render(); change(host.querySelector('select'), format); await act(async () => button('Prepare export').click())
+  expect(mock.build).toHaveBeenCalledWith(mock.S, ['r'], format, expect.objectContaining({ template: false }))
+  expect(mock.save).not.toHaveBeenCalled(); expect(host.textContent).toContain(file.name)
   mock.save.mockRejectedValueOnce(new Error('disk')); await act(async () => button('Download').click())
-  expect(host.querySelector('[role="alert"]').textContent).toContain('Download again'); await act(async () => button('Download').click()); expect(mock.save).toHaveBeenCalledTimes(2)
+  expect(host.querySelector('[role="alert"]').textContent).toContain('Download again'); expect(host.textContent).toContain(file.name)
+  await act(async () => button('Download').click())
+  expect(mock.save.mock.calls).toEqual([[file], [file]])
+  expect(host.querySelector('[role="alert"]')).toBeNull(); expect(mock.build).toHaveBeenCalledTimes(1)
 })
 it('cancels preparation and ignores late results and repeated presses', async () => {
   let resolve; mock.build.mockImplementation(() => new Promise(r => { resolve = r })); render()
