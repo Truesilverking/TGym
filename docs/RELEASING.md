@@ -1,7 +1,7 @@
 # TGym releases and verification
 
 The production version comes from frontend/package.json and must match Android versionName.
-Android versionCode must increase. Published baseline: 1.15.59 / 95. The routine download correction targets 1.15.60 / 96; see ROUTINE-DOWNLOAD-AUDIT-2026-10-10.md for verification and publication status.
+Android versionCode must increase. Current published release: 1.15.60 / 96. See RELEASE-AUDIT-1.15.60.md and ROUTINE-DOWNLOAD-AUDIT-2026-10-10.md for verification and publication evidence.
 Run frontend/scripts/check-version.mjs before tagging.
 
 ## Single publication

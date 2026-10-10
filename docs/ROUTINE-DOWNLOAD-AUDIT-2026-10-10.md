@@ -1,6 +1,6 @@
 # Routine download correction — 2026-10-10
 
-Correction based on published `v1.15.59` (`7a6fccf29dff7b154fc1d2a5e15c065cb9d9b044`), branch `fix/routine-export-download-1.15.59`. Target release: `1.15.60` / Android `96`. Publication was explicitly authorized after local review; exact-source CI and signed candidate validation precede the release tag.
+Published correction: `1.15.60` / Android `96`, source `9313c40a0a0e81e4153e30c390bc9e7032810b12`. Based on `v1.15.59` (`7a6fccf29dff7b154fc1d2a5e15c065cb9d9b044`), branch `fix/routine-export-download-1.15.59`; exact-source CI and signed candidate validation passed before tagging.
 
 ## Reproduction and data flow
 
@@ -25,4 +25,8 @@ Browser evidence and generated synthetic files are under ignored `.tools/routine
 
 Vite preview returned `Vary: Origin`, causing its precached no-Origin JS/CSS responses to miss module requests after offline reload. GitHub Pages was checked live and uses `Vary: Accept-Encoding` with identical asset responses for requests with/without Origin. Offline checks therefore used the identical production bundle through a static local server without `Vary: Origin`; no service-worker changes were needed.
 
-The installed app uses the public 1.15.59 build until the 1.15.60 release is published and applied. Publication and installed-app results will be recorded separately after verification.
+Release `1.15.60` / Android `96` was published from `9313c40a0a0e81e4153e30c390bc9e7032810b12` after exact-source CI and signed APK/AAB verification. Public metadata, artifact hashes, signatures and updater checks passed; see `RELEASE-AUDIT-1.15.60.md`.
+
+The installed desktop PWA now displays 1.15.60 and reports up to date after closing and reopening its original desktop shortcut. Its normal Update button twice displayed a generic failure; a forced reload applied the published version without clearing the profile or reinstalling. The precise cause of that updater failure is unclassified. The same normal 1.15.59-to-1.15.60 update succeeded in an isolated production Edge profile, preserving the exact saved state and creating the pre-update backup.
+
+JSON, XLSX and PDF were then downloaded successfully from the user's installed app. Completed files remain in the user's Downloads folder, outside the repository. JSON parsing, XLSX ZIP/sheet structure and PDF image-page parsing passed. Existing selected routines and visible unit preferences were retained. Public PWA QA additionally passed 35 assertions, including all three formats online and after a verified offline reopen, with no profile changes or browser errors.
