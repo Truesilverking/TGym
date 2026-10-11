@@ -18,7 +18,7 @@ import Media from '../components/Media.jsx'
 import { startFlow, exercisePicker, exConfigSheet, exerciseDetailSheet, topWeightSheet, finishWorkout, workoutCompleteSheet, confirmSheet, exerciseNoteSheet, sessionNoteSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
 import { Button, Check, NumberField } from '../components/ui.jsx'
-import { nextPrescription, applyPrescription, defaultIncrement } from '../lib/progression.js'
+import { nextPrescription, applyPrescription, defaultIncrement, loadingStepFor } from '../lib/progression.js'
 import { glyphOf } from '../lib/glyphs.js'
 import { setSideState, toggleSetSide, isWarmupRow, isDropSet, isRestPauseSet, dropsOf, clustersOf, addDrop, addCluster, removeDropAt, removeClusterAt, setDropAt, setClusterAt, nextDropWeight, nextBurstReps } from '../lib/workout-model.js'
 import { restSeconds } from '../lib/rest-policy.js'
@@ -420,12 +420,12 @@ function ActiveWorkout() {
     // heavier bar carries through the set instead of retyping every row.
     if (field === 'w') {
       e.sets = e.target?.setScheme === 'topback'
-        ? cascadeTopBackWeight(e.sets, i, safe, e.target, defaultIncrement(e.id, S.unit))
+        ? cascadeTopBackWeight(e.sets, i, safe, e.target, loadingStepFor({ ...e.target, id: e.id }, S.unit))
         : cascadeWeight(e.sets, i, safe)
     }
     if (field === 'r' && e.target?.setScheme === 'topback' && !warm) e.sets = cascadeTopBackReps(e.sets, i, safe, e.target)
     const firstWork = e.sets.findIndex(row => !isWarmupRow(row))
-    if (i === firstWork && (field === 'w' || field === 'r' || field === 'sec')) e.sets = rerampWarmups(e.sets, defaultIncrement(e.id, S.unit))
+    if (i === firstWork && (field === 'w' || field === 'r' || field === 'sec')) e.sets = rerampWarmups(e.sets, loadingStepFor({ ...e.target, id: e.id }, S.unit))
   })
   const modeAt = idx => modeOf({ ...(A.entries[idx].target || {}), id: A.entries[idx].id })
   const addSet = idx => mutEntry(idx, e => {
@@ -438,7 +438,7 @@ function ActiveWorkout() {
   const removeSet = idx => { timedGeneration.current++; useUI.getState().stopWork(); mutEntry(idx, e => { if (e.sets.length > 1) e.sets.pop() }) }
   const addWarmup = idx => { timedGeneration.current++; useUI.getState().stopWork(); mutEntry(idx, e => {
     const m = modeOf({ ...(e.target || {}), id: e.id })
-    e.sets = insertWarmupRow(e.sets, m, e.target || {}, defaultIncrement(e.id, S.unit))
+    e.sets = insertWarmupRow(e.sets, m, e.target || {}, loadingStepFor({ ...e.target, id: e.id }, S.unit))
   }) }
   const removeSetAt = (idx, i) => { timedGeneration.current++; useUI.getState().stopWork(); mutEntry(idx, e => { e.sets = removeRowAt(e.sets, i) }) }
   const pairAt = (first, second) => update(s => {
@@ -518,7 +518,7 @@ function ActiveWorkout() {
       timedGeneration.current++; useUI.getState().stopWork()
       const target = { id: ex.id, ...cfg }
       const plan = nextPrescription(S, target, null)
-      const step = defaultIncrement(ex.id, S.unit)
+      const step = loadingStepFor(target, S.unit)
       const sets = applyIntensifierPlan(applyTrainingPlan(applyPrescription(buildSets(S, target, { step }), plan, step), target, step, deloadStatus(S)), target)
       update(s => {
         const old = s.active.entries[idx]
@@ -696,7 +696,7 @@ function ActiveWorkout() {
       exConfigSheet(ex, null, cfg => update(s => {
         const full = { ...cfg, id: ex.id }
         const plan = freestyle ? null : nextPrescription(s, full, s.routines.find(r => r.id === s.active.routineId))
-        const step = defaultIncrement(ex.id, s.unit)
+        const step = loadingStepFor(full, s.unit)
         const sets = buildSets(s, full, { step, ...(freestyle ? { preferLast: true } : {}) })
         const progressed = freestyle ? sets : applyPrescription(sets, plan, step)
         const deload = deloadStatus(s)

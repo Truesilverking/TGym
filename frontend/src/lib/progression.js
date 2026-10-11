@@ -56,11 +56,16 @@ const HEAVY_BP = ['upper legs', 'lower legs', 'back', 'hips', 'glutes']
 
 // Default load step. Lower-body lifts take the bigger jump — that is the "lift-specific
 // increment" a linear program lives on; an exercise can override it with cfg.inc.
-export function defaultIncrement(exId, unit) {
-  const ex = EXIDX[exId]
+export function defaultIncrement(exId, unit, definition) {
+  const ex = definition || EXIDX[exId]
   const heavy = ex && HEAVY_BP.includes(ex.bp)
   if (unit === 'lb') return heavy ? 10 : 5
   return heavy ? 5 : 2.5
+}
+// Portable plans retain the source loading grid separately from progression increments.
+// Older plans continue using their catalogue default without a storage migration.
+export function loadingStepFor(cfg, unit, definition) {
+  return Number.isFinite(cfg?.loadingStep) && cfg.loadingStep > 0 ? cfg.loadingStep : defaultIncrement(cfg?.id, unit, definition)
 }
 export const DEFAULT_SEC_INCREMENT = 5
 // Where adding another set of push-ups stops being progress and starts being a way to spend

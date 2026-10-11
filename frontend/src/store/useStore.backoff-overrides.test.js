@@ -23,7 +23,7 @@ describe('explicit Back-off overrides and legacy profile inheritance', () => {
     }
   })
 
-  it('executes imported repeated exercise instances with different modes, legacy offsets and inherited defaults', () => {
+  it('executes portable repeated instances with source modes, legacy offsets and effective inherited defaults', () => {
     const before = useStore.getState().S
     const ex = [
       { ...base, backoffRepsOverride: true, backoffRepsMode: 'same' },
@@ -43,11 +43,22 @@ describe('explicit Back-off overrides and legacy profile inheritance', () => {
     expect(entries.every(e => e.sets.every(s => !s.done))).toBe(true)
     useStore.getState().update(S => { S.backoffRepsMode = 'increased' })
     const after = useStore.getState().S
-    expect(after.active.entries.map(e => e.sets.filter(s => s.role === 'backoff').map(s => s.r))).toEqual([[8, 8], [10, 10], [12, 12], [10, 10], [10, 10]])
+    expect(after.active.entries.map(e => e.sets.filter(s => s.role === 'backoff').map(s => s.r))).toEqual([[8, 8], [10, 10], [12, 12], [8, 8], [8, 8]])
     expect(after.workouts).toEqual(history)
     const reopened = JSON.parse(localStorage.getItem('gym_state_v1'))
     expect(reopened.active.entries).toEqual(after.active.entries)
     expect(reopened.routines).toEqual(after.routines)
+  })
+
+  it('keeps existing unmarked profile prescriptions inherited without a storage migration', () => {
+    const ex = [{ ...base }, { ...base, backoffRepsMode: 'increased', backoffRepOffset: 4 }]
+    useStore.getState().update(S => { S.routines = [{ id: 'legacy', name: 'Existing legacy', ex }]; S.routineOrder = ['legacy'] })
+    beginWorkout('legacy', 80)
+    expect(useStore.getState().S.active.entries.map(e => e.sets.filter(s => s.role === 'backoff').map(s => s.r))).toEqual([[8, 8], [8, 8]])
+    useStore.getState().update(S => { S.backoffRepsMode = 'increased' })
+    expect(useStore.getState().S.active.entries.map(e => e.sets.filter(s => s.role === 'backoff').map(s => s.r))).toEqual([[10, 10], [10, 10]])
+    expect(useStore.getState().S.routines[0].ex).toEqual(ex)
+    expect(useStore.getState().S.workouts).toEqual(history)
   })
 
   it('retains visible unilateral offset semantics and leaves independent ranges unchanged', () => {

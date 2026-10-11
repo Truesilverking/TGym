@@ -1,8 +1,8 @@
 import { routineExchangeRows, ROUTINE_EXCHANGE_VERSION } from './routine-exchange.js'
 import { reportPagesFile } from './report-file.js'
-import { displayReps, isBw, modeOf, applyIntensifierPlan } from './history.js'
+import { displayReps, isBw, modeOf } from './history.js'
 import { restSeconds } from './rest-policy.js'
-import { policyFor, defaultIncrement } from './progression.js'
+import { policyFor, loadingStepFor } from './progression.js'
 import { routineIds } from './daily-plan.js'
 import { withBackoffRepsMode } from './training-plan.js'
 
@@ -124,13 +124,7 @@ export function routinePDFPages(data) {
       const ex = catalog.get(e.id), instance = `${routine.id}:${ei + 1}`, mode = modeOf(e)
       const exerciseName = data.exerciseNameMode === 'original' ? ex?.n || e.id : ex?.alias || ex?.n || e.id
       exerciseContext = ''
-      let rows = series.get(instance) || []
-      // Rest-pause replaces configured series during beginWorkout. Reuse the same helper
-      // rather than printing several independent work sets the athlete will never perform.
-      if (mode === 'reps' && e.intensifier?.type === 'restpause') {
-        const planned = applyIntensifierPlan([{ w: e.weight || 0, r: e.reps || 1 }], e)
-        rows = planned.map((set, index) => [instance, index + 1, index ? 'Working' : 'Warm-up', set.r, set.r, set.w, data.unit, '', '', restSeconds({ state: data.rules, routine, target: e, warmup: !index }), '', '', '', '', '', '', ''])
-      }
+      const rows = series.get(instance) || []
       const cells = rows.map(row => cellsFor(row, e, ex))
       if (e.intensifier?.type === 'restpause' && mode === 'reps') cells[0][2] = `${number(displayReps(rows[0][3], e))} reps${e.side ? ' / side' : ''} (activation)`
       const alias = ex?.alias ? data.exerciseNameMode === 'original' ? `Alias: ${ex.alias}` : `Original: ${ex.n}` : ''
@@ -164,7 +158,8 @@ export function routinePDFPages(data) {
         paragraph(`Top association: ${top} | Load reduction ${backoff[11]}% | Reps ${rule}`)
       }
       const policy = policyFor(e, routine, mode)
-      paragraph(`Progression: ${policy}${policy !== 'off' ? ` | Increment ${number(e.inc || (mode === 'time' ? 5 : defaultIncrement(e.id, data.unit)))} ${mode === 'time' ? 's' : data.unit}` : ''}${mode === 'reps' ? ` | Strict rep targets: ${(e.strictReps ?? data.rules.strictReps) ? 'on' : 'off'}${e.amrap ? ' | AMRAP (target limit does not apply)' : ''}` : ''}`)
+      const loadingStep = loadingStepFor(e, data.unit, ex?.definition)
+      paragraph(`Progression: ${policy}${policy !== 'off' ? ` | Increment ${number(e.inc || (mode === 'time' ? 5 : loadingStep))} ${mode === 'time' ? 's' : data.unit}` : ''}${mode !== 'cardio' ? ` | Load step ${number(loadingStep)} ${data.unit}` : ''}${mode === 'reps' ? ` | Strict rep targets: ${(e.strictReps ?? data.rules.strictReps) ? 'on' : 'off'}${e.amrap ? ' | AMRAP (target limit does not apply)' : ''}` : ''}`)
       if (e.intensifier?.type === 'dropset') paragraph(`Drop-set: ${e.intensifier.count || 1} drops after each work set | Load reduction ${e.intensifier.pct ?? 20}% per drop`)
       if (e.intensifier?.type === 'restpause') paragraph(`Rest-pause: activation + one working set | Total ${number(displayReps(e.intensifier.totalReps || 1, e))} reps${e.side ? ' / side' : ''} | Cluster rest ${e.intensifier.restSec || 15} s`)
       if (e.sg) paragraph(`Superset: ${e.sg} | Superset move rest: ${restSeconds({ state: data.rules, routine, target: e, phase: 'supersetMove' })} s | Round rest: ${restSeconds({ state: data.rules, routine, target: e, phase: 'supersetRound' })} s`)

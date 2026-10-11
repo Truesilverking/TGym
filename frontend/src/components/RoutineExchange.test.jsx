@@ -5,8 +5,12 @@ import { beforeEach, afterEach, expect, it, vi } from 'vitest'
 import RoutineExchange from './RoutineExchange.jsx'
 import { CATALOGUE } from '../lib/exercises.js'
 import { createRoutineExchange } from '../lib/routine-exchange.js'
-const mock = vi.hoisted(() => ({ S: null, update: vi.fn(), build: vi.fn(), read: vi.fn(), save: vi.fn() }))
-vi.mock('../store/useStore.js', () => ({ useStore: selector => selector({ S: mock.S, update: mock.update }) }))
+const mock = vi.hoisted(() => ({ S: null, update: vi.fn(), build: vi.fn(), read: vi.fn(), save: vi.fn(), flush: vi.fn(), storageWarning: null }))
+vi.mock('../store/useStore.js', () => {
+  const useStore = selector => selector({ S: mock.S, update: mock.update })
+  useStore.getState = () => ({ flushPersistence: mock.flush, storageWarning: mock.storageWarning })
+  return { useStore }
+})
 vi.mock('../lib/i18n.js', () => ({ t: (key, ...args) => args.reduce((s, value, i) => s.replaceAll(`{${i}}`, value), key) }))
 vi.mock('../lib/routine-exchange.js', async original => ({ ...await original(), buildRoutineExchangeFile: (...args) => mock.build(...args), readRoutineExchangeFile: (...args) => mock.read(...args) }))
 vi.mock('../lib/report-file.js', () => ({ saveReportFile: (...args) => mock.save(...args) }))
@@ -21,6 +25,7 @@ beforeEach(() => {
   mock.update.mockReset().mockImplementation(fn => { const draft = structuredClone(mock.S); fn(draft); mock.S = draft })
   mock.build.mockReset().mockResolvedValue({ name: 'TGym-routines.json', blob: new Blob(['fixture']) })
   mock.read.mockReset().mockResolvedValue({ data: createRoutineExchange(mock.S), errors: [] }); mock.save.mockReset().mockResolvedValue(undefined)
+  mock.flush.mockReset().mockResolvedValue(undefined); mock.storageWarning = null
   host = document.createElement('div'); document.body.append(host); root = createRoot(host); close = vi.fn()
 })
 afterEach(() => { act(() => root.unmount()); host.remove() })
@@ -54,7 +59,7 @@ it('shows preview and requires conflicts to be explicitly chosen before one pers
   const conflict = [...host.querySelectorAll('select')].find(el => el.querySelector('option[value="replace"]')); change(conflict, 'replace')
   expect(button('Confirm import').disabled).toBe(true)
   act(() => host.querySelector('input[aria-label="I confirm replacing the selected existing data"]').click())
-  expect(button('Confirm import').disabled).toBe(false); act(() => button('Confirm import').click())
+  expect(button('Confirm import').disabled).toBe(false); await act(async () => button('Confirm import').click())
   expect(mock.update).toHaveBeenCalledTimes(1); expect(mock.S.routines).toHaveLength(1); expect(close).toHaveBeenCalledTimes(1)
 })
 it('previews every prescribed series including warmups, ranges, units and rest before saving', async () => {
@@ -68,7 +73,7 @@ it('previews every prescribed series including warmups, ranges, units and rest b
   expect(host.textContent).toContain('90 s')
   expect(mock.update).not.toHaveBeenCalled()
 })
-it('previews the retained current defaults until imported defaults are explicitly selected', async () => {
+it('previews and imports source prescription rules without overwriting destination defaults', async () => {
   const source = structuredClone(mock.S)
   source.routines[0].id = 'incoming'; source.routines[0].name = 'Incoming routine'; source.routineOrder = ['incoming']
   source.routines[0].ex[0] = { id: CATALOGUE[0].id, sets: 2, reps: 8, weight: 20, setScheme: 'topback', topSets: 1, backoffSets: 1, autoBackoffReps: true }
@@ -77,25 +82,19 @@ it('previews the retained current defaults until imported defaults are explicitl
   mock.read.mockResolvedValue({ data: createRoutineExchange(source), errors: [] })
   render(); await upload()
   const backoff = () => [...host.querySelectorAll('.routine-exchange-series tbody tr')].find(row => row.textContent.includes('Back-off'))
-  expect(backoff().textContent).toContain('8 reps')
-  expect(backoff().textContent).toContain('120 s')
-  const importedDefaults = [...host.querySelectorAll('.routine-exchange-preview label')].find(label => label.textContent.includes('Apply imported default rest, effort and Back-off preferences')).querySelector('input')
-  act(() => importedDefaults.click())
   expect(backoff().textContent).toContain('10 reps')
   expect(backoff().textContent).toContain('30 s')
-  act(() => importedDefaults.click())
-  expect(backoff().textContent).toContain('8 reps')
-  expect(backoff().textContent).toContain('120 s')
-  act(() => button('Confirm import').click())
+  expect(host.textContent).not.toContain('Apply imported default rest, effort and Back-off preferences')
+  await act(async () => button('Confirm import').click())
   expect(mock.S.backoffRepsMode).toBe('same')
   expect(mock.S.restSec).toBe(120)
-  expect(mock.S.routines.find(r => r.id === 'incoming').ex[0].backoffRepsMode).toBeUndefined()
+  expect(mock.S.routines.find(r => r.id === 'incoming').ex[0]).toMatchObject({ backoffRepsMode: 'increased', backoffRepsOverride: true, restSec: 30 })
   expect(mock.update).toHaveBeenCalledTimes(1)
 })
-it('resets schedule and default-rule decisions for a new file and when canceling', async () => {
+it('resets schedule decisions for a new file and when canceling', async () => {
   render(); await upload()
   const options = () => [...host.querySelectorAll('.routine-exchange-preview label input[type="checkbox"]')]
-  act(() => { options()[0].click(); options()[1].click() })
+  act(() => { options().forEach(option => option.click()) })
   await upload()
   expect(options().every(input => !input.checked)).toBe(true)
   act(() => { options()[0].click(); button('Cancel import').click() })
@@ -112,7 +111,9 @@ it('requires an explicit source unit for old plans that omitted it', async () =>
   expect(unit).not.toBeNull(); change(unit, 'lb')
   const conversion = [...host.querySelectorAll('select')].find(el => el.querySelector('option[value="convert"]'))
   expect(conversion).toBeDefined(); change(conversion, 'convert')
-  expect(button('Confirm import').disabled).toBe(false); act(() => button('Confirm import').click())
+  const adaptations = host.querySelector('input[aria-label="I accept these adaptations for this import"]')
+  if (adaptations) act(() => adaptations.click())
+  expect(button('Confirm import').disabled).toBe(false); await act(async () => button('Confirm import').click())
   expect(mock.S.routines[0].ex[0].weight).toBeCloseTo(20 / 2.2046226218)
   expect(mock.update).toHaveBeenCalledTimes(1)
 })
@@ -131,4 +132,60 @@ it('asks for unknown exercise mapping and keeps import blocked until the mapping
   const mapping = [...host.querySelectorAll('select')].find(el => el.querySelector(`option[value="${CATALOGUE[0].id}"]`)); change(mapping, CATALOGUE[0].id)
   const conflict = [...host.querySelectorAll('select')].find(el => el.querySelector('option[value="copy"]')); change(conflict, 'copy')
   expect(button('Confirm import').disabled).toBe(false)
+})
+
+it('keeps a failed primary save reviewable with no profile change and retries the complete draft once', async () => {
+  const source = structuredClone(mock.S); source.routines[0].id = 'new'; source.routines[0].name = 'New'; source.routines[0].ex[0].reps = 12; source.routineOrder = ['new']
+  mock.read.mockResolvedValue({ data: createRoutineExchange(source), errors: [] })
+  const before = structuredClone(mock.S)
+  mock.update.mockImplementationOnce(() => { throw new Error('QuotaExceededError') })
+  render(); await upload(); await act(async () => button('Confirm import').click())
+  expect(mock.S).toEqual(before); expect(close).not.toHaveBeenCalled(); expect(mock.flush).not.toHaveBeenCalled()
+  expect(host.querySelector('[role="alert"]').textContent).toContain('QuotaExceededError')
+  await act(async () => button('Confirm import').click())
+  expect(mock.S.routines).toHaveLength(2); expect(mock.update).toHaveBeenCalledTimes(2); expect(close).toHaveBeenCalledOnce()
+})
+
+it('retries only the mirror after a complete local import, without importing a second copy', async () => {
+  const source = structuredClone(mock.S); source.routines[0].id = 'new'; source.routines[0].name = 'New'; source.routines[0].ex[0].reps = 12; source.routineOrder = ['new']
+  mock.read.mockResolvedValue({ data: createRoutineExchange(source), errors: [] }); mock.flush.mockRejectedValueOnce(new Error('Native unavailable'))
+  render(); await upload(); await act(async () => button('Confirm import').click())
+  expect(mock.S.routines).toHaveLength(2); expect(mock.update).toHaveBeenCalledOnce(); expect(close).not.toHaveBeenCalled()
+  expect(host.querySelector('[role="alert"]').textContent).toContain('will not be repeated')
+  expect(button('Cancel import')).toBeUndefined()
+  await act(async () => button('Retry saving').click())
+  expect(mock.S.routines).toHaveLength(2); expect(mock.update).toHaveBeenCalledOnce(); expect(mock.flush).toHaveBeenCalledTimes(2); expect(close).toHaveBeenCalledOnce()
+})
+
+it('requires acknowledgement of file-level legacy resource warnings and cancellation leaves the profile unchanged', async () => {
+  mock.read.mockResolvedValue({ data: createRoutineExchange(mock.S), errors: [], warnings: [{ sheet: 'Catálogo', row: 2, field: 'definition', message: 'Legacy media cannot be recovered; export the original file again.' }] })
+  const before = structuredClone(mock.S)
+  render(); await upload(); expect(host.textContent).toContain('Legacy media cannot be recovered')
+  const conflict = [...host.querySelectorAll('select')].find(el => el.querySelector('option[value="copy"]')); change(conflict, 'copy')
+  expect(button('Confirm import').disabled).toBe(true)
+  act(() => host.querySelector('input[aria-label="I accept these adaptations for this import"]').click())
+  expect(button('Confirm import').disabled).toBe(false)
+  act(() => button('Cancel import').click())
+  expect(mock.S).toEqual(before); expect(mock.update).not.toHaveBeenCalled()
+})
+
+it('ignores a late file read after cancelling it and permits the next file to recover', async () => {
+  let finish; mock.read.mockImplementationOnce(() => new Promise(resolve => { finish = resolve }))
+  render(); const input = host.querySelector('input[type="file"]'); Object.defineProperty(input, 'files', { configurable: true, value: [new File(['fixture'], 'late.json')] })
+  let pending; act(() => { input.dispatchEvent(new Event('change', { bubbles: true })); pending = true })
+  expect(pending).toBe(true); act(() => button('Cancel').click())
+  await act(async () => finish({ data: createRoutineExchange(mock.S), errors: [] }))
+  expect(host.textContent).not.toContain('Review import'); expect(mock.update).not.toHaveBeenCalled()
+  await upload(); expect(host.textContent).toContain('Review import')
+})
+
+it('previews Rest-pause activation repetitions and the total Working target', async () => {
+  mock.S.routines[0].ex[0] = { id: CATALOGUE[0].id, sets: 3, reps: 8, weight: 30, intensifier: { type: 'restpause', totalReps: 15, restSec: 15 } }
+  mock.read.mockResolvedValue({ data: createRoutineExchange(mock.S), errors: [] })
+  await render(); await upload()
+  const rows = [...host.querySelectorAll('.routine-exchange-series tbody tr')]
+  expect(rows).toHaveLength(2)
+  expect(rows[0].textContent).toContain('Warm-up'); expect(rows[0].textContent).toContain('8 reps · 30 kg')
+  expect(rows[1].textContent).toContain('15 reps · 30 kg')
+  expect(rows[0].textContent).not.toContain('Automatic warm-up')
 })

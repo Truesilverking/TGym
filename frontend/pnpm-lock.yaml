@@ -14,7 +14,7 @@ overrides:
 
 patchedDependencies:
   exceljs@4.4.0:
-    hash: b1ef638cedb95e48f10e62e99e42532a52a6fce0304c143ba39bc4eefb58b7e1
+    hash: b56ea5d492167a8336dcf29e808d0e12b84f1cae327195f4c3a9eb10eb174ca1
     path: patches/exceljs@4.4.0.patch
 
 importers:
@@ -47,7 +47,7 @@ importers:
         version: 7.0.4(@capacitor/core@7.6.8)
       exceljs:
         specifier: 4.4.0
-        version: 4.4.0(patch_hash=b1ef638cedb95e48f10e62e99e42532a52a6fce0304c143ba39bc4eefb58b7e1)
+        version: 4.4.0(patch_hash=b56ea5d492167a8336dcf29e808d0e12b84f1cae327195f4c3a9eb10eb174ca1)
       html-to-image:
         specifier: ^1.11.13
         version: 1.11.13
@@ -2776,7 +2776,7 @@ snapshots:
     dependencies:
       '@types/estree': 1.0.9
 
-  exceljs@4.4.0(patch_hash=b1ef638cedb95e48f10e62e99e42532a52a6fce0304c143ba39bc4eefb58b7e1):
+  exceljs@4.4.0(patch_hash=b56ea5d492167a8336dcf29e808d0e12b84f1cae327195f4c3a9eb10eb174ca1):
     dependencies:
       archiver: 5.3.2
       dayjs: 1.11.23

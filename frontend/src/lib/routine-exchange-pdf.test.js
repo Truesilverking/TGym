@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { createRoutineExchange } from './routine-exchange.js'
+import { createRoutineExchange, exchangeCatalogue } from './routine-exchange.js'
+import { CATALOGUE } from './exercises.js'
 import { routinePDFPages } from './routine-exchange-pdf.js'
 
 const fixture = () => ({
@@ -47,10 +48,22 @@ describe('routine PDF complete prescription projection', () => {
   it('presents the current app rule for an unmarked stale snapshot and labels its inheritance', () => {
     const S = fixture(), e = S.routines[0].ex[0]
     e.backoffRepsMode = 'increased'; e.backoffRepOffset = 4
-    const svg = content(routinePDFPages(createRoutineExchange(S)))
+    // A v1 payload still contains the raw inherited snapshot. V2 explicitly freezes it.
+    const data = {tgym_routine_exchange:1,unit:S.unit,routines:S.routines,catalog:exchangeCatalogue(S),rules:S,week:S.week,dayPlan:S.dayPlan}
+    const svg = content(routinePDFPages(data))
     expect(svg).toContain('6-8 reps / side')
     expect(svg).not.toContain('8-10 reps / side')
     expect(svg).toContain('Reps same (follow app setting)')
+  })
+
+  it('freezes inherited v2 rules and prints the load grid independently of progression', () => {
+    const S=fixture(),id=CATALOGUE.find(ex=>ex.bp==='back').id
+    S.unit='kg';S.routines[0].ex=[{id,sets:3,reps:8,weight:103,inc:2.5,setScheme:'topback',topSets:1,backoffSets:2,topRepsMin:6,topRepsMax:8,backoffPct:15}]
+    const data=createRoutineExchange(S),svg=content(routinePDFPages(data))
+    expect(data.routines[0].ex[0]).toMatchObject({loadingStep:5,backoffRepsOverride:true})
+    expect(svg).toContain('90 kg');expect(svg).not.toContain('87.5 kg')
+    expect(svg).toContain('Increment 2.5 kg | Load step 5 kg')
+    expect(svg).toContain('Reps same');expect(svg).not.toContain('follow app setting')
   })
 
   it('renders rest-pause activation and one work total according to the existing execution helper', () => {

@@ -2,6 +2,12 @@ import english from '../lib/english-fallback.js'
 // Spanish UI strings. Keys are the English source strings (see lib/i18n.js).
 export default {
   ...english,
+  "The routines are saved locally. Could not finish saving the local copy. Check available storage and retry saving; the import will not be repeated.": "Las rutinas se guardaron en este dispositivo. No se pudo completar la copia local. Revisa el espacio disponible y reintenta guardar; la importación no se repetirá.",
+  "The complete import is saved locally. Retry saving the local copy.": "La importación completa está guardada en este dispositivo. Reintenta guardar la copia local.",
+  "Choose an existing exercise instead": "Elegir un ejercicio existente en su lugar",
+  "Review the settings that differ on this device:": "Revisa los ajustes que difieren en este dispositivo:",
+  "I accept these adaptations for this import": "Acepto estas adaptaciones para esta importación",
+  "Routine prescriptions retain their transferred settings. This device keeps its global preferences and workout history.": "Las prescripciones conservan los ajustes transferidos. Este dispositivo mantiene sus preferencias generales y su historial de entrenamientos.",
   "Could not save the pre-update backup. Check available storage and try again. Your TGym data was kept.": "No se pudo guardar la copia previa a la actualización. Revisa el espacio disponible e inténtalo de nuevo. Tus datos de TGym se conservaron.",
   "Training days in this streak": "Días de entrenamiento en esta racha",
   "Complete today's workout to keep your streak.": "Completa el entrenamiento de hoy para mantener tu racha.",

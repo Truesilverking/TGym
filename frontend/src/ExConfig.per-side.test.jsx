@@ -28,6 +28,12 @@ function mount(cfg) {
   saved = vi.fn()
   act(() => { root.render(<Modals />); exConfigSheet(exOr('0025'), { sets: 3, mode: 'reps', bodyweight: false, weight: 20, ...cfg }, saved) })
 }
+it.each(['reps', 'time'])('retains transferred loading and rest rules after editing a %s prescription', mode => {
+  const transferred = { loadingStep: 5, warmupRestSec: 20, supersetMoveRestSec: 10, supersetRoundRestSec: 150 }
+  mount({ mode, reps: 8, sec: 45, restSec: 75, ...transferred })
+  click('Save')
+  expect(saved).toHaveBeenCalledWith(expect.objectContaining({ ...transferred, restSec: 75 }))
+})
 beforeEach(() => {
   vi.useFakeTimers()
   bindUI(useUI)

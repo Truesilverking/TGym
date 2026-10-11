@@ -142,8 +142,9 @@ export function matchesExerciseSearch(exercise, query) {
 const ENV = import.meta.env || {}
 const IMG_BASE = ENV.VITE_IMG_BASE || 'img/'
 const GIF_BASE = ENV.VITE_GIF_BASE || 'gif/'
-export const imgSrc = ex => String(ex?.img || '').startsWith('data:') ? ex.img : IMG_BASE + ex.img
-export const gifSrc = ex => String(ex?.gif || '').startsWith('data:') ? ex.gif : GIF_BASE + ex.gif
+const mediaSrc = (value, base) => /^(?:data:|https:\/\/)/i.test(String(value || '')) ? value : base + value
+export const imgSrc = ex => mediaSrc(ex?.img, IMG_BASE)
+export const gifSrc = ex => mediaSrc(ex?.gif, GIF_BASE)
 
 // Cardio exercises log time + speed instead of weight × reps.
 export const isCardio = idOrEx => (typeof idOrEx === 'string' ? EXIDX[idOrEx] : idOrEx)?.bp === 'cardio'

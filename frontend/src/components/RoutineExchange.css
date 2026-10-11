@@ -15,3 +15,4 @@
 .routine-exchange-series th, .routine-exchange-series td { padding: 6px 4px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--sep); overflow-wrap: anywhere; }
 .routine-exchange-series th:first-child { width: 25%; }
 .routine-exchange-series th:last-child { width: 18%; }
+.routine-exchange-review-fields { border: 0; padding: 0; margin: 0; min-width: 0; }

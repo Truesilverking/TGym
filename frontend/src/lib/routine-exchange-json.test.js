@@ -41,7 +41,8 @@ describe('JSON import boundary regressions', () => {
     expect(check.needsLegacyUnit).toBe(true)
     expect(check.sourceData).toEqual(legacy)
     expect(() => applyRoutineExchange(state, check)).toThrow(/Choose how/)
-    const next = applyRoutineExchange(state, check, { conflicts: { unit: 'convert' } })
+    expect(() => applyRoutineExchange(state, check, { conflicts: { unit: 'convert' } })).toThrow(/explicitly accept/)
+    const next = applyRoutineExchange(state, check, { conflicts: { unit: 'convert' }, acceptAdaptations: true })
     expect(next.routines[0].ex[0].weight).toBeCloseTo(45.359237)
     expect(next.week).toEqual(state.week)
   })
@@ -83,7 +84,10 @@ describe('JSON import boundary regressions', () => {
     S.routines[0].ex[0].note = '@literal prescription áéíóú'
     const data = JSON.parse(JSON.stringify(createRoutineExchange(S))), state = empty()
     const next = applyRoutineExchange(state, validateRoutineExchange(data, state))
-    expect(next.routines).toEqual(S.routines)
+    expect(next.routines).toEqual(data.routines)
+    expect(next.routines[0].name).toBe(S.routines[0].name)
+    expect(next.routines[0].note).toBe(S.routines[0].note)
+    expect(next.routines[0].ex[0].note).toBe(S.routines[0].ex[0].note)
     expect(next.workouts).toEqual(state.workouts)
   })
 
@@ -138,17 +142,17 @@ describe('JSON import boundary regressions', () => {
     expect(next.exNotes).toEqual(state.exNotes)
   })
 
-  it('preserves deload configuration and converts a portable weight step only when opted in', () => {
+  it('reviews source deload differences without replacing destination globals and converts only the imported loading step', () => {
     const S = source()
     S.deload = { on: true, notifications: false, normalWeeks: 6, deloadWeeks: 1, loadPct: 80, setPct: 60, targetRir: 4, startDate: '2026-10-10' }
     const data = createRoutineExchange(S), state = { ...empty(), unit: 'lb', step: 5 }, checked = validateRoutineExchange(data, state)
     expect(checked.errors).toEqual([])
-    const next = applyRoutineExchange(state, checked, { conflicts: { unit: 'convert' }, rules: true })
-    expect(next.deload).toEqual(S.deload)
-    expect(next.step).toBeCloseTo(S.step * 2.2046226218)
-    const withoutRules = applyRoutineExchange(state, checked, { conflicts: { unit: 'convert' } })
-    expect(withoutRules.deload).toBeUndefined()
-    expect(withoutRules.step).toBe(5)
+    expect(checked.adaptations).toEqual(expect.arrayContaining([expect.objectContaining({key:'deload',source:S.deload})]))
+    expect(() => applyRoutineExchange(state, checked, {conflicts:{unit:'convert'},rules:true})).toThrow(/explicitly accept/)
+    const next = applyRoutineExchange(state, checked, {conflicts:{unit:'convert'},acceptAdaptations:true,rules:true})
+    expect(next.deload).toBeUndefined(); expect(next.step).toBe(5)
+    expect(next.routines[0].ex[0].loadingStep).toBeCloseTo(data.routines[0].ex[0].loadingStep * 2.2046226218)
+    expect(state.deload).toBeUndefined(); expect(state.routines).toEqual([])
   })
 
   it('does not invent a missing start date for an enabled deload cycle', () => {
@@ -199,14 +203,16 @@ describe('JSON import boundary regressions', () => {
     S.routineOrder = ['routine-2', 'routine']; S.week = { 1: ['routine', 'routine-2'] }; S.dayPlan = { '2026-10-10': ['routine-2', 'routine'] }
     const data = JSON.parse(JSON.stringify(createRoutineExchange(S))), checked = validateRoutineExchange(data, state)
     expect(checked.errors).toEqual([])
-    const first = applyRoutineExchange(state, checked, { schedule: true, rules: true })
+    const first = applyRoutineExchange(state, checked, {schedule:true,acceptAdaptations:true})
     const reexported = JSON.parse(JSON.stringify(createRoutineExchange(first)))
     expect(reexported.routines).toEqual(data.routines)
     expect(reexported.week).toEqual(data.week); expect(reexported.dayPlan).toEqual(data.dayPlan)
-    expect(reexported.rules).toEqual(data.rules)
+    expect(first.backoffRepsMode).toBeUndefined(); expect(first.strictReps).toBeUndefined(); expect(first.effort).toBeUndefined()
+    expect(reexported.rules.effort).toBe('none')
+    expect(reexported.routines[1].ex[0]).toMatchObject({backoffRepsMode:'same',backoffRepsOverride:true,strictReps:true,restSec:90})
     expect(reexported.catalog.filter(ex => ex.custom)).toEqual(data.catalog.filter(ex => ex.custom))
     const rechecked = validateRoutineExchange(reexported, first), choices = Object.fromEntries(rechecked.conflicts.map(c => [c.key, 'replace']))
-    const second = applyRoutineExchange(first, rechecked, { conflicts: choices, schedule: true, rules: true })
+    const second = applyRoutineExchange(first, rechecked, {conflicts:choices,schedule:true})
     expect(second).toEqual(first)
   })
 })

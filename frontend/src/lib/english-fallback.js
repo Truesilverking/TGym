@@ -1,5 +1,11 @@
 // Explicit source-language fallback. Entries in language packs override these values.
 export default {
+  "The routines are saved locally. Could not finish saving the local copy. Check available storage and retry saving; the import will not be repeated.": "The routines are saved locally. Could not finish saving the local copy. Check available storage and retry saving; the import will not be repeated.",
+  "The complete import is saved locally. Retry saving the local copy.": "The complete import is saved locally. Retry saving the local copy.",
+  "Choose an existing exercise instead": "Choose an existing exercise instead",
+  "Review the settings that differ on this device:": "Review the settings that differ on this device:",
+  "I accept these adaptations for this import": "I accept these adaptations for this import",
+  "Routine prescriptions retain their transferred settings. This device keeps its global preferences and workout history.": "Routine prescriptions retain their transferred settings. This device keeps its global preferences and workout history.",
   "Could not save the pre-update backup. Check available storage and try again. Your TGym data was kept.": "Could not save the pre-update backup. Check available storage and try again. Your TGym data was kept.",
   "Training days in this streak": "Training days in this streak",
   "Complete today's workout to keep your streak.": "Complete today's workout to keep your streak.",

@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { CATALOGUE } from './exercises.js'
 import { repBounds, withBackoffRepsMode } from './training-plan.js'
-import { applyRoutineExchange, createRoutineExchange, createRoutineWorkbook, parseRoutineWorkbook, routineExchangeRows, validateRoutineExchange } from './routine-exchange.js'
+import { applyRoutineExchange, createRoutineExchange as createPortableExchange, exchangeCatalogue, createRoutineWorkbook, parseRoutineWorkbook, routineExchangeRows, validateRoutineExchange } from './routine-exchange.js'
+import { materializeRoutinePrescription } from './routine-portability.js'
 
 const id = CATALOGUE[0].id
+// Actual archived v1 files retain raw prescriptions; v2 snapshots are tested separately.
+const createRoutineExchange = S => ({ ...createPortableExchange({ ...S, routines: [] }, []), tgym_routine_exchange: 1, routines: structuredClone(S.routines), routineOrder: S.routineOrder, week: S.week, dayPlan: S.dayPlan, catalog: exchangeCatalogue(S) })
 const cfg = extra => ({ id, sets: 3, reps: 6, weight: 100, setScheme: 'topback', topSets: 1, backoffSets: 2, topRepsMin: 4, topRepsMax: 6, backoffPct: 10, ...extra })
 const state = (ex, mode = 'increased') => ({ unit: 'kg', backoffRepsMode: mode, restSec: 90, routines: [{ id: 'r', name: 'Reglas Back-off', ex }], routineOrder: ['r'], customEx: [], week: {}, dayPlan: {} })
 const target = (mode = 'increased') => ({ ...state([], mode), routines: [], routineOrder: [], workouts: [{ id: 'history', entries: [] }], active: { id: 'active', entries: [] } })
@@ -25,7 +28,8 @@ describe('routine Back-off intent across JSON, Excel and execution', () => {
     const S = state([cfg(snapshot)], mode), data = createRoutineExchange(S)
     const checked = validateRoutineExchange(JSON.stringify(data), target(mode))
     expect(checked.errors).toEqual([])
-    expect(checked.data.routines[0].ex[0]).toEqual(S.routines[0].ex[0])
+    expect(checked.sourceData.routines[0].ex[0]).toEqual(S.routines[0].ex[0])
+    expect(checked.data.routines[0]).toEqual(materializeRoutinePrescription(S, S.routines[0]))
     const rows = backoffRows(data), expected = mode === 'same' ? [4, 6] : [6, 8]
     expect(rows.map(row => row.slice(3, 5))).toEqual([expected, expected])
     expect(rows.map(row => row[12])).toEqual(['inherit', 'inherit'])
@@ -46,16 +50,17 @@ describe('routine Back-off intent across JSON, Excel and execution', () => {
     if (rule.startsWith('legacy:')) expect(importedCfg).not.toHaveProperty('backoffRepsMode')
     const before = target(profile), checked = validateRoutineExchange(parsed.data, before)
     expect(checked.errors).toEqual([])
-    const imported = applyRoutineExchange(before, checked)
+    const imported = applyRoutineExchange(before, checked, { acceptAdaptations: true })
+    const storedCfg = imported.routines[0].ex[0]
     expect(imported.workouts).toEqual(before.workouts)
     expect(imported.active).toEqual(before.active)
     expect(repBounds(withBackoffRepsMode(imported.routines[0].ex[0], imported), 'backoff')).toEqual({ min: expected[0], max: expected[1] })
-    const json = JSON.stringify(createRoutineExchange(imported)), jsonChecked = validateRoutineExchange(json, target(profile))
+    const json = JSON.stringify(createPortableExchange(imported)), jsonChecked = validateRoutineExchange(json, target(profile))
     expect(jsonChecked.errors).toEqual([])
-    expect(jsonChecked.data.routines[0].ex[0]).toEqual(importedCfg)
+    expect(jsonChecked.data.routines[0].ex[0]).toEqual(storedCfg)
     const again = await roundtrip(imported)
     expect(again.errors).toEqual([])
-    expect(again.data.routines[0].ex[0]).toEqual(importedCfg)
+    expect(again.data.routines[0].ex[0]).toEqual(storedCfg)
     expect(backoffRows(again.data).map(row => row.slice(3, 5))).toEqual([expected, expected])
     expect(backoffRows(again.data).map(row => row[12])).toEqual([rule, rule])
   })

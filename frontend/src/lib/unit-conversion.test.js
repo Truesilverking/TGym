@@ -2,6 +2,18 @@ import { describe, expect, it } from 'vitest'
 import { convertMeasurementState, convertWeightState, weightStepFor } from './unit-conversion.js'
 
 describe('stored unit conversion', () => {
+  it('converts portable loading grids without converting timed progression seconds', () => {
+    const cfg = { id: 'timed', mode: 'time', weight: 20, inc: 5, loadingStep: 2.5 }
+    const S = { unit: 'kg', routines: [{ ex: [cfg] }], active: { entries: [{ target: { ...cfg }, sets: [] }] } }
+    convertWeightState(S, 'lb')
+    expect(cfg.inc).toBe(5)
+    expect(cfg.loadingStep).toBeCloseTo(2.5 * 2.2046226218487757, 5)
+    expect(S.active.entries[0].target.inc).toBe(5)
+    expect(S.active.entries[0].target.loadingStep).toBeCloseTo(cfg.loadingStep, 6)
+    convertWeightState(S, 'kg')
+    expect(cfg.loadingStep).toBeCloseTo(2.5, 5)
+    expect(cfg.inc).toBe(5)
+  })
   it('converts the auto-finish resume snapshot together with its history entry', () => {
     const S={unit:'kg',workouts:[{resumeSnapshot:{unit:'kg',entries:[{sets:[{w:100}]}]}}]}
     convertWeightState(S,'lb')

@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { createRequire } from 'node:module'
 import { CATALOGUE } from './exercises.js'
-import { createRoutineExchange, createRoutineWorkbook, parseRoutineWorkbook, validateRoutineExchange, routineExchangeRows } from './routine-exchange.js'
+import { createRoutineExchange as createPortableExchange, exchangeCatalogue, createRoutineWorkbook, parseRoutineWorkbook, validateRoutineExchange, routineExchangeRows } from './routine-exchange.js'
 
 const id = CATALOGUE[0].id
 const state = (ex = [{ id, sets: 2, reps: 8, weight: 20 }]) => ({ unit: 'kg', restSec: 90, step: 2.5, backoffRepsMode: 'same', routines: [{ id: 'r', name: 'Prueba de acentos y fuerza', ex }], customEx: [], week: { 0: [], 1: ['r'] }, dayPlan: {}, routineOrder: ['r'] })
+// Archived v1 prescriptions keep their original absence/inheritance semantics.
+// New portable-v2 exports are exercised separately in routine-exchange-excel-v2.test.js.
+const createRoutineExchange = S => ({ ...createPortableExchange({ ...S, customEx: [] }), tgym_routine_exchange: 1, routines: structuredClone(S.routines), catalog: exchangeCatalogue(S) })
 const parse = async (S, edit) => {
   const book = await createRoutineWorkbook(createRoutineExchange(S))
   edit?.(book)

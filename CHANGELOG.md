@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.15.64
+
+- Routine exchange format 2 transfers effective exercise prescriptions, source loading grids and embedded custom GIF/image resources between desktop and phones without replacing destination preferences or importing workout results. Version 1 Excel/JSON and old plan readers remain available with explicit migration/adaptation review.
+- Imports remap collided custom identities, reserve IDs referenced by deleted routines/history/resume snapshots, detect equivalent repeated routines across different local IDs, and require explicit mapping/conflict choices before one complete persisted update. Failed local mirrors can be retried without repeating a committed import.
+- Excel keeps the existing five editable sheets/header prefixes, uses an expandable catalogue dropdown, validates matching metadata versions and rejects ambiguous decimal strings, missing custom resources, oversized archives and ZIP CRC corruption. Rest-pause rows and Back-off loading now match execution and PDF.
+- Source prescription rules survive target editing, kg/lb conversion, workout start and Top/warm-up weight edits. Existing unmarked routines retain their inherited preference behavior; personal historical progression and deload calendars remain local.
+- PDF reuses the shared series representation, with readable units, notes, aliases/original names and pagination; Progress Report remains separate.
+
 ## 1.15.63
 
 - Fix desktop/PWA updates blocked by the pre-update safety copy when a valid profile with uploaded GIFs nearly fills localStorage. Commit the portable backup to a separate IndexedDB snapshot before activating the worker, with the existing localStorage key as a fallback.

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { CATALOGUE } from './exercises.js'
 import { createRoutineExchange, validateRoutineExchange, applyRoutineExchange, createRoutineWorkbook, parseRoutineWorkbook, readRoutineExchangeFile, routineExchangeRows, buildRoutineExchangeFile } from './routine-exchange.js'
 import { routinePDFPages } from './routine-exchange-pdf.js'
+import { materializeRoutinePrescription } from './routine-portability.js'
 
 const known = CATALOGUE[0].id
 function fixture() {
@@ -21,18 +22,18 @@ describe('routine exchange identities, validation and atomic import', () => {
   it('exports selected routines and their ordered schedule without user workout results', () => {
     const data = createRoutineExchange(fixture(), ['r1'])
     expect(data.routines.map(r => r.id)).toEqual(['r1']); expect(data.week[1]).toEqual(['r1'])
-    expect(data.catalog.filter(ex => ex.custom)).toHaveLength(2)
+    expect(data.catalog.filter(ex => ex.custom)).toHaveLength(1)
     expect(data.workouts).toBeUndefined(); expect(data.active).toBeUndefined()
     expect(data.catalog.find(ex => ex.id === known).n).toBe(CATALOGUE[0].n)
   })
   it('JSON preserves all configuration, custom definition, aliases, schedule and order', () => {
     const S = fixture(), data = JSON.parse(JSON.stringify(createRoutineExchange(S))), check = validateRoutineExchange(data, empty())
     expect(check.errors).toEqual([]); expect(check.unresolved).toEqual([])
-    const imported = applyRoutineExchange(empty(), check, { schedule: true, rules: true })
-    expect(imported.routines).toEqual([S.routines[1], S.routines[0]])
-    expect(imported.customEx).toEqual(S.customEx); expect(imported.exerciseAliases).toEqual(S.exerciseAliases)
+    const imported = applyRoutineExchange(empty(), check, { schedule: true, acceptAdaptations: true })
+    expect(imported.routines).toEqual([S.routines[1], S.routines[0]].map(r => materializeRoutinePrescription(S, r)))
+    expect(imported.customEx.toSorted((a, b) => a.id.localeCompare(b.id))).toEqual(S.customEx.toSorted((a, b) => a.id.localeCompare(b.id))); expect(imported.exerciseAliases).toEqual(S.exerciseAliases)
     expect(imported.week).toEqual(S.week); expect(imported.dayPlan).toEqual(S.dayPlan); expect(imported.routineOrder).toEqual(S.routineOrder)
-    expect(imported.backoffRepsMode).toBe('same'); expect(imported.workouts).toEqual([{ id: 'old' }]); expect(imported.active).toEqual({ id: 'live' })
+    expect(imported.backoffRepsMode).toBeUndefined(); expect(imported.routines[1].ex[0].backoffRepsMode).toBe('increased'); expect(imported.workouts).toEqual([{ id: 'old' }]); expect(imported.active).toEqual({ id: 'live' })
   })
   it('requires explicit unknown-ID mapping and never resolves duplicate names by guessing', () => {
     const data = createRoutineExchange(fixture()); data.routines[0].ex[0].id = 'unknown'; data.catalog.push({ id: 'unknown', n: 'Duplicate original' })
@@ -74,7 +75,7 @@ describe('routine exchange identities, validation and atomic import', () => {
   it('requires renewed review after relevant live data changes, while timer-only changes remain valid', () => {
     const S = fixture(), check = validateRoutineExchange(createRoutineExchange(S), S), choices = Object.fromEntries(check.conflicts.map(conflict => [conflict.key, 'replace']))
     S.active.clock = { elapsed: 12 }; S._ts = 999
-    expect(() => applyRoutineExchange(S, check, { conflicts: choices })).not.toThrow()
+    expect(() => applyRoutineExchange(S, check, { conflicts: choices, acceptAdaptations: true })).not.toThrow()
     S.routines[0].name = 'Edited during preview'
     expect(() => applyRoutineExchange(S, check, { conflicts: choices })).toThrow(/changed during review/)
     expect(S.routines[0].name).toBe('Edited during preview')
@@ -91,14 +92,14 @@ describe('routine exchange identities, validation and atomic import', () => {
     const S = fixture(), e = S.routines[0].ex[0]
     e.repRange = false; e.repsMin = 99; e.topRepsMin = 99; e.backoffRepsMin = 99; e.backoffRepsMax = 1
     const data = createRoutineExchange(S), checked = validateRoutineExchange(data, empty())
-    expect(checked.errors).toEqual([]); expect(checked.data.routines[1].ex[0]).toEqual(e)
+    expect(checked.errors).toEqual([]); expect(checked.data.routines[1].ex[0]).toEqual(materializeRoutinePrescription(S, S.routines[0]).ex[0])
     const rows = routineExchangeRows(data).Series.filter(row => row[0] === 'r1:1')
     expect(rows.find(row => row[2] === 'Top').slice(3, 5)).toEqual([8, 8]); expect(rows.find(row => row[2] === 'Back-off').slice(3, 5)).toEqual([10, 10])
   })
   it('converts weight units explicitly and leaves timed increments in seconds', () => {
     const data = createRoutineExchange(fixture()), S = { ...empty(), unit: 'lb' }, checked = validateRoutineExchange(data, S)
     expect(() => applyRoutineExchange(S, checked)).toThrow()
-    const next = applyRoutineExchange(S, checked, { conflicts: { unit: 'convert' } })
+    const next = applyRoutineExchange(S, checked, { conflicts: { unit: 'convert' }, acceptAdaptations: true })
     expect(next.routines[1].ex[0].weight).toBeCloseTo(220.462262, 5)
     expect(next.routines[0].ex[0].inc).toBe(5)
   })
@@ -108,16 +109,16 @@ describe('editable native XLSX round trip', () => {
   it('has true linked dropdowns, exact original names and separate aliases', async () => {
     const S = fixture(), workbook = await createRoutineWorkbook(createRoutineExchange(S))
     expect(workbook.worksheets.filter(sheet => sheet.state === 'visible').map(sheet => sheet.name)).toEqual(['Instrucciones', 'Rutinas', 'Ejercicios de rutina', 'Series', 'Catálogo'])
-    expect(workbook.getWorksheet('Ejercicios de rutina').dataValidations.model['C2:C10001']).toMatchObject({ type: 'list', formulae: ['TGymExercises'] })
+    expect(workbook.getWorksheet('Ejercicios de rutina').dataValidations.model['C2:C10001']).toMatchObject({ type: 'list', formulae: ['INDIRECT("TGymCatalogue[Selector]")'] })
     expect(workbook.getWorksheet('Series').dataValidations.model['C2:C10001'].type).toBe('list')
     const selectors = routineExchangeRows(createRoutineExchange(S)).Catálogo.filter(row => row[1] === 'Duplicate original').map(row => row[4]); expect(new Set(selectors).size).toBe(2)
   })
   it('preserves every routine field and custom catalog definition through real serialized XLSX', async () => {
     const S = fixture(), parsed = await roundtrip(S)
-    expect(parsed.errors).toEqual([]); expect(parsed.data.routines).toEqual([S.routines[1], S.routines[0]])
+    expect(parsed.errors).toEqual([]); expect(parsed.data.routines).toEqual([S.routines[1], S.routines[0]].map(r => materializeRoutinePrescription(S, r)))
     const checked = validateRoutineExchange(parsed.data, empty()); expect(checked.errors).toEqual([])
-    const imported = applyRoutineExchange(empty(), checked, { schedule: true, rules: true })
-    expect(imported.customEx).toEqual(S.customEx); expect(imported.week).toEqual(S.week); expect(imported.dayPlan).toEqual(S.dayPlan)
+    const imported = applyRoutineExchange(empty(), checked, { schedule: true, acceptAdaptations: true })
+    expect(imported.customEx.toSorted((a, b) => a.id.localeCompare(b.id))).toEqual(S.customEx.toSorted((a, b) => a.id.localeCompare(b.id))); expect(imported.week).toEqual(S.week); expect(imported.dayPlan).toEqual(S.dayPlan)
   })
   it('imports edited names, notes, order, weekly schedule and shared working targets', async () => {
     const S = fixture(); S.routines = [{ id: 'working', name: 'Before', ex: [{ id: known, sets: 2, reps: 8, weight: 20, note: 'old' }] }]; S.week = { 1: ['working'] }; S.dayPlan = {}; S.routineOrder = ['working']
@@ -158,7 +159,7 @@ describe('editable native XLSX round trip', () => {
   })
   it('exports a downloadable empty template with current full catalog, without fake user routines', async () => {
     const file = await buildRoutineExchangeFile(fixture(), [], 'xlsx', { template: true })
-    expect(file.name).toContain('routine-template-v1'); const parsed = await parseRoutineWorkbook(await file.blob.arrayBuffer()); expect(parsed.errors).toEqual([]); expect(parsed.data.routines).toEqual([]); expect(parsed.data.catalog.length).toBe(CATALOGUE.length + 2)
+    expect(file.name).toContain('routine-template-v2'); const parsed = await parseRoutineWorkbook(await file.blob.arrayBuffer()); expect(parsed.errors).toEqual([]); expect(parsed.data.routines).toEqual([]); expect(parsed.data.catalog.length).toBe(CATALOGUE.length + 2)
   })
 })
 

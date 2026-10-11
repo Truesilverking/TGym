@@ -42,7 +42,7 @@ import { parseImport, mergeImport } from './lib/import-csv.js'
 import { buildPlanBundle, parsePlan, mergePlan, printPlan } from './lib/plan-share.js'
 import RoutineExchange from './components/RoutineExchange.jsx'
 import { estimate1RM, best1RM, is1RMRecord, REP_CAP } from './lib/onerm.js'
-import { nextPrescription, applyPrescription, policyFor, defaultIncrement, POLICIES_FOR, POLICY_NAME, POLICY_DESC, MAX_BW_SETS } from './lib/progression.js'
+import { nextPrescription, applyPrescription, policyFor, defaultIncrement, loadingStepFor, POLICIES_FOR, POLICY_NAME, POLICY_DESC, MAX_BW_SETS } from './lib/progression.js'
 import { MOBILE, shareExport } from './lib/mobile.js'
 import { buildCompletedWorkout } from './lib/finish-workout.js'
 import { isWarmupRow } from './lib/workout-model.js'
@@ -822,7 +822,10 @@ function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial }) {
     const withWarmups = warmupSets ? { warmupSets } : {}
     // Per exercise, one override is enough: rest between work sets. Legacy per-set,
     // warm-up and after-exercise overrides disappear when this exercise is saved.
-    const restCfg = c.restSec === undefined ? {} : { restSec: Math.max(0, Math.round(c.restSec) || 0) }
+    // Imported prescriptions carry the source loading/rest rules locally. Editing a target
+    // must not drop those rules and unexpectedly adopt this device's global preferences.
+    const transferredRules = c.loadingStep > 0 ? Object.fromEntries(['loadingStep', 'warmupRestSec', 'supersetMoveRestSec', 'supersetRoundRestSec'].filter(key => c[key] != null).map(key => [key, c[key]])) : {}
+    const restCfg = { ...transferredRules, ...(c.restSec === undefined ? {} : { restSec: Math.max(0, Math.round(c.restSec) || 0) }) }
     if (cardio) onSave({ sets, min: Math.max(1, Math.round(c.min) || 20), speed: Math.max(0, c.speed || 8), ...withNote, ...restCfg })
     else if (mode === 'time') onSave({ sets, mode: 'time', sec: Math.max(1, Math.round(c.sec) || 45), weight: Math.max(0, c.weight || 0), ...flags, ...(perSide ? { side: true, ...(c.repsPerSide ? {repsPerSide:true} : {}) } : {}), ...prog, ...withNote, ...withWarmups, ...restCfg })
     else {
@@ -1577,7 +1580,7 @@ export function beginWorkout(routineId, bw) {
   const deload = deloadStatus(st)
   const entries = (r ? r.ex : []).map(cfg => {
     const plan = nextPrescription(st, cfg, r)
-    const step = defaultIncrement(cfg.id, st.unit)
+    const step = loadingStepFor(cfg, st.unit)
     const prescribed = applyPrescription(buildSets(st, cfg, { step }), plan, step)
     const target = deloadTargetFor(withBackoffRepsMode(cfg, st), deload)
     const sets = applyIntensifierPlan(applyTrainingPlan(prescribed, target, step, deload), target)

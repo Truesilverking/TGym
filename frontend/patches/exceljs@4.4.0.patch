@@ -1,3 +1,16 @@
+diff --git a/dist/exceljs.js b/dist/exceljs.js
+index ab2c9d6e576d8069d77d787b863dfe09c7659890..e3cf483db20764ed499af6f750a586e8e732f9a6 100644
+--- a/dist/exceljs.js
++++ b/dist/exceljs.js
+@@ -15737,7 +15737,7 @@ class XLSX {
+       tables: {},
+       vmlDrawings: {}
+     };
+-    const zip = await JSZip.loadAsync(buffer);
++    const zip = await JSZip.loadAsync(buffer, {checkCRC32: true});
+     for (const entry of Object.values(zip.files)) {
+       /* eslint-disable no-await-in-loop */
+       if (!entry.dir) {
 diff --git a/lib/utils/zip-stream.js b/lib/utils/zip-stream.js
 index 96efd8e7be61da1c7e7ee41682aac2182cb39e11..4baa232e5a8a14ba3a0c2329fa07af7c878561c1 100644
 --- a/lib/utils/zip-stream.js
@@ -14,3 +27,23 @@ index 96efd8e7be61da1c7e7ee41682aac2182cb39e11..4baa232e5a8a14ba3a0c2329fa07af7c
          data = stringToBuffer(data);
        }
        this.zip.file(options.name, data);
+diff --git a/lib/xlsx/xlsx.js b/lib/xlsx/xlsx.js
+index ff2d9a117d78cacf727564f74770e1e8f19d0fa1..d2ec72c9a048ee2048d33f8dc21362be1d46db4b 100644
+--- a/lib/xlsx/xlsx.js
++++ b/lib/xlsx/xlsx.js
+@@ -279 +279 @@ class XLSX {
+-    const zip = await JSZip.loadAsync(buffer);
++    const zip = await JSZip.loadAsync(buffer, {checkCRC32: true});
+diff --git a/package.json b/package.json
+index 7a70a5e13145a917b57806a6998b8d5e04f47acd..8a1c0a87b0140412517ab7a0fa871afdfbe22b6c 100644
+--- a/package.json
++++ b/package.json
+@@ -16,7 +16,7 @@
+     "node": ">=8.3.0"
+   },
+   "main": "./excel.js",
+-  "browser": "./dist/exceljs.min.js",
++  "browser": "./dist/exceljs.js",
+   "types": "./index.d.ts",
+   "files": [
+     "dist",

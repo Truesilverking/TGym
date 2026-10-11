@@ -2,6 +2,7 @@
 
 The production version comes from frontend/package.json and must match Android versionName.
 Android versionCode must increase. Current published release: 1.15.63 / 99. See RELEASE-AUDIT-1.15.63.md and DESKTOP-UPDATE-AUDIT-1.15.63.md for exact-source CI, signed/public artifacts and the owner's preserved Windows PWA profile. Real Microsoft Excel/Pixel routine-exchange acceptance and restoration remain in the separate 1.15.62 audits; earlier versions retain their own evidence.
+Routine transfer candidate 1.15.64 / Android100 adds format 2 with format 1 compatibility. Before its tag, verify the exact-source signed candidate, received-file desktop/phone round trips, native QA profile/radio restoration and PWA offline continuity. See ROUTINE-TRANSFER-AUDIT-1.15.64.md and RELEASE-AUDIT-1.15.64.md for current confirmed and pending evidence.
 Run frontend/scripts/check-version.mjs before tagging.
 
 Desktop update correction 1.15.63 / Android99 was published after its exact-source checks, verified signed candidate and corrected-source browser acceptance passed. The owner's installed Windows PWA then loaded63 and reported up to date, with completely equal official portable-profile exports. The tag suppresses the update-delivery notification step; credential validate-only checks and package/PWA publication still run.

@@ -19,9 +19,11 @@ function convertEntry(entry, factor, unit) {
   change(entry, 'topW', factor)
   change(entry, 'topWeight', factor)
   change(entry, 'weight', factor)
-  change(entry, 'inc', factor)
+  if ((entry?.mode || entry?.target?.mode) !== 'time') change(entry, 'inc', factor)
   change(entry?.target, 'weight', factor)
-  change(entry?.target, 'inc', factor)
+  if ((entry?.target?.mode || entry?.mode) !== 'time') change(entry?.target, 'inc', factor)
+  // Loading grids are weights even for timed holds; preserve their precision across units.
+  for (const cfg of [entry, entry?.target]) if (cfg && finite(cfg.loadingStep)) cfg.loadingStep = Math.round(Number(cfg.loadingStep) * factor * 1e6) / 1e6
   if (entry?.target?.unit) entry.target.unit = unit
   // A saved workout contains an array of performed sets, while a routine contains the
   // prescribed set count as a number (`sets: 4`). Both pass through this function.
