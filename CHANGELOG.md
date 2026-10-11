@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.15.61
+
+- Harden routine JSON/XLSX validation, identity mapping, conflict review and atomic import. Import only catalogue metadata used by accepted routines; preserve history and active workouts. Legacy plans without a source unit now require an explicit kg/lb choice.
+- Extend the compatible v1 Excel template with expandable tables, validated routine/instance/catalogue selectors, local decimal support, editable inherited settings and advanced prescription options. Unrelated edits retain inherited Back-off/rest rules and legacy exceptions.
+- Preview every series and require explicit replacement confirmation. Reset schedule/default decisions for each file.
+- Organize routine PDFs with measured, paginated exercise/series tables and readable Top/Back-off and intensity prescriptions; retain names, units, notes and side semantics.
+- Add serialized Excel/JSON round-trip, malformed-file, cancellation, prescription and PDF pagination regressions. Progress Report and storage identifiers are unchanged.
+
 ## 1.15.51
 
 - Refresh Home's local date and training streak at midnight, clock/timezone changes and foreground return without writing the profile or altering history.

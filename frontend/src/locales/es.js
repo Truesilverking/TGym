@@ -1748,4 +1748,13 @@ export default {
 ,"Confirm saves the complete valid import at once. Existing history and active workouts are preserved.":"Confirmar guarda toda la importación válida de una vez. Se conservan el historial y la sesión activa."
 ,"Confirm import":"Confirmar importación"
 ,"Cancel import":"Cancelar importación"
+,"Automatic warm-up":"Calentamiento automático"
+,"per side":"por lado"
+,"Top reps +2":"Reps del Top +2"
+,"Same as Top reps":"Mismas reps del Top"
+,"Independent reps":"Reps independientes"
+,"Prescription":"Prescripción"
+,"I confirm replacing the selected existing data":"Confirmo reemplazar los datos existentes seleccionados"
+,"Source weight unit of the legacy file":"Unidad de peso original del archivo antiguo"
+,"Export failed: {0}":"Exportación fallida: {0}"
 }

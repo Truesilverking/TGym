@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useStore } from '../store/useStore.js'
 import { t } from '../lib/i18n.js'
-import { buildRoutineExchangeFile, readRoutineExchangeFile, validateRoutineExchange, applyRoutineExchange, exchangeCatalogue, routineExchangeReviewKey } from '../lib/routine-exchange.js'
+import { buildRoutineExchangeFile, readRoutineExchangeFile, validateRoutineExchange, applyRoutineExchange, exchangeCatalogue, routineExchangeReviewKey, routineExchangeRows } from '../lib/routine-exchange.js'
+import { displayReps } from '../lib/history.js'
 import { saveReportFile } from '../lib/report-file.js'
 import { Button } from './ui.jsx'
 import './RoutineExchange.css'
@@ -11,16 +12,29 @@ export default function RoutineExchange({ close }) {
   const [selection, setSelection] = useState(() => (S.routines || []).map(r => r.id)), [format, setFormat] = useState('json')
   const [busy, setBusy] = useState(false), [progress, setProgress] = useState(0), [error, setError] = useState(''), [file, setFile] = useState(null)
   const [imported, setImported] = useState(null), [mappings, setMappings] = useState({}), [choices, setChoices] = useState({}), [schedule, setSchedule] = useState(false), [rules, setRules] = useState(false)
+  const [replaceConfirmed, setReplaceConfirmed] = useState(false)
+  const [legacyUnit, setLegacyUnit] = useState('')
   const input = useRef(null), abort = useRef(null), mounted = useRef(true), generation = useRef(0), working = useRef(false)
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; abort.current?.abort(); generation.current++ } }, [])
   const catalogue = useMemo(() => exchangeCatalogue(S), [S])
   const reviewKey = routineExchangeReviewKey(S)
-  useEffect(() => { setChoices({}) }, [reviewKey])
-  const validation = useMemo(() => imported ? validateRoutineExchange(imported.data, S, { exerciseMappings: mappings }) : null, [imported, S, mappings])
+  useEffect(() => { setChoices({}); setReplaceConfirmed(false) }, [reviewKey])
+  const validation = useMemo(() => imported ? validateRoutineExchange(imported.data, S, { exerciseMappings: mappings, legacyUnit }) : null, [imported, S, mappings, legacyUnit])
   const errors = [...(imported?.errors || []), ...(validation?.errors || [])]
   const previewRoutines = Array.isArray(validation?.data?.routines) ? validation.data.routines.filter(routine => routine && typeof routine === 'object') : []
   const previewCatalog = Array.isArray(validation?.data?.catalog) ? validation.data.catalog.filter(ex => ex && typeof ex === 'object') : []
   const allChosen = validation?.conflicts.every(conflict => choices[conflict.key])
+  const replacing = validation?.conflicts.some(conflict => choices[conflict.key] === 'replace')
+  const previewRows = useMemo(() => {
+    if (!validation?.data || errors.length) return []
+    try { return routineExchangeRows({ ...validation.data, rules: { ...S, ...(rules ? validation.data.rules : {}) } }).Series } catch { return [] }
+  }, [validation, imported, S, rules])
+  const prescription = (row, ex) => {
+    const [, , type, min, max, weight, unit, rirMin, rirMax, , , pct, rule, automatic, sec, minutes, speed] = row
+    const range = (lo, hi) => lo === hi ? String(hi) : `${lo}–${hi}`
+    const target = type === 'Warm-up' ? t('Automatic warm-up') : sec !== '' ? `${sec} s` : minutes !== '' ? `${minutes} min · ${speed} km/h` : `${range(displayReps(min, ex), displayReps(max, ex))} reps`
+    return [target + (ex.side ? ` · ${t('per side')}` : ''), weight !== '' && minutes === '' ? `${weight} ${unit}` : '', rirMin !== '' ? `RIR ${range(rirMin, rirMax)}` : '', type === 'Back-off' ? `${pct}% · ${automatic ? rule === 'increased' ? t('Top reps +2') : rule === 'same' ? t('Same as Top reps') : String(rule) : t('Independent reps')}` : ''].filter(Boolean).join(' · ')
+  }
   const cancel = () => { abort.current?.abort(); generation.current++; working.current = false; setBusy(false); setProgress(0) }
   const prepare = async (template = false) => {
     if (working.current) return
@@ -28,7 +42,7 @@ export default function RoutineExchange({ close }) {
     try {
       const next = await buildRoutineExchangeFile(S, selection, template ? 'xlsx' : format, { template, signal: abort.current.signal, onProgress: value => { if (mounted.current && epoch === generation.current) setProgress(value) } })
       if (mounted.current && epoch === generation.current) setFile(next)
-    } catch (e) { if (e.name !== 'AbortError' && mounted.current && epoch === generation.current) setError(t('Could not export. Try again.')) }
+    } catch (e) { if (e.name !== 'AbortError' && mounted.current && epoch === generation.current) setError(t('Export failed: {0}', e.message || t('Could not export. Try again.'))) }
     finally { if (epoch === generation.current) { working.current = false; if (mounted.current) setBusy(false) } }
   }
   const download = async () => {
@@ -40,17 +54,17 @@ export default function RoutineExchange({ close }) {
   }
   const chooseFile = async event => {
     const selected = event.target.files?.[0]; event.target.value = ''; if (!selected || working.current) return
-    const epoch = ++generation.current; working.current = true; setBusy(true); setError(''); setImported(null); setChoices({}); setMappings({})
+    const epoch = ++generation.current; working.current = true; setBusy(true); setError(''); setImported(null); setChoices({}); setMappings({}); setSchedule(false); setRules(false); setReplaceConfirmed(false); setLegacyUnit('')
     try { const parsed = await readRoutineExchangeFile(selected); if (mounted.current && epoch === generation.current) setImported({ ...parsed, name: selected.name }) }
     catch (e) { if (mounted.current && epoch === generation.current) setError(t('Import failed: {0}', e.message)) }
     finally { if (epoch === generation.current) { working.current = false; if (mounted.current) setBusy(false) } }
   }
   const apply = () => {
-    if (working.current || errors.length || !validation?.valid || !allChosen) return
+    if (working.current || errors.length || !validation?.valid || !allChosen || replacing && !replaceConfirmed) return
     working.current = true; setError('')
     try {
       // Recheck against the live state inside the persisted update, then commit one complete draft.
-      update(current => { const next = applyRoutineExchange(current, validation, { conflicts: choices, schedule, rules, exerciseMappings: mappings }); Object.assign(current, next) })
+      update(current => { const next = applyRoutineExchange(current, validation, { conflicts: choices, schedule, rules, exerciseMappings: mappings, legacyUnit }); Object.assign(current, next) })
       setImported(null); setChoices({}); setMappings({}); setFile(null); setError(''); close()
     } catch (e) { setError(t('Import failed: {0}', e.message)) }
     finally { working.current = false }
@@ -74,15 +88,26 @@ export default function RoutineExchange({ close }) {
       <h4>{t('Review import')}</h4><p className="small">{imported.name}</p>
       <p>{t('{0} routines · {1} exercises', validation?.routineCount || 0, validation?.exerciseCount || 0)}</p>
       {validation?.data?.convertedLegacy && <p className="small dim">{t('Legacy plan v1 converted. No unknown exercise is removed automatically.')}</p>}
-      {previewRoutines.map((routine, index) => <details key={`${routine.id}-${index}`}><summary>{String(routine.name || '')} ({Array.isArray(routine.ex) ? routine.ex.length : 0})</summary>{(Array.isArray(routine.ex) ? routine.ex.filter(ex => ex && typeof ex === 'object') : []).map((ex, i) => <p className="small" key={i}>{i + 1}. {String(previewCatalog.find(item => item.id === ex.id)?.n || catalogue.find(item => item.id === ex.id)?.n || ex.id || '')} · {ex.setScheme === 'topback' ? `${ex.topSets || 1} Top + ${ex.backoffSets || 2} Back-off` : `${ex.sets || 1} ${t('Sets')}`}{typeof ex.note === 'string' && ex.note ? ` · ${ex.note}` : ''}</p>)}</details>)}
+      {validation?.needsLegacyUnit && <label>{t('Source weight unit of the legacy file')}<select className="input" aria-label={t('Source weight unit of the legacy file')} value={legacyUnit} onChange={event => { setLegacyUnit(event.target.value); setChoices({}); setReplaceConfirmed(false) }}><option value="">{t('Choose how to import')}</option><option value="kg">kg</option><option value="lb">lb</option></select></label>}
+      {previewRoutines.map((routine, index) => <details key={`${routine.id}-${index}`}>
+        <summary>{String(routine.name || '')} ({Array.isArray(routine.ex) ? routine.ex.length : 0})</summary>
+        {typeof routine.note === 'string' && routine.note && <p className="small">{routine.note}</p>}
+        {(Array.isArray(routine.ex) ? routine.ex : []).map((ex, i) => ex && typeof ex === 'object' ? <div className="routine-exchange-exercise" key={i}>
+          <strong className="small">{i + 1}. {String(previewCatalog.find(item => item.id === ex.id)?.n || catalogue.find(item => item.id === ex.id)?.n || ex.id || '')}</strong>
+          {typeof ex.sg === 'string' && ex.sg && <p className="small">{t('Superset')}: {ex.sg}</p>}
+          {typeof ex.note === 'string' && ex.note && <p className="small">{ex.note}</p>}
+          <table className="routine-exchange-series small"><thead><tr><th>{t('Sets')}</th><th>{t('Prescription')}</th><th>{t('Rest')}</th></tr></thead><tbody>{previewRows.filter(row => row[0] === `${routine.id}:${i + 1}`).map(row => <tr key={row[1]}><td>{row[1]} · {row[2]}</td><td>{prescription(row, ex)}</td><td>{row[9]} s</td></tr>)}</tbody></table>
+        </div> : null)}
+      </details>)}
       {errors.length > 0 && <div role="alert"><p>{t('Fix these errors before importing:')}</p><ul>{errors.map((item, index) => <li key={index}>{item.sheet} {item.row ? `#${item.row}` : ''} · {item.field}: {item.message}</li>)}</ul></div>}
       {validation?.unresolved.map(item => <label key={item.id}>{t('Map unknown exercise: {0}', item.name)}<select className="input" aria-label={t('Map unknown exercise: {0}', item.name)} value={mappings[item.id] || ''} onChange={event => { setMappings(old => ({ ...old, [item.id]: event.target.value })); setChoices({}) }}><option value="">{t('Choose an exercise')}</option>{catalogue.map(ex => <option key={ex.id} value={ex.id}>{ex.selector}{ex.alias ? ` · ${ex.alias}` : ''}</option>)}</select></label>)}
-      {validation?.conflicts.map(conflict => <label key={conflict.key}>{t('Conflict: {0}', conflict.name)}<select className="input" aria-label={t('Conflict: {0}', conflict.name)} value={choices[conflict.key] || ''} onChange={event => setChoices(old => ({ ...old, [conflict.key]: event.target.value }))}><option value="">{t('Choose how to import')}</option>{conflict.kind === 'unit' ? <option value="convert">{t('Convert weights to my current unit')}</option> : <><option value="keep">{t('Keep existing')}</option>{conflict.kind !== 'routine' || conflict.existingId ? <option value="replace">{t('Replace existing')}</option> : null}{conflict.kind === 'routine' && <option value="copy">{t('Import a separate copy')}</option>}</>}</select></label>)}
+      {validation?.conflicts.map(conflict => <label key={conflict.key}>{t('Conflict: {0}', conflict.name)}<select className="input" aria-label={t('Conflict: {0}', conflict.name)} value={choices[conflict.key] || ''} onChange={event => { setChoices(old => ({ ...old, [conflict.key]: event.target.value })); setReplaceConfirmed(false) }}><option value="">{t('Choose how to import')}</option>{conflict.kind === 'unit' ? <option value="convert">{t('Convert weights to my current unit')}</option> : <><option value="keep">{t('Keep existing')}</option>{conflict.kind !== 'routine' || conflict.existingId ? <option value="replace">{t('Replace existing')}</option> : null}{conflict.kind === 'routine' && <option value="copy">{t('Import a separate copy')}</option>}</>}</select></label>)}
+      {replacing && <label className="routine-exchange-choice"><input type="checkbox" aria-label={t('I confirm replacing the selected existing data')} checked={replaceConfirmed} onChange={event => setReplaceConfirmed(event.target.checked)}/>{t('I confirm replacing the selected existing data')}</label>}
       <label className="routine-exchange-choice"><input type="checkbox" checked={schedule} onChange={event => setSchedule(event.target.checked)}/>{t('Apply imported schedule (preserves other routines)')}</label>
       <label className="routine-exchange-choice"><input type="checkbox" checked={rules} onChange={event => setRules(event.target.checked)}/>{t('Apply imported default rest, effort and Back-off preferences')}</label>
       <p className="small dim">{t('Confirm saves the complete valid import at once. Existing history and active workouts are preserved.')}</p>
-      <Button variant="primary" disabled={busy || errors.length > 0 || !validation?.valid || !allChosen} onClick={apply}>{t('Confirm import')}</Button>
-      <Button onClick={() => { setImported(null); setChoices({}); setMappings({}); setError('') }}>{t('Cancel import')}</Button>
+      <Button variant="primary" disabled={busy || errors.length > 0 || !validation?.valid || !allChosen || replacing && !replaceConfirmed} onClick={apply}>{t('Confirm import')}</Button>
+      <Button onClick={() => { setImported(null); setChoices({}); setMappings({}); setSchedule(false); setRules(false); setReplaceConfirmed(false); setLegacyUnit(''); setError('') }}>{t('Cancel import')}</Button>
     </div>}
     {error && <p role="alert">{error}</p>}
     <Button disabled={busy} onClick={close}>{t('Done')}</Button>

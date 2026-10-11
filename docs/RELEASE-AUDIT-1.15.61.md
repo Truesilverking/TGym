@@ -1,0 +1,9 @@
+# TGym 1.15.61 / Android97 release audit
+
+Candidate branch: `fix/routine-exchange-1.15.61`, based on published 1.15.60 / Android96. See [routine audit](ROUTINE-EXCHANGE-AUDIT-1.15.61.md) and [format documentation](ROUTINE-EXCHANGE.md). The user requested commit, push, exact-source CI and publication after checks. No unrelated `cv-studio/` or `output/` data is part of the change.
+
+Local frontend 1812 tests / 168 files, API11, MCP37 plus Node-loadability, source/locale checks and fatigue probes passed. Web, standalone PWA and mobile asset builds passed. Local SDK35/JDK21 Android debug compilation/lint passed. Existing large-chunk and Android dependency warnings remain. Frontend has no lint/typecheck script; production compilation and existing source checks ran. CocoaPods/Xcode were skipped on Windows, so iOS native compilation is not claimed.
+
+Synthetic Chromium/Edge desktop/mobile and WebKit mobile browser checks verify actual JSON/XLSX/PDF downloads, template, round-trip configurations/identity/schedules, atomic preview/cancel/errors and pending runtime workout creation. Actual PDF files reopen/render and were visually inspected. XLSX opens/parses with serialized tables/validations; reconstructed saved styles were visually reviewed. Native Microsoft Excel review stopped on the user's Escape input and remains pending. Physical Android/iOS export/share/installation and notification receipt remain unverified.
+
+Exact-source CI, signed candidate artifact verification and publication results will be appended after they complete. The release tag will include `[skip-update-notifications]` so publication does not send phone notifications while physical handset acceptance remains pending. Public APK/AAB checksums, package/signing identity, manifest/PWA build SHA, ordinary retained-profile update and offline acceptance must be checked after publication; source-version edits alone prove none of these results.

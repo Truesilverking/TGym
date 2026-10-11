@@ -10,3 +10,8 @@
 .routine-exchange-preview ul { padding-left: 20px; }
 .routine-exchange-preview select { width: 100%; min-width: 0; }
 .routine-exchange progress { width: 100%; accent-color: var(--acc); }
+.routine-exchange-exercise { margin: 12px 0; }
+.routine-exchange-series { width: 100%; border-collapse: collapse; table-layout: fixed; margin-top: 6px; }
+.routine-exchange-series th, .routine-exchange-series td { padding: 6px 4px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--sep); overflow-wrap: anywhere; }
+.routine-exchange-series th:first-child { width: 25%; }
+.routine-exchange-series th:last-child { width: 18%; }
