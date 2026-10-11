@@ -7,6 +7,7 @@
 - Excel keeps the existing five editable sheets/header prefixes, uses an expandable catalogue dropdown, validates matching metadata versions and rejects ambiguous decimal strings, missing custom resources, oversized archives and ZIP CRC corruption. Rest-pause rows and Back-off loading now match execution and PDF.
 - Source prescription rules survive target editing, kg/lb conversion, workout start and Top/warm-up weight edits. Existing unmarked routines retain their inherited preference behavior; personal historical progression and deload calendars remain local.
 - PDF reuses the shared series representation, with readable units, notes, aliases/original names and pagination; Progress Report remains separate.
+- Excel instructions wrap without clipped guidance. Real Microsoft Excel blank-template authoring and edited-file imports, bidirectional desktop/Pixel JSON/Excel transfers, offline animated GIFs and native file opening pass; release artifacts, update manifest and PWA are independently verified. Physical iPhone/native iOS and editing inside Excel Android remain untested.
 
 ## 1.15.63
 
