@@ -1,10 +1,10 @@
 # TGym releases and verification
 
 The production version comes from frontend/package.json and must match Android versionName.
-Android versionCode must increase. Current published release: 1.15.62 / 98. See RELEASE-AUDIT-1.15.62.md and ROUTINE-EXCHANGE-NATIVE-AUDIT-1.15.62.md for exact-source CI, signed/public artifacts, real Microsoft Excel/Pixel acceptance, restoration and retained-profile PWA update evidence. The earlier 1.15.61 evidence remains in its separate audits.
+Android versionCode must increase. Current published release: 1.15.63 / 99. See RELEASE-AUDIT-1.15.63.md and DESKTOP-UPDATE-AUDIT-1.15.63.md for exact-source CI, signed/public artifacts and the owner's preserved Windows PWA profile. Real Microsoft Excel/Pixel routine-exchange acceptance and restoration remain in the separate 1.15.62 audits; earlier versions retain their own evidence.
 Run frontend/scripts/check-version.mjs before tagging.
 
-Native acceptance follow-up 1.15.62 / Android98 was published after its exact-source checks, verified signed candidate, corrected physical Pixel acceptance and original QA profile/settings restoration passed. The tag suppresses the update-delivery notification step; credential validate-only checks and package/PWA publication still run.
+Desktop update correction 1.15.63 / Android99 was published after its exact-source checks, verified signed candidate and corrected-source browser acceptance passed. The owner's installed Windows PWA then loaded63 and reported up to date, with completely equal official portable-profile exports. The tag suppresses the update-delivery notification step; credential validate-only checks and package/PWA publication still run.
 
 ## Single publication
 
@@ -51,6 +51,20 @@ Devices on older versions do not gain the new installer until they install this 
 The service worker caches the build's shell/assets, names its cache by version/commit,
 and deletes only old TGym caches. Update activates a waiting worker and reloads once.
 PWA builds never use the APK installer.
+
+Starting with 1.15.63, the portable pre-update safety copy commits to the existing
+IndexedDB `tgym-profile` / `snapshots` store under `pre-update`; `current` remains
+the normal independent profile mirror. The legacy `tgym_pre_update_backup`
+localStorage key is the compatible fallback. If neither store commits, the update
+stops with a recoverable storage message before activating the worker.
+
+A large profile with uploaded GIFs can already fit in localStorage while its
+second complete safety copy does not. An installation running the old handler
+can need an initial hard reload to obtain this correction. Export and verify an
+official full backup first, then use Ctrl+Shift+R in the existing Windows PWA;
+do not clear site data or reinstall to work around this quota condition. Compare
+a new full backup after updating. See DESKTOP-UPDATE-AUDIT-1.15.63.md for the
+real installation, exact-artifact reproduction and separate isolated QA evidence.
 
 ## Locale compatibility
 
