@@ -4,6 +4,7 @@ import { displayReps, isBw, modeOf, applyIntensifierPlan } from './history.js'
 import { restSeconds } from './rest-policy.js'
 import { policyFor, defaultIncrement } from './progression.js'
 import { routineIds } from './daily-plan.js'
+import { withBackoffRepsMode } from './training-plan.js'
 
 const WIDTH = 794, HEIGHT = 1123, LEFT = 48, INNER = 698, TOP = 112, BOTTOM = 1044
 const COLUMN_WIDTHS = [40, 87, 253, 115, 85, 118]
@@ -154,7 +155,12 @@ export function routinePDFPages(data) {
       const backoff = rows.find(row => row[2] === 'Back-off')
       if (backoff) {
         const tops = rows.filter(row => row[2] === 'Top').map(row => row[1]), top = tops.length === 1 ? `set ${tops[0]}` : `sets ${tops[0]}-${tops.at(-1)}`
-        const automatic = backoff[13], rule = automatic ? backoff[12] === 'increased' ? `increased (+2${e.side ? ' / side' : ''})` : backoff[12].startsWith('legacy:') ? `legacy (+${number(displayReps(Number(backoff[12].split(':')[1]), e))}${e.side ? ' / side' : ''})` : backoff[12] : 'independent range'
+        let rule = 'independent range'
+        if (backoff[13]) {
+          const inherited = backoff[12] === 'inherit', mode = inherited ? withBackoffRepsMode(e, data.rules).backoffRepsMode : backoff[12]
+          rule = mode === 'increased' ? `increased (+2${e.side ? ' / side' : ''})` : mode.startsWith('legacy:') ? `legacy (+${number(displayReps(Number(mode.split(':')[1]), e))}${e.side ? ' / side' : ''})` : mode
+          if (inherited) rule += ' (follow app setting)'
+        }
         paragraph(`Top association: ${top} | Load reduction ${backoff[11]}% | Reps ${rule}`)
       }
       const policy = policyFor(e, routine, mode)

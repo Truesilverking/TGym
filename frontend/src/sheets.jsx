@@ -793,6 +793,8 @@ function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial }) {
   // Both default from the dataset and are then whatever the config says — see isBw.
   const bw = !cardio && isBw({ ...c, id: ex.id })
   const perSide = isPerSide(c)
+  const backoffTarget = withBackoffRepsMode(c, st)
+  const backoffChoice = c.backoffRepsOverride === true ? c.backoffRepsMode || 'legacy' : ''
   // Keep whatever the other mode already had (sets, weight) and fill only what is missing.
   const setMode = m => setC(x => ({ ...defaultConfig(ex.id, m), ...x, mode: m }))
   const save = () => {
@@ -845,6 +847,10 @@ function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial }) {
         out.backoffPct = Math.max(1, Math.min(50, Number(c.backoffPct) || 10))
         out.autoBackoffReps = c.autoBackoffReps !== false
         out.backoffRepOffset = backoffRepOffsetFor(c)
+        if (c.backoffRepsOverride === true) {
+          out.backoffRepsOverride = true
+          if (c.backoffRepsMode) out.backoffRepsMode = c.backoffRepsMode
+        }
         const topRir = targetRirRangeFor(c, 'top'), backRir = targetRirRangeFor(c, 'backoff')
         if (topRir) { out.topRirMin = topRir.min; out.topRirMax = topRir.max }
         if (backRir) { out.backoffRirMin = backRir.min; out.backoffRirMax = backRir.max }
@@ -1052,9 +1058,22 @@ function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial }) {
         <div className="sect-b" style={{ marginBottom: 8 }}><Row icon="repeat" iconTint="var(--blue)" title={t('Automatic back-off reps')} subtitle={t('Back-off reps follow the latest Top Set.')}>
           <Switch checked={c.autoBackoffReps !== false} onChange={v => setC(x => ({ ...x, autoBackoffReps: v }))} />
         </Row></div>
-        {c.autoBackoffReps !== false ? <div className="small muted" style={{ marginBottom: 8 }}>
-          {t('Back-off repetitions')}: {t(S().backoffRepsMode === 'same' ? 'Same reps' : 'Increased reps')}. {t('Same reps uses the Top Set range. Increased reps adds 2 to both limits.')}
-        </div> : <div className="row cfgrow" style={{ marginBottom: 8 }}>
+        {c.autoBackoffReps !== false ? <>
+          <div className="sect-b" style={{ marginBottom: 8 }}>
+            <SelectRow title={t('Back-off repetitions')} sheetTitle={t('Back-off repetitions')} value={backoffChoice}
+              onChange={value => setC(current => {
+                const next = { ...current }
+                if (!value) { delete next.backoffRepsOverride; delete next.backoffRepsMode; delete next.backoffRepOffset }
+                else { next.backoffRepsOverride = true; if (value !== 'legacy') next.backoffRepsMode = value }
+                return next
+              })}
+              options={[{ value: '', label: t('Follow app setting') }, { value: 'same', label: t('Same reps') }, { value: 'increased', label: t('Increased reps') },
+                ...(backoffChoice === 'legacy' ? [{ value: 'legacy', label: `+${displayReps(backoffRepOffsetFor(c), c)} ${t('Reps')}` }] : [])]} />
+          </div>
+          <div className="small muted" style={{ marginBottom: 8 }}>
+            {t('Back-off repetitions')}: {backoffTarget.backoffRepsMode ? t(backoffTarget.backoffRepsMode === 'same' ? 'Same reps' : 'Increased reps') : `+${displayReps(backoffRepOffsetFor(backoffTarget), backoffTarget)} ${t('Reps')}`}. {t('Same reps uses the Top Set range. Increased reps adds 2 to both limits.')}
+          </div>
+        </> : <div className="row cfgrow" style={{ marginBottom: 8 }}>
           <RepStepper cfg={c} label={t('Back-off min reps')} value={c.backoffRepsMin || c.repsMin || c.reps || 1} step={1} decimal={false} onChange={v => setC(x => ({ ...x, backoffRepsMin: Math.max(1, v) }))} />
           <RepStepper cfg={c} label={t('Back-off max reps')} value={c.backoffRepsMax || c.reps || 10} step={1} decimal={false} onChange={v => setC(x => ({ ...x, backoffRepsMax: Math.max(x.backoffRepsMin || 1, v) }))} />
         </div>}

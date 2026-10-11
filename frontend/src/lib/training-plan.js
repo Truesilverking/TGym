@@ -304,9 +304,12 @@ export function rirAdvice(sets, cfg) {
   return { kind: 'maintain', delta, count: rated.length }
 }
 
-// Apply the profile preference only to automatic targets; independent ranges stay explicit.
+// Unmarked legacy mode/offset fields are profile snapshots, not per-exercise choices.
+// An additive override marker distinguishes deliberate exceptions without reinterpreting
+// existing routines or stopping inherited active targets from following Settings changes.
 export function withBackoffRepsMode(cfg = {}, S = {}) {
   if (cfg.setScheme !== 'topback' || cfg.autoBackoffReps === false) return { ...cfg }
+  if (cfg.backoffRepsOverride === true) return withBackoffRepTargets(cfg)
   return withBackoffRepTargets({ ...cfg, backoffRepsMode: S.backoffRepsMode === 'same' ? 'same' : 'increased' })
 }
 

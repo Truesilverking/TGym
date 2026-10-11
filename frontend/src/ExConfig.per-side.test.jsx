@@ -7,6 +7,7 @@ import { useUI } from './store/useUI.js'
 import { exConfigSheet } from './sheets.jsx'
 import { exOr } from './lib/exercises.js'
 import Modals from './components/Modals.jsx'
+import { bindUI } from './components/ui.jsx'
 
 vi.mock('./components/Media.jsx', () => ({ default: () => null }))
 globalThis.IS_REACT_ACT_ENVIRONMENT = true
@@ -29,6 +30,7 @@ function mount(cfg) {
 }
 beforeEach(() => {
   vi.useFakeTimers()
+  bindUI(useUI)
   useUI.setState({ sheets: [] })
   container = document.createElement('div'); document.body.appendChild(container)
   root = createRoot(container)
@@ -72,4 +74,32 @@ it('updates both Back-off range limits when the Top range is edited instead of r
 it('saves a fixed Top target with a fixed Back-off target two reps higher',()=>{
  mount({setScheme:'topback',repRange:false,reps:5,topRepsMin:3,topRepsMax:5})
  click('Save');expect(saved).toHaveBeenCalledWith(expect.objectContaining({topRepsMin:5,topRepsMax:5,backoffRepsMin:7,backoffRepsMax:7}))
+})
+
+it.each([
+ {backoffRepsOverride:true,backoffRepsMode:'same',backoffRepOffset:0,expectedMin:4,expectedMax:6},
+ {backoffRepsOverride:true,backoffRepOffset:4,expectedMin:8,expectedMax:10},
+])('preserves explicit imported automatic rules while editing other fields %j',cfg=>{
+ const {expectedMin,expectedMax,...rule}=cfg
+ mount({setScheme:'topback',repRange:true,reps:6,repsMin:4,topRepsMin:4,topRepsMax:6,...rule})
+ click('Save')
+ expect(saved).toHaveBeenCalledWith(expect.objectContaining({...rule,backoffRepsMin:expectedMin,backoffRepsMax:expectedMax}))
+ if(!rule.backoffRepsMode)expect(saved.mock.calls[0][0]).not.toHaveProperty('backoffRepsMode')
+})
+
+it('lets an explicit legacy exception return to the app setting',()=>{
+ mount({setScheme:'topback',repRange:true,reps:6,repsMin:4,backoffRepsOverride:true,backoffRepOffset:4})
+ act(()=>[...container.querySelectorAll('button.lrow')].find(button=>button.querySelector('.lrow-t')?.textContent==='Back-off repetitions').click())
+ click('Follow app setting');click('Save')
+ const value=saved.mock.calls[0][0]
+ expect(value).not.toHaveProperty('backoffRepsOverride')
+ expect(value).toMatchObject({backoffRepsMode:'increased',backoffRepOffset:2,backoffRepsMin:6,backoffRepsMax:8})
+})
+
+it('lets an inherited automatic target become a same-reps exception without changing Settings',()=>{
+ mount({setScheme:'topback',repRange:false,reps:5})
+ act(()=>[...container.querySelectorAll('button.lrow')].find(button=>button.querySelector('.lrow-t')?.textContent==='Back-off repetitions').click())
+ click('Same reps');click('Save')
+ expect(saved).toHaveBeenCalledWith(expect.objectContaining({backoffRepsOverride:true,backoffRepsMode:'same',backoffRepsMin:5,backoffRepsMax:5}))
+ expect(useStore.getState().S.backoffRepsMode).toBe('increased')
 })

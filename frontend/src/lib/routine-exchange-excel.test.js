@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { createRequire } from 'node:module'
 import { CATALOGUE } from './exercises.js'
 import { createRoutineExchange, createRoutineWorkbook, parseRoutineWorkbook, validateRoutineExchange, routineExchangeRows } from './routine-exchange.js'
 
@@ -51,7 +52,7 @@ describe('Excel routine exchange regressions', () => {
     expect(result.data.routines[0].ex[1]).not.toHaveProperty('restSec')
   })
   it('exports inherited rules as visible effective targets without overwriting legacy offset exceptions', () => {
-    const data = createRoutineExchange(state([{ id, sets: 3, reps: 8, weight: 100, setScheme: 'topback', topSets: 1, backoffSets: 2, backoffRepOffset: 4 }]))
+    const data = createRoutineExchange(state([{ id, sets: 3, reps: 8, weight: 100, setScheme: 'topback', topSets: 1, backoffSets: 2, backoffRepOffset: 4, backoffRepsOverride: true }]))
     const rows = routineExchangeRows(data).Series
     expect(rows[1].slice(3, 5)).toEqual([12, 12])
     expect(rows[1][12]).toBe('legacy:4')
@@ -116,7 +117,7 @@ describe('Excel routine exchange regressions', () => {
   })
   it('preserves both Back-off modes, independent ranges, warmups, and lb loads across serialization', async () => {
     const S = state([
-      { id, sets: 3, reps: 8, weight: 100, setScheme: 'topback', topSets: 1, backoffSets: 2, backoffRepsMode: 'increased', warmupSets: 2, side: true, repsPerSide: false },
+      { id, sets: 3, reps: 8, weight: 100, setScheme: 'topback', topSets: 1, backoffSets: 2, backoffRepsMode: 'increased', backoffRepsOverride: true, warmupSets: 2, side: true, repsPerSide: false },
       { id, sets: 3, reps: 8, weight: 100, setScheme: 'topback', topSets: 1, backoffSets: 2, backoffRepsMode: 'same', autoBackoffReps: false, backoffRepsMin: 10, backoffRepsMax: 12 }
     ])
     S.unit = 'lb'
@@ -125,16 +126,26 @@ describe('Excel routine exchange regressions', () => {
     expect(parsed.data.routines).toEqual(S.routines)
     expect(validateRoutineExchange(parsed.data, S).errors).toEqual([])
   })
-  it('keeps multi-cell preservation metadata valid across Unicode surrogate boundaries', async () => {
+  it('preserves long Unicode notes and multi-cell custom metadata in the actual ZIP and importer', async () => {
     const S = state(); S.customEx = [{ id: 'unicode-custom', n: 'Extensión personalizada', desc: '🏋️'.repeat(14000) }]
+    S.routines[0].note = 'Rutina: café, áéíóú, ñ y 🏋️. '.repeat(700)
+    S.routines[0].ex[0].note = 'Ejercicio: técnica, control y 🏋️. '.repeat(700)
     const book = await createRoutineWorkbook(createRoutineExchange(S))
     book.getWorksheet('_TGym').eachRow(row => {
       expect(row.getCell(1).value).not.toMatch(/^[\uDC00-\uDFFF]|[\uD800-\uDBFF]$/)
       expect(row.getCell(1).value.length).toBeLessThanOrEqual(30000)
     })
-    const result = await parseRoutineWorkbook(await book.xlsx.writeBuffer())
+    const bytes = await book.xlsx.writeBuffer()
+    // JSZip is ExcelJS's existing ZIP dependency; inspect bytes independently of its importer.
+    const require = createRequire(import.meta.url), JSZip = createRequire(require.resolve('exceljs'))('jszip')
+    const zip = await JSZip.loadAsync(bytes), xmlBytes = await zip.file('xl/sharedStrings.xml').async('uint8array')
+    const xml = new TextDecoder('utf-8', { fatal: true }).decode(xmlBytes)
+    expect(xml).not.toContain('\uFFFD')
+    const result = await parseRoutineWorkbook(bytes)
     expect(result.errors).toEqual([])
-    expect(result.data.catalog.find(ex => ex.id === 'unicode-custom').definition.desc).toBe(S.customEx[0].desc)
+    expect(result.data.routines[0].note === S.routines[0].note).toBe(true)
+    expect(result.data.routines[0].ex[0].note === S.routines[0].ex[0].note).toBe(true)
+    expect(result.data.catalog.find(ex => ex.id === 'unicode-custom').definition.desc === S.customEx[0].desc).toBe(true)
   })
   it('reports Excel cell limits before exporting a file that needs repair', async () => {
     const S = state(); S.routines[0].note = 'a'.repeat(32768)

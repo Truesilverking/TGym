@@ -4,6 +4,8 @@ The production version comes from frontend/package.json and must match Android v
 Android versionCode must increase. Current published release: 1.15.61 / 97. See RELEASE-AUDIT-1.15.61.md and ROUTINE-EXCHANGE-AUDIT-1.15.61.md for exact-source CI, signed/public artifacts, retained-profile PWA update and offline acceptance evidence.
 Run frontend/scripts/check-version.mjs before tagging.
 
+Native acceptance follow-up 1.15.62 / Android98 is tracked in RELEASE-AUDIT-1.15.62.md and ROUTINE-EXCHANGE-NATIVE-AUDIT-1.15.62.md. It is published only after its exact-source checks and physical regression acceptance complete; the previously published 1.15.61 evidence remains separate.
+
 ## Single publication
 
 Only release.yml deploys production Pages. pages.yml validates the PWA without deploying.

@@ -11,3 +11,7 @@ overrides:
   brace-expansion@2: 2.1.7
   brace-expansion@5: 5.0.12
   dompurify: 3.4.16
+
+# Keep UTF-16 pairs intact when the Node workbook writer feeds JSZip.
+patchedDependencies:
+  exceljs@4.4.0: patches/exceljs@4.4.0.patch

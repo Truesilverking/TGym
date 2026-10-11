@@ -33,7 +33,7 @@ describe('routine PDF complete prescription projection', () => {
 
   it('describes increased and independent Back-off targets without opaque association IDs', () => {
     const S = fixture(), e = S.routines[0].ex[0]
-    e.backoffRepsMode = 'increased'
+    e.backoffRepsMode = 'increased'; e.backoffRepsOverride = true
     let svg = content(routinePDFPages(createRoutineExchange(S)))
     expect(svg).toContain('8-10 reps / side')
     expect(svg).toContain('Reps increased (+2 / side)')
@@ -42,6 +42,15 @@ describe('routine PDF complete prescription projection', () => {
     svg = content(routinePDFPages(createRoutineExchange(S)))
     expect(svg).toContain('9-11 reps / side')
     expect(svg).toContain('Reps independent range')
+  })
+
+  it('presents the current app rule for an unmarked stale snapshot and labels its inheritance', () => {
+    const S = fixture(), e = S.routines[0].ex[0]
+    e.backoffRepsMode = 'increased'; e.backoffRepOffset = 4
+    const svg = content(routinePDFPages(createRoutineExchange(S)))
+    expect(svg).toContain('6-8 reps / side')
+    expect(svg).not.toContain('8-10 reps / side')
+    expect(svg).toContain('Reps same (follow app setting)')
   })
 
   it('renders rest-pause activation and one work total according to the existing execution helper', () => {

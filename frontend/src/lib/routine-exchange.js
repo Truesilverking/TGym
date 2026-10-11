@@ -2,7 +2,7 @@ import { CATALOGUE } from './exercises.js'
 import { orderedRoutines } from './routine-order.js'
 import { routineIds } from './daily-plan.js'
 import { modeOf, MAX_PLANNED_WARMUPS } from './history.js'
-import { repBounds, targetRirRangeFor, backoffWeightFor, backoffRepOffsetFor } from './training-plan.js'
+import { repBounds, targetRirRangeFor, backoffWeightFor, backoffRepOffsetFor, withBackoffRepsMode } from './training-plan.js'
 import { restSeconds } from './rest-policy.js'
 import { uid, todayISO } from './format.js'
 
@@ -139,7 +139,7 @@ export function validateRoutineExchange(raw, S = {}, { exerciseMappings = {}, le
         const ignoredLegacyBounds = e.repRange === false && ['repsMin', 'topRepsMin'].includes(lo) || lo === 'backoffRepsMin' && e.setScheme === 'topback' && e.autoBackoffReps !== false
         if (e[lo] != null && e[hi] != null && e[lo] > e[hi] && !ignoredLegacyBounds) errors.push(issue('Series', erow, `${lo} / ${hi}`, 'Minimum exceeds maximum'))
       }
-      for (const key of ['side', 'repsPerSide', 'bodyweight', 'repRange', 'strictReps', 'autoBackoffReps', 'amrap']) if (e[key] != null && typeof e[key] !== 'boolean') errors.push(issue('Ejercicios de rutina', erow, key, 'Expected boolean'))
+      for (const key of ['side', 'repsPerSide', 'bodyweight', 'repRange', 'strictReps', 'autoBackoffReps', 'backoffRepsOverride', 'amrap']) if (e[key] != null && typeof e[key] !== 'boolean') errors.push(issue('Ejercicios de rutina', erow, key, 'Expected boolean'))
       for (const key of ['restSec', 'afterRestSec', 'warmupRestSec', 'supersetMoveRestSec', 'supersetRoundRestSec']) number(e[key], 0, 86400, 'Series', erow, key, true)
       if (e.setRestSec != null) {
         if (!Array.isArray(e.setRestSec) || e.setRestSec.length > 99) errors.push(issue('Series', erow, 'setRestSec', 'Use an array of at most 99 rest values in seconds'))
@@ -150,6 +150,7 @@ export function validateRoutineExchange(raw, S = {}, { exerciseMappings = {}, le
       if (e.backoffRepsMode != null && !['same', 'increased'].includes(e.backoffRepsMode)) errors.push(issue('Series', erow, 'Regla Back-off', 'Use same or increased'))
       number(e.backoffPct, 1, 50, 'Series', erow, 'Reducción %')
       number(e.backoffRepOffset, 0, 10, 'Series', erow, 'backoffRepOffset')
+      if (e.setScheme === 'topback' && e.autoBackoffReps !== false && e.backoffRepsOverride === true && !['same', 'increased'].includes(e.backoffRepsMode) && !(typeof e.backoffRepOffset === 'number' && e.backoffRepOffset > 0)) errors.push(issue('Series', erow, 'backoffRepsOverride', 'An explicit automatic Back-off rule requires same, increased or a positive legacy backoffRepOffset. Omit backoffRepsOverride to follow the app setting.'))
       if (e.setScheme === 'topback' && modeOf(e) !== 'reps') errors.push(issue('Series', erow, 'Tipo', 'Top / Back-off requires repetition mode'))
       if (e.prog != null && !PROGS.includes(e.prog)) errors.push(issue('Ejercicios de rutina', erow, 'prog', 'Unknown progression rule'))
       if (e.intensifier != null) {
@@ -285,10 +286,12 @@ export const EXCHANGE_HEADERS = {
 }
 const legacyHeaderLength = { Rutinas: 6, 'Ejercicios de rutina': 10, Series: 17, Catálogo: 6 }
 const routineColumnKeys = ['id', 'name', 'ex', 'note', 'prog', 'restSec', 'warmupRestSec', 'supersetMoveRestSec', 'supersetRoundRestSec']
-const exerciseColumnKeys = ['id', 'sg', 'note', 'mode', 'side', 'repsPerSide', 'prog', 'inc', 'bodyweight', 'strictReps', 'amrap', 'supersetMoveRestSec', 'supersetRoundRestSec', 'intensifier', 'sets', 'warmupSets', 'setScheme', 'topSets', 'backoffSets', 'reps', 'repsMin', 'repRange', 'topRepsMin', 'topRepsMax', 'backoffRepsMin', 'backoffRepsMax', 'weight', 'restSec', 'warmupRestSec', 'targetRir', 'targetRirMin', 'targetRirMax', 'topRir', 'topRirMin', 'topRirMax', 'backoffRir', 'backoffRirMin', 'backoffRirMax', 'backoffPct', 'autoBackoffReps', 'backoffRepsMode', 'sec', 'min', 'speed']
+const exerciseColumnKeys = ['id', 'sg', 'note', 'mode', 'side', 'repsPerSide', 'prog', 'inc', 'bodyweight', 'strictReps', 'amrap', 'supersetMoveRestSec', 'supersetRoundRestSec', 'intensifier', 'sets', 'warmupSets', 'setScheme', 'topSets', 'backoffSets', 'reps', 'repsMin', 'repRange', 'topRepsMin', 'topRepsMax', 'backoffRepsMin', 'backoffRepsMax', 'weight', 'restSec', 'warmupRestSec', 'targetRir', 'targetRirMin', 'targetRirMax', 'topRir', 'topRirMin', 'topRirMax', 'backoffRir', 'backoffRirMin', 'backoffRirMax', 'backoffPct', 'autoBackoffReps', 'backoffRepsMode', 'backoffRepsOverride', 'sec', 'min', 'speed']
 const extraConfig = (record, keys) => Object.fromEntries(Object.entries(record).filter(([key]) => !keys.includes(key)))
-// Explicit legacy offsets are exceptions, not an absent profile preference.
-const effectiveBackoff = (e, rules) => ({ ...e, ...(e.backoffRepsMode == null && e.backoffRepOffset == null && rules.backoffRepsMode ? { backoffRepsMode: rules.backoffRepsMode } : {}) })
+// Old editors saved the current profile mode as a snapshot. Only a marked rule
+// is a per-exercise choice; presentation follows the same helper as execution.
+const effectiveBackoff = (e, rules) => withBackoffRepsMode(e, rules)
+const backoffRule = e => e.backoffRepsOverride === true ? e.backoffRepsMode || `legacy:${backoffRepOffsetFor(e)}` : 'inherit'
 function scheduleFor(data, field, id) { return Object.fromEntries(Object.entries(data[field] || {}).filter(([, ids]) => routineIds(ids).includes(id)).map(([key, ids]) => [key, routineIds(ids).indexOf(id)])) }
 export function routineExchangeRows(data) {
   const rows = { Rutinas: [], 'Ejercicios de rutina': [], Series: [], Catálogo: data.catalog.map(ex => [ex.id, ex.n, ex.alias || '', !!ex.custom, ex.selector || `${ex.n} [${ex.id}]`, ex.libraryNote || '']) }
@@ -304,7 +307,7 @@ export function routineExchangeRows(data) {
         const role = type === 'Top' ? 'top' : type === 'Back-off' ? 'backoff' : null
         const bounds = repBounds(effective, role), rir = type === 'Warm-up' ? null : targetRirRangeFor(e, role)
         const weight = type === 'Back-off' ? backoffWeightFor(e.weight, effective, e.inc || data.rules.step || 2.5) : e.weight
-        rows.Series.push([instance, index + 1, type, mode === 'reps' && type !== 'Warm-up' ? bounds.min : '', mode === 'reps' && type !== 'Warm-up' ? bounds.max : '', type === 'Warm-up' || mode === 'cardio' ? '' : weight ?? '', data.unit, mode === 'reps' ? rir?.min ?? '' : '', mode === 'reps' ? rir?.max ?? '' : '', restSeconds({ state: data.rules, routine, target: e, warmup: type === 'Warm-up' }), type === 'Back-off' ? `${instance}:Top` : '', type === 'Back-off' ? e.backoffPct ?? 10 : '', type === 'Back-off' ? effective.backoffRepsMode || `legacy:${backoffRepOffsetFor(effective)}` : '', type === 'Back-off' ? effective.autoBackoffReps !== false : '', mode === 'time' && type !== 'Warm-up' ? e.sec ?? 45 : '', mode === 'cardio' ? e.min ?? 20 : '', mode === 'cardio' ? e.speed ?? 8 : ''])
+        rows.Series.push([instance, index + 1, type, mode === 'reps' && type !== 'Warm-up' ? bounds.min : '', mode === 'reps' && type !== 'Warm-up' ? bounds.max : '', type === 'Warm-up' || mode === 'cardio' ? '' : weight ?? '', data.unit, mode === 'reps' ? rir?.min ?? '' : '', mode === 'reps' ? rir?.max ?? '' : '', restSeconds({ state: data.rules, routine, target: e, warmup: type === 'Warm-up' }), type === 'Back-off' ? `${instance}:Top` : '', type === 'Back-off' ? e.backoffPct ?? 10 : '', type === 'Back-off' ? backoffRule(e) : '', type === 'Back-off' ? effective.autoBackoffReps !== false : '', mode === 'time' && type !== 'Warm-up' ? e.sec ?? 45 : '', mode === 'cardio' ? e.min ?? 20 : '', mode === 'cardio' ? e.speed ?? 8 : ''])
       })
     }
   }
@@ -325,7 +328,7 @@ export async function createRoutineWorkbook(data, { signal } = {}) {
     ['Series', 'Una fila por serie prescrita. Tipos: Warm-up, Working, Top, Back-off. Reps mín./máx. iguales = objetivo fijo. RIR 0–10. kg/lb. Descanso en segundos. No escriba resultados registrados.'],
     ['Reglas', 'Working comparte reps/peso/RIR; Top comparte su rango y RIR; Back-off comparte su rango/RIR y reducción 1–50%. TGym no admite objetivos independientes arbitrarios por fila. Se rechazan diferencias incompatibles.'],
     ['Warm-up', 'Warm-up usa el calentamiento automático de TGym (máximo 5). Peso/reps/RIR vacíos: no se prescribe un objetivo individual. Su descanso sí se puede editar.'],
-    ['Back-off', 'Top asociado = Instancia:Top. same = mismas reps; increased = +2 a ambos límites (respeta reps por lado); legacy:N conserva excepción heredada. Automático false permite un rango independiente. Peso se deriva del Top y reducción.'],
+    ['Back-off', 'Top asociado = Instancia:Top. inherit sigue la preferencia de TGym. same fija mismas reps; increased fija +2 por lado; legacy:N fija el incremento heredado en reps almacenadas. Cambie la regla en todas las filas Back-off de la instancia. Automático false usa el rango independiente.'],
     ['Supersets', 'Use el mismo identificador en al menos dos ejercicios consecutivos de una rutina.'],
     ['Programación', 'Semana (JSON): {"1":0,"3":1}; días 0=domingo…6=sábado, valor=posición de la rutina ese día. Fechas (JSON): {"2026-10-08":0}. {} significa sin programación.'],
     ['Opcionales', 'Notas, Superset, RIR, Por lado, Reps por lado, Progresión (vacía = heredar; off = desactivada). Reposos opcionales vacíos heredan del nivel superior. Un cambio en reps no fija un reposo ni una regla heredada.'],
@@ -339,7 +342,7 @@ export async function createRoutineWorkbook(data, { signal } = {}) {
     ['Primer ejemplo', 'Rutinas: R1, Fuerza, 1, {}, {}. Ejercicios: R1:1, elija R1, elija ejercicio, 1, modo reps. Series: elija R1:1, 1, Working, 8, 8, 20, kg, RIR opcional, descanso 90. Repita para añadir series o rutinas.'],
     ['Avanzado', 'Incremento usa kg/lb en repeticiones y segundos en modo time. Peso corporal, Reps estrictas y AMRAP: true/false, vacío conserva/hereda. La duración cardio usa min y km/h; distancia = min × km/h / 60.'],
     ['Intensificador (JSON)', 'Vacío = ninguno. Dropset: {"type":"dropset","count":2,"pct":20}. Rest-pause: {"type":"restpause","totalReps":12,"restSec":15}. TGym aplica sus calentamientos/activación y bloques automáticamente. No son series realizadas.'],
-    ['Configuración (JSON)', 'Opciones técnicas existentes o excepciones: objeto JSON, {} = sin extras. Rutina: icono emoji, guideSlots y ajustes heredados. Ejercicio: afterRestSec, setRestSec o backoffRepOffset. Use las columnas para los campos que ya aparecen; no duplique id, name, ex, reps o sets aquí.'],
+    ['Configuración (JSON)', 'Opciones técnicas existentes: objeto JSON, {} = sin extras. Rutina: emoji, guideSlots y ajustes heredados. Ejercicio: afterRestSec, setRestSec o backoffRepOffset. Use Regla Back-off para elegir una excepción; un offset sin esa intención conserva un snapshot heredado. No duplique campos de columnas.'],
     ['Reglas del perfil', 'El JSON editable de arriba admite backoffRepsMode (same/increased), strictReps, effort (none/rir/rpe), restSec, restAdvanced (warmup/supersetMove/supersetRound), warmup, step y deload. Se importa únicamente al confirmar esa opción en TGym.'],
     ['Compatibilidad', 'Formato v1 con columnas avanzadas opcionales. TGym admite los encabezados anteriores y conserva sus metadatos. Al exportar no se guardan entrenamientos completados. Nombres y notas que comienzan por = son texto literal.']
   ]
@@ -362,7 +365,7 @@ export async function createRoutineWorkbook(data, { signal } = {}) {
           cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: color } }
           cell.font = { name: 'Arial', size: 11, color: { argb: technical.includes(column) ? 'FF515B63' : 'FF202B35' } }
           if (typeof cell.value === 'string') cell.numFmt = '@'
-          else if (typeof cell.value === 'number') cell.numFmt = '0.###'
+          else if (typeof cell.value === 'number') cell.numFmt = 'General'
         })
         const lineCount = Math.max(...headers.map((_, column) => String(row.getCell(column + 1).value ?? '').split(/\r?\n/).reduce((total, text) => total + Math.max(1, Math.ceil(Array.from(text).length / (sheet.getColumn(column + 1).width - 4))), 0)))
         row.height = Math.max(28, Math.min(409, lineCount * 17 + 8))
@@ -376,7 +379,7 @@ export async function createRoutineWorkbook(data, { signal } = {}) {
   list('Ejercicios de rutina', 'B2:B10001', 'TGymRoutineIDs'); list('Series', 'A2:A10001', 'TGymInstances')
   list('Ejercicios de rutina', 'C2:C10001', 'TGymExercises')
   list('Ejercicios de rutina', 'G2:G10001', '"reps,time,cardio"'); list('Ejercicios de rutina', 'H2:I10001', '"true,false"'); list('Ejercicios de rutina', 'J2:J10001', `"${PROGS.join(',')}"`)
-  list('Series', 'C2:C10001', '"Warm-up,Working,Top,Back-off"'); list('Series', 'G2:G10001', '"kg,lb"'); list('Series', 'M2:M10001', '"same,increased"'); list('Series', 'N2:N10001', '"true,false"')
+  list('Series', 'C2:C10001', '"Warm-up,Working,Top,Back-off"'); list('Series', 'G2:G10001', '"kg,lb"'); list('Series', 'M2:M10001', '"inherit,same,increased,legacy:1,legacy:2,legacy:3,legacy:4,legacy:5,legacy:6,legacy:7,legacy:8,legacy:9,legacy:10"'); list('Series', 'N2:N10001', '"true,false"')
   list('Rutinas', 'G2:G10001', `"${PROGS.join(',')}"`); list('Ejercicios de rutina', 'L2:N10001', '"true,false"')
   list('Instrucciones', 'B17', '"aliases,original"')
   const decimal = (sheet, range, max, integer = false, min = 0) => workbook.getWorksheet(sheet).dataValidations.add(range, { type: integer ? 'whole' : 'decimal', operator: 'between', allowBlank: true, formulae: [min, max], showErrorMessage: true, errorStyle: 'stop', errorTitle: 'Número no permitido', error: `Use ${integer ? 'un entero' : 'un número'} entre ${min} y ${max}.` })
@@ -584,9 +587,10 @@ export async function parseRoutineWorkbook(buffer) {
         if (edited(type, 11)) setNumber('backoffPct', numeric(v[11]))
         if (bool(v[13]) == null || v[13] === '') errors.push(issue('Series', first.row, 'Back-off automático', 'Use true or false'))
         else if (edited(type, 13)) e.autoBackoffReps = bool(v[13])
-        if (['same', 'increased'].includes(v[12])) { if (edited(type, 12)) { e.backoffRepsMode = v[12]; delete e.backoffRepOffset } }
-        else if (/^legacy:\d+$/.test(v[12])) { if (edited(type, 12)) { delete e.backoffRepsMode; e.backoffRepOffset = Number(v[12].slice(7)) } }
-        else errors.push(issue('Series', first.row, 'Regla Back-off', 'Use same, increased or an existing legacy:N rule'))
+        if (v[12] === 'inherit') { if (edited(type, 12)) { delete e.backoffRepsOverride; delete e.backoffRepsMode; delete e.backoffRepOffset } }
+        else if (['same', 'increased'].includes(v[12])) { if (edited(type, 12)) { e.backoffRepsOverride = true; e.backoffRepsMode = v[12]; delete e.backoffRepOffset } }
+        else if (/^legacy:(?:[1-9]|10)$/.test(v[12])) { if (edited(type, 12)) { e.backoffRepsOverride = true; delete e.backoffRepsMode; e.backoffRepOffset = Number(v[12].slice(7)) } }
+        else errors.push(issue('Series', first.row, 'Regla Back-off', 'Use inherit, same, increased or legacy:N with N between 1 and 10'))
       } else {
         if (edited(type, 5)) setNumber('weight', numeric(v[5]))
         if (edited(type, 9)) setNumber('restSec', numeric(v[9]))

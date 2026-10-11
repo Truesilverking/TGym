@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.15.62
+
+- Correct the Back-off rule mismatch reproduced on a physical Pixel: explicit per-exercise choices now survive workout start, editor saves and global preference changes. Existing unmarked routine snapshots keep following the app setting.
+- Keep format v1 compatible. Add optional `backoffRepsOverride` intent and the Excel `inherit` choice so JSON, editable series, preview, PDF and runtime agree without reinterpreting older routines.
+- Verify native Microsoft Excel opening, catalogue dropdowns, Unicode edits, decimal commas, table expansion, save/reopen and content equivalence. Add regressions for explicit/inherited Back-off targets and pending workout persistence.
+- Patch the pinned ExcelJS Node ZIP writer to encode UTF-8 before chunking, preserving long Unicode notes/custom metadata. Keep the browser encoder and dependency version unchanged; use `General` numeric formatting to avoid trailing decimal marks on whole numbers.
+
 ## 1.15.61
 
 - Harden routine JSON/XLSX validation, identity mapping, conflict review and atomic import. Import only catalogue metadata used by accepted routines; preserve history and active workouts. Legacy plans without a source unit now require an explicit kg/lb choice.
