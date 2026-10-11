@@ -1,7 +1,7 @@
 # TGym releases and verification
 
 The production version comes from frontend/package.json and must match Android versionName.
-Android versionCode must increase. Current published release: 1.15.60 / 96. See RELEASE-AUDIT-1.15.60.md and ROUTINE-DOWNLOAD-AUDIT-2026-10-10.md for verification and publication evidence.
+Android versionCode must increase. Current published release: 1.15.61 / 97. See RELEASE-AUDIT-1.15.61.md and ROUTINE-EXCHANGE-AUDIT-1.15.61.md for exact-source CI, signed/public artifacts, retained-profile PWA update and offline acceptance evidence.
 Run frontend/scripts/check-version.mjs before tagging.
 
 ## Single publication
