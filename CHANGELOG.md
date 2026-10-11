@@ -6,6 +6,7 @@
 - Keep format v1 compatible. Add optional `backoffRepsOverride` intent and the Excel `inherit` choice so JSON, editable series, preview, PDF and runtime agree without reinterpreting older routines.
 - Verify native Microsoft Excel opening, catalogue dropdowns, Unicode edits, decimal commas, table expansion, save/reopen and content equivalence. Add regressions for explicit/inherited Back-off targets and pending workout persistence.
 - Patch the pinned ExcelJS Node ZIP writer to encode UTF-8 before chunking, preserving long Unicode notes/custom metadata. Keep the browser encoder and dependency version unchanged; use `General` numeric formatting to avoid trailing decimal marks on whole numbers.
+- Complete actual Windows/Android Excel and physical Pixel offline acceptance, restore the original QA profile/settings, and verify the signed public packages plus the retained-profile PWA update. Record remaining iPhone/native iOS boundaries in the release audit.
 
 ## 1.15.61
 

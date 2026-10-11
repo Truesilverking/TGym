@@ -1,10 +1,10 @@
 # TGym releases and verification
 
 The production version comes from frontend/package.json and must match Android versionName.
-Android versionCode must increase. Current published release: 1.15.61 / 97. See RELEASE-AUDIT-1.15.61.md and ROUTINE-EXCHANGE-AUDIT-1.15.61.md for exact-source CI, signed/public artifacts, retained-profile PWA update and offline acceptance evidence.
+Android versionCode must increase. Current published release: 1.15.62 / 98. See RELEASE-AUDIT-1.15.62.md and ROUTINE-EXCHANGE-NATIVE-AUDIT-1.15.62.md for exact-source CI, signed/public artifacts, real Microsoft Excel/Pixel acceptance, restoration and retained-profile PWA update evidence. The earlier 1.15.61 evidence remains in its separate audits.
 Run frontend/scripts/check-version.mjs before tagging.
 
-Native acceptance follow-up 1.15.62 / Android98 is tracked in RELEASE-AUDIT-1.15.62.md and ROUTINE-EXCHANGE-NATIVE-AUDIT-1.15.62.md. It is published only after its exact-source checks and physical regression acceptance complete; the previously published 1.15.61 evidence remains separate.
+Native acceptance follow-up 1.15.62 / Android98 was published after its exact-source checks, verified signed candidate, corrected physical Pixel acceptance and original QA profile/settings restoration passed. The tag suppresses the update-delivery notification step; credential validate-only checks and package/PWA publication still run.
 
 ## Single publication
 
