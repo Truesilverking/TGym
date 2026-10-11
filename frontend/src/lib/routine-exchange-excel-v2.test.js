@@ -20,6 +20,15 @@ const saveMetadata = (book, data) => {
 }
 
 describe('portable format 2 Excel regressions', () => {
+  it('explains source-only rules and the required custom preservation metadata in the downloadable workbook', async () => {
+    const book = await createRoutineWorkbook(createRoutineExchange(state()))
+    const guidance = new Map()
+    book.getWorksheet('Instrucciones').eachRow(row => guidance.set(row.getCell(1).value, row.getCell(2).value))
+    expect(guidance.get('Reglas del perfil')).toContain('las preferencias globales del receptor no cambian')
+    expect(guidance.get('Reglas del perfil')).not.toContain('confirmar esa opción')
+    expect(guidance.get('Compatibilidad')).toContain('el formato 2 bloquea la importación')
+    expect(guidance.get('Compatibilidad')).toContain('El formato 1 requiere aceptar la advertencia')
+  })
   it('reopens serialized files with complete source prescriptions, custom GIFs and repeated-instance relationships', async () => {
     const S = state([{ id: 'c', sets: 1, reps: 8, weight: 22.5, note: '=literal' }, { id: 'c', sets: 2, reps: 12, weight: 30, sg: 'pair' }, { id, sets: 2, reps: 10, sg: 'pair' }])
     S.customEx = [{ id: 'c', n: 'Duplicado con acentos', bp: 'back', eq: 'barbell', custom: true, img: gif, desc: 'Técnica 🏋️' }]
