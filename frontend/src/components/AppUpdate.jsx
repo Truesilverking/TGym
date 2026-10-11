@@ -7,6 +7,7 @@ import { Button } from './ui.jsx'
 import { activatePwaUpdate, checkForAppUpdate, dismissUpdate, updateUrlFor } from '../lib/app-update.js'
 import { APP_DISTRIBUTION } from '../lib/app-meta.js'
 import { createBackup } from '../lib/backup.js'
+import { savePreUpdateBackup } from '../lib/web-state.js'
 import { initializeUpdatePush } from '../lib/update-push.js'
 
 const Installer = registerPlugin('AppInstaller')
@@ -16,7 +17,7 @@ async function snapshotBeforeUpdate() {
   if (Capacitor.isNativePlatform()) {
     const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem')
     await Filesystem.writeFile({path:'tgym-pre-update.json', directory:Directory.Data, encoding:Encoding.UTF8, data})
-  } else localStorage.setItem('tgym_pre_update_backup', data)
+  } else await savePreUpdateBackup(data)
   if (useStore.getState().S.cloudSync?.on) useStore.getState().update(s => { s.cloudSync.dirtyAt = Date.now() })
 }
 function UpdateDialog({manifest, close}) {
@@ -45,7 +46,11 @@ function UpdateDialog({manifest, close}) {
         const { Browser } = await import('@capacitor/browser')
         await Browser.open({url}); close()
       }
-    } catch { setError(t('Update failed. Please try again.')) }
+    } catch (error) {
+      setError(error?.code === 'pre_update_backup_failed'
+        ? t('Could not save the pre-update backup. Check available storage and try again. Your TGym data was kept.')
+        : t('Update failed. Please try again.'))
+    }
     finally { setBusy(false) }
   }
   return <><h3>{t('Update available')}</h3><p>{t('TGym {0} is available.', manifest.version)}</p>

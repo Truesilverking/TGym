@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.15.63
+
+- Fix desktop/PWA updates blocked by the pre-update safety copy when a valid profile with uploaded GIFs nearly fills localStorage. Commit the portable backup to a separate IndexedDB snapshot before activating the worker, with the existing localStorage key as a fallback.
+- Keep the current profile mirror, exercise IDs, embedded media and native Android backup path intact. If neither backup store can commit, retain the profile and prior copies, stop the update and show a recoverable storage error.
+- Add regressions for the actual Update dialog, full storage, durable commit, fallback, bounded waits, recovery and selection of the newest valid backup.
+
 ## 1.15.62
 
 - Correct the Back-off rule mismatch reproduced on a physical Pixel: explicit per-exercise choices now survive workout start, editor saves and global preference changes. Existing unmarked routine snapshots keep following the app setting.

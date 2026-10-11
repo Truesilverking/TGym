@@ -2,6 +2,7 @@ import english from '../lib/english-fallback.js'
 // Spanish UI strings. Keys are the English source strings (see lib/i18n.js).
 export default {
   ...english,
+  "Could not save the pre-update backup. Check available storage and try again. Your TGym data was kept.": "No se pudo guardar la copia previa a la actualización. Revisa el espacio disponible e inténtalo de nuevo. Tus datos de TGym se conservaron.",
   "Training days in this streak": "Días de entrenamiento en esta racha",
   "Complete today's workout to keep your streak.": "Completa el entrenamiento de hoy para mantener tu racha.",
   "No workout scheduled today — streak preserved.": "Sin entrenamiento programado hoy: tu racha se conserva.",

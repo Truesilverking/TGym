@@ -1,5 +1,6 @@
 // Explicit source-language fallback. Entries in language packs override these values.
 export default {
+  "Could not save the pre-update backup. Check available storage and try again. Your TGym data was kept.": "Could not save the pre-update backup. Check available storage and try again. Your TGym data was kept.",
   "Training days in this streak": "Training days in this streak",
   "Complete today's workout to keep your streak.": "Complete today's workout to keep your streak.",
   "No workout scheduled today — streak preserved.": "No workout scheduled today — streak preserved.",
