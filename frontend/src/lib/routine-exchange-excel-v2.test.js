@@ -28,6 +28,8 @@ describe('portable format 2 Excel regressions', () => {
     expect(guidance.get('Reglas del perfil')).not.toContain('confirmar esa opción')
     expect(guidance.get('Compatibilidad')).toContain('el formato 2 bloquea la importación')
     expect(guidance.get('Compatibilidad')).toContain('El formato 1 requiere aceptar la advertencia')
+    expect(book.getWorksheet('Instrucciones').getRow(24).height).toBeGreaterThan(44)
+    expect(book.getWorksheet('Instrucciones').getRow(25).height).toBeGreaterThan(44)
   })
   it('reopens serialized files with complete source prescriptions, custom GIFs and repeated-instance relationships', async () => {
     const S = state([{ id: 'c', sets: 1, reps: 8, weight: 22.5, note: '=literal' }, { id: 'c', sets: 2, reps: 12, weight: 30, sg: 'pair' }, { id, sets: 2, reps: 10, sg: 'pair' }])

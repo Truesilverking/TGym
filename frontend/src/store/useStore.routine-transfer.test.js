@@ -52,3 +52,15 @@ it('leaves both the persisted state and exercise registry intact when primary st
   useStore.getState().update(S => Object.assign(S, applyRoutineExchange(S, check, { conflicts, acceptAdaptations: true })))
   expect(useStore.getState().S.routines).toHaveLength(2)
 })
+
+it('retains the original meaning of name-only legacy history when an imported routine has that name', () => {
+  const S = destination(), legacy = { ...S.workouts[0], name: source().routines[0].name }
+  delete legacy.routineId; delete legacy.sessionOrigin
+  S.workouts = [legacy]; useStore.getState().replaceState(S)
+  const { before, check, conflicts } = review()
+  useStore.getState().update(current => Object.assign(current, applyRoutineExchange(current, check, { conflicts, schedule: true, acceptAdaptations: true })), true, false)
+  const after = useStore.getState().S
+  expect(after.workouts).toEqual([{ ...before.workouts[0], sessionOrigin: { type: 'extra', routineId: null } }])
+  expect(dailyPlan(after, '2026-10-11').completed).toBe(0)
+  expect(after.routines.some(r => r.name === legacy.name)).toBe(true)
+})

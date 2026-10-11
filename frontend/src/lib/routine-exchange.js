@@ -483,7 +483,11 @@ export async function createRoutineWorkbook(data, { signal } = {}) {
     ['Días de descanso (JSON)', JSON.stringify(Object.fromEntries(['week', 'dayPlan'].map(field => [field, Object.entries(data[field] || {}).filter(([, ids]) => !routineIds(ids).length).map(([key]) => field === 'week' ? Number(key) : key)])))]
   ]
   for (const [label, value] of lines) if (typeof value === 'string' && value.length > 32767) throw new Error(`Instrucciones, ${label} exceeds Excel's 32767-character cell limit. Export JSON to preserve the full text.`)
-  instructions.addRows(lines); instructions.eachRow(row => { row.alignment = { wrapText: true, vertical: 'top' }; row.height = 44 }); instructions.getRow(1).font = { bold: true, size: 15 }; instructions.getRow(1).height = 30
+  instructions.addRows(lines); instructions.eachRow(row => {
+    const wrappedLines = String(row.getCell(2).value ?? '').split(/\r?\n/).reduce((count, paragraph) => count + Math.max(1, Math.ceil(paragraph.length / 90)), 0)
+    row.font = { name: 'Arial', size: 11 }; row.alignment = { wrapText: true, vertical: 'top' }
+    row.height = Math.min(409, Math.max(44, wrappedLines * 17 + 8))
+  }); instructions.getRow(1).font = { name: 'Arial', bold: true, size: 15 }; instructions.getRow(1).height = 30
   const rows = routineExchangeRows(data)
   for (const [name, headers] of Object.entries(EXCHANGE_HEADERS)) {
     if (rows[name].length > WORKBOOK_ROW_LIMIT) throw new Error(`${name}: Excel supports at most ${WORKBOOK_ROW_LIMIT} data rows. Select fewer routines or export JSON.`)
