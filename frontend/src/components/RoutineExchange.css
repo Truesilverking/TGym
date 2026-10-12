@@ -34,6 +34,10 @@
 .routine-import-file-summary { display: grid; gap: 4px; font-size: 14px; overflow-wrap: anywhere; }
 .routine-import-file-summary small, .routine-import-card small { color: var(--label-3); }
 .routine-import-selection { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 14px; }
+.routine-import-selection { flex-wrap: wrap; }
+.routine-import-wizard select { width: 100%; max-width: 100%; min-width: 0; white-space: normal; }
+.routine-import-wizard label:not(.routine-import-card-title):not(.routine-exchange-choice) { display: grid; grid-template-columns: minmax(0, 1fr); }
+.routine-import-wizard label:not(.routine-import-card-title):not(.routine-exchange-choice) > span { display: block; min-width: 0; max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
 .routine-import-link { border: 0; background: transparent; color: var(--acc); font: inherit; font-size: 14px; padding: 8px 0; text-align: left; }
 .routine-import-cards { display: grid; gap: 9px; }
 .routine-import-card { border: 1px solid var(--sep); border-radius: 14px; padding: 12px; overflow-wrap: anywhere; }
@@ -54,7 +58,7 @@
 .routine-import-saving, .routine-import-success { text-align: center; padding: 25px 12px; }
 .routine-import-success > div { font-size: 44px; color: var(--acc); }
 .routine-import-footer { position: sticky; bottom: 0; background: var(--bg-el); padding: 12px 0 calc(12px + var(--sab, 0px)); display: flex; align-items: center; gap: 10px; border-top: 1px solid var(--sep); z-index: 1; }
-.routine-import-footer .btn { flex: 1; width: auto; margin: 0; }
+.routine-import-footer .btn { flex: 1 1 9em; width: auto; margin: 0; }
 .routine-import-footer { flex-wrap: wrap; }
 .routine-import-footer .btn { min-width: 0; white-space: normal; overflow-wrap: anywhere; }
 .routine-import-cancel { text-align: center; }
