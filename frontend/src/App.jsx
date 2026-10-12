@@ -232,7 +232,7 @@ function Shell() {
     <>
       <div id="app">
         <OfflineStatus />
-        {storageWarning && <aside className="offline-status" role="alert">{t(storageWarning==='primary'?'Could not save changes. Free device storage and try again.':'Local backup is unavailable. Export your data as a precaution.')}</aside>}
+        {storageWarning && <aside className="offline-status" role="alert">{t(storageWarning==='primary'?'Could not save changes. Try again.':'Local backup is unavailable. Export your data as a precaution.')}</aside>}
         {/* Reset route errors/animation without restarting offline readiness. */}
         <div className="vfade" key={loc.pathname}>
         <ErrorBoundary>

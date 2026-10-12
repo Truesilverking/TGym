@@ -86,6 +86,15 @@ it('blocks authenticated routes and profile controls until saved resource hydrat
   } finally { useStore.setState({ boot }) }
 })
 
+it.each(['en', 'es'])('does not infer a full device from a primary storage warning in %s', async lang => {
+  useStore.setState({S:{...structuredClone(DEF),lang,hasCompletedOnboarding:true,hasCompletedAppTour:true}})
+  await setLang(lang); await mount()
+  await act(() => useStore.setState({storageWarning:'primary'}))
+  const warning = host.querySelector('aside.offline-status[role="alert"]')
+  expect(warning.textContent).toBe(t('Could not save changes. Try again.'))
+  expect(warning.textContent).not.toBe(t('Could not save changes. Free device storage and try again.'))
+})
+
 it('completes first setup, skips the tour and reopens with preferences intact', async () => {
   await mount()
   expect(useStore.getState().needsMobileOnboarding).toBe(true)
