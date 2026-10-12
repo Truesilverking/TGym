@@ -870,10 +870,15 @@ export async function parseRoutineWorkbook(buffer) {
 }
 
 export async function readRoutineExchangeFile(file) {
-  if (!file.size || file.size > ROUTINE_EXCHANGE_MAX_BYTES) throw new Error('Choose a nonempty file no larger than 15 MiB. Select fewer routines or split the transfer into separate files.')
+  const invalid = (message, stage = 'select', cause) => Object.assign(new Error(message, cause ? { cause } : undefined), { kind: 'validation', stage })
+  if (!file.size || file.size > ROUTINE_EXCHANGE_MAX_BYTES) throw invalid('Choose a nonempty file no larger than 15 MiB. Select fewer routines or split the transfer into separate files.')
   if (/\.xlsx$/i.test(file.name)) return parseRoutineWorkbook(await file.arrayBuffer())
-  if (!/\.json$/i.test(file.name)) throw new Error('Choose a TGym .xlsx or .json file. PDF cannot be imported.')
-  try { return { data: JSON.parse((await file.text()).replace(/^\uFEFF/, '')), errors: [], warnings: [] } } catch { throw new Error('The JSON file is damaged or incomplete. Export it again from TGym; do not rename another format to .json.') }
+  if (!/\.json$/i.test(file.name)) throw invalid('Choose a TGym .xlsx or .json file. PDF cannot be imported.')
+  // Reading can fail for permissions or device access. Preserve that exception;
+  // only a failed JSON parse proves the selected contents are malformed.
+  const text = await file.text()
+  try { return { data: JSON.parse(text.replace(/^\uFEFF/, '')), errors: [], warnings: [] } }
+  catch (error) { throw invalid('The JSON file is damaged or incomplete. Export it again from TGym; do not rename another format to .json.', 'parse', error) }
 }
 
 export async function buildRoutineExchangeFile(S, ids, format, { signal, onProgress = () => {}, template = false } = {}) {

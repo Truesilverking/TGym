@@ -16,3 +16,4 @@
 .routine-exchange-series th:first-child { width: 25%; }
 .routine-exchange-series th:last-child { width: 18%; }
 .routine-exchange-review-fields { border: 0; padding: 0; margin: 0; min-width: 0; }
+.routine-exchange-diagnostics pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 300px; overflow-y: auto; }

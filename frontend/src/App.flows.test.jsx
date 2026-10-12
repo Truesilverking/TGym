@@ -72,6 +72,20 @@ it.each([['en', 'dark'], ['en', 'light'], ['es', 'dark'], ['es', 'light']])('boo
   expect(useStore.getState().S.workouts.map(w => w.id)).toEqual(historyIds)
 })
 
+it('blocks authenticated routes and profile controls until saved resource hydration is ready', async () => {
+  const boot = useStore.getState().boot
+  useStore.setState({ user: { id: 'authenticated' }, ready: false, boot: vi.fn(async () => {}) })
+  try {
+    await mount()
+    expect(host.querySelector('#app')).not.toBeNull()
+    expect(host.querySelector('#tabbar')).toBeNull()
+    expect(host.querySelector('.app-update')).toBeNull()
+    expect(host.textContent).not.toContain('Consistency')
+    expect(host.textContent).not.toContain('Start')
+    expect(localStorage.getItem('gym_state_v1')).toBeNull()
+  } finally { useStore.setState({ boot }) }
+})
+
 it('completes first setup, skips the tour and reopens with preferences intact', async () => {
   await mount()
   expect(useStore.getState().needsMobileOnboarding).toBe(true)

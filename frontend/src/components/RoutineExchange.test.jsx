@@ -5,13 +5,15 @@ import { beforeEach, afterEach, expect, it, vi } from 'vitest'
 import RoutineExchange from './RoutineExchange.jsx'
 import { CATALOGUE } from '../lib/exercises.js'
 import { createRoutineExchange } from '../lib/routine-exchange.js'
-const mock = vi.hoisted(() => ({ S: null, update: vi.fn(), build: vi.fn(), read: vi.fn(), save: vi.fn(), flush: vi.fn(), storageWarning: null }))
+const mock = vi.hoisted(() => ({ S: null, update: vi.fn(), build: vi.fn(), read: vi.fn(), save: vi.fn(), es: false }))
 vi.mock('../store/useStore.js', () => {
-  const useStore = selector => selector({ S: mock.S, update: mock.update })
-  useStore.getState = () => ({ flushPersistence: mock.flush, storageWarning: mock.storageWarning })
+  const useStore = selector => selector({ S: mock.S, updateAtomic: mock.update })
   return { useStore }
 })
-vi.mock('../lib/i18n.js', () => ({ t: (key, ...args) => args.reduce((s, value, i) => s.replaceAll(`{${i}}`, value), key) }))
+vi.mock('../lib/i18n.js', async () => {
+  const { default: es } = await import('../locales/es.js')
+  return { t: (key, ...args) => args.reduce((s, value, i) => s.replaceAll(`{${i}}`, value), mock.es ? es[key] || key : key) }
+})
 vi.mock('../lib/routine-exchange.js', async original => ({ ...await original(), buildRoutineExchangeFile: (...args) => mock.build(...args), readRoutineExchangeFile: (...args) => mock.read(...args) }))
 vi.mock('../lib/report-file.js', () => ({ saveReportFile: (...args) => mock.save(...args) }))
 let host, root, close
@@ -25,7 +27,7 @@ beforeEach(() => {
   mock.update.mockReset().mockImplementation(fn => { const draft = structuredClone(mock.S); fn(draft); mock.S = draft })
   mock.build.mockReset().mockResolvedValue({ name: 'TGym-routines.json', blob: new Blob(['fixture']) })
   mock.read.mockReset().mockResolvedValue({ data: createRoutineExchange(mock.S), errors: [] }); mock.save.mockReset().mockResolvedValue(undefined)
-  mock.flush.mockReset().mockResolvedValue(undefined); mock.storageWarning = null
+  mock.es = false
   host = document.createElement('div'); document.body.append(host); root = createRoot(host); close = vi.fn()
 })
 afterEach(() => { act(() => root.unmount()); host.remove() })
@@ -140,21 +142,29 @@ it('keeps a failed primary save reviewable with no profile change and retries th
   const before = structuredClone(mock.S)
   mock.update.mockImplementationOnce(() => { throw new Error('QuotaExceededError') })
   render(); await upload(); await act(async () => button('Confirm import').click())
-  expect(mock.S).toEqual(before); expect(close).not.toHaveBeenCalled(); expect(mock.flush).not.toHaveBeenCalled()
-  expect(host.querySelector('[role="alert"]').textContent).toContain('QuotaExceededError')
-  await act(async () => button('Confirm import').click())
+  expect(mock.S).toEqual(before); expect(close).not.toHaveBeenCalled()
+  expect(host.querySelector('[role="alert"] p').textContent).toContain('storage quota')
+  expect(host.querySelector('.routine-exchange-diagnostics').open).toBe(false)
+  expect(host.querySelector('.routine-exchange-diagnostics').textContent).toContain('QuotaExceededError')
+  await act(async () => button('Retry import').click())
   expect(mock.S.routines).toHaveLength(2); expect(mock.update).toHaveBeenCalledTimes(2); expect(close).toHaveBeenCalledOnce()
 })
 
-it('retries only the mirror after a complete local import, without importing a second copy', async () => {
+it('keeps an intermediate persistence failure atomic and retries once without importing a second copy', async () => {
   const source = structuredClone(mock.S); source.routines[0].id = 'new'; source.routines[0].name = 'New'; source.routines[0].ex[0].reps = 12; source.routineOrder = ['new']
-  mock.read.mockResolvedValue({ data: createRoutineExchange(source), errors: [] }); mock.flush.mockRejectedValueOnce(new Error('Native unavailable'))
+  mock.read.mockResolvedValue({ data: createRoutineExchange(source), errors: [] })
+  const before = structuredClone(mock.S), cause = new DOMException('The quota has been exceeded.', 'QuotaExceededError')
+  const failure = new Error('Could not persist resources', { cause }); failure.diagnostics = { stage: 'resources-write', backend: 'IndexedDB', database: 'tgym-profile', store: 'resources', key: 'media:anonymous', attemptedBytes: 5000, previousBytes: 1000 }
+  mock.update.mockImplementationOnce(async fn => { const draft = structuredClone(mock.S); fn(draft); await Promise.resolve(); throw failure })
   render(); await upload(); await act(async () => button('Confirm import').click())
-  expect(mock.S.routines).toHaveLength(2); expect(mock.update).toHaveBeenCalledOnce(); expect(close).not.toHaveBeenCalled()
-  expect(host.querySelector('[role="alert"]').textContent).toContain('will not be repeated')
-  expect(button('Cancel import')).toBeUndefined()
-  await act(async () => button('Retry saving').click())
-  expect(mock.S.routines).toHaveLength(2); expect(mock.update).toHaveBeenCalledOnce(); expect(mock.flush).toHaveBeenCalledTimes(2); expect(close).toHaveBeenCalledOnce()
+  expect(mock.S).toEqual(before); expect(mock.update).toHaveBeenCalledOnce(); expect(close).not.toHaveBeenCalled()
+  expect(host.querySelector('[role="alert"] p').textContent).toContain('storage quota')
+  const details = host.querySelector('.routine-exchange-diagnostics').textContent
+  expect(details).toContain('resources-write'); expect(details).toContain('tgym-profile'); expect(details).toContain('media:anonymous'); expect(details).toContain('QuotaExceededError')
+  expect(JSON.parse(host.querySelector('.routine-exchange-diagnostics pre').textContent).failures[1].stack).toBe(cause.stack || '')
+  expect(button('Cancel import').disabled).toBe(false)
+  await act(async () => button('Retry import').click())
+  expect(mock.S.routines).toHaveLength(2); expect(mock.update).toHaveBeenCalledTimes(2); expect(close).toHaveBeenCalledOnce()
 })
 
 it('requires acknowledgement of file-level legacy resource warnings and cancellation leaves the profile unchanged', async () => {
@@ -188,4 +198,76 @@ it('previews Rest-pause activation repetitions and the total Working target', as
   expect(rows[0].textContent).toContain('Warm-up'); expect(rows[0].textContent).toContain('8 reps · 30 kg')
   expect(rows[1].textContent).toContain('15 reps · 30 kg')
   expect(rows[0].textContent).not.toContain('Automatic warm-up')
+})
+
+it('blocks double confirmation and cancellation until the persisted transaction finishes', async () => {
+  const source = structuredClone(mock.S); source.routines[0].id = 'incoming'; source.routines[0].name = 'Incoming'; source.routineOrder = ['incoming']; source.routines[0].ex[0].reps = 12
+  mock.read.mockResolvedValue({ data: createRoutineExchange(source), errors: [] })
+  let finish
+  mock.update.mockImplementationOnce(fn => {
+    const draft = structuredClone(mock.S); fn(draft)
+    return new Promise(resolve => { finish = () => { mock.S = draft; resolve() } })
+  })
+  const before = structuredClone(mock.S)
+  render(); await upload()
+  act(() => { button('Confirm import').click(); button('Confirm import').click() })
+  expect(mock.update).toHaveBeenCalledOnce(); expect(mock.S).toEqual(before); expect(close).not.toHaveBeenCalled()
+  expect(host.querySelector('[role="status"]').textContent).toBe('Saving import…')
+  expect(button('Cancel')).toBeUndefined(); expect(button('Cancel import').disabled).toBe(true); expect(button('Done').disabled).toBe(true)
+  await act(async () => finish())
+  expect(mock.S.routines).toHaveLength(2); expect(close).toHaveBeenCalledOnce()
+  expect(mock.update.mock.calls[0].slice(1)).toEqual([true, false])
+})
+
+it('retains unit, schedule and adaptation choices on failure, and cancellation preserves the complete prior profile', async () => {
+  Object.assign(mock.S, { workouts: [{ id: 'history', routineId: 'r', entries: [] }], active: { id: 'active', routineId: 'r', entries: [] }, theme: 'light', unit: 'lb', customEx: [{ id: 'local', n: 'Local', custom: true }], week: { 1: ['r'] }, dayPlan: { '2026-10-11': ['r'] } })
+  const source = structuredClone(mock.S); source.unit = 'kg'; source.routines[0].id = 'incoming'; source.routines[0].name = 'Incoming'; source.routineOrder = ['incoming']; source.routines[0].ex[0].reps = 12; source.deload = { on: true, startDate: '2026-10-01', every: 4, deloadWeeks: 1 }; source.week = { 2: ['incoming'] }; source.dayPlan = {}
+  mock.read.mockResolvedValue({ data: createRoutineExchange(source), errors: [] })
+  mock.update.mockImplementationOnce(fn => { const draft = structuredClone(mock.S); fn(draft); throw new DOMException('The quota has been exceeded.', 'QuotaExceededError') })
+  const before = structuredClone(mock.S)
+  render(); await upload()
+  const unit = host.querySelector('select[aria-label="Conflict: kg → lb"]'); change(unit, 'convert')
+  const schedule = [...host.querySelectorAll('label')].find(label => label.textContent === 'Apply imported schedule (preserves other routines)').querySelector('input')
+  act(() => { schedule.click(); host.querySelector('input[aria-label="I accept these adaptations for this import"]').click() })
+  await act(async () => button('Confirm import').click())
+  expect(mock.S).toEqual(before); expect(unit.value).toBe('convert'); expect(schedule.checked).toBe(true)
+  expect(host.querySelector('input[aria-label="I accept these adaptations for this import"]').checked).toBe(true)
+  act(() => button('Cancel import').click())
+  expect(mock.S).toEqual(before); expect(host.textContent).not.toContain('Review import'); expect(host.querySelector('[role="alert"]')).toBeNull(); expect(close).not.toHaveBeenCalled()
+})
+
+it.each(['quota', 'permission', 'validation', 'read'])('keeps %s file errors distinct and technical details collapsed', async kind => {
+  const failures = { quota: new DOMException('The quota has been exceeded.', 'QuotaExceededError'), permission: new DOMException('Access denied', 'NotAllowedError'), validation: new SyntaxError('Unexpected token'), read: new Error('File access failed') }
+  mock.read.mockRejectedValue(failures[kind])
+  render(); await upload()
+  const text = host.querySelector('[role="alert"] p').textContent
+  const expected = { quota: 'storage quota', permission: 'did not permit', validation: 'format validation', read: 'could not read' }
+  expect(text).toContain(expected[kind]); expect(text).not.toContain(failures[kind].message)
+  expect(host.querySelector('.routine-exchange-diagnostics').open).toBe(false); expect(mock.update).not.toHaveBeenCalled()
+})
+
+it('shows the declared file unit without a false kg fallback when both profiles use lb', async () => {
+  mock.S.unit = 'lb'; const source = structuredClone(mock.S); source.routines[0].id = 'lb-source'; source.routines[0].name = 'LB source'; source.routineOrder = ['lb-source']; source.routines[0].ex[0].reps = 12
+  mock.read.mockResolvedValue({ data: createRoutineExchange(source), errors: [] })
+  render(); await upload()
+  expect(host.textContent).toContain('File unit: lb · This device: lb'); expect(host.textContent).not.toContain('kg → lb')
+  expect(host.querySelector('select[aria-label^="Conflict:"]')).toBeNull()
+  await act(async () => button('Confirm import').click())
+  expect(mock.S.routines.find(r => r.id === 'lb-source').ex[0].weight).toBe(10)
+})
+
+it('localizes Spanish adaptation and quota recovery messages without changing prescription meaning', async () => {
+  mock.es = true
+  const source = structuredClone(mock.S); source.routines[0].id = 'incoming'; source.routines[0].name = 'Incoming'; source.routineOrder = ['incoming']; source.routines[0].ex[0].reps = 12; source.effort = 'rpe'; source.deload = { on: true, startDate: '2026-10-01', every: 4, deloadWeeks: 1 }
+  mock.read.mockResolvedValue({ data: createRoutineExchange(source), errors: [] }); mock.update.mockImplementationOnce(() => { throw new DOMException('The quota has been exceeded.', 'QuotaExceededError') })
+  render(); await upload()
+  expect(host.textContent).toContain('El deload está activado en el origen o en este dispositivo.')
+  expect(host.textContent).toContain('La escala de esfuerzo difiere (RPE → Ninguno).')
+  expect(host.textContent).not.toContain('Deload is enabled'); expect(host.textContent).not.toContain('Destination preferences remain unchanged')
+  act(() => host.querySelector('input[aria-label="Acepto estas adaptaciones para esta importación"]').click())
+  await act(async () => button('Confirmar importación').click())
+  expect(host.querySelector('[role="alert"] p').textContent).toContain('se superó la cuota de almacenamiento de TGym')
+  expect(button('Reintentar importación')).toBeDefined(); expect(button('Cancelar importación')).toBeDefined()
+  expect(host.querySelector('.routine-exchange-diagnostics summary').textContent).toBe('Detalles técnicos')
+  expect(mock.S.effort).toBeUndefined(); expect(mock.S.deload).toBeUndefined()
 })

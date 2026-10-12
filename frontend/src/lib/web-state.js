@@ -4,21 +4,25 @@
 import { readBackup } from './backup.js'
 
 const DATABASE = 'tgym-profile', STORE = 'snapshots'
+export const WEB_RESOURCE_STORE = 'resources'
 const PRE_UPDATE = 'pre-update', LEGACY_PRE_UPDATE = 'tgym_pre_update_backup'
 let queue = null, pending = null
-function database() {
+export function profileDatabase() {
   return new Promise((resolve, reject) => {
     if (!globalThis.indexedDB) { resolve(null); return }
-    const request = indexedDB.open(DATABASE, 1)
+    const request = indexedDB.open(DATABASE, 2)
     let settled = false
     const timer = setTimeout(() => { settled = true; reject(new Error('Profile storage is busy')) }, 5000)
-    request.onupgradeneeded = () => { if (!request.result.objectStoreNames.contains(STORE)) request.result.createObjectStore(STORE) }
+    request.onupgradeneeded = () => {
+      if (!request.result.objectStoreNames.contains(STORE)) request.result.createObjectStore(STORE)
+      if (!request.result.objectStoreNames.contains(WEB_RESOURCE_STORE)) request.result.createObjectStore(WEB_RESOURCE_STORE)
+    }
     request.onerror = () => { clearTimeout(timer); settled = true; reject(request.error) }
     request.onsuccess = () => { clearTimeout(timer); if (settled) request.result.close(); else { settled = true; resolve(request.result) } }
   })
 }
 async function writeSnapshot(snapshot, key = 'current') {
-    const db = await database()
+    const db = await profileDatabase()
     if (!db) return false
     try {
       await new Promise((resolve, reject) => {
@@ -47,7 +51,7 @@ export function saveWebState(state) {
   return queue
 }
 async function readSnapshot(key) {
-  const db = await database()
+  const db = await profileDatabase()
   if (!db) return null
   try { return await new Promise((resolve, reject) => {
       const tx=db.transaction(STORE), request=tx.objectStore(STORE).get(key)

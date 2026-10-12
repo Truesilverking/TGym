@@ -3,6 +3,7 @@ import { bindExerciseNameState } from '../lib/exercise-name-state.js'
 import { create } from 'zustand'
 import { migrateState, STATE_SCHEMA } from '../lib/state-migrations.js'
 import { loadWebState, saveWebState } from '../lib/web-state.js'
+import { compactProfile, hasProfileResources, hydrateProfile, isQuotaError, retainProfileResources, stageProfileResources, storageFailure } from '../lib/profile-resources.js'
 import { DEFAULT_SOUNDS } from '../lib/sound-preferences.js'
 import { api, setRemoteAuth } from '../lib/api.js'
 import { localTZ } from '../lib/format.js'
@@ -44,20 +45,21 @@ export const DEF = {
 const clone = o => JSON.parse(JSON.stringify(o))
 
 let storageError = null
+let initialStorageCause = null
 function loadState() {
   try {
     const raw = localStorage.getItem(KEY)
     if (raw) {
       const S = Object.assign(clone(DEF), migrateState(JSON.parse(raw), { onboarded: localStorage.getItem('framegym_onboarded_v1') === '1' }))
       const active = sessionTiming(reconcileWorkoutClock(S.active))
-      if (active !== S.active) {
+      if (active !== S.active && !hasProfileResources(S)) {
         S.active = active
         // Preserve freshness until boot has compared the native mirror.
         localStorage.setItem(KEY, JSON.stringify(S))
       }
       return S
     }
-  } catch (e) { storageError = e.message }
+  } catch (e) { storageError = e.message; initialStorageCause = e }
   return clone(DEF)
 }
 
@@ -68,6 +70,7 @@ export const useStore = create((set, get) => {
   let pushQueue = Promise.resolve()
   let saveTm = null
   let bootstrap = null
+  let atomicSaving = false
 
   // Mobile build: mirror the state into a file in the app's data directory (survives WebView
   // storage eviction) and keep the native reminder schedule in step with the weekly plan.
@@ -78,27 +81,48 @@ export const useStore = create((set, get) => {
 
   const mirrorWeb = async S => {
     let ok=false
-    try {ok=await saveWebState(S)} catch {}
+    try {ok=await saveWebState(compactProfile(S))} catch {}
     if(get().S===S&&get().storageWarning!=='primary')set({storageWarning:ok?null:'mirror'})
     return ok
   }
 
-  const persist = (S, push = true) => {
-    if (storageError) throw new Error(storageError)
+  const preparePersistence = S => {
+    if (storageError || get().storageError) throw new Error(storageError || get().storageError)
+    if (hasProfileResources(S)) throw storageFailure(new Error('Saved profile resources have not been loaded'), {stage:'resource-hydration',backend:'localStorage',key:KEY})
     S = migrateState(S, { onboarded: !!get().S.hasCompletedOnboarding, toured: !!get().S.hasCompletedAppTour })
     S.active = sessionTiming(reconcileWorkoutClock(S.active))
-    const clockChanged = S.active?.timerPausedAt !== get().S.active?.timerPausedAt || S.active?.timerContinuedAt !== get().S.active?.timerContinuedAt
     if (S.cloudSync?.on && backupChecksum(portableState(S)) !== backupChecksum(portableState(get().S))) {
       S.cloudSync = { ...S.cloudSync, dirtyAt: Date.now() }
     }
     S._ts = Date.now()
+    return S
+  }
+  const persist = (draft, push = true, prepared = false) => {
+    const S = prepared ? draft : preparePersistence(draft)
+    const clockChanged = S.active?.timerPausedAt !== get().S.active?.timerPausedAt || S.active?.timerContinuedAt !== get().S.active?.timerContinuedAt
+    const serialized = JSON.stringify(STANDALONE ? compactProfile(S) : S)
+    let previous = null, dirty = null, dirtyWritten = false, failedKey = KEY, operation = 'getItem', attemptedValue = null
     // Mark before writing the profile: a suspended page cannot lose its sync intent.
     try {
-      if (push && get().user) localStorage.setItem('gym_dirty', '1')
-      localStorage.setItem(KEY, JSON.stringify(S))
+      previous = localStorage.getItem(KEY)
+      if (push && get().user) {
+        failedKey = 'gym_dirty'; dirty = localStorage.getItem('gym_dirty')
+        operation = 'setItem'; attemptedValue = '1'
+        localStorage.setItem('gym_dirty', '1'); dirtyWritten = true
+      }
+      failedKey = KEY; operation = 'setItem'; attemptedValue = serialized
+      localStorage.setItem(KEY, serialized)
     }
-    catch(error){set({storageWarning:'primary'});throw error}
+    catch(cause){
+      let rollbackError = null
+      if (dirtyWritten) try { if (dirty == null) localStorage.removeItem('gym_dirty'); else localStorage.setItem('gym_dirty', dirty) } catch (error) { rollbackError = error.name }
+      let localStorageBytes = null
+      try { localStorageBytes = Array.from({length:localStorage.length},(_,i)=>localStorage.key(i)).reduce((sum,key)=>sum+2*(key.length+(localStorage.getItem(key)||'').length),0) } catch { /* A denied store cannot be measured. */ }
+      set({storageWarning:'primary'})
+      throw storageFailure(cause, {stage:'profile-write',backend:'localStorage',key:failedKey,operation,attemptedBytes:(attemptedValue?.length||0)*2,attemptedUtf8Bytes:attemptedValue==null?0:new TextEncoder().encode(attemptedValue).length,previousBytes:((failedKey===KEY?previous:dirty)?.length||0)*2,localStorageBytes,rollbackError})
+    }
     registerCustom(S.customEx)
+    retainProfileResources(S)
     set({ S, storageWarning:null })
     if (STANDALONE) void mirrorWeb(S)
     if (MOBILE) {
@@ -113,6 +137,22 @@ export const useStore = create((set, get) => {
       clearTimeout(pushTm)
       pushTm = setTimeout(() => get().pushState(), 1500)
     }
+  }
+
+  const updateDraft = (mut, userActivity) => {
+    const S = clone(get().S)
+    mut(S)
+    // Editing a session cannot change the origin captured before this edit.
+    if (S.active && S.active.id === get().S.active?.id) S.active.sessionOrigin = {...sessionOrigin(get().S.active,get().S.routines)}
+    const previousWorkouts = new Map((get().S.workouts || []).map(w=>[w.id,w]))
+    const routinesChanged = JSON.stringify(S.routines) !== JSON.stringify(get().S.routines)
+    for (const w of S.workouts || []) {
+      const previous = w.id != null && previousWorkouts.get(w.id)
+      if (previous && (previous.sessionOrigin || previous.routineId !== w.routineId || previous.name !== w.name || !previous.routineId && routinesChanged)) w.sessionOrigin = {...sessionOrigin(previous,get().S.routines)}
+    }
+    if (S.backoffRepsMode !== get().S.backoffRepsMode) S.active = refreshActiveBackoffReps(S.active, S)
+    if (S.unit === get().S.unit) S.active = reconcileWorkoutEdit(get().S.active, S.active, Date.now(), userActivity)
+    return S
   }
 
   // A setting changed right before switching away/closing the tab must not get lost mid-debounce
@@ -162,9 +202,10 @@ export const useStore = create((set, get) => {
   }
 
   return {
-    S: (() => { const s = loadState(); registerCustom(s.customEx); return s })(),
+    S: (() => { const s = loadState(); if (!hasProfileResources(s)) registerCustom(s.customEx); return s })(),
     user: (() => { try { return JSON.parse(localStorage.getItem('gym_user')) || null } catch { return null } })(),
     storageError,
+    storageDiagnostics: initialStorageCause,
     storageWarning: null,
     serverSyncError: null,
     ready: false,
@@ -186,19 +227,43 @@ export const useStore = create((set, get) => {
 
     // Mutate a draft of S via producer fn, then persist + schedule sync.
     update(mut, push = true, userActivity = true) {
-      const S = clone(get().S)
-      mut(S)
-      // Editing a session cannot change the origin captured before this edit.
-      if (S.active && S.active.id === get().S.active?.id) S.active.sessionOrigin = {...sessionOrigin(get().S.active,get().S.routines)}
-      const previousWorkouts = new Map((get().S.workouts || []).map(w=>[w.id,w]))
-      const routinesChanged = JSON.stringify(S.routines) !== JSON.stringify(get().S.routines)
-      for (const w of S.workouts || []) {
-        const previous = w.id != null && previousWorkouts.get(w.id)
-        if (previous && (previous.sessionOrigin || previous.routineId !== w.routineId || previous.name !== w.name || !previous.routineId && routinesChanged)) w.sessionOrigin = {...sessionOrigin(previous,get().S.routines)}
-      }
-      if (S.backoffRepsMode !== get().S.backoffRepsMode) S.active = refreshActiveBackoffReps(S.active, S)
-      if (S.unit === get().S.unit) S.active = reconcileWorkoutEdit(get().S.active, S.active, Date.now(), userActivity)
-      persist(S, push)
+      persist(updateDraft(mut, userActivity), push)
+    },
+    async updateAtomic(mut, push = true, userActivity = true) {
+      if (atomicSaving) throw Object.assign(new Error('A profile save is already in progress'), {code:'profile_save_busy'})
+      atomicSaving = true
+      const before = get().S
+      try {
+        const S = preparePersistence(updateDraft(mut, userActivity))
+        try { persist(S, push, true); return }
+        catch (error) {
+          // The demonstrated iPhone failure is the synchronous string-store
+          // limit, despite available IndexedDB capacity. Keep the primary core
+          // and synchronous edit contract; stage only necessary large resources.
+          if (!STANDALONE || !isQuotaError(error) || error.diagnostics?.key !== KEY || error.diagnostics?.operation !== 'setItem') throw error
+          let staged
+          try { staged = await stageProfileResources(S) }
+          catch (cause) { cause.initialStorageFailure=error; cause.diagnostics = {...cause.diagnostics,originalAttemptedBytes:error.diagnostics?.attemptedBytes,initialStorageError:error.cause?.name}; throw cause }
+          if (!staged) throw error
+          if (get().S !== before) throw Object.assign(new Error('Your profile changed while saving. Review the import again.'), {code:'profile_changed_during_save'})
+          try { persist(S, push, true) }
+          catch (cause) { cause.initialStorageFailure=error; cause.diagnostics = {...cause.diagnostics,resourceBytes:staged.resourceBytes,resourceCount:staged.resourceCount,originalAttemptedBytes:error.diagnostics?.attemptedBytes}; throw cause }
+        }
+      } finally { if (get().S === before) retainProfileResources(before); atomicSaving = false }
+    },
+    async retryStorage() {
+      set({ready:false,storageError:null,storageDiagnostics:null})
+      try {
+        const raw = localStorage.getItem(KEY)
+        if (!raw) throw new Error('The saved profile is unavailable. Keep the recovery file before restoring data.')
+        const saved = await hydrateProfile(Object.assign(clone(DEF), migrateState(JSON.parse(raw))))
+        // Parsing and every resource read must complete before the protected
+        // source becomes editable again. Retrying never writes the raw source.
+        storageError = null; initialStorageCause = null
+        registerCustom(saved.customEx)
+        set({S:saved})
+        await get().boot()
+      } catch (error) { set({ready:false,storageError:error.message,storageDiagnostics:error}) }
     },
     reconcileActiveClock(now = Date.now()) {
       const before = get().S.active
@@ -399,7 +464,7 @@ export const useStore = create((set, get) => {
 
     // Boot: ask the server who we are, then pull.
     async boot() {
-      if (storageError) { set({ ready: true, storageError }); return }
+      if (storageError) { set({ ready: false, storageError, storageDiagnostics:initialStorageCause }); return }
       // Mobile build: no backend by default — restore from the file mirror (the durable copy;
       // localStorage may have been evicted since the last run) and go straight in. Unless this
       // device was paired to a server ("connect to my server" mode, lib/remote.js), in which
@@ -423,7 +488,7 @@ export const useStore = create((set, get) => {
         const saved = await nativeLoad()
         const S = get().S
         if (shouldRestoreNative(S, saved)) {
-          try { persist(Object.assign(clone(DEF), saved), false) } catch (error) { set({ready:true,storageError:error.message});return }
+          try { persist(Object.assign(clone(DEF), saved), false) } catch (error) { set({ready:false,storageError:error.message,storageDiagnostics:error});return }
         } else if (S._ts || hasData(S)) {
           nativeSave(S)   // first run after an update from a file-less version: seed the mirror
         }
@@ -438,11 +503,16 @@ export const useStore = create((set, get) => {
       // TGym's free PWA build has no backend: each installation is a private local profile
       // and JSON files are the explicit transfer mechanism.
       if (STANDALONE) {
-        const saved = await loadWebState()
         try {
-          if (saved && (!get().S._ts || (saved._ts || 0) > get().S._ts)) persist(Object.assign(clone(DEF), saved), false)
+          const local = await hydrateProfile(get().S)
+          if (local !== get().S) { registerCustom(local.customEx); set({S:local}) }
+          const snapshot = await loadWebState()
+          if (snapshot && (!get().S._ts || (snapshot._ts || 0) > get().S._ts)) {
+            const saved = await hydrateProfile(snapshot)
+            persist(Object.assign(clone(DEF), saved), false)
+          }
           else if (get().S._ts) await mirrorWeb(get().S)
-        } catch (error) { set({ ready: true, storageError: error.message }); return }
+        } catch (error) { set({ ready: false, storageError: error.message, storageDiagnostics:error }); return }
         get().setGuest(true)
         set({ ready: true, needsMobileOnboarding: !get().S.hasCompletedOnboarding && !localStorage.getItem('framegym_onboarded_v1') && !hasData(get().S) })
         return

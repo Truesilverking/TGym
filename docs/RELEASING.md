@@ -6,6 +6,8 @@ Routine transfer 1.15.64 adds format 2 with format 1 compatibility. Its tag foll
 The owner's actual Windows PWA62 failed one normal Update, then the protected hard reload loaded64. Confirmed close/reopen, normal offline-preparation Retry and up-to-date checks passed; all three official full backups are completely equal. See RELEASE-AUDIT-1.15.64.md for the exact observations and separate offline-profile boundary.
 Run frontend/scripts/check-version.mjs before tagging.
 
+Routine import candidate 1.15.65 / Android 101 is validated against the original locally held JSON and an anonymous equivalent that reproduces the published-64 WebKit quota error. Its schema 4/resource representation migrates only after committed, freshly verified IndexedDB resource reads and a successful primary profile replacement; no prior source is deleted. Physical iPhone acceptance is unavailable because the screenshot belongs to a third party. Exact-source CI, artifacts and publication must still pass; see ROUTINE-IMPORT-QUOTA-AUDIT-1.15.65.md.
+
 Desktop update correction 1.15.63 / Android 99 was published after its exact-source checks, verified signed candidate and corrected-source browser acceptance passed. The owner's installed Windows PWA then loaded63 and reported up to date, with completely equal official portable-profile exports. The tag suppresses the update-delivery notification step; credential validate-only checks and package/PWA publication still run.
 
 ## Single publication

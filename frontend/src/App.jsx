@@ -35,6 +35,7 @@ import Admin from './views/Admin.jsx'
 import AppLock from './components/AppLock.jsx'
 import AppUpdate from './components/AppUpdate.jsx'
 import OfflineStatus from './components/OfflineStatus.jsx'
+import ProfileRecovery from './components/ProfileRecovery.jsx'
 import AppTour from './components/AppTour.jsx'
 import { backupToGoogleDrive, cloudBackupDue } from './lib/cloud-sync.js'
 import { MOBILE, syncReminder } from './lib/mobile.js'
@@ -82,7 +83,7 @@ export function ThemePreferences() {
 function Shell() {
   const navigate = useNavigate()
   const loc = useLocation()
-  const { S, user, ready, storageError, storageWarning } = useStore()
+  const { S, user, ready, storageError, storageWarning, storageDiagnostics } = useStore()
   const isGuest = useStore(s => s.isGuest())
   const needsMobileOnboarding = useStore(s => s.needsMobileOnboarding)
   const langV = useLang()   // re-renders the whole shell when the language (pack) changes
@@ -156,7 +157,7 @@ function Shell() {
     return ()=>{clearInterval(timer);events.forEach(type=>document.removeEventListener(type,interact,true));document.removeEventListener('input',beforeInput,true);document.removeEventListener('input',interact);document.removeEventListener('visibilitychange',foreground)}
   },[ready])
   useEffect(() => {
-    if (!MOBILE) return
+    if (!MOBILE || !ready || storageError) return
     let disposed = false, listener
     import('@capacitor/local-notifications').then(async ({ LocalNotifications }) => {
       const handle = await LocalNotifications.addListener('localNotificationActionPerformed', async event => {
@@ -175,7 +176,7 @@ function Shell() {
       if (disposed) void handle.remove(); else listener = handle
     }).catch(() => {})
     return () => { disposed = true; void listener?.remove() }
-  }, [])
+  }, [ready, storageError])
   useEffect(() => {
     if (!MOBILE || !ready) return
     const sync = () => { if (document.visibilityState !== 'hidden') void syncReminder(useStore.getState().S) }
@@ -188,7 +189,7 @@ function Shell() {
   // every tab/route change starts at the top of the page
   useEffect(() => { window.scrollTo(0, 0) }, [loc.pathname])
   // bound to the workout, not to the route — checking Stats mid-session keeps the screen on
-  useWakeLock(!!S.active && S.keepAwake !== false)
+  useWakeLock(ready && !storageError && !!S.active && S.keepAwake !== false)
 
   // A PWA cannot wake itself while it is fully closed. Run the weekly check on launch and
   // foreground instead. Google normally renews prior consent silently; if the browser cannot,
@@ -217,9 +218,9 @@ function Shell() {
     return () => { gone = true; clearInterval(timer); window.removeEventListener('online', syncIfDue); document.removeEventListener('visibilitychange', visible) }
   }, [ready])
 
-  if (storageError) return <main className="narrow card"><h1>{t('Saved data needs attention')}</h1><p>{t('Your saved profile has not been overwritten. Export it before restoring a backup or opening a newer app version.')}</p><button className="btn" onClick={() => { const raw = localStorage.getItem('gym_state_v1'); const url = URL.createObjectURL(new Blob([raw || '{}'], { type: 'application/json' })); const a = document.createElement('a'); a.href = url; a.download = 'tgym-recovery.json'; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000) }}>{t('Export saved data')}</button></main>
+  if (storageError) return <ProfileRecovery error={storageDiagnostics || storageError} />
   const authed = user || isGuest
-  if (!ready && !authed) return (
+  if (!ready) return (
     <div id="app">
       <div style={{ paddingTop: '44dvh', display: 'flex', justifyContent: 'center', fontSize: 34, color: 'var(--label-3)' }}>
         <Icon name="dumbbell" />

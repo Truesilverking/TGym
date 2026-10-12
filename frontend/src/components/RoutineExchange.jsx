@@ -4,16 +4,17 @@ import { t } from '../lib/i18n.js'
 import { buildRoutineExchangeFile, readRoutineExchangeFile, validateRoutineExchange, applyRoutineExchange, exchangeCatalogue, routineExchangeReviewKey, routineExchangeRows, ROUTINE_EXCHANGE_VERSION } from '../lib/routine-exchange.js'
 import { displayReps } from '../lib/history.js'
 import { saveReportFile } from '../lib/report-file.js'
+import { routineAdaptationMessage, routineImportDiagnostics, routineImportFailureMessage } from '../lib/routine-import-feedback.js'
 import { Button } from './ui.jsx'
 import './RoutineExchange.css'
 
 export default function RoutineExchange({ close }) {
-  const S = useStore(s => s.S), update = useStore(s => s.update)
+  const S = useStore(s => s.S), updateAtomic = useStore(s => s.updateAtomic)
   const [selection, setSelection] = useState(() => (S.routines || []).map(r => r.id)), [format, setFormat] = useState('json')
   const [busy, setBusy] = useState(false), [progress, setProgress] = useState(0), [error, setError] = useState(''), [file, setFile] = useState(null)
   const [imported, setImported] = useState(null), [mappings, setMappings] = useState({}), [choices, setChoices] = useState({}), [schedule, setSchedule] = useState(false), [acceptAdaptations, setAcceptAdaptations] = useState(false)
   const [replaceConfirmed, setReplaceConfirmed] = useState(false)
-  const [committed, setCommitted] = useState(false)
+  const [saving, setSaving] = useState(false)
   const [legacyUnit, setLegacyUnit] = useState('')
   const input = useRef(null), abort = useRef(null), mounted = useRef(true), generation = useRef(0), working = useRef(false)
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; abort.current?.abort(); generation.current++ } }, [])
@@ -56,26 +57,30 @@ export default function RoutineExchange({ close }) {
   }
   const chooseFile = async event => {
     const selected = event.target.files?.[0]; event.target.value = ''; if (!selected || working.current) return
-    const epoch = ++generation.current; working.current = true; setBusy(true); setError(''); setImported(null); setCommitted(false); setChoices({}); setMappings({}); setSchedule(false); setAcceptAdaptations(false); setReplaceConfirmed(false); setLegacyUnit('')
-    try { const parsed = await readRoutineExchangeFile(selected); if (mounted.current && epoch === generation.current) setImported({ ...parsed, name: selected.name }) }
-    catch (e) { if (mounted.current && epoch === generation.current) setError(t('Import failed: {0}', e.message)) }
+    const epoch = ++generation.current; working.current = true; setBusy(true); setError(''); setImported(null); setChoices({}); setMappings({}); setSchedule(false); setAcceptAdaptations(false); setReplaceConfirmed(false); setLegacyUnit('')
+    try { const parsed = await readRoutineExchangeFile(selected); if (mounted.current && epoch === generation.current) setImported({ ...parsed, name: selected.name, bytes: selected.size }) }
+    catch (e) { if (mounted.current && epoch === generation.current) setError({ ...routineImportFailureMessage(e, 'read', t), details: routineImportDiagnostics(e, { stage: 'read', file: selected.name, fileBytes: selected.size }) }) }
     finally { if (epoch === generation.current) { working.current = false; if (mounted.current) setBusy(false) } }
   }
   const apply = async () => {
-    if (working.current || !committed && (errors.length || !validation?.valid || !allChosen || replacing && !replaceConfirmed || adaptations.length && !acceptAdaptations)) return
-    working.current = true; setBusy(true); setError('')
-    let saved = committed
+    if (working.current || errors.length || !validation?.valid || !allChosen || replacing && !replaceConfirmed || adaptations.length && !acceptAdaptations) return
+    working.current = true; setBusy(true); setSaving(true); setError('')
+    let transformed = false, persisted = false
     try {
       // Recheck against the live state inside the persisted update, then commit one complete draft.
-      if (!saved) {
-        update(current => { const next = applyRoutineExchange(current, validation, { conflicts: choices, schedule, acceptAdaptations, exerciseMappings: mappings, legacyUnit }); Object.assign(current, next) }, true, false)
-        saved = true; setCommitted(true)
+      await updateAtomic(current => { const next = applyRoutineExchange(current, validation, { conflicts: choices, schedule, acceptAdaptations, exerciseMappings: mappings, legacyUnit }); Object.assign(current, next); transformed = true }, true, false)
+      persisted = true
+    } catch (e) {
+      if (mounted.current) {
+        const stage = transformed ? 'persist' : 'conversion'
+        const standalone = navigator.standalone === true || window.matchMedia?.('(display-mode: standalone)').matches === true
+        const ios = /(?:iPhone|iPad).*?OS ([\d_]+)/.exec(navigator.userAgent || '')?.[1]?.replaceAll('_', '.')
+        const context = { stage, file: imported.name, fileBytes: imported.bytes, normalizedBytes: new TextEncoder().encode(JSON.stringify(validation.data)).length, sourceUnit: validation.sourceUnit, destinationUnit: S.unit, appVersion: typeof __APP_VERSION__ === 'undefined' ? 'unknown' : __APP_VERSION__, runtime: import.meta.env.VITE_MOBILE === '1' ? 'Capacitor' : standalone ? 'installed PWA' : 'browser tab', ...(ios ? { ios } : {}), userAgent: navigator.userAgent }
+        setError({ ...routineImportFailureMessage(e, stage, t), details: routineImportDiagnostics(e, context) })
       }
-      await useStore.getState().flushPersistence()
-      if (useStore.getState().storageWarning === 'mirror') throw new Error('Profile mirror unavailable')
-      setImported(null); setChoices({}); setMappings({}); setFile(null); setError(''); close()
-    } catch (e) { setError(saved ? t('The routines are saved locally. Could not finish saving the local copy. Check available storage and retry saving; the import will not be repeated.') : t('Import failed: {0}', e.message)) }
-    finally { working.current = false; if (mounted.current) setBusy(false) }
+    }
+    finally { working.current = false; if (mounted.current) { setBusy(false); setSaving(false) } }
+    if (persisted && mounted.current) { setImported(null); setChoices({}); setMappings({}); setFile(null); setError(''); close() }
   }
   const changeSelection = ids => { setSelection(ids); setFile(null); setError('') }
   return <section className="routine-exchange" aria-label={t('Import / Export routines')}>
@@ -86,17 +91,17 @@ export default function RoutineExchange({ close }) {
     <label>{t('Format')}<select className="input" aria-label={t('Format')} disabled={busy} value={format} onChange={event => { setFormat(event.target.value); setFile(null) }}><option value="json">JSON v{ROUTINE_EXCHANGE_VERSION}</option><option value="xlsx">Excel (.xlsx) v{ROUTINE_EXCHANGE_VERSION}</option><option value="pdf">PDF</option></select></label>
     <p className="small dim">{t('Prepare {0} selected routines as {1}.', selection.length, format.toUpperCase())}</p>
     <Button variant="primary" disabled={busy || !selection.length} onClick={() => prepare()}>{t('Prepare export')}</Button>
-    {busy && <><progress max="100" value={progress} aria-label={t('Export progress')}/>{!committed && <Button onClick={cancel}>{t('Cancel')}</Button>}</>}
+    {busy && (saving ? <p role="status">{t('Saving import…')}</p> : <><progress max="100" value={progress} aria-label={t('Export progress')}/><Button onClick={cancel}>{t('Cancel')}</Button></>)}
     {file && <div className="routine-exchange-result"><div>{file.name}</div><Button disabled={busy} onClick={download}>{t('Download')}</Button></div>}
     <h4 className="sec">{t('Import routines')}</h4>
     <p className="small dim">{t('Use Excel or JSON. Download the template, choose exercises from its catalog lists, and review before saving.')}</p>
-    <div className="row" style={{ flexWrap: 'wrap', gap: 8 }}><Button disabled={busy} onClick={() => prepare(true)}>{t('Download Excel template')}</Button><Button disabled={busy || committed} onClick={() => input.current?.click()}>{t('Choose Excel / JSON')}</Button></div>
+    <div className="row" style={{ flexWrap: 'wrap', gap: 8 }}><Button disabled={busy} onClick={() => prepare(true)}>{t('Download Excel template')}</Button><Button disabled={busy} onClick={() => input.current?.click()}>{t('Choose Excel / JSON')}</Button></div>
     <input ref={input} type="file" hidden accept=".xlsx,.json,application/json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={chooseFile}/>
     {imported && <div className="routine-exchange-preview">
       <h4>{t('Review import')}</h4><p className="small">{imported.name}</p>
-      {committed && <p role="status">{t('The complete import is saved locally. Retry saving the local copy.')}</p>}
-      <fieldset disabled={busy || committed} className="routine-exchange-review-fields">
+      <fieldset disabled={busy} className="routine-exchange-review-fields">
       <p>{t('{0} routines · {1} exercises', validation?.routineCount || 0, validation?.exerciseCount || 0)}</p>
+      <p className="small dim">{t('File unit: {0} · This device: {1}', validation?.sourceUnit || t('Not recorded'), S.unit || t('Not recorded'))}</p>
       {validation?.data?.convertedLegacy && <p className="small dim">{t('Legacy plan v1 converted. No unknown exercise is removed automatically.')}</p>}
       {validation?.needsLegacyUnit && <label>{t('Source weight unit of the legacy file')}<select className="input" aria-label={t('Source weight unit of the legacy file')} value={legacyUnit} onChange={event => { setLegacyUnit(event.target.value); setChoices({}); setReplaceConfirmed(false) }}><option value="">{t('Choose how to import')}</option><option value="kg">kg</option><option value="lb">lb</option></select></label>}
       {previewRoutines.map((routine, index) => <details key={`${routine.id}-${index}`}>
@@ -118,14 +123,14 @@ export default function RoutineExchange({ close }) {
       </div>)}
       {replacing && <label className="routine-exchange-choice"><input type="checkbox" aria-label={t('I confirm replacing the selected existing data')} checked={replaceConfirmed} onChange={event => setReplaceConfirmed(event.target.checked)}/>{t('I confirm replacing the selected existing data')}</label>}
       <label className="routine-exchange-choice"><input type="checkbox" checked={schedule} onChange={event => setSchedule(event.target.checked)}/>{t('Apply imported schedule (preserves other routines)')}</label>
-      {adaptations.length > 0 && <div className="routine-exchange-adaptations"><p>{t('Review the settings that differ on this device:')}</p><ul>{adaptations.map((item, index) => <li key={item.key || index}>{item.message}</li>)}</ul><label className="routine-exchange-choice"><input type="checkbox" aria-label={t('I accept these adaptations for this import')} checked={acceptAdaptations} onChange={event => setAcceptAdaptations(event.target.checked)}/>{t('I accept these adaptations for this import')}</label></div>}
+      {adaptations.length > 0 && <div className="routine-exchange-adaptations"><p>{t('Review the settings that differ on this device:')}</p><ul>{adaptations.map((item, index) => <li key={item.key || index}>{routineAdaptationMessage(item, t)}</li>)}</ul><label className="routine-exchange-choice"><input type="checkbox" aria-label={t('I accept these adaptations for this import')} checked={acceptAdaptations} onChange={event => setAcceptAdaptations(event.target.checked)}/>{t('I accept these adaptations for this import')}</label></div>}
       <p className="small dim">{t('Routine prescriptions retain their transferred settings. This device keeps its global preferences and workout history.')}</p>
       <p className="small dim">{t('Confirm saves the complete valid import at once. Existing history and active workouts are preserved.')}</p>
       </fieldset>
-      <Button variant="primary" disabled={busy || !committed && (errors.length > 0 || !validation?.valid || !allChosen || replacing && !replaceConfirmed || adaptations.length > 0 && !acceptAdaptations)} onClick={apply}>{t(committed ? 'Retry saving' : 'Confirm import')}</Button>
-      {!committed && <Button onClick={() => { setImported(null); setChoices({}); setMappings({}); setSchedule(false); setAcceptAdaptations(false); setReplaceConfirmed(false); setLegacyUnit(''); setError('') }}>{t('Cancel import')}</Button>}
+      <Button variant="primary" disabled={busy || errors.length > 0 || !validation?.valid || !allChosen || replacing && !replaceConfirmed || adaptations.length > 0 && !acceptAdaptations} onClick={apply}>{t(error?.details ? 'Retry import' : 'Confirm import')}</Button>
+      <Button disabled={busy} onClick={() => { setImported(null); setChoices({}); setMappings({}); setSchedule(false); setAcceptAdaptations(false); setReplaceConfirmed(false); setLegacyUnit(''); setError('') }}>{t('Cancel import')}</Button>
     </div>}
-    {error && <p role="alert">{error}</p>}
+    {error && <div role="alert"><p>{typeof error === 'string' ? error : error.message}</p>{['quota', 'permission'].includes(error.kind) && <p className="small">{t('Keep this review open to retry, or cancel. You can export a full backup from Settings. Check browser storage restrictions and available device storage before trying again.')}</p>}{error.details && <details className="routine-exchange-diagnostics"><summary>{t('Technical details')}</summary><pre className="small">{JSON.stringify(error.details, null, 2)}</pre></details>}</div>}
     <Button disabled={busy} onClick={close}>{t('Done')}</Button>
   </section>
 }

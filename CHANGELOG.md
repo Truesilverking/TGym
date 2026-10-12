@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.15.65
+
+- Fix large routine imports that exceed WebKit localStorage's string quota despite valid JSON and an otherwise empty profile. Preserve embedded images/GIFs in verified IndexedDB resources and commit a compact browser profile only after those resources can be read back; runtime, native mirrors and portable exports retain the original content.
+- Keep failed imports atomic, retain the previous profile and review choices, block duplicate confirmation, and distinguish quota, access, file validation and adaptation failures. Technical storage operations and original exceptions appear in a separate expandable section.
+- Translate import adaptation warnings in Spanish and show actual source/destination units without assuming a source unit for versioned JSON.
+- Add anonymous resource-size, partial-transaction, quota, retry, cancellation, identity, schedule, prescription and round-trip regressions. Original-file WebKit and Edge imports, retained profile data, export/reimport and complete browser reopen with the origin stopped pass. Physical iPhone Safari/PWA hardware is unavailable and remains unverified.
+
 ## 1.15.64
 
 - Routine exchange format 2 transfers effective exercise prescriptions, source loading grids and embedded custom GIF/image resources between desktop and phones without replacing destination preferences or importing workout results. Version 1 Excel/JSON and old plan readers remain available with explicit migration/adaptation review.

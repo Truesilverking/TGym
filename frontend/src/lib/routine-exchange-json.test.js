@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { CATALOGUE } from './exercises.js'
-import { applyRoutineExchange, createRoutineExchange, validateRoutineExchange } from './routine-exchange.js'
+import { applyRoutineExchange, createRoutineExchange, readRoutineExchangeFile, validateRoutineExchange } from './routine-exchange.js'
 import { buildSets } from './history.js'
 
 const known = CATALOGUE[0]
@@ -8,6 +8,31 @@ const empty = () => ({ unit: 'kg', routines: [], routineOrder: [], customEx: [],
 const source = () => ({ ...empty(), step: 2.5, routines: [{ id: 'routine', name: 'Routine áéíóú', ex: [{ id: known.id, sets: 2, reps: 8, weight: 10 }] }], routineOrder: ['routine'] })
 
 describe('JSON import boundary regressions', () => {
+  it.each(['NotAllowedError', 'SecurityError', 'NotReadableError', 'QuotaExceededError'])('preserves the original %s when reading a file fails', async name => {
+    const error = new DOMException('Cannot read selected file', name)
+    await expect(readRoutineExchangeFile({ name: 'routines.json', size: 10, text: async () => { throw error } })).rejects.toBe(error)
+  })
+
+  it('classifies malformed JSON without replacing the original parse exception', async () => {
+    const file = { name: 'routines.json', size: 10, text: async () => '{ invalid' }
+    const error = await readRoutineExchangeFile(file).catch(error => error)
+    expect(error).toMatchObject({kind:'validation', stage:'parse'})
+    expect(error.cause).toBeInstanceOf(SyntaxError)
+    expect(error.cause.stack).toContain('JSON.parse')
+  })
+
+  it.each([{ name: 'routines.json', size: 0 }, { name: 'routines.pdf', size: 10 }])('classifies rejected file selection as validation before reading', async file => {
+    await expect(readRoutineExchangeFile(file)).rejects.toMatchObject({kind:'validation',stage:'select'})
+  })
+
+  it('accepts a JSON BOM without changing its declared source unit', async () => {
+    const data = {...createRoutineExchange(source()), unit:'lb'}
+    const file = { name: 'routines.json', size: 100, text: async () => `\uFEFF${JSON.stringify(data)}` }
+    const read = await readRoutineExchangeFile(file)
+    expect(read.data).toEqual(data)
+    expect(read.data.unit).toBe('lb')
+  })
+
   it.each([
     ['setRestSec', ['bad']], ['sec', 0], ['unit', 'stone'], ['done', true], ['target', { sets: [{ done: true }] }],
   ])('rejects malformed or performed exercise field %s before any mutation', (field, value) => {
