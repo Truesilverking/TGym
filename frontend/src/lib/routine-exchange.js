@@ -2,7 +2,7 @@ import { CATALOGUE } from './exercises.js'
 import { orderedRoutines } from './routine-order.js'
 import { routineIds } from './daily-plan.js'
 import { modeOf, effortOf, MAX_PLANNED_WARMUPS } from './history.js'
-import { repBounds, targetRirRangeFor, backoffWeightFor, backoffRepOffsetFor, withBackoffRepsMode } from './training-plan.js'
+import { repBounds, targetRirRangeFor, backoffWeightFor, backoffRepOffsetFor, withBackoffRepsMode, defaultDeload, deloadStatus } from './training-plan.js'
 import { restSeconds } from './rest-policy.js'
 import { todayISO } from './format.js'
 import { materializeRoutinePrescription, portableExchangeCatalogue, portableRoutineRules, customTransferIssues } from './routine-portability.js'
@@ -41,7 +41,7 @@ function identityReservations(S) {
   }
   return { exercises: [...exercises].sort(), routines: [...routines].sort() }
 }
-export const routineExchangeReviewKey = S => JSON.stringify({ unit: S.unit, routines: S.routines, routineOrder: S.routineOrder, customEx: S.customEx, exerciseAliases: S.exerciseAliases, exNotes: S.exNotes, week: S.week, dayPlan: S.dayPlan, daySkipped: S.daySkipped, rules: rulesKeys.map(key => S[key]), reservations: identityReservations(S) })
+export const routineExchangeReviewKey = S => JSON.stringify({ unit: S.unit, routines: S.routines, routineOrder: S.routineOrder, customEx: S.customEx, exerciseAliases: S.exerciseAliases, exNotes: S.exNotes, week: S.week, dayPlan: S.dayPlan, daySkipped: S.daySkipped, trainingPauses:S.trainingPauses, rules: rulesKeys.map(key => S[key]), reservations: identityReservations(S) })
 function customDefinition(ex) {
   const { alias, aliasPresent, selector, definition, libraryNote, ...fields } = ex
   return clone(definition || fields)
@@ -104,7 +104,7 @@ function convertedLegacy(data, legacyUnit) {
   return data
 }
 export function validateRoutineExchange(raw, S = {}, { exerciseMappings = {}, legacyUnit, conflicts: choices = {}, locations } = {}) {
-  const errors = [], unresolved = [], conflicts = [], adaptations = []
+  const errors = [], unresolved = [], conflicts = [], adaptations = [], notices = []
   let data, parsed
   try {
     if (typeof raw === 'string' && new TextEncoder().encode(raw).length > ROUTINE_EXCHANGE_MAX_BYTES) return {errors:[issue('JSON',0,'Archivo','Routine exchange exceeds 15 MiB. Export fewer selected routines or reduce embedded media.')],unresolved,conflicts,valid:false}
@@ -325,7 +325,16 @@ export function validateRoutineExchange(raw, S = {}, { exerciseMappings = {}, le
     const sourceEffort = effortOf(data.rules), destinationEffort = effortOf(S)
     if (Object.hasOwn(data.rules,'effort') && sourceEffort !== destinationEffort) adaptations.push({key:'effort',field:'effort',message:`Effort scale differs (${sourceEffort} → ${destinationEffort}). Destination preferences remain unchanged; imported RIR prescriptions are preserved.`,source:sourceEffort,destination:destinationEffort})
     const destinationDeload = portableRoutineRules(S).deload
-    if (data.rules.deload?.on === true || destinationDeload.on === true) adaptations.push({key:'deload',field:'deload',message:'Deload is enabled in the source or destination. The destination personal calendar, pauses and history determine deload execution; review and accept this adaptation. Destination settings remain unchanged.',source:clone(data.rules.deload || {on:false}),destination:destinationDeload})
+    const sourceDeload = {...defaultDeload(),startDate:null,...(data.rules.deload || {on:false})}
+    if (sourceDeload.on === true || destinationDeload.on === true) {
+      const fields=['on','normalWeeks','deloadWeeks','loadPct','setPct','targetRir','startDate']
+      const settings = config => Object.fromEntries(fields.map(key=>[key,config[key]]))
+      const calendar = state => { const status=deloadStatus(state); return {active:status.active,paused:!!status.paused,start:status.start,end:status.end,nextStart:status.nextStart} }
+      const differs = !equal(settings(sourceDeload),settings(destinationDeload)) || !equal(calendar({deload:sourceDeload,trainingPauses:[]}),calendar({...S,deload:destinationDeload}))
+      const item={key:'deload',field:'deload',message:differs ? 'Deload execution differs on this device. Imported routines follow this device\'s existing deload calendar and pauses; global settings remain unchanged.' : 'Deload settings match. Imported routines use this device\'s existing calendar and pauses; no global settings change.',source:clone(sourceDeload),destination:destinationDeload}
+      ;(differs ? adaptations : notices).push(item)
+    }
+    if (data.routines.some(routine=>routine.ex.some(ex=>ex.setScheme==='topback'&&ex.autoBackoffReps!==false&&ex.backoffRepsOverride===true&&ex.backoffRepsMode!==(S.backoffRepsMode==='same'?'same':'increased')))) notices.push({key:'backoff',field:'backoffRepsMode',message:'Imported Top/Back-off prescriptions keep their explicit rules. This device\'s global Back-off preference remains unchanged.'})
     if (!errors.length && !unresolved.length) {
       const semantic = new Map(), reservedRoutines = new Set(reservations.routines)
       const targetContext = {...S,customEx:[...(S.customEx || []), ...catalogPlan.filter(ex => ex.action === 'create').map(ex => ({...ex.definition,id:ex.targetId}))]}
@@ -348,11 +357,11 @@ export function validateRoutineExchange(raw, S = {}, { exerciseMappings = {}, le
     if (!errors.length && ownValue(choices,'unit') === 'convert') { data.routines = data.routines.map(routine => convertedRoutine(routine,sourceUnit,S.unit || 'kg')); data.unit = S.unit || 'kg' }
   }
   if (!errors.length && new TextEncoder().encode(JSON.stringify(data)).length > ROUTINE_EXCHANGE_MAX_BYTES) errors.push(issue('JSON',0,'Archivo','The normalized routine exchange exceeds 15 MiB. Export fewer selected routines or reduce embedded media.'))
-  return { data, sourceData, sourceUnit, needsLegacyUnit, legacyUnit, locations, exerciseMappings: obj(exerciseMappings) ? clone(exerciseMappings) : {}, exerciseIdMap, catalogPlan, errors, unresolved, conflicts, adaptations, valid: !errors.length && !unresolved.length, reviewKey: routineExchangeReviewKey(S), routineCount: data.routines.length, exerciseCount: data.routines.reduce((n, r) => n + (Array.isArray(r?.ex) ? r.ex.length : 0), 0) }
+  return { data, sourceData, sourceUnit, needsLegacyUnit, legacyUnit, locations, exerciseMappings: obj(exerciseMappings) ? clone(exerciseMappings) : {}, exerciseIdMap, catalogPlan, errors, unresolved, conflicts, adaptations, notices, valid: !errors.length && !unresolved.length, reviewKey: routineExchangeReviewKey(S), routineCount: data.routines.length, exerciseCount: data.routines.reduce((n, r) => n + (Array.isArray(r?.ex) ? r.ex.length : 0), 0) }
 }
 
 /** Computes a complete draft before mutation. The UI commits it in ONE store.update. */
-export function applyRoutineExchange(S, validation, { conflicts: choices = {}, schedule = false, acceptAdaptations = false, exerciseMappings = validation.exerciseMappings || {}, legacyUnit = validation.legacyUnit } = {}) {
+export function applyRoutineExchange(S, validation, { conflicts: choices = {}, schedule = false, acceptAdaptations = false, exerciseMappings = validation.exerciseMappings || {}, legacyUnit = validation.legacyUnit, returnDetails = false } = {}) {
   if (validation.reviewKey !== routineExchangeReviewKey(S)) throw new Error('Your plan changed during review. Review the current conflicts again before importing.')
   const checked = validateRoutineExchange(validation.sourceData || validation.data, S, { exerciseMappings, legacyUnit, conflicts:choices, locations:validation.locations })
   if (!checked.valid) throw new Error('Resolve all errors and exercise mappings before importing')
@@ -362,7 +371,9 @@ export function applyRoutineExchange(S, validation, { conflicts: choices = {}, s
   if (checked.adaptations.length && !acceptAdaptations) throw new Error('Review and explicitly accept the listed preference adaptations before importing')
   const data = checked.data, next = clone(S), map = new Map()
   const accepted = data.routines.filter(r => choices[`routine:${r.id}`] !== 'keep')
-  if (!accepted.length) return next
+  if (!accepted.length) return returnDetails ? {state:next,routineIdMap:{}} : next
+  const replacements=accepted.filter(r=>choices[`routine:${r.id}`]==='replace').map(r=>checked.conflicts.find(c=>c.key===`routine:${r.id}`)?.existingId)
+  if(new Set(replacements).size!==replacements.length)throw new Error('Two selected routines cannot replace the same existing routine. Keep or copy one before importing.')
   next.routines ||= []; next.customEx ||= []; next.exerciseAliases ||= {}; next.exNotes ||= {}
   // Scope metadata to accepted SOURCE references. An explicit correspondence
   // adopts destination identity; it does not replace its definition or metadata.
@@ -398,7 +409,7 @@ export function applyRoutineExchange(S, validation, { conflicts: choices = {}, s
       next[field][key] = [...new Set([...existing, ...imported])]
     }
   }
-  return next
+  return returnDetails ? {state:next,routineIdMap:Object.fromEntries(map)} : next
 }
 
 export const EXCHANGE_HEADERS = {

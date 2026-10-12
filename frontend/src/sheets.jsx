@@ -1129,7 +1129,12 @@ export const glyphPicker = (current, onPick) => {
 }
 
 /* ============================ share / print / import a plan ============================ */
-export const planToolsSheet = () => ui().openSheet(close => <RoutineExchange close={close} />)
+export const planToolsSheet = ({ mode = 'import' } = {}) => {
+  let sheet
+  const onSaving = saving => sheet?.lock(saving)
+  sheet = ui().openSheet(close => <RoutineExchange close={close} mode={mode} onSaving={onSaving} />)
+  return sheet
+}
 
 function PlanTools({ close }) {
   const st = useStore(s => s.S)

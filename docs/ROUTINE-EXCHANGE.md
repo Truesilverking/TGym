@@ -1,8 +1,18 @@
 # Routine exchange v2
 
-TGym 1.15.65 writes `tgym_routine_exchange: 2`. Excel and JSON use the same prescription boundary. Format 1 and legacy `framegym_plan: 1` / `opengym_plan: 1` remain readable with an explicit compatibility review. See [transfer audit](ROUTINE-TRANSFER-AUDIT-1.15.64.md) and [release verification](RELEASE-AUDIT-1.15.64.md). Existing stored routines, completed workouts, storage keys and package IDs require no migration.
+TGym 1.15.66 writes `tgym_routine_exchange: 2`. Excel and JSON use the same prescription boundary. Format 1 and legacy `framegym_plan: 1` / `opengym_plan: 1` remain readable with an explicit compatibility review. See [transfer audit](ROUTINE-TRANSFER-AUDIT-1.15.64.md) and [release verification](RELEASE-AUDIT-1.15.64.md). Existing stored routines, completed workouts, storage keys and package IDs require no migration.
 
 From Plan's existing share action or Settings → Load Routine → Import / Export routines, select one, several or all routines, choose JSON, Excel or PDF, prepare, review the file and download. The downloadable blank Excel template uses the complete current built-in and local custom catalogue. Normal exports include definitions/resources only for custom exercises used by the selected routines. The common `saveReportFile` adapter downloads in browsers/PWAs and uses the native system share sheet on phones. Preparation, cancellation and retry remain in the existing flow. All builders work from local data; portable embedded media needs no server.
+
+## Import flow
+
+Settings → Load Routine opens the import mode; Plan's share action opens export mode. Both use one sheet with separate import/export panels. Import proceeds through **File → Review → Import**. The file step accepts supported TGym JSON and XLSX and provides the existing editable Excel template. Arbitrary documents and PDF are not import formats.
+
+Review validates the complete source before scoping selected routines, displays compact cards with expandable concrete series, and resolves relevant decisions. New compatible routines require no generic acknowledgement. Unit conversion defaults to equivalent destination loads without changing global units. Existing routines default to Keep; names alone do not establish content equality. Copy and permitted replacement are explicit choices, and replacement requires confirmation. Multiple source routines cannot replace one destination. Unknown exercise correspondence is required only for accepted routines; skipped routines cannot write catalogue metadata or resources.
+
+The current calendar is preserved by default. Optional imported weekly/date assignments show conflicts and preserve unrelated routines. Only an effective prescription adaptation requires acknowledgement; already materialized Back-off/rest values and matching deload execution remain informational. Legacy source uncertainty still requires review. Secondary prescription and original diagnostic details are expandable; blocking validation and mapping decisions remain visible.
+
+`routine-import.js` owns full validation, selected-payload preparation, destination transformation, schedule summary and preview. Confirmation repeats that same preparation against live state and rejects a stale review; history and active-session changes are retained rather than copied from a stale preview. Back retains choices; selecting another file clears previous file decisions. The final action counts effective imports, locks the sheet during persistence and offers success/View routines only after the primary commit. Failures retain the review for retry/cancel and keep the previous state.
 
 ## Identity, prescriptions and destination preferences
 

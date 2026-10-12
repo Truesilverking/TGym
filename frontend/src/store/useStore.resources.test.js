@@ -67,7 +67,9 @@ it('reproduces the original-sized anonymous quota case and commits verified medi
   useStore.getState().update(S=>{S.theme='dark'})
   expect(localStorage.getItem(KEY).length*2).toBeLessThan(200_000)
   expect((await hydrateProfile(JSON.parse(localStorage.getItem(KEY)))).theme).toBe('dark')
-})
+// This case hashes and round-trips the original-sized anonymous payload while
+// the complete suite runs in parallel. Quota and content assertions stay exact.
+},15000)
 it.each(['empty','existing'])('saves into an %s profile, deduplicates immutable resources, and reopens offline',async kind=>{
   if(kind==='empty'){useStore.setState({S:{...structuredClone(DEF),unit:'lb'}});localStorage.setItem(KEY,JSON.stringify(useStore.getState().S))}
   await useStore.getState().updateAtomic(review(),true,false)

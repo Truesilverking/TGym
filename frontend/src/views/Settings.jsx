@@ -144,7 +144,7 @@ export default function Settings() {
     <div className="muted small" style={{ marginBottom: 14 }}>{t('Create, import or export routines from one place.')}</div>
     <div className="list">
       <Row icon="sparkles" iconTint="var(--acc)" title={t('Load starter plan (PPL)')} accessory="chevron" onClick={() => { close(); loadStarterPlan() }} />
-      <Row icon="folder" iconTint="var(--blue)" title={t('Import or export routine')} subtitle={t('TGym routine files contain no workout history.')} accessory="chevron" onClick={() => { close(); planToolsSheet() }} />
+      <Row icon="folder" iconTint="var(--blue)" title={t('Import or export routine')} subtitle={t('TGym routine files contain no workout history.')} accessory="chevron" onClick={() => { close(); planToolsSheet({ mode: 'import' }) }} />
       <Row icon="shuffle" iconTint="var(--teal)" title={t('Import from another app')} subtitle={t('FitNotes, Strong, Hevy — or body weight from Apple Health')} accessory="chevron" onClick={() => { close(); requestAnimationFrame(() => importRef.current?.click()) }} />
     </div>
   </>)

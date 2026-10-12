@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.15.66
+
+- Replace the routine import form with File → Review → Import inside one sheet. Select compatible TGym JSON/XLSX, inspect compact routine cards and prescriptions, choose a subset, then confirm the actual import count. Back preserves choices; changing files resets them. The Excel template remains available.
+- Show unit conversion, duplicate identity/content choices, unknown exercise mapping and effective prescription adaptations only when relevant. Preserve the existing calendar by default and preview optional imported schedule changes without removing unrelated routines.
+- Share one deterministic scoped preparation between preview and atomic save. Skipped routines do not import their catalogue resources or require exercise mappings; reject multiple replacements of the same destination. Keep the existing verified quota recovery, lock double confirmation and display success only after durable persistence.
+- Add accessible step/focus states, safe-area actions, translated Spanish recovery and validation guidance, and separate expandable technical diagnostics. Preserve history, preferences, active sessions and all supported prescription fields.
+
 ## 1.15.65
 
 - Fix large routine imports that exceed WebKit localStorage's string quota despite valid JSON and an otherwise empty profile. Preserve embedded images/GIFs in verified IndexedDB resources and commit a compact browser profile only after those resources can be read back; runtime, native mirrors and portable exports retain the original content.

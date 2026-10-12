@@ -72,7 +72,7 @@ export default function Plan() {
     <div className="hdr hdr-centered plan-header">
       <TrainingPauseAction compact />
       <div className="hdr-center"><h1>{t('Routine')}</h1></div>
-      <button className="iconbtn" onClick={planToolsSheet} aria-label={t('Share your plan')} title={t('Share your plan')}><Icon name="upload" /></button>
+      <button className="iconbtn" onClick={() => planToolsSheet({ mode: 'export' })} aria-label={t('Share your plan')} title={t('Share your plan')}><Icon name="upload" /></button>
     </div>
     <div className="cols"><div>
       <div className="week-schedule-header">

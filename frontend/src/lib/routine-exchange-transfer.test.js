@@ -209,7 +209,8 @@ describe('cross-device identity and semantic-duplicate regressions',()=>{
     expect(validateRoutineExchange(data,S).adaptations.some(a=>a.key==='deload')).toBe(false)
     const enabled={...source,deload:{...source.deload,on:true}}
     const checked=validateRoutineExchange(createRoutineExchange(enabled),{...S,deload:{...enabled.deload}})
-    expect(checked.adaptations.some(a=>a.key==='deload')).toBe(true)
-    expect(()=>apply({...S,deload:{...enabled.deload}},checked)).toThrow(/explicitly accept/)
+    expect(checked.adaptations.some(a=>a.key==='deload')).toBe(false)
+    expect(checked.notices.some(a=>a.key==='deload')).toBe(true)
+    expect(()=>apply({...S,deload:{...enabled.deload}},checked)).not.toThrow()
   })
 })

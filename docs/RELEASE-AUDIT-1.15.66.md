@@ -1,0 +1,21 @@
+# TGym 1.15.66 / Android 102 release audit
+
+Runtime branch: `feature/routine-import-flow-1.15.66`. Publication is gated on exact-source tests, PWA, Android validation, signed candidate integrity and isolated browser import/update acceptance. A documentation follow-up records final commit, Actions, artifact and public deployment evidence without moving the immutable release tag.
+
+The [import flow audit](ROUTINE-IMPORT-FLOW-AUDIT-1.15.66.md) describes the implementation and previous confirmed quota cause. Scope is routine import and its direct dependencies, export-panel separation, synchronized locale keys and release metadata. Existing schema 4/resource version 1 is retained; this release introduces no storage migration. The original supplied JSON needs no correction. Private inputs, round trips, personal images and diagnostics stay ignored. Public regression fixtures and screenshots are anonymous. Unrelated `cv-studio/` and `output/` remain excluded.
+
+## Validation plan
+
+Local final frontend verification passes 2,011 tests across 182 files; API 11 and MCP 37 plus plain-Node loadability pass. Web/PWA/mobile asset builds and version/source/locale checks pass: 12 dictionaries share 1,908 keys and all 1,214 translated source strings are covered. The original-sized resource round-trip test now has an explicit 15-second test timeout after a measured 5.88-second run exceeded the default while the full suite and browser QA ran concurrently; storage limits and content/rollback assertions are unchanged.
+
+Spanish WebKit/Edge checks pass the ordinary matching-unit flow without an acknowledgement, actual durable success, both controlled duplicate-copy choices, real localStorage exhaustion and retry with unchanged prior data and collapsed diagnostics. The old controlled-select callback was independently reproduced restoring Copy to Keep in WebKit; snapshotting values before functional state updates corrects it. Browser CSS zoom at 200% produces no import-container horizontal overflow. Original exceptions/validation errors are shown before the summary/cards, and sticky Back/Cancel/Import actions remain in the same sheet. These are browser checks, not physical handset results.
+
+Run the existing frontend suite and web/PWA/mobile builds, API 11 tests, MCP 37 tests and plain-Node loadability; version/source/locale checks and native CI lint/build remain required. No frontend lint or typecheck script exists. `build:mobile` synchronizes assets; native Android compilation and lint run separately. Native iOS compilation requires macOS/Xcode.
+
+Pure preparation regressions cover selected subsets/order/resources, empty selection, missing identities, safe duplicate defaults, multiple replacements of one destination, one unit conversion, actual schedule conflicts, custom definitions and media, explicit Back-off/rest/time prescriptions, matching/effectively different deload, stale review and preservation of live history/active state. UI tests retain the original validation, conversion, series, custom, cancellation, double-confirmation, quota/retry and Spanish assertions and add step/focus/mode/durable-success behavior.
+
+Browser acceptance uses isolated WebKit mobile and desktop Edge profiles on frozen compiled artifacts. The mandatory original file is selected using the actual file input, imported with existing data, exported and compared, and reopened offline. Anonymous JSON/XLSX exercises subsets, back navigation, duplicates/replacement, distinct units, conflicting calendar, unknown mapping/invalid data, actual browser quota exhaustion and intermediate resource transaction abort/retry. Imported routines are started offline with their prescriptions and discarded without adding history. Actual 65 → 66 service-worker updates verify retained portable backups and offline downloads/reopen.
+
+## Hardware and privacy boundaries
+
+WebKit mobile viewport and browser zoom are emulation, not a physical iPhone or installed Home Screen PWA. Android Actions tests use an API 35 emulator. The third-party screenshot's iOS/TGym version and browser/PWA mode are unavailable. The user's Pixel is excluded; no ADB, phone enumeration or device profile access is performed. Native iOS and physical iPhone/Android acceptance remain pending.
