@@ -4,7 +4,7 @@ import { isTrainingPaused } from './training-pause.js'
 import { isoOf } from './format.js'
 import { dailyPlan } from './daily-plan.js'
 import { MONTHS_LONG } from './format.js'
-import { calendarGrid, calendarPatterns, calendarSvgLegend, calendarText as text, calendarRect as rect, escapeCalendarText as esc } from './calendar-grid.js'
+import { calendarGrid, calendarSvgLegend, calendarText as text, calendarRect as rect, escapeCalendarText as esc } from './calendar-grid.js'
 
 export const STREAK_PERIODS = [['this-week','This week'],['last-week','Last Week'],['this-month','This month'],['last-month','Last Month'],['week','Selected Week'],['month','Selected Month'],['year','Year'],['full','Full report'],['custom','Custom Range']]
 export function streakRange({ period = 'this-week', anchor = new Date(), from, to, now = new Date() } = {}) {
@@ -64,7 +64,7 @@ export function streakReportPages(S, { format = 'pdf', t = x => x, ...options } 
     const cols=overview?3:groups.length>1?2:1, width=overview?280:cols===2?424:904, stride=overview?309:478
     const rowHeight=overview?300:cols===2?430:week?170:730
     const height=Math.max(680,350+Math.ceil(groups.length/cols)*rowHeight+180)
-    let svg=`<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="${height}" viewBox="0 0 1000 ${height}" role="img" aria-label="${esc(t('Streak Report'))}">${calendarPatterns('streak')}${rect(0,0,1000,height,'#ffffff',0)}<g font-family="Arial, sans-serif">`
+    let svg=`<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="${height}" viewBox="0 0 1000 ${height}" role="img" aria-label="${esc(t('Streak Report'))}">${rect(0,0,1000,height,'#ffffff',0)}<g font-family="Arial, sans-serif">`
     svg+=text(48,60,'TGym',28)+text(48,112,t('Streak Report'),36)+text(48,150,report.range.start+' – '+report.range.end)
     if (!first) svg+=text(48,194,t('Streak as of {0}').replace('{0}',report.asOf))+text(48,232,t('Training streak')+': '+report.current+' · '+t('Best streak')+': '+report.best,26)
     svg+=text(48,272,t('Activity days advance the streak; missed scheduled days reset it.'),17)

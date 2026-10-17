@@ -2,7 +2,7 @@ import { trainingStart } from './training-history.js'
 import { calendarPeriod, calendarFilename } from './calendar-data.js'
 import { MONTHS_LONG, isoOf } from './format.js'
 import { calendarState, CALENDAR_STATUS_IDS } from './calendar-visual.js'
-import { calendarGrid, calendarPatterns, calendarSvgLegend, calendarText as text, calendarRect as rect, escapeCalendarText as escape } from './calendar-grid.js'
+import { calendarGrid, calendarSvgLegend, calendarText as text, calendarRect as rect, escapeCalendarText as escape } from './calendar-grid.js'
 
 // A dedicated export layout; data and completion calculations remain shared with the app.
 export const REPORT_COLORS = Object.fromEntries(CALENDAR_STATUS_IDS.map(status => [status, calendarState(status).fill]))
@@ -16,7 +16,7 @@ function grid(S, date, period, x, y, width, t, now) {
 function page(S, anchor, period, months, overview, t, now, pageNumber, pageCount) {
   const summary = calendarPeriod(S, anchor, period === 'full' ? 'year' : period, now)
   const height = period === 'week' ? 680 : overview ? 1730 : 1390
-  let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="${height}" viewBox="0 0 1000 ${height}" role="img" aria-label="${escape(t('Consistency Report'))}">${calendarPatterns()}<g font-family="Arial, sans-serif">`
+  let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="${height}" viewBox="0 0 1000 ${height}" role="img" aria-label="${escape(t('Consistency Report'))}"><g font-family="Arial, sans-serif">`
   svg += rect(0, 0, 1000, height, '#ffffff', 0) + rect(48, 48, 48, 5, '#d82727', 2)
   svg += text(48, 92, 'TGym', 30, 750) + text(48, 144, t('Consistency Report'), 38, 700)
   svg += text(48, 181, `${summary.start} - ${summary.end} · ${t('Training since {0}').replace('{0}',trainingStart(S,isoOf(now)))}`, 20, 400, 'start', '#576172')

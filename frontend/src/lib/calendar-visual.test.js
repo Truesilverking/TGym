@@ -23,19 +23,20 @@ const lab = hex => {
 }
 
 describe('shared calendar state presentation', () => {
-  it('uses a perceptually separated fixed palette with readable text and independent symbols', () => {
+  it('uses a perceptually separated fixed palette with readable text and no symbols or patterns', () => {
     for (const kind of ['streak', 'consistency']) {
       const states = calendarLegend(kind)
       expect(new Set(states.map(state => state.fill)).size).toBe(states.length)
-      expect(new Set(states.map(state => state.symbol)).size).toBe(states.length)
       for (const [i, state] of states.entries()) {
+        expect(state).not.toHaveProperty('symbol')
+        expect(state).not.toHaveProperty('pattern')
         const l = [luminance(state.fill), luminance(state.ink)].sort((a, b) => a - b)
         expect((l[1] + .05) / (l[0] + .05)).toBeGreaterThanOrEqual(4.5)
         for (const other of states.slice(i + 1)) {
           const a = lab(state.fill), b = lab(other.fill)
           expect(Math.hypot(...a.map((value, index) => value - b[index]))).toBeGreaterThan(25)
         }
-        expect(JSON.stringify(calendarVisualStyle(state.status, kind))).not.toMatch(/var\(--acc|opacity|color-mix/)
+        expect(JSON.stringify(calendarVisualStyle(state.status, kind))).not.toMatch(/var\(--acc|opacity|color-mix|pattern|gradient/)
       }
     }
   })
@@ -48,11 +49,13 @@ describe('shared calendar state presentation', () => {
     expect(calendarState('completed', 'streak').label).toBe('Recorded activity')
     expect(calendarState('untracked', 'streak').label).toBe('Not tracking yet')
     expect(calendarState('completed', 'streak').semantic).not.toBe(calendarState('completed').semantic)
+    expect(calendarState('completed').fill).toBe('#115bb2')
+    expect(calendarState('completed', 'streak').fill).toBe('#115bb2')
     for (const status of ['missed', 'pending', 'rest', 'paused', 'untracked']) expect(calendarState(status, 'streak')).toEqual(calendarState(status))
     expect(JSON.stringify(S)).toBe(before)
     expect(() => calendarState('tracking')).toThrow('Unknown calendar status')
   })
-  it('matches every cell to its exact legend color, pattern, symbol and accessible text', () => {
+  it('matches every plain cell to its exact legend color and accessible text', () => {
     const S = fixture()
     const pages = [
       ...calendarReportPages(S, now, 'month', 'png', { now }),
@@ -63,18 +66,21 @@ describe('shared calendar state presentation', () => {
     for (const page of pages) {
       const doc = parse(page.svg)
       expect(doc.querySelector('parsererror')).toBeNull()
+      expect(doc.querySelector('pattern, [data-symbol], circle, path')).toBeNull()
       for (const cell of doc.querySelectorAll('[data-date]')) {
         const status = cell.getAttribute('data-status'), legend = doc.querySelector(`[data-legend="${status}"]`)
         statuses.add(status)
         expect(legend).not.toBeNull()
         expect(cell.querySelector('rect').getAttribute('fill')).toBe(legend.querySelector('rect').getAttribute('fill'))
-        expect(cell.querySelectorAll('rect')[1].getAttribute('fill')).toBe(legend.querySelectorAll('rect')[1].getAttribute('fill'))
-        expect(cell.querySelector('[data-symbol]').textContent).toBe(legend.querySelector('[data-symbol]').textContent)
+        expect(cell.querySelectorAll('rect')).toHaveLength(1)
+        expect(cell.querySelectorAll('text')).toHaveLength(1)
+        expect(legend.querySelectorAll('rect')).toHaveLength(1)
+        expect(legend.querySelectorAll('text')).toHaveLength(1)
         const number = cell.querySelector('[data-day-number]'), box = cell.querySelector('rect')
         expect(number.textContent).toBe(String(Number(cell.getAttribute('data-date').slice(-2))))
         expect(+number.getAttribute('x')).toBeCloseTo(+box.getAttribute('x') + +box.getAttribute('width') / 2)
         expect(+number.getAttribute('y')).toBeCloseTo(+box.getAttribute('y') + +box.getAttribute('height') / 2)
-        expect(cell.getAttribute('aria-label')).toContain(legend.querySelector('text:not([data-symbol])').textContent)
+        expect(cell.getAttribute('aria-label')).toContain(legend.querySelector('text').textContent)
       }
     }
     expect([...statuses].sort()).toEqual(['completed', 'missed', 'partial', 'paused', 'pending', 'rest', 'untracked'])
@@ -85,6 +91,7 @@ describe('shared calendar state presentation', () => {
       for (const page of [...calendarReportPages(S, now, period, format, { now }), ...streakReportPages(S, { period, anchor: now, format, now })]) {
         const doc = parse(page.svg)
         expect(doc.querySelector('parsererror')).toBeNull()
+        expect(doc.querySelector('pattern, [data-symbol], circle, path')).toBeNull()
         for (const cell of doc.querySelectorAll('[data-date] rect')) {
           expect(cell.getAttribute('width')).toBe(cell.getAttribute('height'))
           expect(+cell.getAttribute('x')).toBeGreaterThanOrEqual(48)

@@ -57,11 +57,14 @@ describe('zoom consistency calendar', () => {
     const partial=host.querySelector('.zoomcal-day.partial'), legend=host.querySelector('[data-legend="partial"]')
     expect(partial.getAttribute('aria-label')).toContain('Partially completed')
     expect(partial.getAttribute('aria-label')).not.toContain('Rest day')
-    expect(partial.querySelector('.calendar-state-symbol').textContent).toBe(legend.querySelector('i').textContent)
+    expect(partial.querySelector('i, svg')).toBeNull()
+    expect(partial.textContent).toBe('2')
+    expect(legend.querySelector('i').textContent).toBe('')
     expect(partial.style.getPropertyValue('--calendar-fill')).toBe(legend.querySelector('i').style.getPropertyValue('--calendar-fill'))
     expect(host.querySelectorAll('[data-legend]')).toHaveLength(7)
     expect(host.querySelector('[data-legend="rest"]').textContent).toContain('Rest day')
     expect(host.querySelector('[data-legend="untracked"]').textContent).toContain('Not tracking yet')
+    expect(host.querySelector('.calendar-state-symbol')).toBeNull()
   })
 
   it('shows the full year boundary in the week heading outside the day cells', () => {
