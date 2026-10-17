@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { expect, it, vi } from 'vitest'
-import { REPORT_EXPORTS, PDF_REPORT_EXPORTS, buildDashboardReports, buildReportFile, buildSelectedReports, saveSelectedReports, selectedReports } from './report-exports.js'
+import { REPORT_EXPORTS, PDF_REPORT_EXPORTS, buildDashboardReports, buildDashboardReportPages, buildReportFile, buildSelectedReports, saveSelectedReports, selectedReports } from './report-exports.js'
 import { reportPagesFile } from './report-file.js'
 vi.mock('./i18n.js',()=>({t:s=>s,exerciseNameFor:e=>e.n||e.id,getLang:()=> 'en',dateLocale:()=> 'en'}))
 vi.mock('./report-file.js',()=>({reportPagesFile:vi.fn(async(pages,name)=>({name,blob:new Blob(pages.map(p=>p.svg),{type:'application/pdf'})})),saveReportFile:vi.fn(),saveReportBatch:vi.fn()}))
@@ -66,6 +66,22 @@ it('routes combined selection through the existing Streak and Consistency page b
  const text=await files[0].blob.text()
  expect(text).toContain('Streak Report');expect(text).toContain('Consistency Report')
  expect(text).not.toContain('Progress Report');expect(text).not.toContain('Body measurements')
+})
+it('keeps complete-year filters and landscape geometry in independent and mixed combined exports',async()=>{
+ const years={period:'years',fromYear:'2024',toYear:'2026',anchor:'invalid',format:'png'},before=structuredClone(S)
+ for(const id of ['streak','consistency']){
+  const pages=await buildDashboardReportPages(id,S,years,{now})
+  expect(pages).toHaveLength(3);expect(pages.every(page=>page.orientation==='landscape'&&page.width>page.height)).toBe(true)
+  const file=await buildReportFile(id,S,years,{now})
+  expect(file.name).toBe(`TGym-${id==='streak'?'Streak':'Consistency'}-Years-2024_2026.pdf`)
+  expect(file.blob.type).toBe('application/pdf')
+ }
+ await buildDashboardReports(S,['streak','consistency'],{streak:years,consistency:{period:'full'}},{now})
+ const pages=reportPagesFile.mock.calls.at(-1)[0]
+ expect(pages).toHaveLength(5)
+ expect(pages.slice(0,3).every(page=>page.orientation==='landscape')).toBe(true)
+ expect(pages.slice(3).every(page=>!page.orientation||page.orientation==='portrait')).toBe(true)
+ expect(S).toEqual(before)
 })
 
 it('saves a combined PDF once, preserves canceled status and retries only with every original report ID',async()=>{

@@ -10,7 +10,8 @@ export function consistencyDays(S, start, end, now = new Date()) {
   for (const w of loggedWorkouts(S)) (byDay[w.d] ||= []).push(w)
   const tracking = trackingStart(S,today)
   const days = []
-  for (const d = new Date(start + 'T12:00:00'); isoOf(d) <= end; d.setDate(d.getDate() + 1)) {
+  const lastDate = new Date(end + 'T12:00:00')
+  for (const d = new Date(start + 'T12:00:00'); d <= lastDate; d.setDate(d.getDate() + 1)) {
     const iso = isoOf(d)
     if (iso < tracking) { days.push({ iso, routineId:null, planned:false, workouts:[], extra:0, status:'untracked' }); continue }
     const plan = dailyPlan(state,iso)

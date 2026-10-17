@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.15.70
+
+- Add Complete years to Streak and Consistency reports: choose the first and last year and export one landscape PDF page for each complete year, with all twelve months, clear day numbers, fixed status colors and the matching legend.
+- Reuse existing annual status and summary calculations, including leap days, dates before tracking and future dates. Keep Full reports, Year reports, custom dates, PNG output and all personal data unchanged.
+- Support mixed portrait and landscape pages in combined PDFs, validate year ranges before export, and translate the controls in all locale packs. Limit each export to 25 years to bound mobile PDF resource use; longer histories can be exported in separate ranges.
+
 ## 1.15.66
 
 - Replace the routine import form with File → Review → Import inside one sheet. Select compatible TGym JSON/XLSX, inspect compact routine cards and prescriptions, choose a subset, then confirm the actual import count. Back preserves choices; changing files resets them. The Excel template remains available.

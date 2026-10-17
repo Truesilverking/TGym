@@ -12,7 +12,7 @@ let host, root, mounted
 const S = {}, anchor = new Date('2026-09-16T12:00:00')
 const file = () => ({ name: 'calendar.pdf', blob: new Blob(['pdf'], { type: 'application/pdf' }) })
 const button = title => [...host.querySelectorAll('button')].find(b => b.textContent === title)
-const render = (state = S) => act(() => root.render(<CalendarExport S={state} anchor={anchor} close={() => {}} />))
+const render = (state = S, props = {}) => act(() => root.render(<CalendarExport S={state} anchor={anchor} close={() => {}} {...props} />))
 beforeEach(() => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true
   mock.build.mockReset().mockResolvedValue(file()); mock.save.mockReset().mockResolvedValue(undefined)
@@ -38,6 +38,25 @@ it.each(['unmount', 'profile change'])('discards a late file after %s without al
   if (action === 'unmount') { act(() => root.unmount()); mounted = false } else render({ workouts: [] })
   await act(async () => resolve(file()))
   expect(URL.createObjectURL).not.toHaveBeenCalled(); expect(mock.save).not.toHaveBeenCalled()
+})
+it.each(['streak','consistency'])('exports complete years from %s with one landscape page per year and validates before export', async reportType => {
+  render(S,{reportType})
+  act(() => { const select=host.querySelector('select');select.value='years';select.dispatchEvent(new Event('change',{bubbles:true})) })
+  const inputs=host.querySelectorAll('input[type="number"]')
+  const change=(input,value)=>act(()=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,value);input.dispatchEvent(new Event('change',{bubbles:true}))})
+  change(inputs[0],'2027');change(inputs[1],'2026')
+  expect(button('Export').disabled).toBe(true)
+  expect(host.querySelector('[role="alert"]').textContent).toBe('Choose a valid year range.')
+  expect(mock.build).not.toHaveBeenCalled()
+  change(inputs[0],'2024')
+  expect(host.querySelectorAll('select')[1].value).toBe('pdf');expect(host.querySelectorAll('select')[1].disabled).toBe(true)
+  await act(async()=>button('Export').click())
+  const [pages,name]=mock.build.mock.calls[0]
+  expect(pages).toHaveLength(3);expect(pages.every(page=>page.orientation==='landscape')).toBe(true)
+  expect(name).toBe(`TGym-${reportType==='streak'?'Streak':'Consistency'}-Years-2024_2026.pdf`)
+  expect(host.querySelector('a').href).toBe('blob:calendar')
+  await act(async()=>button('Share / save').click())
+  expect(mock.save).toHaveBeenCalledOnce()
 })
 it('invalidates a prepared file when its source profile changes', async () => {
   render(); await act(async () => button('Export').click()); expect(host.textContent).toContain('calendar.pdf')

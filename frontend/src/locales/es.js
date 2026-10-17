@@ -1867,4 +1867,11 @@ export default {
 ,"I confirm replacing the selected existing data":"Confirmo reemplazar los datos existentes seleccionados"
 ,"Source weight unit of the legacy file":"Unidad de peso original del archivo antiguo"
 ,"Export failed: {0}":"Exportación fallida: {0}"
+,"Complete years":"Años completos"
+,"From year":"Desde el año"
+,"To year":"Hasta el año"
+,"One PDF page per year.":"Una página PDF por año."
+,"Choose a valid year range.":"Elige un intervalo de años válido."
+,"Choose up to 25 years per report.":"Elige hasta 25 años por reporte."
+,"Complete-year reports require PDF":"Los reportes de años completos requieren PDF"
 }

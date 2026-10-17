@@ -950,4 +950,11 @@ export default {
 ,"I confirm replacing the selected existing data":"I confirm replacing the selected existing data"
 ,"Source weight unit of the legacy file":"Source weight unit of the legacy file"
 ,"Export failed: {0}":"Export failed: {0}"
+,"Complete years":"Vollständige Jahre"
+,"From year":"Ab Jahr"
+,"To year":"Bis Jahr"
+,"One PDF page per year.":"Eine PDF-Seite pro Jahr."
+,"Choose a valid year range.":"Wähle einen gültigen Jahresbereich."
+,"Choose up to 25 years per report.":"Wähle bis zu 25 Jahre pro Bericht."
+,"Complete-year reports require PDF":"Berichte über vollständige Jahre erfordern PDF"
 }

@@ -933,4 +933,11 @@ export default {
 ,"I confirm replacing the selected existing data":"I confirm replacing the selected existing data"
 ,"Source weight unit of the legacy file":"Source weight unit of the legacy file"
 ,"Export failed: {0}":"Export failed: {0}"
+,"Complete years":"Tam yıllar"
+,"From year":"Başlangıç yılı"
+,"To year":"Bitiş yılı"
+,"One PDF page per year.":"Her yıl için bir PDF sayfası."
+,"Choose a valid year range.":"Geçerli bir yıl aralığı seç."
+,"Choose up to 25 years per report.":"Rapor başına en fazla 25 yıl seç."
+,"Complete-year reports require PDF":"Tam yıl raporları PDF biçimi gerektirir"
 }

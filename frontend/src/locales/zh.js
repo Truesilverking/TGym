@@ -933,4 +933,11 @@ export default {
 ,"I confirm replacing the selected existing data":"I confirm replacing the selected existing data"
 ,"Source weight unit of the legacy file":"Source weight unit of the legacy file"
 ,"Export failed: {0}":"Export failed: {0}"
+,"Complete years":"完整年份"
+,"From year":"起始年份"
+,"To year":"结束年份"
+,"One PDF page per year.":"每年一页 PDF。"
+,"Choose a valid year range.":"请选择有效的年份范围。"
+,"Choose up to 25 years per report.":"每份报告最多选择 25 年。"
+,"Complete-year reports require PDF":"完整年份报告需要 PDF 格式"
 }

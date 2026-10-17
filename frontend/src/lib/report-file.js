@@ -24,14 +24,17 @@ export async function reportPagesFile(pages, name, { format = 'pdf', imageType =
     return { name, blob: await (await fetch(await rasterizeReport(pages[0]))).blob() }
   }
   if (format !== 'pdf') throw new Error('Invalid report format')
-  const pdf = new jsPDF({ unit: 'mm', format: 'a4' })
+  if (pages.some(page => page.orientation != null && !['portrait', 'landscape'].includes(page.orientation))) throw new Error('Invalid report orientation')
+  const pdf = new jsPDF({ unit: 'mm', format: 'a4', ...(pages[0].orientation ? { orientation: pages[0].orientation } : {}) })
   if (title) pdf.setProperties({ title, creator: 'TGym' })
   for (const [i, page] of pages.entries()) {
-    if (i) pdf.addPage()
+    const orientation = page.orientation || 'portrait', previous = pages[i - 1]?.orientation || 'portrait'
+    if (i) { if (orientation === 'portrait' && previous === 'portrait') pdf.addPage(); else pdf.addPage('a4', orientation) }
     const pageImageType = page.imageType ?? imageType, pageFull = page.fullPage ?? fullPage
     const data = await rasterizeReport(page, pageImageType === 'JPEG' ? 'image/jpeg' : 'image/png')
-    const scale = Math.min((pageFull ? 210 : 190) / page.width, (pageFull ? 297 : 277) / page.height)
-    pdf.addImage(data, pageImageType, (210 - page.width * scale) / 2, pageFull ? 0 : 10, page.width * scale, page.height * scale, undefined, pageImageType === 'PNG' ? 'FAST' : undefined)
+    const pageWidth = orientation === 'landscape' ? 297 : 210, pageHeight = orientation === 'landscape' ? 210 : 297
+    const scale = Math.min((pageWidth - (pageFull ? 0 : 20)) / page.width, (pageHeight - (pageFull ? 0 : 20)) / page.height)
+    pdf.addImage(data, pageImageType, (pageWidth - page.width * scale) / 2, pageFull ? 0 : 10, page.width * scale, page.height * scale, undefined, pageImageType === 'PNG' ? 'FAST' : undefined)
   }
   return { name, blob: pdf.output('blob') }
 }

@@ -933,4 +933,11 @@ export default {
 ,"I confirm replacing the selected existing data":"I confirm replacing the selected existing data"
 ,"Source weight unit of the legacy file":"Source weight unit of the legacy file"
 ,"Export failed: {0}":"Export failed: {0}"
+,"Complete years":"पूरे वर्ष"
+,"From year":"प्रारंभिक वर्ष"
+,"To year":"अंतिम वर्ष"
+,"One PDF page per year.":"हर वर्ष के लिए एक PDF पृष्ठ।"
+,"Choose a valid year range.":"वर्षों की मान्य सीमा चुनें।"
+,"Choose up to 25 years per report.":"प्रत्येक रिपोर्ट में अधिकतम 25 वर्ष चुनें।"
+,"Complete-year reports require PDF":"पूरे वर्ष की रिपोर्ट के लिए PDF आवश्यक है"
 }

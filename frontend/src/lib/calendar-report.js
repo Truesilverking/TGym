@@ -4,6 +4,9 @@ import { MONTHS_LONG, isoOf } from './format.js'
 import { calendarState, CALENDAR_STATUS_IDS } from './calendar-visual.js'
 import { calendarGrid, calendarSvgLegend, calendarText as text, calendarRect as rect, escapeCalendarText as escape } from './calendar-grid.js'
 import { calendarFullReportPages } from './calendar-full-report.js'
+import { completeYearRange, CONSISTENCY_PERIODS } from './calendar-year-range.js'
+import { calendarYearReportPage } from './calendar-year-report.js'
+export { CONSISTENCY_PERIODS } from './calendar-year-range.js'
 
 // A dedicated export layout; data and completion calculations remain shared with the app.
 export const REPORT_COLORS = Object.fromEntries(CALENDAR_STATUS_IDS.map(status => [status, calendarState(status).fill]))
@@ -36,8 +39,20 @@ function page(S, anchor, period, months, overview, t, now, pageNumber, pageCount
   return { svg: svg + '</g></svg>', width: 1000, height }
 }
 
-export function calendarReportPages(S, anchor, period, format, { t = x => x, now = new Date() } = {}) {
-  if (!['week', 'month', 'year', 'full'].includes(period) || !['png', 'pdf'].includes(format)) throw new Error('Invalid calendar export')
+export function calendarReportPages(S, anchor, period, format, { t = x => x, now = new Date(), fromYear, toYear } = {}) {
+  if (!CONSISTENCY_PERIODS.some(([id]) => id === period) || !['png', 'pdf'].includes(format)) throw new Error('Invalid calendar export')
+  if (period === 'years') {
+    if (format !== 'pdf') throw Error('Complete-year reports require PDF')
+    const range = completeYearRange({ fromYear, toYear })
+    if (range.error) throw Error(range.error)
+    return range.years.map((year, i) => {
+      const report = calendarPeriod(S, new Date(`${year}-01-01T12:00:00`), 'year', now)
+      return calendarYearReportPage({ kind: 'consistency', year, days: report.days,
+        metrics: [['Completed', report.stats.completed], ['Missed', report.stats.missed], ['Completion', report.completion == null ? '—' : `${report.completion}%`]],
+        context: t('Training since {0}').replace('{0}', trainingStart(S, isoOf(now))), note: `${t('Rest day')}: ${t('No scheduled workout')}`,
+        pageNumber: i + 1, pageCount: range.years.length, fromYear: range.years[0], toYear: range.years.at(-1), t })
+    })
+  }
   if (period === 'full' && format !== 'pdf') throw new Error('Full reports require PDF')
   anchor = new Date(typeof anchor === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(anchor) ? anchor + 'T12:00:00' : anchor)
   if (!Number.isFinite(anchor.getTime())) throw new Error('Invalid report date')
@@ -53,7 +68,13 @@ export function calendarReportPages(S, anchor, period, format, { t = x => x, now
   return pages
 }
 
-export function reportFilename(anchor, period, format) {
+export function reportFilename(anchor, period, format, options = {}) {
+  if (period === 'years') {
+    if (format !== 'pdf') throw Error('Complete-year reports require PDF')
+    const range = completeYearRange(options)
+    if (range.error) throw Error(range.error)
+    return `TGym-Consistency-Years-${range.years[0]}_${range.years.at(-1)}.pdf`
+  }
   const date = new Date(typeof anchor === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(anchor) ? anchor + 'T12:00:00' : anchor)
   if (period === 'week') date.setDate(date.getDate() - (date.getDay() + 6) % 7)
   return calendarFilename(period, isoOf(date), '', format)

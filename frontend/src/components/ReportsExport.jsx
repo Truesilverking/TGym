@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { REPORT_EXPORTS, PDF_REPORT_EXPORTS, buildSelectedReports, saveSelectedReports, selectedReports } from '../lib/report-exports.js'
 import { STATS_SECTIONS } from '../lib/stats-sections.js'
 import { STREAK_PERIODS, buildStreakReport } from '../lib/streak-report.js'
+import { CONSISTENCY_PERIODS, completeYearRange } from '../lib/calendar-year-range.js'
 import { PROGRESS_PERIODS, progressRange } from '../lib/progress-report.js'
 import { t } from '../lib/i18n.js'
 import { exerciseNameFor } from '../lib/i18n-core.js'
@@ -16,8 +17,8 @@ export default function ReportsExport({ S, anchor = new Date(), close, pdf = fal
   const catalog=pdf?PDF_REPORT_EXPORTS:REPORT_EXPORTS
   const now=useLocalNow(), today=isoOf(now)
   const [selected,setSelected]=useState(['streak']), [settings,setSettings]=useState({
-    streak:{period:'this-week',from:isoOf(anchor),to:today,anchor:isoOf(anchor),format:'pdf'},
-    consistency:{period:'month',anchor:isoOf(anchor),format:'pdf'},
+    streak:{period:'this-week',from:isoOf(anchor),to:today,anchor:isoOf(anchor),format:'pdf',fromYear:String(anchor.getFullYear()),toYear:String(anchor.getFullYear())},
+    consistency:{period:'month',anchor:isoOf(anchor),format:'pdf',fromYear:String(anchor.getFullYear()),toYear:String(anchor.getFullYear())},
     progress:{period:'all',from:S.trainingStartDate || today,to:today},
     history:{period:'all',query:''},
     stats:{sections:STATS_SECTIONS.map(([id])=>id),filters:statsFilters}
@@ -30,7 +31,7 @@ export default function ReportsExport({ S, anchor = new Date(), close, pdf = fal
   const change=(id,value)=>setSettings(s=>({...s,[id]:value}))
   const streak=useMemo(()=>buildStreakReport(S,{...settings.streak,now}),[S,settings.streak,today])
   const progress=useMemo(()=>progressRange(S,{...settings.progress,now}),[S,settings.progress,today])
-  const invalid=id=>id==='streak'?streak.range.error:id==='progress'?progress.error:id==='consistency'&&!validDate(settings.consistency.anchor)?'Choose a valid date range.':id==='stats'&&pdf&&!settings.stats.sections.length?'Select at least one section.':null
+  const invalid=id=>id==='streak'?streak.range.error:id==='progress'?progress.error:id==='consistency'?(settings.consistency.period==='years'?completeYearRange(settings.consistency).error:!validDate(settings.consistency.anchor)?'Choose a valid date range.':null):id==='stats'&&pdf&&!settings.stats.sections.length?'Select at least one section.':null
   const download=async ids=>{
     if(working.current)return
     const selection=selectedReports(ids)
@@ -59,7 +60,7 @@ export default function ReportsExport({ S, anchor = new Date(), close, pdf = fal
       <label className="report-choice"><input type="checkbox" disabled={busy} checked={selected.includes(id)} onChange={e=>setSelected(s=>e.target.checked?[...s,id]:s.filter(v=>v!==id))}/>{t(title)}<small>{pdf?'PDF':id==='stats'?'HTML':id==='history'?'CSV':['plan','backup'].includes(id)?'JSON':'PDF'}</small></label>
       {selected.includes(id)&&<div className="report-settings">
         {id==='streak'&&<><ReportDateRange value={settings.streak} onChange={v=>change(id,v)} periods={STREAK_PERIODS} disabled={busy} today={today}/><p className="small dim">{streak.range.start} – {streak.range.end}</p>{streak.noData&&<p className="small dim">{t('No recorded activity in this period.')}</p>}</>}
-        {id==='consistency'&&<><label>{t('Period')}<select className="input" disabled={busy} value={settings[id].period} onChange={e=>change(id,{...settings[id],period:e.target.value})}>{[['week','Week'],['month','Month'],['year','Year'],['full','Full report']].map(([v,label])=><option key={v} value={v}>{t(label)}</option>)}</select></label><label>{t('Date')}<input className="input" type="date" disabled={busy} value={settings[id].anchor} onChange={e=>change(id,{...settings[id],anchor:e.target.value})}/></label></>}
+        {id==='consistency'&&<><ReportDateRange value={settings[id]} onChange={v=>change(id,v)} periods={CONSISTENCY_PERIODS} disabled={busy} today={today}/>{settings[id].period!=='years'&&<label>{t('Date')}<input className="input" type="date" disabled={busy} value={settings[id].anchor} onChange={e=>change(id,{...settings[id],anchor:e.target.value})}/></label>}</>}
         {id==='progress'&&<ReportDateRange value={settings.progress} onChange={v=>change(id,v)} periods={PROGRESS_PERIODS} disabled={busy} today={today}/>}
         {id==='history'&&<><label>{t('Period')}<select className="input" disabled={busy} value={settings[id].period} onChange={e=>change(id,{...settings[id],period:e.target.value})}>{[['all','All'],['30','30 days'],['90','90 days']].map(([v,label])=><option key={v} value={v}>{t(label)}</option>)}</select></label><label>{t('Search workouts or exercises…')}<input className="input" disabled={busy} value={settings[id].query} onChange={e=>change(id,{...settings[id],query:e.target.value})}/></label></>}
         {id==='stats'&&(pdf?<><p className="small dim">{t('Uses the current Stats filters.')}</p>{STATS_SECTIONS.map(([section,title])=><label className="report-choice" data-report-section={section} key={section}><input type="checkbox" disabled={busy} checked={settings.stats.sections.includes(section)} onChange={e=>change('stats',{...settings.stats,sections:e.target.checked?[...settings.stats.sections,section]:settings.stats.sections.filter(value=>value!==section)})}/>{t(title)}</label>)}</>:<p className="small dim">{t('Since Start')}</p>)}

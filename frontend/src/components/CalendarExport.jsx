@@ -3,6 +3,7 @@ import { saveReportFile } from '../lib/report-file.js'
 import { buildCalendarExport, buildConsistencyExport } from '../lib/calendar-file.js'
 export { buildCalendarExport } from '../lib/calendar-file.js'
 import { STREAK_PERIODS, buildStreakReport } from '../lib/streak-report.js'
+import { CONSISTENCY_PERIODS, completeYearRange } from '../lib/calendar-year-range.js'
 import { isoOf } from '../lib/format.js'
 import { useLocalNow } from '../lib/use-local-now.js'
 import ReportDateRange from './ReportDateRange.jsx'
@@ -13,10 +14,11 @@ import { Button } from './ui.jsx'
 
 export default function CalendarExport({ S, anchor, close, reportType = 'streak' }) {
   const consistency = reportType === 'consistency', now = useLocalNow(), today = isoOf(now)
-  const [range, setRange] = useState({ period: consistency ? 'week' : 'this-week', from: isoOf(anchor), to: today }), [format, setFormat] = useState('png')
+  const [range, setRange] = useState({ period: consistency ? 'week' : 'this-week', from: isoOf(anchor), to: today, fromYear: String(anchor.getFullYear()), toYear: String(anchor.getFullYear()) }), [format, setFormat] = useState('png')
   const period = range.period
   const report = useMemo(()=>consistency ? null : buildStreakReport(S, { ...range, anchor, now }),[S,range,anchor,today,consistency])
-  const pdfOnly = period === 'full' || !consistency && report?.days.length > 366
+  const rangeError = period === 'years' ? completeYearRange(range).error : report?.range.error
+  const pdfOnly = period === 'full' || period === 'years' || !consistency && report?.days.length > 366
   const [busy, setBusy] = useState(false), [result, setResult] = useState(null), [error, setError] = useState('')
   const mounted = useRef(true), exporting = useRef(false), current = useRef({ S, anchor })
   current.current = { S, anchor, today }
@@ -44,10 +46,10 @@ export default function CalendarExport({ S, anchor, close, reportType = 'streak'
     finally { exporting.current = false; if (mounted.current) setBusy(false) }
   }
   return <><h3>{t(consistency ? 'Consistency Report' : 'Export Calendar')}</h3>
-    {!result ? <><ReportDateRange value={range} onChange={setRange} periods={consistency ? [['week','Week'],['month','Month'],['year','Year'],['full','Full report']] : STREAK_PERIODS} disabled={busy} today={today}/>
+    {!result ? <><ReportDateRange value={range} onChange={setRange} periods={consistency ? CONSISTENCY_PERIODS : STREAK_PERIODS} disabled={busy} today={today}/>
       <label>{t('Format')}<select className="input" disabled={busy || pdfOnly} value={pdfOnly ? 'pdf' : format} onChange={e => setFormat(e.target.value)}><option value="png">PNG</option><option value="pdf">PDF</option></select></label>
-      <Button disabled={busy || !!report?.range.error} onClick={generate}>{t(busy ? 'Working…' : 'Export')}</Button></> : <><p>{result.name}</p><Button disabled={busy} onClick={share}>{t('Share / save')}</Button>{!MOBILE && <a href={result.url} target="_blank" rel="noopener noreferrer">{t('Open')}</a>}<Button onClick={close}>{t('Done')}</Button></>}
+      <Button disabled={busy || !!rangeError} onClick={generate}>{t(busy ? 'Working…' : 'Export')}</Button></> : <><p>{result.name}</p><Button disabled={busy} onClick={share}>{t('Share / save')}</Button>{!MOBILE && <a href={result.url} target="_blank" rel="noopener noreferrer">{t('Open')}</a>}<Button onClick={close}>{t('Done')}</Button></>}
     {report?.noData && !result && <p className="small dim">{t('No recorded activity in this period.')}</p>}
-    {(error || report?.range.error) && <p role="alert">{error || t(report.range.error)}</p>}
+    {(error || rangeError) && <p role="alert">{error || t(rangeError)}</p>}
   </>
 }

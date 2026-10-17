@@ -7,5 +7,5 @@ export async function buildCalendarExport(S, anchor, period, format, options = {
   return reportPagesFile(streakReportPages(S, settings), streakFilename(settings), { format, imageType: 'JPEG' })
 }
 export async function buildConsistencyExport(S, anchor, period, format, options = {}) {
-  return reportPagesFile(calendarReportPages(S, anchor, period, format, options), reportFilename(anchor, period, format), { format, imageType: 'JPEG' })
+  return reportPagesFile(calendarReportPages(S, anchor, period, format, options), reportFilename(anchor, period, format, options), { format, imageType: 'JPEG' })
 }

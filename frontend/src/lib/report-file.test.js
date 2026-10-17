@@ -9,9 +9,9 @@ const mock = vi.hoisted(() => ({ documents: [], share: vi.fn(), mobile: false, g
 vi.mock('./mobile.js', () => ({ get MOBILE() { return mock.mobile }, shareBase64: (...args) => mock.share(...args), shareReportFiles: (...args) => mock.share(...args) }))
 vi.mock('./body-geometry.js', () => ({ loadBodyGeometry: () => mock.geometry() }))
 vi.mock('jspdf', () => ({ jsPDF: class {
-  constructor() { this.images = []; this.pages = 1; mock.documents.push(this) }
+  constructor(options) { this.options = options; this.images = []; this.pages = 1; this.addedPages = []; mock.documents.push(this) }
   setProperties(properties) { this.properties = properties }
-  addPage() { this.pages++ }
+  addPage(...args) { this.pages++; this.addedPages.push(args) }
   addImage(...args) { this.images.push(args) }
   output() { return new Blob([JSON.stringify({ pages: this.pages, images: this.images, properties: this.properties })], { type: 'application/pdf' }) }
 } }))
@@ -63,6 +63,26 @@ it('produces PNG bytes and rejects empty or unsupported files', async () => {
   await expect(reportPagesFile([], 'empty.pdf')).rejects.toThrow('Empty report')
   await expect(reportPagesFile([page, page], 'partial.png', { format: 'png' })).rejects.toThrow('PNG requires one page')
   await expect(reportPagesFile([page], 'wrong.csv', { format: 'csv' })).rejects.toThrow('Invalid report format')
+})
+it('fits landscape annual pages and resets portrait orientation in a combined PDF', async () => {
+  const annual = { svg: '<svg/>', width: 1414, height: 1000, orientation: 'landscape' }
+  await reportPagesFile([page, annual, page, annual], 'mixed.pdf')
+  const pdf = mock.documents[0]
+  expect(pdf.options).toEqual({ unit: 'mm', format: 'a4' })
+  expect(pdf.addedPages).toEqual([['a4', 'landscape'], ['a4', 'portrait'], ['a4', 'landscape']])
+  expect(pdf.images).toHaveLength(4)
+  const [, , x, y, w, h] = pdf.images[1]
+  expect(x).toBeCloseTo((297 - 1414 * .19) / 2); expect(y).toBe(10)
+  expect(w).toBeCloseTo(1414 * .19); expect(h).toBeCloseTo(190)
+  expect(w / h).toBeCloseTo(annual.width / annual.height)
+  expect(pdf.images[2][4] / pdf.images[2][5]).toBeCloseTo(page.width / page.height)
+  await reportPagesFile([annual, annual, page, page], 'annual-first.pdf')
+  expect(mock.documents[1].options.orientation).toBe('landscape')
+  expect(mock.documents[1].addedPages).toEqual([['a4', 'landscape'], ['a4', 'portrait'], []])
+})
+it('rejects an invalid PDF page orientation before allocating or rasterizing', async () => {
+  await expect(reportPagesFile([{ ...page, orientation: 'diagonal' }], 'invalid.pdf')).rejects.toThrow('Invalid report orientation')
+  expect(mock.documents).toHaveLength(0); expect(URL.createObjectURL).not.toHaveBeenCalled()
 })
 it.each(['overview', 'consistency', 'duration', 'routines', 'performance', 'body', 'inbody', 'trends'])('builds a correctly named %s-only progress file and loads body assets only when needed', async section => {
   const report = buildProgressReport({ workouts: [] }, { now: new Date('2026-09-26T12:00:00') })

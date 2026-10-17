@@ -6,11 +6,14 @@ import { dailyPlan } from './daily-plan.js'
 import { MONTHS_LONG } from './format.js'
 import { calendarGrid, calendarSvgLegend, calendarText as text, calendarRect as rect, escapeCalendarText as esc } from './calendar-grid.js'
 import { calendarFullReportPages } from './calendar-full-report.js'
+import { completeYearRange } from './calendar-year-range.js'
+import { calendarYearReportPage } from './calendar-year-report.js'
 
-export const STREAK_PERIODS = [['this-week','This week'],['last-week','Last Week'],['this-month','This month'],['last-month','Last Month'],['week','Selected Week'],['month','Selected Month'],['year','Year'],['full','Full report'],['custom','Custom Range']]
-export function streakRange({ period = 'this-week', anchor = new Date(), from, to, now = new Date() } = {}) {
+export const STREAK_PERIODS = [['this-week','This week'],['last-week','Last Week'],['this-month','This month'],['last-month','Last Month'],['week','Selected Week'],['month','Selected Month'],['year','Year'],['full','Full report'],['custom','Custom Range'],['years','Complete years']]
+export function streakRange({ period = 'this-week', anchor = new Date(), from, to, fromYear, toYear, now = new Date() } = {}) {
   const today = isoOf(now)
   if (!validDate(today) || !STREAK_PERIODS.some(([id]) => id === period)) return { error: 'Choose a valid date range.' }
+  if (period === 'years') return { ...completeYearRange({ fromYear, toYear }), today }
   if (period === 'custom') return !validDate(from) || !validDate(to) || from > to || to > today ? { error: 'Choose a valid date range.' } : { start: from, end: to, today }
   if (!period.startsWith('this-') && !period.startsWith('last-') && typeof anchor === 'string' && !validDate(anchor)) return { error: 'Choose a valid date range.' }
   const date = period.startsWith('this-') || period.startsWith('last-') ? new Date(now) : new Date(typeof anchor === 'string' ? anchor + 'T12:00:00' : anchor)
@@ -27,15 +30,22 @@ export function streakRange({ period = 'this-week', anchor = new Date(), from, t
 
 // Reuse Home's actual streak rows, including neutral rest/pause and pending today.
 // Earlier activity supplies streak continuity, never additional exported calendar dates.
-export function buildStreakReport(S, options = {}) {
+export function buildStreakReport(S, options = {}, sharedStreak) {
   const range = streakRange(options)
   if (range.error) return { range, days: [] }
+  if (options.period === 'years') {
+    const streak = sharedStreak || trainingStreak(S, options.now || new Date())
+    const yearReports = range.years.map(year => buildStreakReport(S, { ...options, period: 'year', anchor: `${year}-01-01` }, streak))
+    const last = yearReports.at(-1)
+    return { range, asOf: last.asOf, current: last.current, best: last.best, days: yearReports.flatMap(report => report.days), noData: yearReports.every(report => report.noData), yearReports }
+  }
   const asOf = range.end < range.today ? range.end : range.today
-  const streak = trainingStreak(S, options.now || new Date())
+  const streak = sharedStreak || trainingStreak(S, options.now || new Date())
   const summary = streakOfRows(streak.rows.filter(row => row.iso <= asOf))
   const rows = new Map(streak.rows.map(row => [row.iso, row]))
   const tracked = trackingStart(S, asOf), days = []
-  for (const date = new Date(range.start+'T12:00:00'); isoOf(date) <= range.end; date.setDate(date.getDate()+1)) {
+  const lastDate = new Date(range.end+'T12:00:00')
+  for (const date = new Date(range.start+'T12:00:00'); date <= lastDate; date.setDate(date.getDate()+1)) {
     const iso = isoOf(date), row = rows.get(iso)
     const status = iso < tracked ? 'untracked' : row?.status || (isTrainingPaused(S,iso) ? 'paused' : iso > asOf && dailyPlan({ ...S, routines: S.routines || [] },iso).total ? 'pending' : 'rest')
     days.push({ iso, status })
@@ -45,8 +55,13 @@ export function buildStreakReport(S, options = {}) {
 
 export function streakReportPages(S, { format = 'pdf', t = x => x, ...options } = {}) {
   if (!['png','pdf'].includes(format)) throw Error('Invalid report format')
+  if (options.period === 'years' && format !== 'pdf') throw Error('Complete-year reports require PDF')
   const report = buildStreakReport(S, options)
   if (report.range.error) throw Error(report.range.error)
+  if (options.period === 'years') return report.yearReports.map((annual, i) => calendarYearReportPage({ kind: 'streak', year: report.range.years[i], days: annual.days,
+    metrics: [['Training streak', annual.current], ['Best streak', annual.best]], context: t('Streak as of {0}').replace('{0}', annual.asOf),
+    note: t('Activity days advance the streak; missed scheduled days reset it.'), emptyMessage: annual.noData ? t('No recorded activity in this period.') : '',
+    pageNumber: i + 1, pageCount: report.range.years.length, fromYear: report.range.years[0], toYear: report.range.years.at(-1), t }))
   if (format === 'png' && report.days.length > 366) throw Error('Use PDF for ranges longer than one year.')
   if (format === 'pdf' && options.period === 'full') return calendarFullReportPages({ kind: 'streak', days: report.days, start: report.range.start, end: report.range.end,
     metrics: [['Training streak', report.current], ['Best streak', report.best]], context: t('Streak as of {0}').replace('{0}', report.asOf),
@@ -86,5 +101,9 @@ export function streakReportPages(S, { format = 'pdf', t = x => x, ...options } 
 export function streakFilename(options = {}) {
   const range=streakRange(options)
   if(range.error)throw Error(range.error)
+  if (options.period === 'years') {
+    if (options.format && options.format !== 'pdf') throw Error('Complete-year reports require PDF')
+    return `TGym-Streak-Years-${range.years[0]}_${range.years.at(-1)}.pdf`
+  }
   return `TGym-Streak-${range.start}_${range.end}.${options.format || 'pdf'}`
 }

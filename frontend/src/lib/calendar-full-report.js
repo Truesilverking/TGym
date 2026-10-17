@@ -18,6 +18,7 @@ function lines(value, maxWidth, size) {
   return result
 }
 const wrapped = (x, y, value, maxWidth, size, lineHeight, weight = 400, fill = MUTED) => lines(value, maxWidth, size).map((line, i) => text(x, y + i * lineHeight, line, size, weight, 'start', fill)).join('')
+export { wrapped as calendarWrappedText, measure as calendarTextWidth }
 
 function legend(kind, t) {
   let svg = '<g data-full-legend="true">'

@@ -24,10 +24,10 @@ export function selectedReports(ids) {
 export async function buildDashboardReportPages(id, S, settings = {}, options = {}) {
   options={name:(exercise,context)=>exerciseNameFor(exercise,S,context),...options}
   const now=options.now || new Date(),today=isoOf(now)
-  if(['streak','consistency'].includes(id)&&!validDate(settings.anchor??today))throw Error('Choose a valid date range.')
+  if(['streak','consistency'].includes(id)&&settings.period!=='years'&&!validDate(settings.anchor??today))throw Error('Choose a valid date range.')
   const anchor=new Date((settings.anchor??today)+'T12:00:00')
   if(id==='streak')return streakReportPages(S,{...options,...settings,now,anchor,period:settings.period||'this-week',format:'pdf'}).map(page=>({...page,imageType:'JPEG',fullPage:false}))
-  if(id==='consistency')return calendarReportPages(S,anchor,settings.period||'month','pdf',{...options,now}).map(page=>({...page,imageType:'JPEG',fullPage:false}))
+  if(id==='consistency')return calendarReportPages(S,anchor,settings.period||'month','pdf',{...options,...settings,now}).map(page=>({...page,imageType:'JPEG',fullPage:false}))
   if(id==='progress')return (await buildProgressPages(buildProgressReport(S,{...settings,now}),options)).map(page=>({...page,fullPage:true}))
   if(id==='stats'){
     const bodyGeometry=!settings.sections||settings.sections.some(id=>['muscles','measurements'].includes(id))?await loadBodyGeometry():undefined
@@ -47,10 +47,10 @@ export async function buildDashboardReports(S, ids, settings = {}, options = {},
 export async function buildReportFile(id, S, settings = {}, options = {}) {
   options={name:(exercise,context)=>exerciseNameFor(exercise,S,context),...options}
   const now = options.now || new Date(), today = isoOf(now)
-  if (['streak','consistency'].includes(id) && !validDate(settings.anchor ?? today)) throw Error('Choose a valid date range.')
+  if (['streak','consistency'].includes(id) && settings.period !== 'years' && !validDate(settings.anchor ?? today)) throw Error('Choose a valid date range.')
   const date = new Date((settings.anchor ?? today)+'T12:00:00')
-  if(id==='streak')return buildCalendarExport(S,date,settings.period || 'this-week',settings.format || 'pdf',{...options,...settings,now})
-  if(id==='consistency')return buildConsistencyExport(S,date,settings.period || 'month',settings.period === 'full' ? 'pdf' : settings.format || 'pdf',{...options,now})
+  if(id==='streak')return buildCalendarExport(S,date,settings.period || 'this-week',settings.period === 'years' ? 'pdf' : settings.format || 'pdf',{...options,...settings,now})
+  if(id==='consistency')return buildConsistencyExport(S,date,settings.period || 'month',['full','years'].includes(settings.period) ? 'pdf' : settings.format || 'pdf',{...options,...settings,now})
   if(id==='progress')return buildProgressFile(buildProgressReport(S,{...settings,now}),options)
   if(id==='stats')return {name:`tgym-stats-${today}.html`,blob:new Blob([statsReportHTML(S)],{type:'text/html;charset=utf-8'})}
   if(id==='history')return {name:`TGym-history-${today}.csv`,blob:new Blob([historyCsv(S,{...settings,now:now.getTime()})],{type:'text/csv;charset=utf-8'})}

@@ -933,4 +933,11 @@ export default {
 ,"I confirm replacing the selected existing data":"I confirm replacing the selected existing data"
 ,"Source weight unit of the legacy file":"Source weight unit of the legacy file"
 ,"Export failed: {0}":"Export failed: {0}"
+,"Complete years":"Полные годы"
+,"From year":"С года"
+,"To year":"По год"
+,"One PDF page per year.":"Одна страница PDF на каждый год."
+,"Choose a valid year range.":"Выберите допустимый диапазон лет."
+,"Choose up to 25 years per report.":"Выберите не более 25 лет для одного отчёта."
+,"Complete-year reports require PDF":"Для отчётов за полные годы требуется PDF"
 }

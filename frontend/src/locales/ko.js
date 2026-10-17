@@ -933,4 +933,11 @@ export default {
 ,"I confirm replacing the selected existing data":"I confirm replacing the selected existing data"
 ,"Source weight unit of the legacy file":"Source weight unit of the legacy file"
 ,"Export failed: {0}":"Export failed: {0}"
+,"Complete years":"전체 연도"
+,"From year":"시작 연도"
+,"To year":"종료 연도"
+,"One PDF page per year.":"연도별 PDF 한 페이지입니다."
+,"Choose a valid year range.":"올바른 연도 범위를 선택하세요."
+,"Choose up to 25 years per report.":"보고서당 최대 25년을 선택하세요."
+,"Complete-year reports require PDF":"전체 연도 보고서는 PDF 형식이 필요합니다"
 }
