@@ -477,7 +477,7 @@ export default {
   'Thursday': 'Jueves', 'Friday': 'Viernes', 'Saturday': 'Sábado',
   'Su': 'Do', 'Mo': 'Lu', 'Tu': 'Ma', 'We': 'Mi', 'Th': 'Ju', 'Fr': 'Vi', 'Sa': 'Sá',
   'Mon': 'Lun', 'Wed': 'Mié', 'Fri': 'Vie',
-  'Jan': 'Ene', 'Feb': 'Feb', 'Mar': 'Mar', 'Apr': 'Abr', 'May': 'May', 'Jun': 'Jun',
+  'Jan': 'Ene', 'Feb': 'Feb', 'Mar': 'Mar', 'Apr': 'Abr', 'May': 'Mayo', 'Jun': 'Jun',
   'Jul': 'Jul', 'Aug': 'Ago', 'Sep': 'Sep', 'Oct': 'Oct', 'Nov': 'Nov', 'Dec': 'Dic',
   'January': 'Enero', 'February': 'Febrero', 'March': 'Marzo', 'April': 'Abril',
   'June': 'Junio', 'July': 'Julio', 'August': 'Agosto', 'September': 'Septiembre',

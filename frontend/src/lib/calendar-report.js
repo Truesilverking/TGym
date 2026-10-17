@@ -3,6 +3,7 @@ import { calendarPeriod, calendarFilename } from './calendar-data.js'
 import { MONTHS_LONG, isoOf } from './format.js'
 import { calendarState, CALENDAR_STATUS_IDS } from './calendar-visual.js'
 import { calendarGrid, calendarSvgLegend, calendarText as text, calendarRect as rect, escapeCalendarText as escape } from './calendar-grid.js'
+import { calendarFullReportPages } from './calendar-full-report.js'
 
 // A dedicated export layout; data and completion calculations remain shared with the app.
 export const REPORT_COLORS = Object.fromEntries(CALENDAR_STATUS_IDS.map(status => [status, calendarState(status).fill]))
@@ -40,8 +41,14 @@ export function calendarReportPages(S, anchor, period, format, { t = x => x, now
   if (period === 'full' && format !== 'pdf') throw new Error('Full reports require PDF')
   anchor = new Date(typeof anchor === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(anchor) ? anchor + 'T12:00:00' : anchor)
   if (!Number.isFinite(anchor.getTime())) throw new Error('Invalid report date')
+  if (period === 'full') {
+    const report = calendarPeriod(S, anchor, 'year', now)
+    return calendarFullReportPages({ kind: 'consistency', days: report.days, start: report.start, end: report.end,
+      metrics: [['Completed', report.stats.completed], ['Missed', report.stats.missed], ['Completion', report.completion == null ? '—' : `${report.completion}%`]],
+      context: t('Training since {0}').replace('{0}', trainingStart(S, isoOf(now))), note: `${t('Rest day')}: ${t('No scheduled workout')}`, t })
+  }
   const all = Array.from({ length: 12 }, (_, i) => i)
-  const groups = period === 'week' || period === 'month' ? [null] : format === 'png' ? [all] : period === 'full' ? [all, all.slice(0, 4), all.slice(4, 8), all.slice(8)] : [all.slice(0, 4), all.slice(4, 8), all.slice(8)]
+  const groups = period === 'week' || period === 'month' ? [null] : format === 'png' ? [all] : [all.slice(0, 4), all.slice(4, 8), all.slice(8)]
   const pages = groups.map((months, i) => page(S, anchor, period, months, months?.length === 12, t, now, i + 1, groups.length))
   return pages
 }

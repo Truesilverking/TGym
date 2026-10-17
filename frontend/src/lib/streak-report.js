@@ -5,6 +5,7 @@ import { isoOf } from './format.js'
 import { dailyPlan } from './daily-plan.js'
 import { MONTHS_LONG } from './format.js'
 import { calendarGrid, calendarSvgLegend, calendarText as text, calendarRect as rect, escapeCalendarText as esc } from './calendar-grid.js'
+import { calendarFullReportPages } from './calendar-full-report.js'
 
 export const STREAK_PERIODS = [['this-week','This week'],['last-week','Last Week'],['this-month','This month'],['last-month','Last Month'],['week','Selected Week'],['month','Selected Month'],['year','Year'],['full','Full report'],['custom','Custom Range']]
 export function streakRange({ period = 'this-week', anchor = new Date(), from, to, now = new Date() } = {}) {
@@ -47,6 +48,9 @@ export function streakReportPages(S, { format = 'pdf', t = x => x, ...options } 
   const report = buildStreakReport(S, options)
   if (report.range.error) throw Error(report.range.error)
   if (format === 'png' && report.days.length > 366) throw Error('Use PDF for ranges longer than one year.')
+  if (format === 'pdf' && options.period === 'full') return calendarFullReportPages({ kind: 'streak', days: report.days, start: report.range.start, end: report.range.end,
+    metrics: [['Training streak', report.current], ['Best streak', report.best]], context: t('Streak as of {0}').replace('{0}', report.asOf),
+    note: t('Activity days advance the streak; missed scheduled days reset it.'), emptyMessage: report.noData ? t('No recorded activity in this period.') : '', t })
   // PNG keeps a single image; PDF splits dates without repeating date cells.
   const chunks = [], pages = []
   if (format === 'pdf' && options.period === 'year') {

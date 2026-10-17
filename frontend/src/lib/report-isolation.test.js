@@ -16,7 +16,7 @@ const doc = svg => new DOMParser().parseFromString(svg, 'image/svg+xml')
 afterEach(() => vi.useRealTimers())
 
 describe('independent report sources', () => {
- it.each([['week','png',1],['week','pdf',1],['month','png',1],['month','pdf',1],['year','png',1],['year','pdf',3],['full','pdf',4]])('isolates calendar %s/%s', (period, format, count) => {
+ it.each([['week','png',1],['week','pdf',1],['month','png',1],['month','pdf',1],['year','png',1],['year','pdf',3],['full','pdf',2]])('isolates calendar %s/%s', (period, format, count) => {
   const s = fixture(), before = structuredClone(s), pages = calendarReportPages(s, now, period, format, { now })
   expect(pages).toHaveLength(count)
   for (const p of pages) {

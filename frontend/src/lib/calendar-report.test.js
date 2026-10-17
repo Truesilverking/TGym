@@ -22,9 +22,9 @@ describe('dedicated consistency reports', () => {
   })
   it('keeps Full Report exclusively calendar pages for the anchored year',()=>{
     const pages=calendarReportPages(S,anchor,'full','pdf',{now:anchor})
-    expect(pages).toHaveLength(4)
-    expect(parse(pages[0].svg).querySelectorAll('[data-period="month"]')).toHaveLength(12)
-    const detail=pages.slice(1).flatMap(p=>[...parse(p.svg).querySelectorAll('[data-date]')].map(d=>d.getAttribute('data-date')))
+    expect(pages).toHaveLength(2)
+    for (const page of pages) expect(parse(page.svg).querySelectorAll('[data-period="month"]')).toHaveLength(6)
+    const detail=pages.flatMap(p=>[...parse(p.svg).querySelectorAll('[data-date]')].map(d=>d.getAttribute('data-date')))
     expect(detail).toHaveLength(365)
     expect(new Set(detail).size).toBe(365)
     expect(detail[0]).toBe('2026-01-01');expect(detail.at(-1)).toBe('2026-12-31')

@@ -19,7 +19,7 @@ afterEach(()=>{vi.restoreAllMocks();vi.unstubAllGlobals()})
 it('builds only the streak PDF pages and releases every canvas allocation',async()=>{
  const file=await buildCalendarExport({},new Date('2026-09-23T12:00:00'),'full','pdf')
  expect(file.name).toBe('TGym-Streak-2026-01-01_2026-12-31.pdf');expect(file.blob.type).toBe('application/pdf')
- expect(canvases).toHaveLength(9);expect(canvases.every(c=>c.width===0 && c.height===0)).toBe(true)
+ expect(canvases).toHaveLength(2);expect(canvases.every(c=>c.width===0 && c.height===0)).toBe(true)
  expect(URL.revokeObjectURL).toHaveBeenCalledTimes(canvases.length)
 })
 it('keeps PNG quality and releases allocations when encoding fails',async()=>{
