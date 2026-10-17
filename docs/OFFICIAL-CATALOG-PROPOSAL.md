@@ -10,6 +10,8 @@ Se implementó una herramienta **local de borradores y preparación para revisi�
 
 La condición del pedido que exige presentar requisitos antes de configurar nuevos permisos aplica aquí. Los reportes y la publicación autorizada de la nueva versión de la app siguen su flujo habitual y no dependen de esta decisión.
 
+Decisión confirmada por el propietario durante esta sesión: **entregar la propuesta y la herramienta local; dejar publicación y actualización del catálogo pendientes de configurar**. No se autorizó configurar la identidad ni el canal remoto en esta entrega.
+
 ## Arquitectura encontrada
 
 | Área | Implementación actual y consecuencia |
