@@ -3,6 +3,8 @@ import { trackingStart, validDate } from './training-history.js'
 import { isTrainingPaused } from './training-pause.js'
 import { isoOf } from './format.js'
 import { dailyPlan } from './daily-plan.js'
+import { MONTHS_LONG } from './format.js'
+import { calendarGrid, calendarPatterns, calendarSvgLegend, calendarText as text, calendarRect as rect, escapeCalendarText as esc } from './calendar-grid.js'
 
 export const STREAK_PERIODS = [['this-week','This week'],['last-week','Last Week'],['this-month','This month'],['last-month','Last Month'],['week','Selected Week'],['month','Selected Month'],['year','Year'],['full','Full report'],['custom','Custom Range']]
 export function streakRange({ period = 'this-week', anchor = new Date(), from, to, now = new Date() } = {}) {
@@ -40,29 +42,39 @@ export function buildStreakReport(S, options = {}) {
   return { range, asOf, current: summary.current, best: summary.best, days, noData: !days.some(day => day.status === 'completed') }
 }
 
-const esc = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]))
-const text = (x,y,value,size=20) => `<text x="${x}" y="${y}" font-size="${size}" fill="#202733">${esc(value)}</text>`
-const colors = { completed:'#d82727', missed:'#c93e4e', pending:'#747b87', rest:'#edf0f4', paused:'#77619b', untracked:'#f4f4f4' }
-const labels = { completed:'Recorded activity', missed:'Not completed', pending:'Pending', rest:'Rest day', paused:'Training paused', untracked:'Not tracking yet' }
 export function streakReportPages(S, { format = 'pdf', t = x => x, ...options } = {}) {
   if (!['png','pdf'].includes(format)) throw Error('Invalid report format')
   const report = buildStreakReport(S, options)
   if (report.range.error) throw Error(report.range.error)
   if (format === 'png' && report.days.length > 366) throw Error('Use PDF for ranges longer than one year.')
   // PNG keeps a single image; PDF splits dates without repeating date cells.
-  const size = format === 'png' ? report.days.length : options.period === 'year' ? 126 : 42, pages = []
-  for (let first=0; first<report.days.length; first+=size) {
-    const days=report.days.slice(first,first+size), offset=(new Date(days[0].iso+'T12:00:00').getDay()+6)%7
-    const rows=Math.ceil((offset+days.length)/7), height=430+rows*90
-    let svg=`<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="${height}" viewBox="0 0 1000 ${height}" aria-label="${esc(t('Streak Report'))}"><rect width="1000" height="${height}" fill="white"/><g font-family="Arial, sans-serif">`
+  const chunks = [], pages = []
+  if (format === 'pdf' && options.period === 'year') {
+    // Four whole months per A4 page keep month labels and legends readable.
+    for (let month=0;month<12;month+=4) chunks.push(report.days.filter(day => { const m=Number(day.iso.slice(5,7))-1; return m>=month&&m<month+4 }))
+  } else {
+    const size = format === 'png' ? report.days.length : 42
+    for (let first=0;first<report.days.length;first+=size) chunks.push(report.days.slice(first,first+size))
+  }
+  for (const [first, days] of chunks.entries()) {
+    const week=(options.period || 'this-week').endsWith('week')
+    const months = new Map()
+    for (const day of days) { const key=week ? 'week' : day.iso.slice(0,7); if (!months.has(key)) months.set(key, []); months.get(key).push(day) }
+    const groups=[...months.values()], overview=format==='png' && groups.length>2
+    const cols=overview?3:groups.length>1?2:1, width=overview?280:cols===2?424:904, stride=overview?309:478
+    const rowHeight=overview?300:cols===2?430:week?170:730
+    const height=Math.max(680,350+Math.ceil(groups.length/cols)*rowHeight+180)
+    let svg=`<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="${height}" viewBox="0 0 1000 ${height}" role="img" aria-label="${esc(t('Streak Report'))}">${calendarPatterns('streak')}${rect(0,0,1000,height,'#ffffff',0)}<g font-family="Arial, sans-serif">`
     svg+=text(48,60,'TGym',28)+text(48,112,t('Streak Report'),36)+text(48,150,report.range.start+' – '+report.range.end)
     if (!first) svg+=text(48,194,t('Streak as of {0}').replace('{0}',report.asOf))+text(48,232,t('Training streak')+': '+report.current+' · '+t('Best streak')+': '+report.best,26)
     svg+=text(48,272,t('Activity days advance the streak; missed scheduled days reset it.'),17)
     if (report.noData && !first) svg+=text(48,299,t('No recorded activity in this period.'),17)
-    ;['Mo','Tu','We','Th','Fr','Sa','Su'].forEach((label,i)=>{svg+=text(54+i*130,326,t(label),16)})
-    days.forEach((day,i)=>{const x=48+((offset+i)%7)*130,y=342+Math.floor((offset+i)/7)*90;svg+=`<g data-date="${day.iso}" data-status="${day.status}"><rect x="${x}" y="${y}" width="122" height="78" rx="6" fill="${colors[day.status]}"/>`+`<text x="${x+8}" y="${y+43}" font-size="17" fill="${['rest','untracked'].includes(day.status)?'#576172':'white'}">${day.iso}</text></g>`})
-    Object.entries(labels).forEach(([status,label],i)=>{const x=48+(i%3)*310,y=height-67+Math.floor(i/3)*28;svg+=`<rect x="${x}" y="${y-15}" width="16" height="16" fill="${colors[status]}"/>`+text(x+24,y,t(label),15)})
-    svg+=text(900,height-14,`${pages.length+1} / ${Math.ceil(report.days.length/size)}`,14)
+    groups.forEach((days,i)=>{
+      const date=new Date(days[0].iso+'T12:00:00'), title=week?`${days[0].iso} - ${days.at(-1).iso}`:`${t(MONTHS_LONG[date.getMonth()])} ${date.getFullYear()}`
+      svg+=calendarGrid({days,title,period:week?'week':'month',x:48+i%cols*stride,y:350+Math.floor(i/cols)*rowHeight,width,kind:'streak',t})
+    })
+    svg+=calendarSvgLegend({y:height-115,kind:'streak',t})
+    svg+=text(952,height-26,`${pages.length+1} / ${chunks.length}`,15,400,'end','#576172')
     pages.push({svg:svg+'</g></svg>',width:1000,height})
   }
   return pages

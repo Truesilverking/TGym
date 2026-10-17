@@ -51,11 +51,36 @@ describe('zoom consistency calendar', () => {
     expect(host.querySelector('.zoomcal-month .selected')).not.toBeNull()
   })
 
+  it('uses the same accessible partial/rest state and presentation in cells and the complete legend', () => {
+    const S=state(); S.week[3]=['upper','lower']
+    act(()=>root.render(<ZoomCalendar S={S}/>))
+    const partial=host.querySelector('.zoomcal-day.partial'), legend=host.querySelector('[data-legend="partial"]')
+    expect(partial.getAttribute('aria-label')).toContain('Partially completed')
+    expect(partial.getAttribute('aria-label')).not.toContain('Rest day')
+    expect(partial.querySelector('.calendar-state-symbol').textContent).toBe(legend.querySelector('i').textContent)
+    expect(partial.style.getPropertyValue('--calendar-fill')).toBe(legend.querySelector('i').style.getPropertyValue('--calendar-fill'))
+    expect(host.querySelectorAll('[data-legend]')).toHaveLength(7)
+    expect(host.querySelector('[data-legend="rest"]').textContent).toContain('Rest day')
+    expect(host.querySelector('[data-legend="untracked"]').textContent).toContain('Not tracking yet')
+  })
+
+  it('shows the full year boundary in the week heading outside the day cells', () => {
+    act(()=>root.render(<ZoomCalendar S={state()} initialAnchor={new Date('2026-12-30T12:00:00')}/>))
+    const title=host.querySelector('.zoomcal-title>b').textContent
+    expect(title).toContain('2026'); expect(title).toContain('2027')
+    expect([...host.querySelectorAll('.zoomcal-day b')].map(day=>day.textContent)).toEqual(['28','29','30','31','1','2','3'])
+  })
+
   it('renders twelve seven-column mini calendars with invisible placeholders', () => {
     render(); act(() => zoomOut().click()); act(() => zoomOut().click())
     expect(host.querySelectorAll('.zoomcal-mini-month')).toHaveLength(12)
     expect(host.querySelector('.zoomcal-mini-month .completed')).not.toBeNull()
     expect(host.querySelectorAll('.zoomcal-mini-month .placeholder').length).toBeGreaterThan(0)
+    expect(host.querySelectorAll('.zoomcal-mini-month .zoomcal-mini-weekday')).toHaveLength(84)
+    expect(host.querySelectorAll('.zoomcal-mini-month .zoomcal-mini-day')).toHaveLength(365)
+    expect(host.querySelector('.zoomcal-mini-month .zoomcal-mini-day').textContent).toBe('1')
+    expect(host.querySelector('.zoomcal-mini-month .completed').getAttribute('aria-label')).toContain('Completed')
+    expect(host.querySelector('.zoomcal-periods.months>button').getAttribute('aria-label')).toMatch(/January 2026.*Zoom in/)
   })
 
   it('keeps zoom navigation working through the year level', () => {
