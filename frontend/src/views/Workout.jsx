@@ -721,10 +721,11 @@ function ActiveWorkout() {
       </Button>
     </div>
     {(() => {
-      const exDone = A.entries.filter(e => e.sets.length && e.sets.every(s => s.done)).length
-      const allDone = A.entries.length > 0 && exDone === A.entries.length
+      const workEntries = A.entries.filter(e => e.sets.some(s => !isWarmupRow(s)))
+      const exDone = workEntries.filter(e => e.sets.filter(s => !isWarmupRow(s)).every(s => s.done)).length
+      const allDone = effectiveWorkoutComplete(A)
       return <button className={allDone ? 'btn primary' : 'btn ghost dim'} onClick={finishWorkout}>
-        {allDone ? t('Finish workout') : t('Finish workout early · {0} exercises', exDone + '/' + A.entries.length)}
+        {allDone ? t('Finish workout') : t('Finish workout early · {0} exercises', exDone + '/' + workEntries.length)}
       </button>
     })()}
   </div>

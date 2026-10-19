@@ -55,8 +55,9 @@ describe('shared calendar state presentation', () => {
     expect((luminance(rest.fill) + .05) / (luminance(rest.border) + .05)).toBeGreaterThanOrEqual(3)
     expect(CALENDAR_STATUS_IDS).toContain('untracked')
     // The owner explicitly retained Partial pending a future rule decision.
-    expect(calendarReportState('partial')).toEqual({ label: 'Partial', fill: '#f4cc83', ink: '#533600', border: '#9c6b14', semantic: 'partial', status: 'partial' })
-    expect(calendarState('partial')).toEqual({ label: 'Partially completed', fill: '#e49b32', ink: '#202733', border: '#835000', semantic: 'partial', status: 'partial' })
+    expect(calendarReportState('partial')).toEqual({ label: 'Partial', fill: '#0087c2', ink: '#000000', border: '#00547a', semantic: 'partial', status: 'partial' })
+    expect(calendarState('partial')).toEqual({ label: 'Partially completed', fill: '#0087c2', ink: '#000000', border: '#00547a', semantic: 'partial', status: 'partial' })
+    for (const color of ['fill', 'ink', 'border']) expect(calendarReportState('partial')[color]).toBe(calendarState('partial')[color])
     expect(TRACKING_START_MARKER).toMatchObject({ fill: '#0f766e', border: '#064e3b' })
     expect(calendarLegend().some(state => state.fill === TRACKING_START_MARKER.fill)).toBe(false)
   })

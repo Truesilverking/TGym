@@ -1851,10 +1851,10 @@ export function finishWorkout() {
   const A = S().active
   if (!A) return
   const done = setsDoneActive(A)
-  const total = A.entries.reduce((n, e) => n + e.sets.length, 0)
+  const remaining = A.entries.reduce((n, e) => n + e.sets.filter(set => !isWarmupRow(set) && !set.done).length, 0)
   const cancel = A.timerPausedAt != null ? () => {} : resumeActiveWorkoutClock
   if (!done) { pauseActiveWorkoutClock(); confirmSheet({ title: t('Nothing logged yet'), message: t('You haven’t checked off any sets. Finish the workout anyway?'), confirmText: t('Finish anyway'), onConfirm: doFinishWorkout, onCancel: cancel }); return }
-  if (done < total) { pauseActiveWorkoutClock(); confirmSheet({ title: t('Finish early?'), message: t(total - done === 1 ? '{0} set still unchecked. Finish the workout now?' : '{0} sets still unchecked. Finish the workout now?', total - done), confirmText: t('Finish workout'), onConfirm: doFinishWorkout, onCancel: cancel }); return }
+  if (remaining) { pauseActiveWorkoutClock(); confirmSheet({ title: t('Finish early?'), message: t(remaining === 1 ? '{0} set still unchecked. Finish the workout now?' : '{0} sets still unchecked. Finish the workout now?', remaining), confirmText: t('Finish workout'), onConfirm: doFinishWorkout, onCancel: cancel }); return }
   doFinishWorkout()
 }
 export function doFinishWorkout(options = {}) {

@@ -22,9 +22,16 @@ const button = text => {
   if (text === 'Cancel') text = 'Cancel import'
   return [...host.querySelectorAll('button')].find(el => el.textContent === text)
 }
+async function saveAndSettle(control) {
+  await act(() => control.click())
+  await vi.waitFor(async () => {
+    await act(async () => {})
+    expect(host.querySelector('[data-step=saving]')).toBeNull()
+  })
+}
 async function confirm() {
   if (host.querySelector('[data-step=review]')) await act(() => host.querySelector('.routine-import-footer .primary').click())
-  await act(async () => { host.querySelector('.routine-import-footer .primary').click(); await new Promise(resolve=>setTimeout(resolve,25)) })
+  await saveAndSettle(host.querySelector('.routine-import-footer .primary'))
   if (host.querySelector('[data-step=success]')) await act(() => button(mock.es ? 'Ver rutinas' : 'View routines').click())
 }
 const render = () => act(() => root.render(<RoutineExchange close={close}/>))
@@ -136,7 +143,7 @@ it('keeps a failed primary save reviewable with no profile change and retries th
   expect(host.querySelector('.routine-exchange-diagnostics').open).toBe(false)
   expect(host.querySelector('[role="alert"]').compareDocumentPosition(host.querySelector('.routine-import-summary')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   expect(host.querySelector('.routine-exchange-diagnostics').textContent).toContain('QuotaExceededError')
-  await act(async () => { button('Retry import').click(); await new Promise(resolve=>setTimeout(resolve,25)) })
+  await saveAndSettle(button('Retry import'))
   if (host.querySelector('[data-step=success]')) act(() => button('View routines').click())
   expect(mock.S.routines).toHaveLength(2); expect(mock.update).toHaveBeenCalledTimes(2); expect(close).toHaveBeenCalledOnce()
 })
@@ -154,7 +161,7 @@ it('keeps an intermediate persistence failure atomic and retries once without im
   expect(details).toContain('resources-write'); expect(details).toContain('tgym-profile'); expect(details).toContain('media:anonymous'); expect(details).toContain('QuotaExceededError')
   expect(JSON.parse(host.querySelector('.routine-exchange-diagnostics pre').textContent).failures[1].stack).toBe(cause.stack || '')
   expect(button('Cancel import').disabled).toBe(false)
-  await act(async () => { button('Retry import').click(); await new Promise(resolve=>setTimeout(resolve,25)) })
+  await saveAndSettle(button('Retry import'))
   if (host.querySelector('[data-step=success]')) act(() => button('View routines').click())
   expect(mock.S.routines).toHaveLength(2); expect(mock.update).toHaveBeenCalledTimes(2); expect(close).toHaveBeenCalledOnce()
 })

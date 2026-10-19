@@ -124,6 +124,25 @@ afterEach(async () => {
 })
 
 describe('Workout set completion flow', () => {
+  it('labels Finish normally when only warmups remain unchecked, including a warmup-only exercise', async () => {
+    await mount([exercise('required', [false, true]), exercise('optional', [false])], 0, S => {
+      S.active.entries[0].sets[0].phase = 'warmup'
+      S.active.entries[1].sets[0].warmup = true
+    })
+    const footer = [...container.querySelectorAll('button')].find(button => button.textContent === 'Finish workout')
+    expect(footer?.textContent).toBe('Finish workout')
+    expect(container.textContent).not.toContain('Finish workout early')
+  })
+  it('keeps the early-finish exercise count limited to required working exercises', async () => {
+    await mount([exercise('complete', [false, true]), exercise('pending', [true, false]), exercise('optional', [false])], 0, S => {
+      S.active.entries[0].sets[0].phase = 'warmup'
+      S.active.entries[1].sets[0].warmup = true
+      S.active.entries[2].sets[0].phase = 'warmup'
+    })
+    expect(container.textContent).toContain('Finish workout early · 1/2 exercises')
+    expect(container.textContent).not.toContain('Finish workout early · 1/3 exercises')
+    expect(workoutCompleteSheet).not.toHaveBeenCalled()
+  })
   it('reopens the finish decision once for restored completed work, ignoring unchecked warmups', async () => {
     await mount([exercise('restored', [false, true])], 0, S => {
       S.active.entries[0].sets[0].phase = 'warmup'
