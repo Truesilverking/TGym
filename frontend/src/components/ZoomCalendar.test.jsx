@@ -4,6 +4,7 @@ import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { ZoomCalendar } from '../sheets.jsx'
 import { useUI } from '../store/useUI.js'
+import { calendarReportState } from '../lib/calendar-visual.js'
 
 const state = () => ({
   workouts: [{ id: 'w1', d: '2026-09-02', name: 'Upper A' , entries:[{id:'exercise',sets:[{done:true,r:8}]}]}],
@@ -65,6 +66,33 @@ describe('zoom consistency calendar', () => {
     expect(host.querySelector('[data-legend="rest"]').textContent).toContain('Rest day')
     expect(host.querySelector('[data-legend="untracked"]').textContent).toContain('Not tracking yet')
     expect(host.querySelector('.calendar-state-symbol')).toBeNull()
+  })
+
+  it('matches exported rest/paused/missed/pending colors and labels in month cells and legend', () => {
+    vi.setSystemTime(new Date('2026-09-16T12:00:00'))
+    const S = state()
+    S.trainingStartDate = '2026-09-02'
+    S.week = {}
+    S.dayPlan = { '2026-09-03': ['lower'], '2026-09-04': [], '2026-09-05': ['upper'], '2026-09-17': ['upper'] }
+    S.trainingPauses = [{ start: '2026-09-05', end: '2026-09-06' }]
+    const before = JSON.stringify(S)
+    act(() => root.render(<ZoomCalendar S={S} initialLevel="month" initialAnchor={new Date('2026-09-16T12:00:00')} />))
+    for (const [status, date] of [['rest', '2026-09-04'], ['paused', '2026-09-05'], ['missed', '2026-09-03'], ['pending', '2026-09-17']]) {
+      const visual = calendarReportState(status), cell = host.querySelector(`[data-date="${date}"]`)
+      const legend = host.querySelector(`[data-legend="${status}"]`)
+      expect(cell.getAttribute('data-status')).toBe(status)
+      expect(cell.getAttribute('aria-label')).toContain(visual.label)
+      expect(legend.textContent).toContain(visual.label)
+      for (const element of [cell, legend.querySelector('i')]) {
+        expect(element.style.getPropertyValue('--calendar-fill')).toBe(visual.fill)
+        expect(element.style.getPropertyValue('--calendar-ink')).toBe(visual.ink)
+        expect(element.style.getPropertyValue('--calendar-border')).toBe(visual.border)
+      }
+    }
+    expect(host.querySelector('[data-date="2026-09-01"]').getAttribute('aria-label')).toContain('Not tracking yet')
+    expect(host.querySelector('[data-date="2026-09-01"]').style.getPropertyValue('--calendar-fill')).toBe('#d7dee8')
+    expect(host.querySelector('[data-legend="untracked"]').textContent).toContain('Not tracking yet')
+    expect(JSON.stringify(S)).toBe(before)
   })
 
   it('shows the full year boundary in the week heading outside the day cells', () => {

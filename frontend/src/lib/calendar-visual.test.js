@@ -23,8 +23,19 @@ const lab = hex => {
 }
 
 describe('shared calendar state presentation', () => {
-  it('uses a separate fixed export palette and groups only pre-tracking presentation with rest', () => {
+  it('shares the requested fixed states across screen and exports while preserving pre-tracking presentation', () => {
+    const shared = {
+      rest: { label: 'Rest day', fill: '#ffffff', ink: '#263345', border: '#7b8796' },
+      paused: { label: 'Training paused', fill: '#791f34', ink: '#ffffff', border: '#4b1020' },
+      missed: { label: 'Not Trained', fill: '#f8d4d7', ink: '#78222d', border: '#b56b73' },
+      pending: { label: 'Pending', fill: '#edf0f4', ink: '#39465a', border: '#a8b2c0' },
+    }
     for (const kind of ['streak', 'consistency']) {
+      for (const [status, visual] of Object.entries(shared)) {
+        expect(calendarState(status, kind)).toEqual({ ...visual, semantic: status, status })
+        expect(calendarReportState(status, kind)).toEqual(calendarState(status, kind))
+        expect(calendarVisualStyle(status, kind)).toEqual({ '--calendar-fill': visual.fill, '--calendar-ink': visual.ink, '--calendar-border': visual.border })
+      }
       const states = calendarReportLegend(kind)
       expect(states.some(state => state.status === 'untracked')).toBe(false)
       expect(new Set(states.map(state => state.fill)).size).toBe(states.length)
@@ -35,14 +46,17 @@ describe('shared calendar state presentation', () => {
       }
       expect(calendarReportState('untracked', kind)).toEqual({ ...calendarReportState('rest', kind), status: 'untracked' })
       expect(calendarReportState('missed', kind).label).toBe('Not Trained')
-      expect(luminance(calendarReportState('pending', kind).fill)).toBeGreaterThan(luminance(calendarState('pending', kind).fill))
       expect(luminance(calendarReportState('paused', kind).fill)).toBeLessThan(luminance(calendarReportState('missed', kind).fill))
     }
+    const rest = calendarState('rest')
+    expect((luminance(rest.fill) + .05) / (luminance(rest.border) + .05)).toBeGreaterThanOrEqual(3)
+    expect(calendarState('untracked')).toEqual({ label: 'Not tracking yet', fill: '#d7dee8', ink: '#202733', border: '#657185', semantic: 'untracked', status: 'untracked' })
     // The owner explicitly retained Partial pending a future rule decision.
-    expect(calendarReportLegend().find(state => state.status === 'partial').label).toBe('Partial')
-    expect(calendarState('untracked').label).toBe('Not tracking yet')
+    expect(calendarReportState('partial')).toEqual({ label: 'Partial', fill: '#f4cc83', ink: '#533600', border: '#9c6b14', semantic: 'partial', status: 'partial' })
+    expect(calendarState('partial')).toEqual({ label: 'Partially completed', fill: '#e49b32', ink: '#202733', border: '#835000', semantic: 'partial', status: 'partial' })
+    expect(calendarLegend().find(state => state.status === 'untracked')).toEqual(calendarState('untracked'))
   })
-  it('uses a perceptually separated fixed palette with readable text and no symbols or patterns', () => {
+  it('uses readable text and distinct fixed fills/borders without symbols or patterns', () => {
     for (const kind of ['streak', 'consistency']) {
       const states = calendarLegend(kind)
       expect(new Set(states.map(state => state.fill)).size).toBe(states.length)
@@ -52,8 +66,16 @@ describe('shared calendar state presentation', () => {
         const l = [luminance(state.fill), luminance(state.ink)].sort((a, b) => a - b)
         expect((l[1] + .05) / (l[0] + .05)).toBeGreaterThanOrEqual(4.5)
         for (const other of states.slice(i + 1)) {
+          expect(state.fill).not.toBe(other.fill)
+          expect(state.border).not.toBe(other.border)
           const a = lab(state.fill), b = lab(other.fill)
-          expect(Math.hypot(...a.map((value, index) => value - b[index]))).toBeGreaterThan(25)
+          // White, light gray, pale red and the retained pre-tracking gray are
+          // intentional light fills. Explicit borders and readable ink distinguish
+          // them; the unchanged saturated categories keep their stricter separation.
+          const light = ['missed', 'pending', 'rest', 'untracked']
+          if (!light.includes(state.status) || !light.includes(other.status)) {
+            expect(Math.hypot(...a.map((value, index) => value - b[index]))).toBeGreaterThan(25)
+          }
         }
         expect(JSON.stringify(calendarVisualStyle(state.status, kind))).not.toMatch(/var\(--acc|opacity|color-mix|pattern|gradient/)
       }
