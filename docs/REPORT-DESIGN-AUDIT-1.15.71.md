@@ -1,6 +1,6 @@
-# Rediseño de Streak y Consistency — candidato 1.15.71
+# Rediseño de Streak y Consistency — 1.15.71
 
-Esta nota describe el candidato local; la publicación y la validación integral se documentan por separado. Las muestras se generan con perfiles sintéticos aislados.
+Esta nota describe el diseño publicado en 1.15.71; la publicación y la validación integral se documentan en `RELEASE-AUDIT-1.15.71.md`. Las muestras se generan con perfiles sintéticos aislados.
 
 ## Diseño y paleta
 
