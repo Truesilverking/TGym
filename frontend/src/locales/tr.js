@@ -944,4 +944,5 @@ export default {
 ,"Partial":"Kısmi"
 ,"Counts training dates, not calendar days.":"Takvim günlerini değil, antrenman tarihlerini sayar."
 ,"Four months per PDF page.":"PDF sayfası başına dört ay."
+,"Tracking since {0}":"{0} tarihinden beri kaydediliyor"
 }

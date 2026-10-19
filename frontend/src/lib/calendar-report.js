@@ -1,4 +1,4 @@
-import { trainingStart } from './training-history.js'
+import { trainingStart, trackingStart } from './training-history.js'
 import { calendarPeriod, calendarFilename } from './calendar-data.js'
 import { isoOf } from './format.js'
 import { calendarReportState, CALENDAR_STATUS_IDS } from './calendar-visual.js'
@@ -19,7 +19,7 @@ export function calendarReportPages(S, anchor, period, format, { t = x => x, now
     if (range.error) throw Error(range.error)
     return range.years.flatMap(year => {
       const report = calendarPeriod(S, new Date(`${year}-01-01T12:00:00`), 'year', now)
-      return calendarYearReportPages({ kind: 'consistency', year, days: report.days,
+      return calendarYearReportPages({ kind: 'consistency', year, days: report.days, trackingSince: trackingStart(S, isoOf(now)),
         metrics: [['Completed', report.stats.completed], ['Missed', report.stats.missed], ['Completion', report.completion == null ? '—' : `${report.completion}%`]],
         context: t('Training since {0}').replace('{0}', trainingStart(S, isoOf(now))), note: `${t('Rest day')}: ${t('No scheduled workout')}`,
         t })
@@ -30,12 +30,12 @@ export function calendarReportPages(S, anchor, period, format, { t = x => x, now
   if (!Number.isFinite(anchor.getTime())) throw new Error('Invalid report date')
   if (period === 'full') {
     const report = calendarPeriod(S, anchor, 'year', now)
-    return calendarFullReportPages({ kind: 'consistency', days: report.days, start: report.start, end: report.end,
+    return calendarFullReportPages({ kind: 'consistency', days: report.days, start: report.start, end: report.end, trackingSince: trackingStart(S, isoOf(now)),
       metrics: [['Completed', report.stats.completed], ['Missed', report.stats.missed], ['Completion', report.completion == null ? '—' : `${report.completion}%`]],
       context: t('Training since {0}').replace('{0}', trainingStart(S, isoOf(now))), note: `${t('Rest day')}: ${t('No scheduled workout')}`, t })
   }
   const report = calendarPeriod(S, anchor, period, now)
-  return calendarReportLayout({ kind: 'consistency', days: report.days, start: report.start, end: report.end,
+  return calendarReportLayout({ kind: 'consistency', days: report.days, start: report.start, end: report.end, trackingSince: trackingStart(S, isoOf(now)),
     metrics: [['Completed', report.stats.completed], ['Missed', report.stats.missed], ['Completion', report.completion == null ? '—' : `${report.completion}%`]],
     context: t('Training since {0}').replace('{0}', trainingStart(S, isoOf(now))), note: `${t('Rest day')}: ${t('No scheduled workout')}`,
     format, week: period === 'week', t })

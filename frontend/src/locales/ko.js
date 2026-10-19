@@ -944,4 +944,5 @@ export default {
 ,"Partial":"부분 완료"
 ,"Counts training dates, not calendar days.":"달력 날짜가 아닌 운동한 날짜를 셉니다."
 ,"Four months per PDF page.":"PDF 페이지당 4개월."
+,"Tracking since {0}":"{0}부터 기록 중"
 }

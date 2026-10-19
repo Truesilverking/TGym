@@ -4,7 +4,7 @@ import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { ZoomCalendar } from '../sheets.jsx'
 import { useUI } from '../store/useUI.js'
-import { calendarReportState } from '../lib/calendar-visual.js'
+import { TRACKING_START_MARKER, calendarReportState } from '../lib/calendar-visual.js'
 
 const state = () => ({
   workouts: [{ id: 'w1', d: '2026-09-02', name: 'Upper A' , entries:[{id:'exercise',sets:[{done:true,r:8}]}]}],
@@ -62,9 +62,9 @@ describe('zoom consistency calendar', () => {
     expect(partial.textContent).toBe('2')
     expect(legend.querySelector('i').textContent).toBe('')
     expect(partial.style.getPropertyValue('--calendar-fill')).toBe(legend.querySelector('i').style.getPropertyValue('--calendar-fill'))
-    expect(host.querySelectorAll('[data-legend]')).toHaveLength(7)
+    expect(host.querySelectorAll('[data-legend]')).toHaveLength(6)
     expect(host.querySelector('[data-legend="rest"]').textContent).toContain('Rest day')
-    expect(host.querySelector('[data-legend="untracked"]').textContent).toContain('Not tracking yet')
+    expect(host.querySelector('[data-legend="untracked"]')).toBeNull()
     expect(host.querySelector('.calendar-state-symbol')).toBeNull()
   })
 
@@ -89,9 +89,65 @@ describe('zoom consistency calendar', () => {
         expect(element.style.getPropertyValue('--calendar-border')).toBe(visual.border)
       }
     }
-    expect(host.querySelector('[data-date="2026-09-01"]').getAttribute('aria-label')).toContain('Not tracking yet')
-    expect(host.querySelector('[data-date="2026-09-01"]').style.getPropertyValue('--calendar-fill')).toBe('#d7dee8')
-    expect(host.querySelector('[data-legend="untracked"]').textContent).toContain('Not tracking yet')
+    expect(host.querySelector('[data-date="2026-09-01"]').getAttribute('data-status')).toBe('untracked')
+    expect(host.querySelector('[data-date="2026-09-01"]').getAttribute('aria-label')).toContain('Rest day')
+    expect(host.querySelector('[data-date="2026-09-01"]').style.getPropertyValue('--calendar-fill')).toBe('#ffffff')
+    expect(host.querySelector('[data-legend="untracked"]')).toBeNull()
+    expect(JSON.stringify(S)).toBe(before)
+  })
+
+  it.each(['week', 'month', 'months', 'years'])('shows a separate tracking-start indicator without a pre-tracking category in %s view', level => {
+    vi.setSystemTime(new Date('2026-09-16T12:00:00'))
+    const S = state()
+    S.trainingStartDate = '2025-01-01'
+    S.trainingHistory = { trackedFrom: '2026-09-15', historicalWorkouts: 20, workoutsPerWeek: 3 }
+    const before = JSON.stringify(S)
+    // The real Sep2 workout advances the effective boundary before the entered Sep15.
+    act(() => root.render(<ZoomCalendar S={S} initialLevel={level} initialAnchor={new Date('2026-09-02T12:00:00')} />))
+    const marker = host.querySelector('.zoomcal-tracking-start')
+    expect(marker).not.toBeNull()
+    expect(host.querySelectorAll('.zoomcal-tracking-start')).toHaveLength(1)
+    expect(marker.getAttribute('data-tracking-start')).toBe('2026-09-02')
+    expect(marker.textContent).toContain('Tracking since')
+    expect(marker.textContent).toContain('2026')
+    expect(marker.style.getPropertyValue('--tracking-fill')).toBe(TRACKING_START_MARKER.fill)
+    expect(marker.style.getPropertyValue('--tracking-border')).toBe(TRACKING_START_MARKER.border)
+    expect(marker.querySelector('i').getAttribute('aria-hidden')).toBe('true')
+    expect(marker.closest('.zoomcal-week, .zoomcal-month, .zoomcal-mini-month, .zoomcal-mini-year, .zoomcal-legend')).toBeNull()
+    const body = host.querySelector('.zoomcal-week, .zoomcal-month, .zoomcal-periods')
+    expect(marker.compareDocumentPosition(body) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(host.querySelectorAll('[data-legend]')).toHaveLength(6)
+    expect(host.querySelector('[data-legend="untracked"]')).toBeNull()
+    expect(host.textContent).not.toContain('Not tracking yet')
+    for (const element of host.querySelectorAll('[aria-label], [title]')) {
+      expect(element.getAttribute('aria-label') || '').not.toContain('Not tracking yet')
+      expect(element.getAttribute('title') || '').not.toContain('Not tracking yet')
+    }
+    for (const cell of host.querySelectorAll('[data-status="untracked"]')) {
+      expect(cell.style.getPropertyValue('--calendar-fill')).toBe('#ffffff')
+      expect(cell.style.getPropertyValue('--calendar-border')).toBe('#7b8796')
+    }
+    for (const cell of host.querySelectorAll('[data-status]')) expect(cell.style.getPropertyValue('--calendar-fill')).not.toBe(TRACKING_START_MARKER.fill)
+    const firstRecordedDay = host.querySelector('[data-date="2026-09-02"]')
+    if (firstRecordedDay) expect(firstRecordedDay.style.getPropertyValue('--calendar-fill')).toBe('#115bb2')
+    if (level === 'months') expect(host.querySelector('.zoomcal-periods.months>button>small').textContent).toBe('—')
+    if (level === 'years') expect(host.querySelector('.zoomcal-periods.years>button>small').textContent).toBe('—')
+    expect(JSON.stringify(S)).toBe(before)
+  })
+
+  it('keeps an untracked selected date visible without inventing a status or an earlier tracking boundary', () => {
+    vi.setSystemTime(new Date('2026-09-16T12:00:00'))
+    const S = { ...state(), trainingStartDate: '2025-01-01', trainingHistory: { trackedFrom: '2026-09-15', historicalWorkouts: 20, workoutsPerWeek: 3 }, workouts: [] }
+    const before = JSON.stringify(S)
+    act(() => root.render(<ZoomCalendar S={S} initialLevel="month" initialAnchor={new Date('2026-09-16T12:00:00')} />))
+    expect(host.querySelector('.zoomcal-tracking-start').getAttribute('data-tracking-start')).toBe('2026-09-15')
+    const untracked = host.querySelector('[data-date="2026-09-01"]')
+    act(() => untracked.click())
+    const selection = host.querySelector('.zoomcal-selection')
+    expect(selection.querySelector('b').textContent).not.toBe('')
+    expect(selection.querySelector('span')).toBeNull()
+    expect(selection.style.getPropertyValue('--calendar-fill')).toBe('#ffffff')
+    expect(host.querySelector('[data-date="2026-09-01"].selected')).not.toBeNull()
     expect(JSON.stringify(S)).toBe(before)
   })
 

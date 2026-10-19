@@ -944,4 +944,5 @@ export default {
 ,"Partial":"आंशिक"
 ,"Counts training dates, not calendar days.":"प्रशिक्षण की तारीखें गिनी जाती हैं, कैलेंडर के दिन नहीं।"
 ,"Four months per PDF page.":"हर PDF पेज पर चार महीने।"
+,"Tracking since {0}":"{0} से रिकॉर्डिंग"
 }

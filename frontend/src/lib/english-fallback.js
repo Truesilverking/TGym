@@ -1,5 +1,6 @@
 // Explicit source-language fallback. Entries in language packs override these values.
 export default {
+  "Tracking since {0}": "Tracking since {0}",
   "Select file": "Select file",
   "Correct the file errors before previewing prescriptions.": "Correct the file errors before previewing prescriptions.",
   "Preparing Excel template…": "Preparing Excel template…",

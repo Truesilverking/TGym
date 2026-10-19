@@ -1,7 +1,7 @@
 {
   "name": "tgym",
   "private": true,
-  "version": "1.15.72",
+  "version": "1.15.73",
   "type": "module",
   "scripts": {
     "dev": "vite",

@@ -944,4 +944,5 @@ export default {
 ,"Partial":"部分完成"
 ,"Counts training dates, not calendar days.":"计算训练日期，而不是日历天数。"
 ,"Four months per PDF page.":"每页 PDF 显示四个月。"
+,"Tracking since {0}":"自 {0} 起记录"
 }

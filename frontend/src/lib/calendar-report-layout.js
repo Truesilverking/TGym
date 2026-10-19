@@ -1,5 +1,6 @@
 import { MONTHS_LONG } from './format.js'
 import { calendarGrid, calendarSvgLegend, calendarText as text, calendarRect as rect, escapeCalendarText as escape } from './calendar-grid.js'
+import { TRACKING_START_MARKER } from './calendar-visual.js'
 import { STREAK_FLAME_PATH } from './streak-flame-path.js'
 
 const NAVY = '#18324f', MUTED = '#52647c', BLUE = '#115bb2'
@@ -24,7 +25,7 @@ function flame(value, x, y) {
 
 // Shared by every Streak/Consistency export and their combined-report sections.
 // Four whole months per PDF page; tall PNGs retain phone-readable square calendars.
-export function calendarReportLayout({ kind, days, start, end, metrics, context = '', note = '', emptyMessage = '', format = 'pdf', week = false, layout = 'calendar', year, t = x => x }) {
+export function calendarReportLayout({ kind, days, start, end, metrics, context = '', trackingSince = '', note = '', emptyMessage = '', format = 'pdf', week = false, layout = 'calendar', year, t = x => x }) {
   const grouped = new Map()
   for (const day of days) {
     const key = week ? 'week' : day.iso.slice(0, 7)
@@ -70,7 +71,10 @@ export function calendarReportLayout({ kind, days, start, end, metrics, context 
     })
     svg += `<line x1="48" y1="${legendY - 36}" x2="952" y2="${legendY - 36}" stroke="#dce3ec"/>` + calendarSvgLegend({ y: legendY, kind, t })
     if (emptyMessage) svg += text(48, height - 55, emptyMessage, 19, 400, 'start', MUTED)
-    svg += text(48, height - 25, 'TGym', 17, 600, 'start', MUTED) + text(952, height - 25, `${pageIndex + 1} / ${chunks.length}`, 18, 500, 'end', MUTED)
+    svg += trackingSince
+      ? `<g data-tracking-start="${escape(trackingSince)}"><circle cx="53" cy="${height - 31}" r="5" fill="${TRACKING_START_MARKER.fill}" stroke="${TRACKING_START_MARKER.border}"/>` + text(66, height - 25, t('Tracking since {0}').replace('{0}', trackingSince), 17, 500, 'start', MUTED) + '</g>'
+      : text(48, height - 25, 'TGym', 17, 600, 'start', MUTED)
+    svg += text(952, height - 25, `${pageIndex + 1} / ${chunks.length}`, 18, 500, 'end', MUTED)
     return { svg: svg + '</g></svg>', width: 1000, height }
   })
 }

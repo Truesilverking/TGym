@@ -947,4 +947,5 @@ export default { ...english, ...PT_TRANSLATIONS,
 ,"Partial":"Parcial"
 ,"Counts training dates, not calendar days.":"Conta datas de treino, não dias do calendário."
 ,"Four months per PDF page.":"Quatro meses por página PDF."
+,"Tracking since {0}":"A registar desde {0}"
 }

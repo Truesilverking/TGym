@@ -944,4 +944,5 @@ export default {
 ,"Partial":"Częściowo"
 ,"Counts training dates, not calendar days.":"Liczy daty treningów, a nie dni kalendarzowe."
 ,"Four months per PDF page.":"Cztery miesiące na stronę PDF."
+,"Tracking since {0}":"Rejestrowanie od {0}"
 }

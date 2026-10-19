@@ -2,6 +2,8 @@
    Keep them independent of theme/accent, including exported/mini calendars. */
 .zoomcal .zoomcal-week,.zoomcal .zoomcal-month { grid-template-columns:repeat(7,minmax(0,48px)); justify-content:center; gap:5px; }
 .zoomcal .zoomcal-title>b { white-space:normal; overflow:visible; text-overflow:clip; line-height:1.35; overflow-wrap:anywhere; }
+.zoomcal .zoomcal-tracking-start { display:flex; align-items:center; justify-content:center; gap:7px; margin:2px 0 12px; color:var(--label-2); font-size:12px; line-height:1.4; }
+.zoomcal .zoomcal-tracking-start i { box-sizing:border-box; flex:none; width:10px; height:10px; border-radius:50%; background-color:var(--tracking-fill); border:1px solid var(--tracking-border); opacity:1; }
 .zoomcal.zoomcal .zoomcal-day { box-sizing:border-box; aspect-ratio:1/1; width:100%; max-width:48px; min-height:0; height:auto; padding:0; border-radius:6px; border:1px solid var(--calendar-border); background-color:var(--calendar-fill); background-image:none; color:var(--calendar-ink); outline:none; box-shadow:none; opacity:1; }
 .zoomcal.zoomcal .zoomcal-day b { font-size:15px; line-height:1; color:var(--calendar-ink); }
 .zoomcal .zoomcal-legend { font-size:12px; gap:10px 14px; }

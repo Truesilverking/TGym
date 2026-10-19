@@ -961,4 +961,5 @@ export default {
 ,"Partial":"Teilweise"
 ,"Counts training dates, not calendar days.":"Gezählt werden Trainingstage, keine Kalendertage."
 ,"Four months per PDF page.":"Vier Monate pro PDF-Seite."
+,"Tracking since {0}":"Aufzeichnung seit {0}"
 }
