@@ -2,7 +2,7 @@
 // Streak activity and consistency's completion/partial precedence have different rules.
 // These four states share exactly the same definition on screen and in exports.
 const SHARED_CALENDAR_STATES = Object.freeze({
-  missed: { label: 'Not Trained', fill: '#f8d4d7', ink: '#78222d', border: '#b56b73' },
+  missed: { label: 'Not Trained', fill: '#ed1c24', ink: '#000000', border: '#8f1015' },
   pending: { label: 'Pending', fill: '#696969', ink: '#ffffff', border: '#424242' },
   rest: { label: 'Rest day', fill: '#ffffff', ink: '#263345', border: '#7b8796' },
   paused: { label: 'Training paused', fill: '#791f34', ink: '#ffffff', border: '#4b1020' },

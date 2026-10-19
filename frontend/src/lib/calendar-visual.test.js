@@ -27,7 +27,7 @@ describe('shared calendar state presentation', () => {
     const shared = {
       rest: { label: 'Rest day', fill: '#ffffff', ink: '#263345', border: '#7b8796' },
       paused: { label: 'Training paused', fill: '#791f34', ink: '#ffffff', border: '#4b1020' },
-      missed: { label: 'Not Trained', fill: '#f8d4d7', ink: '#78222d', border: '#b56b73' },
+      missed: { label: 'Not Trained', fill: '#ed1c24', ink: '#000000', border: '#8f1015' },
       pending: { label: 'Pending', fill: '#696969', ink: '#ffffff', border: '#424242' },
     }
     for (const kind of ['streak', 'consistency']) {
@@ -73,13 +73,7 @@ describe('shared calendar state presentation', () => {
           expect(state.fill).not.toBe(other.fill)
           expect(state.border).not.toBe(other.border)
           const a = lab(state.fill), b = lab(other.fill)
-          // White rest and pale red missed are intentional light fills. Explicit
-          // borders and readable ink distinguish them; other pairs retain the
-          // stricter perceptual separation.
-          const light = ['missed', 'rest']
-          if (!light.includes(state.status) || !light.includes(other.status)) {
-            expect(Math.hypot(...a.map((value, index) => value - b[index]))).toBeGreaterThan(25)
-          }
+          expect(Math.hypot(...a.map((value, index) => value - b[index]))).toBeGreaterThan(25)
         }
         expect(JSON.stringify(calendarVisualStyle(state.status, kind))).not.toMatch(/var\(--acc|opacity|color-mix|pattern|gradient/)
       }
