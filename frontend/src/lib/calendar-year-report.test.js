@@ -4,7 +4,7 @@ import { completeYearRange, MAX_REPORT_YEARS, CONSISTENCY_PERIODS } from './cale
 import { calendarReportPages, reportFilename } from './calendar-report.js'
 import { calendarPeriod } from './calendar-data.js'
 import { buildStreakReport, streakReportPages, streakRange, streakFilename, STREAK_PERIODS } from './streak-report.js'
-import { calendarState } from './calendar-visual.js'
+import { calendarReportState } from './calendar-visual.js'
 
 const parse = svg => new DOMParser().parseFromString(svg, 'image/svg+xml')
 const now = new Date('2026-01-07T12:00:00')
@@ -41,39 +41,39 @@ describe('complete-year ranges', () => {
   })
 })
 
-describe('one complete year per landscape PDF page', () => {
+describe('readable complete-year PDF pages', () => {
   it.each(['streak', 'consistency'])('keeps each %s annual data set, metric and context identical to the existing year calculations', kind => {
     const options = { period: 'years', fromYear: 2024, toYear: 2027, now }, before = JSON.stringify(S)
     const pages = kind === 'streak' ? streakReportPages(S, options) : calendarReportPages(S, 'irrelevant', 'years', 'pdf', options)
-    expect(pages).toHaveLength(4)
+    expect(pages).toHaveLength(12)
     const allDates = []
     pages.forEach((page, i) => {
-      const year = 2024 + i, doc = parse(page.svg), anchor = `${year}-01-01`
+      const year = 2024 + Math.floor(i / 3), doc = parse(page.svg), anchor = `${year}-01-01`
       const annual = kind === 'streak' ? buildStreakReport(S, { period: 'year', anchor, now }) : calendarPeriod(S, new Date(anchor + 'T12:00:00'), 'year', now)
       const cells = [...doc.querySelectorAll('[data-date]')]
       expect(doc.querySelector('parsererror')).toBeNull()
       expect(doc.documentElement.getAttribute('data-layout')).toBe('complete-year')
       expect(doc.documentElement.getAttribute('data-year')).toBe(String(year))
-      expect(page.orientation).toBe('landscape'); expect(page.width).toBe(1414); expect(page.height).toBe(1000)
-      expect(doc.querySelectorAll('[data-month]')).toHaveLength(12)
-      expect(cells.map(cell => cell.getAttribute('data-date'))).toEqual(annual.days.map(day => day.iso))
-      expect(cells.map(cell => cell.getAttribute('data-status'))).toEqual(annual.days.map(day => day.status))
-      expect(cells).toHaveLength(year === 2024 ? 366 : 365)
+      expect(page.orientation).toBeUndefined(); expect(page.width).toBe(1000); expect(page.height).toBeGreaterThanOrEqual(1414)
+      expect(doc.querySelectorAll('[data-month]')).toHaveLength(4)
+      expect(cells.map(cell => cell.getAttribute('data-date'))).toEqual(annual.days.filter(day => Math.floor((Number(day.iso.slice(5,7)) - 1) / 4) === i % 3).map(day => day.iso))
+      expect(cells.map(cell => cell.getAttribute('data-status'))).toEqual(annual.days.filter(day => Math.floor((Number(day.iso.slice(5,7)) - 1) / 4) === i % 3).map(day => day.status))
+      expect(cells.length).toBeGreaterThanOrEqual(120)
       allDates.push(...cells.map(cell => cell.getAttribute('data-date')))
       const expectedMetrics = kind === 'streak' ? [['Training streak', annual.current], ['Best streak', annual.best]] : [['Completed', annual.stats.completed], ['Missed', annual.stats.missed], ['Completion', annual.completion == null ? '—' : `${annual.completion}%`]]
       for (const [label, value] of expectedMetrics) expect(doc.querySelector(`[data-summary="${label}"]`).getAttribute('data-value')).toBe(String(value))
       if (kind === 'streak') expect(doc.documentElement.textContent).toContain(`Streak as of ${annual.asOf}`)
-      expect(doc.querySelector('pattern, path, circle, [data-symbol]')).toBeNull()
+      expect(doc.querySelector('[data-date] pattern, [data-date] path, [data-date] circle, [data-date] [data-symbol]')).toBeNull()
       for (const cell of cells) {
-        const box = cell.querySelector('rect'), number = cell.querySelector('text'), monthCard = cell.closest('[data-month]').querySelector('rect')
+        const box = cell.querySelector('rect'), number = cell.querySelector('text')
         expect(cell.querySelectorAll('rect')).toHaveLength(1); expect(cell.querySelectorAll('text')).toHaveLength(1)
-        expect(box.getAttribute('width')).toBe('26'); expect(box.getAttribute('height')).toBe('26')
-        expect(box.getAttribute('fill')).toBe(calendarState(cell.getAttribute('data-status'), kind).fill)
-        expect(box.getAttribute('fill')).toBe(doc.querySelector(`[data-legend="${cell.getAttribute('data-status')}"] rect`).getAttribute('fill'))
-        expect(+box.getAttribute('y') + 26).toBeLessThanOrEqual(+monthCard.getAttribute('y') + +monthCard.getAttribute('height') - 5)
-        expect(+number.getAttribute('x')).toBe(+box.getAttribute('x') + 13)
-        expect(+number.getAttribute('y')).toBe(+box.getAttribute('y') + 13)
-        const scale = Math.min(277 / page.width, 190 / page.height)
+        expect(box.getAttribute('width')).toBe('48'); expect(box.getAttribute('height')).toBe('48')
+        expect(box.getAttribute('fill')).toBe(calendarReportState(cell.getAttribute('data-status'), kind).fill)
+        expect(box.getAttribute('fill')).toBe(doc.querySelector(`[data-legend][data-semantic="${calendarReportState(cell.getAttribute('data-status'), kind).semantic}"] rect`).getAttribute('fill'))
+        expect(+box.getAttribute('y') + 48).toBeLessThan(+doc.querySelector('[data-legend] rect').getAttribute('y') - 20)
+        expect(+number.getAttribute('x')).toBe(+box.getAttribute('x') + 24)
+        expect(+number.getAttribute('y')).toBe(+box.getAttribute('y') + 24)
+        const scale = Math.min(190 / page.width, 277 / page.height)
         expect(+number.getAttribute('font-size') * scale * 72 / 25.4).toBeGreaterThanOrEqual(9)
       }
     })
@@ -89,8 +89,8 @@ describe('one complete year per landscape PDF page', () => {
   })
   it.each([1000, 9999])('stops at December 31 of boundary year %i', year => {
     const options = { period: 'years', fromYear: year, toYear: year, now }
-    for (const page of [...streakReportPages({}, options), ...calendarReportPages({}, now, 'years', 'pdf', options)]) {
-      const cells = [...parse(page.svg).querySelectorAll('[data-date]')]
+    for (const pages of [streakReportPages({}, options), calendarReportPages({}, now, 'years', 'pdf', options)]) {
+      const cells = pages.flatMap(page => [...parse(page.svg).querySelectorAll('[data-date]')])
       expect(cells).toHaveLength(365)
       expect(cells[0].getAttribute('data-date')).toBe(`${year}-01-01`)
       expect(cells.at(-1).getAttribute('data-date')).toBe(`${year}-12-31`)
@@ -103,9 +103,9 @@ describe('one complete year per landscape PDF page', () => {
       const texts = [...summary.querySelectorAll('text')]
       expect(texts).toHaveLength(2)
       expect(texts[0].textContent).toBe(labels[summary.getAttribute('data-summary')])
-      expect(texts[0].getAttribute('y')).toBe('108')
-      expect(texts[1].getAttribute('y')).toBe('155')
-      expect(texts[1].getAttribute('font-size')).toBe('22')
+      expect(texts[0].getAttribute('y')).toBe('208')
+      expect(texts[1].getAttribute('y')).toBe('258')
+      expect(texts[1].getAttribute('font-size')).toBe('40')
     }
   })
 })

@@ -122,6 +122,44 @@ it('releases an SVG URL when image decoding fails', async () => {
   await expect(rasterizeReport(page)).rejects.toThrow('Decode failed')
   expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:report')
 })
+it('bounds long PNG canvas allocation while keeping ordinary pages at 2x quality', async () => {
+  const sizes = [], create = document.createElement.getMockImplementation()
+  vi.spyOn(document, 'createElement').mockImplementation(tag => {
+    const node = create(tag)
+    if (tag === 'canvas') {
+      node.getContext = () => ({ drawImage: vi.fn() })
+      node.toDataURL = () => { sizes.push([node.width, node.height]); return 'data:image/png;base64,eA==' }
+    }
+    return node
+  })
+  await rasterizeReport(page)
+  for (const [width, height] of [[1000, 9011], [1000, 20000], [20000, 1000]]) {
+    await rasterizeReport({ svg: '<svg/>', width, height })
+    const [actualWidth, actualHeight] = sizes.at(-1)
+    expect(actualWidth * actualHeight).toBeLessThanOrEqual(12_000_000)
+    expect(Math.max(actualWidth, actualHeight)).toBeLessThanOrEqual(16384)
+    expect(Math.abs(actualWidth - actualHeight * width / height)).toBeLessThanOrEqual(Math.max(1, width / height))
+  }
+  expect(sizes[0]).toEqual([2000, 2780])
+})
+it('rejects a silent empty canvas encoding, releases resources, and allows a successful retry', async () => {
+  const canvases = [], create = document.createElement.getMockImplementation()
+  let failing = true
+  vi.spyOn(document, 'createElement').mockImplementation(tag => {
+    const node = create(tag)
+    if (tag === 'canvas') {
+      node.getContext = () => ({ drawImage: vi.fn() })
+      node.toDataURL = () => failing ? 'data:,' : 'data:image/png;base64,eA=='
+      canvases.push(node)
+    }
+    return node
+  })
+  await expect(rasterizeReport(page)).rejects.toThrow('Report image encoding failed')
+  expect(canvases[0].width).toBe(0); expect(canvases[0].height).toBe(0)
+  expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:report')
+  failing = false
+  await expect(rasterizeReport(page)).resolves.toBe('data:image/png;base64,eA==')
+})
 it('preserves browser Share/save and direct Download as distinct actions', async () => {
   const share = vi.fn().mockResolvedValue(undefined), click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
   vi.stubGlobal('navigator', { canShare: () => true, share })

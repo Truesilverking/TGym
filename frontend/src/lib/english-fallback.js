@@ -1743,4 +1743,8 @@ export default {
 ,"Activity counts once per day, including planned and extra sessions.":"Activity counts once per day, including planned and extra sessions."
 ,"Selected dashboards download as one PDF.":"Selected dashboards download as one PDF."
 ,"Uses the current Stats filters.":"Uses the current Stats filters."
+,"Not Trained":"Not Trained"
+,"Partial":"Partial"
+,"Counts training dates, not calendar days.":"Counts training dates, not calendar days."
+,"Four months per PDF page.":"Four months per PDF page."
 }

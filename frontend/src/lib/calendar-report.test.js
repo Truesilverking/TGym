@@ -17,13 +17,13 @@ describe('dedicated consistency reports', () => {
         expect(+cell.getAttribute('x') + +cell.getAttribute('width')).toBeLessThanOrEqual(page.width - 40)
         expect(+cell.getAttribute('y') + +cell.getAttribute('height')).toBeLessThan(page.height - 90)
       }
-      for (const label of ['Completed', 'Not completed', 'Pending']) expect(doc.documentElement.textContent).toContain(label)
+      for (const label of ['Completed', 'Not Trained', 'Pending']) expect(doc.documentElement.textContent).toContain(label)
     }
   })
   it('keeps Full Report exclusively calendar pages for the anchored year',()=>{
     const pages=calendarReportPages(S,anchor,'full','pdf',{now:anchor})
-    expect(pages).toHaveLength(2)
-    for (const page of pages) expect(parse(page.svg).querySelectorAll('[data-period="month"]')).toHaveLength(6)
+    expect(pages).toHaveLength(3)
+    for (const page of pages) expect(parse(page.svg).querySelectorAll('[data-period="month"]')).toHaveLength(4)
     const detail=pages.flatMap(p=>[...parse(p.svg).querySelectorAll('[data-date]')].map(d=>d.getAttribute('data-date')))
     expect(detail).toHaveLength(365)
     expect(new Set(detail).size).toBe(365)

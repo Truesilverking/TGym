@@ -2,17 +2,23 @@ import { jsPDF } from 'jspdf'
 import { MOBILE, shareBase64, shareReportFiles } from './mobile.js'
 
 export async function rasterizeReport({ svg, width, height }, mime = 'image/png') {
+  if (![width, height].every(value => Number.isFinite(value) && value > 0)) throw new Error('Invalid report dimensions')
   const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml;charset=utf-8' }))
   let canvas
   try {
     const image = new Image()
     await new Promise((resolve, reject) => { image.onload = resolve; image.onerror = reject; image.src = url })
     canvas = document.createElement('canvas')
-    canvas.width = width * 2; canvas.height = height * 2
+    // Long share images must remain within mobile canvas area/edge limits.
+    // Ordinary PDF pages keep 2x quality; larger images retain their proportions.
+    const scale = Math.min(2, Math.sqrt(12_000_000 / (width * height)), 16384 / Math.max(width, height))
+    canvas.width = Math.max(1, Math.floor(width * scale)); canvas.height = Math.max(1, Math.floor(height * scale))
     const ctx = canvas.getContext('2d')
     if (!ctx) throw new Error('Canvas unavailable')
     ctx.drawImage(image, 0, 0, canvas.width, canvas.height)
-    return canvas.toDataURL(mime, 0.92)
+    const data = canvas.toDataURL(mime, 0.92)
+    if (!data.startsWith('data:image/') || !data.split(',')[1]) throw new Error('Report image encoding failed')
+    return data
   } finally { if (canvas) { canvas.width=0; canvas.height=0 }; URL.revokeObjectURL(url) }
 }
 

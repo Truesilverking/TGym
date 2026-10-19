@@ -957,4 +957,8 @@ export default {
 ,"Choose a valid year range.":"Wähle einen gültigen Jahresbereich."
 ,"Choose up to 25 years per report.":"Wähle bis zu 25 Jahre pro Bericht."
 ,"Complete-year reports require PDF":"Berichte über vollständige Jahre erfordern PDF"
+,"Not Trained":"Nicht trainiert"
+,"Partial":"Teilweise"
+,"Counts training dates, not calendar days.":"Gezählt werden Trainingstage, keine Kalendertage."
+,"Four months per PDF page.":"Vier Monate pro PDF-Seite."
 }

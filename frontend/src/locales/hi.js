@@ -940,4 +940,8 @@ export default {
 ,"Choose a valid year range.":"वर्षों की मान्य सीमा चुनें।"
 ,"Choose up to 25 years per report.":"प्रत्येक रिपोर्ट में अधिकतम 25 वर्ष चुनें।"
 ,"Complete-year reports require PDF":"पूरे वर्ष की रिपोर्ट के लिए PDF आवश्यक है"
+,"Not Trained":"प्रशिक्षण नहीं किया"
+,"Partial":"आंशिक"
+,"Counts training dates, not calendar days.":"प्रशिक्षण की तारीखें गिनी जाती हैं, कैलेंडर के दिन नहीं।"
+,"Four months per PDF page.":"हर PDF पेज पर चार महीने।"
 }

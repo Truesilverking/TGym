@@ -940,4 +940,8 @@ export default {
 ,"Choose a valid year range.":"请选择有效的年份范围。"
 ,"Choose up to 25 years per report.":"每份报告最多选择 25 年。"
 ,"Complete-year reports require PDF":"完整年份报告需要 PDF 格式"
+,"Not Trained":"未训练"
+,"Partial":"部分完成"
+,"Counts training dates, not calendar days.":"计算训练日期，而不是日历天数。"
+,"Four months per PDF page.":"每页 PDF 显示四个月。"
 }

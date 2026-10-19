@@ -940,4 +940,8 @@ export default {
 ,"Choose a valid year range.":"Geçerli bir yıl aralığı seç."
 ,"Choose up to 25 years per report.":"Rapor başına en fazla 25 yıl seç."
 ,"Complete-year reports require PDF":"Tam yıl raporları PDF biçimi gerektirir"
+,"Not Trained":"Antrenman yapılmadı"
+,"Partial":"Kısmi"
+,"Counts training dates, not calendar days.":"Takvim günlerini değil, antrenman tarihlerini sayar."
+,"Four months per PDF page.":"PDF sayfası başına dört ay."
 }

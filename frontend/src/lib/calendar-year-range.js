@@ -1,5 +1,5 @@
 // A bounded number of PDF pages keeps SVG/PDF buffers usable on mobile browsers.
-// Each landscape page is rasterized at 2x (about 22.6 MB) and released in sequence.
+// Each four-month page is rasterized at 2x (about 22.6 MB) and released in sequence.
 export const MAX_REPORT_YEARS = 25
 export const CONSISTENCY_PERIODS = [['week', 'Week'], ['month', 'Month'], ['year', 'Year'], ['full', 'Full report'], ['years', 'Complete years']]
 export function completeYearRange({ fromYear, toYear } = {}) {

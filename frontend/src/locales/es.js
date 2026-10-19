@@ -1874,4 +1874,8 @@ export default {
 ,"Choose a valid year range.":"Elige un intervalo de años válido."
 ,"Choose up to 25 years per report.":"Elige hasta 25 años por reporte."
 ,"Complete-year reports require PDF":"Los reportes de años completos requieren PDF"
+,"Not Trained":"No entrenado"
+,"Partial":"Parcial"
+,"Counts training dates, not calendar days.":"Cuenta fechas de entrenamiento, no días naturales."
+,"Four months per PDF page.":"Cuatro meses por página PDF."
 }

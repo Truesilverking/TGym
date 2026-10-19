@@ -1,4 +1,4 @@
-import { calendarState, calendarLegend } from './calendar-visual.js'
+import { calendarReportState, calendarReportLegend } from './calendar-visual.js'
 
 export const escapeCalendarText = value => String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[c]))
 export const calendarText = (x, y, value, size = 22, weight = 400, anchor = 'start', fill = '#202733') => `<text x="${x}" y="${y}" font-size="${size}" font-weight="${weight}" text-anchor="${anchor}" fill="${fill}">${escapeCalendarText(value)}</text>`
@@ -16,7 +16,7 @@ export function calendarGrid({ days, title, period = 'month', x = 48, y = 370, w
   let svg = `<g data-period="${period}" data-start="${days[0].iso}">` + calendarText(x, y, title, geometry.titleSize ?? (compact ? 20 : 26), 650, 'start', geometry.titleFill ?? '#202733')
   ;['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].forEach((day, i) => { svg += calendarText(left + i * (cell + gap) + cell / 2, y + (geometry.weekdayOffset ?? 31), t(day), geometry.weekdaySize ?? (compact ? 15 : 18), 500, 'middle', '#576172') })
   days.forEach((day, i) => {
-    const state = calendarState(day.status, kind), cx = left + (offset + i) % 7 * (cell + gap), cy = y + (geometry.daysOffset ?? 44) + Math.floor((offset + i) / 7) * (cell + gap)
+    const state = calendarReportState(day.status, kind), cx = left + (offset + i) % 7 * (cell + gap), cy = y + (geometry.daysOffset ?? 44) + Math.floor((offset + i) / 7) * (cell + gap)
     const accessible = `${day.iso}, ${t(state.label)}${day.plan?.total > 1 ? `, ${day.plan.completed}/${day.plan.total}` : ''}`
     svg += `<g data-date="${day.iso}" data-status="${day.status}" data-semantic="${state.semantic}" role="img" aria-label="${escapeCalendarText(accessible)}"><title>${escapeCalendarText(accessible)}</title>` + swatch(cx, cy, cell, state)
     svg += `<text data-day-number="true" x="${cx + cell / 2}" y="${cy + cell / 2}" dominant-baseline="central" text-anchor="middle" font-size="${geometry.daySize ?? (compact ? 16 : 21)}" font-weight="600" fill="${state.ink}">${Number(day.iso.slice(-2))}</text></g>`
@@ -24,8 +24,8 @@ export function calendarGrid({ days, title, period = 'month', x = 48, y = 370, w
   return svg + '</g>'
 }
 export function calendarSvgLegend({ y, kind = 'consistency', t = x => x }) {
-  return calendarLegend(kind).map((state, i) => {
-    const x = 48 + i % 2 * 478, top = y + Math.floor(i / 2) * 30
-    return `<g data-legend="${state.status}" data-semantic="${state.semantic}">` + swatch(x, top - 20, 22, state) + calendarText(x + 33, top - 3, t(state.label), 18) + '</g>'
+  return calendarReportLegend(kind).map((state, i) => {
+    const x = 48 + i % 2 * 464, top = y + Math.floor(i / 2) * 36
+    return `<g data-legend="${state.status}" data-semantic="${state.semantic}">` + swatch(x, top - 20, 24, state) + calendarText(x + 36, top - 1, t(state.label), 22, 500) + '</g>'
   }).join('')
 }

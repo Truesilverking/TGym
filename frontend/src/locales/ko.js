@@ -940,4 +940,8 @@ export default {
 ,"Choose a valid year range.":"올바른 연도 범위를 선택하세요."
 ,"Choose up to 25 years per report.":"보고서당 최대 25년을 선택하세요."
 ,"Complete-year reports require PDF":"전체 연도 보고서는 PDF 형식이 필요합니다"
+,"Not Trained":"운동 안 함"
+,"Partial":"부분 완료"
+,"Counts training dates, not calendar days.":"달력 날짜가 아닌 운동한 날짜를 셉니다."
+,"Four months per PDF page.":"PDF 페이지당 4개월."
 }

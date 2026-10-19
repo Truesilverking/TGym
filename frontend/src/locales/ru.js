@@ -940,4 +940,8 @@ export default {
 ,"Choose a valid year range.":"Выберите допустимый диапазон лет."
 ,"Choose up to 25 years per report.":"Выберите не более 25 лет для одного отчёта."
 ,"Complete-year reports require PDF":"Для отчётов за полные годы требуется PDF"
+,"Not Trained":"Без тренировки"
+,"Partial":"Частично"
+,"Counts training dates, not calendar days.":"Считаются даты тренировок, а не календарные дни."
+,"Four months per PDF page.":"Четыре месяца на странице PDF."
 }

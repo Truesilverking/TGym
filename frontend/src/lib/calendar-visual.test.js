@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest'
-import { CALENDAR_STATES, calendarLegend, calendarState, calendarVisualStyle } from './calendar-visual.js'
+import { CALENDAR_STATES, calendarLegend, calendarState, calendarVisualStyle, calendarReportState, calendarReportLegend } from './calendar-visual.js'
 import { calendarReportPages } from './calendar-report.js'
 import { buildStreakReport, streakReportPages } from './streak-report.js'
 import { calendarDay } from './calendar-data.js'
@@ -23,6 +23,25 @@ const lab = hex => {
 }
 
 describe('shared calendar state presentation', () => {
+  it('uses a separate fixed export palette and groups only pre-tracking presentation with rest', () => {
+    for (const kind of ['streak', 'consistency']) {
+      const states = calendarReportLegend(kind)
+      expect(states.some(state => state.status === 'untracked')).toBe(false)
+      expect(new Set(states.map(state => state.fill)).size).toBe(states.length)
+      for (const state of states) {
+        for (const color of ['fill', 'ink', 'border']) expect(state[color]).toMatch(/^#[a-f0-9]{6}$/)
+        const l = [luminance(state.fill), luminance(state.ink)].sort((a, b) => a - b)
+        expect((l[1] + .05) / (l[0] + .05)).toBeGreaterThanOrEqual(4.5)
+      }
+      expect(calendarReportState('untracked', kind)).toEqual({ ...calendarReportState('rest', kind), status: 'untracked' })
+      expect(calendarReportState('missed', kind).label).toBe('Not Trained')
+      expect(luminance(calendarReportState('pending', kind).fill)).toBeGreaterThan(luminance(calendarState('pending', kind).fill))
+      expect(luminance(calendarReportState('paused', kind).fill)).toBeLessThan(luminance(calendarReportState('missed', kind).fill))
+    }
+    // The owner explicitly retained Partial pending a future rule decision.
+    expect(calendarReportLegend().find(state => state.status === 'partial').label).toBe('Partial')
+    expect(calendarState('untracked').label).toBe('Not tracking yet')
+  })
   it('uses a perceptually separated fixed palette with readable text and no symbols or patterns', () => {
     for (const kind of ['streak', 'consistency']) {
       const states = calendarLegend(kind)
@@ -66,9 +85,9 @@ describe('shared calendar state presentation', () => {
     for (const page of pages) {
       const doc = parse(page.svg)
       expect(doc.querySelector('parsererror')).toBeNull()
-      expect(doc.querySelector('pattern, [data-symbol], circle, path')).toBeNull()
+      expect(doc.querySelector('[data-date] pattern, [data-date] [data-symbol], [data-date] circle, [data-date] path')).toBeNull()
       for (const cell of doc.querySelectorAll('[data-date]')) {
-        const status = cell.getAttribute('data-status'), legend = doc.querySelector(`[data-legend="${status}"]`)
+        const status = cell.getAttribute('data-status'), legend = doc.querySelector(`[data-semantic="${calendarReportState(status, page.svg.includes('Streak Report') ? 'streak' : 'consistency').semantic}"][data-legend]`)
         statuses.add(status)
         expect(legend).not.toBeNull()
         expect(cell.querySelector('rect').getAttribute('fill')).toBe(legend.querySelector('rect').getAttribute('fill'))
@@ -91,7 +110,7 @@ describe('shared calendar state presentation', () => {
       for (const page of [...calendarReportPages(S, now, period, format, { now }), ...streakReportPages(S, { period, anchor: now, format, now })]) {
         const doc = parse(page.svg)
         expect(doc.querySelector('parsererror')).toBeNull()
-        expect(doc.querySelector('pattern, [data-symbol], circle, path')).toBeNull()
+        expect(doc.querySelector('[data-date] pattern, [data-date] [data-symbol], [data-date] circle, [data-date] path')).toBeNull()
         for (const cell of doc.querySelectorAll('[data-date] rect')) {
           expect(cell.getAttribute('width')).toBe(cell.getAttribute('height'))
           expect(+cell.getAttribute('x')).toBeGreaterThanOrEqual(48)
@@ -118,5 +137,16 @@ describe('shared calendar state presentation', () => {
     expect(calendarDay(S, '2027-01-07', now).status).toBe('pending')
     expect(CALENDAR_STATES.rest.fill).not.toBe(CALENDAR_STATES.untracked.fill)
     expect(CALENDAR_STATES.paused.fill).not.toBe(CALENDAR_STATES.partial.fill)
+  })
+  it.each(['png', 'pdf'])('keeps the exported active flame fully filled in %s, with a neutral zero', format => {
+    const S = { trainingStartDate: '2027-01-01', workouts: [workout('first', '2027-01-01'), workout('second', '2027-01-02')] }
+    for (const [state, value] of [[S, 'active'], [{}, 'inactive']]) {
+      for (const page of streakReportPages(state, { period: 'full', anchor: now, now, format })) {
+        const doc = parse(page.svg), flame = doc.querySelector(`[data-streak-flame="${value}"]`)
+        expect(flame).not.toBeNull()
+        expect(flame.querySelector('path').getAttribute('fill')).toBe(value === 'active' ? 'url(#report-streak-fill)' : '#e3e8ef')
+        expect(flame.querySelector('clipPath, mask, [opacity]')).toBeNull()
+      }
+    }
   })
 })

@@ -3,11 +3,10 @@ import { trackingStart, validDate } from './training-history.js'
 import { isTrainingPaused } from './training-pause.js'
 import { isoOf } from './format.js'
 import { dailyPlan } from './daily-plan.js'
-import { MONTHS_LONG } from './format.js'
-import { calendarGrid, calendarSvgLegend, calendarText as text, calendarRect as rect, escapeCalendarText as esc } from './calendar-grid.js'
+import { calendarReportLayout } from './calendar-report-layout.js'
 import { calendarFullReportPages } from './calendar-full-report.js'
 import { completeYearRange } from './calendar-year-range.js'
-import { calendarYearReportPage } from './calendar-year-report.js'
+import { calendarYearReportPages } from './calendar-year-report.js'
 
 export const STREAK_PERIODS = [['this-week','This week'],['last-week','Last Week'],['this-month','This month'],['last-month','Last Month'],['week','Selected Week'],['month','Selected Month'],['year','Year'],['full','Full report'],['custom','Custom Range'],['years','Complete years']]
 export function streakRange({ period = 'this-week', anchor = new Date(), from, to, fromYear, toYear, now = new Date() } = {}) {
@@ -58,45 +57,18 @@ export function streakReportPages(S, { format = 'pdf', t = x => x, ...options } 
   if (options.period === 'years' && format !== 'pdf') throw Error('Complete-year reports require PDF')
   const report = buildStreakReport(S, options)
   if (report.range.error) throw Error(report.range.error)
-  if (options.period === 'years') return report.yearReports.map((annual, i) => calendarYearReportPage({ kind: 'streak', year: report.range.years[i], days: annual.days,
+  if (options.period === 'years') return report.yearReports.flatMap((annual, i) => calendarYearReportPages({ kind: 'streak', year: report.range.years[i], days: annual.days,
     metrics: [['Training streak', annual.current], ['Best streak', annual.best]], context: t('Streak as of {0}').replace('{0}', annual.asOf),
-    note: t('Activity days advance the streak; missed scheduled days reset it.'), emptyMessage: annual.noData ? t('No recorded activity in this period.') : '',
-    pageNumber: i + 1, pageCount: report.range.years.length, fromYear: report.range.years[0], toYear: report.range.years.at(-1), t }))
+    note: `${t('Activity days advance the streak; missed scheduled days reset it.')} ${t('Counts training dates, not calendar days.')}`, emptyMessage: annual.noData ? t('No recorded activity in this period.') : '',
+    t }))
   if (format === 'png' && report.days.length > 366) throw Error('Use PDF for ranges longer than one year.')
   if (format === 'pdf' && options.period === 'full') return calendarFullReportPages({ kind: 'streak', days: report.days, start: report.range.start, end: report.range.end,
     metrics: [['Training streak', report.current], ['Best streak', report.best]], context: t('Streak as of {0}').replace('{0}', report.asOf),
-    note: t('Activity days advance the streak; missed scheduled days reset it.'), emptyMessage: report.noData ? t('No recorded activity in this period.') : '', t })
-  // PNG keeps a single image; PDF splits dates without repeating date cells.
-  const chunks = [], pages = []
-  if (format === 'pdf' && options.period === 'year') {
-    // Four whole months per A4 page keep month labels and legends readable.
-    for (let month=0;month<12;month+=4) chunks.push(report.days.filter(day => { const m=Number(day.iso.slice(5,7))-1; return m>=month&&m<month+4 }))
-  } else {
-    const size = format === 'png' ? report.days.length : 42
-    for (let first=0;first<report.days.length;first+=size) chunks.push(report.days.slice(first,first+size))
-  }
-  for (const [first, days] of chunks.entries()) {
-    const week=(options.period || 'this-week').endsWith('week')
-    const months = new Map()
-    for (const day of days) { const key=week ? 'week' : day.iso.slice(0,7); if (!months.has(key)) months.set(key, []); months.get(key).push(day) }
-    const groups=[...months.values()], overview=format==='png' && groups.length>2
-    const cols=overview?3:groups.length>1?2:1, width=overview?280:cols===2?424:904, stride=overview?309:478
-    const rowHeight=overview?300:cols===2?430:week?170:730
-    const height=Math.max(680,350+Math.ceil(groups.length/cols)*rowHeight+180)
-    let svg=`<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="${height}" viewBox="0 0 1000 ${height}" role="img" aria-label="${esc(t('Streak Report'))}">${rect(0,0,1000,height,'#ffffff',0)}<g font-family="Arial, sans-serif">`
-    svg+=text(48,60,'TGym',28)+text(48,112,t('Streak Report'),36)+text(48,150,report.range.start+' – '+report.range.end)
-    if (!first) svg+=text(48,194,t('Streak as of {0}').replace('{0}',report.asOf))+text(48,232,t('Training streak')+': '+report.current+' · '+t('Best streak')+': '+report.best,26)
-    svg+=text(48,272,t('Activity days advance the streak; missed scheduled days reset it.'),17)
-    if (report.noData && !first) svg+=text(48,299,t('No recorded activity in this period.'),17)
-    groups.forEach((days,i)=>{
-      const date=new Date(days[0].iso+'T12:00:00'), title=week?`${days[0].iso} - ${days.at(-1).iso}`:`${t(MONTHS_LONG[date.getMonth()])} ${date.getFullYear()}`
-      svg+=calendarGrid({days,title,period:week?'week':'month',x:48+i%cols*stride,y:350+Math.floor(i/cols)*rowHeight,width,kind:'streak',t})
-    })
-    svg+=calendarSvgLegend({y:height-115,kind:'streak',t})
-    svg+=text(952,height-26,`${pages.length+1} / ${chunks.length}`,15,400,'end','#576172')
-    pages.push({svg:svg+'</g></svg>',width:1000,height})
-  }
-  return pages
+    note: `${t('Activity days advance the streak; missed scheduled days reset it.')} ${t('Counts training dates, not calendar days.')}`, emptyMessage: report.noData ? t('No recorded activity in this period.') : '', t })
+  return calendarReportLayout({ kind: 'streak', days: report.days, start: report.range.start, end: report.range.end,
+    metrics: [['Training streak', report.current], ['Best streak', report.best]], context: t('Streak as of {0}').replace('{0}', report.asOf),
+    note: `${t('Activity days advance the streak; missed scheduled days reset it.')} ${t('Counts training dates, not calendar days.')}`,
+    emptyMessage: report.noData ? t('No recorded activity in this period.') : '', format, week: (options.period || 'this-week').endsWith('week'), t })
 }
 export function streakFilename(options = {}) {
   const range=streakRange(options)

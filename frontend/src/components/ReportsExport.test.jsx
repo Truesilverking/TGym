@@ -59,7 +59,7 @@ it.each(['streak','consistency'])('forwards complete-year settings from %s into 
  change(inputs[0],'');expect(button('Download Selected').disabled).toBe(true)
  expect(scope.querySelector('[role="alert"]').textContent).toBe('Choose a valid year range.')
  change(inputs[0],'2024');change(inputs[1],'2026')
- expect(scope.textContent).toContain('One PDF page per year.')
+ expect(scope.textContent).toContain('Four months per PDF page.')
  await act(async()=>button('Download Selected').click())
  expect(mock.build.mock.calls[0][1]).toEqual([id])
  expect(mock.build.mock.calls[0][2][id]).toMatchObject({period:'years',fromYear:'2024',toYear:'2026'})

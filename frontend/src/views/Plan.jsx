@@ -84,8 +84,10 @@ export default function Plan() {
           const routines = routineIds(S.week[d]).map(id=>S.routines.find(x=>x.id===id)).filter(Boolean)
           const r = routines[0]
           return <div key={d} className="item" onClick={() => dayAssignSheet(d)}>
+            <button type="button" className="week-schedule-open" onClick={e => { e.stopPropagation(); dayAssignSheet(d) }}>
             <div className="grow"><div className="tt">{t(DAYN[d])}</div>{routines.length>1 && <div className="ss schedule-names">{routines.map(r=>r.name).join(' · ')}</div>}</div>
             {r ? <span className="tag acc"><Icon name={glyphOf(r.emoji)} />{routines.length>1 ? t('{0} activities',routines.length) : r.name}</span> : <span className="tag">{t('Rest')}</span>}
+            </button>
             {r && <button className="iconbtn" aria-label={t('Muscles trained')} onClick={e=>{e.stopPropagation();routineMuscleSheet(r.id)}}><Icon name="info" /></button>}
             <Icon name="chevronRight" className="chev" /></div>
         })}

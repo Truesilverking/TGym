@@ -82,8 +82,10 @@ function ConfirmDialog({ title, message, confirmText, cancelText, danger, onConf
 export function confirmSheet(opts) {
   let decided = false
   ui().openSheet(close => <ConfirmDialog {...opts} close={close} onConfirm={() => {
+    if (decided) return
     decided = true
-    opts.onConfirm?.()
+    try { opts.onConfirm?.() }
+    catch (error) { decided = false; throw error }
   }} />, { kind: 'center', onClose: () => { if (!decided) { decided = true; opts.onCancel?.() } } })
 }
 

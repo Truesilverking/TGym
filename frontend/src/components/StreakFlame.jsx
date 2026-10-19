@@ -1,7 +1,6 @@
 import { useId } from 'react'
 import { streakVisual } from '../lib/streak-visual.js'
-
-const PATH = 'M12 20.4c3.2 0 5.4-2.1 5.4-5.1 0-3.9-3.4-5.6-2.6-9.8-2.5.8-4 2.9-4 5.1 0 1-.5 1.6-1.2 1.6-.8 0-1.2-.7-1.2-1.8-1.1 1.2-1.8 2.9-1.8 4.9 0 3 2.2 5.1 5.4 5.1Z'
+import { STREAK_FLAME_PATH as PATH } from '../lib/streak-flame-path.js'
 
 export default function StreakFlame({ value = 0, className = '' }) {
   const id = 'streak-fill-' + useId().replaceAll(':', '')

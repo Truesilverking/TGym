@@ -17,7 +17,7 @@ import { loadStarterPlan, confirmSheet, importFromApp, equipmentProfileSheet, pl
 import Icon from '../components/Icon.jsx'
 import { Section, Row, SelectRow, Switch, Segmented, Button, TextField } from '../components/ui.jsx'
 import { biometricEnabled, checkDeviceBiometry, deviceLockEnabled, enrollDeviceBiometry, removeDevicePin, setBiometricEnabled, setDevicePin, verifyDevicePin } from '../lib/app-lock.js'
-import { canUndoImport, consumeImportUndo, saveImportUndo } from '../lib/import-undo.js'
+import { canUndoImport, restoreImportUndo, saveImportUndo } from '../lib/import-undo.js'
 import { parseTGymJson } from '../lib/json-import.js'
 import { createBackup } from '../lib/backup.js'
 import { convertMeasurementState, convertWeightState } from '../lib/unit-conversion.js'
@@ -343,7 +343,10 @@ export default function Settings() {
       <Row icon="folder" iconTint="var(--blue)" title={t('Backup')} accessory="chevron" onClick={() => useUI.getState().openSheet(() => <BackupSheet onExport={doExport} onImport={() => authorize(() => fileRef.current?.click())} />)} />
       <Row icon="cloud" iconTint="var(--blue)" title={t('Restore')} subtitle={t('Back up, synchronize or restore your TGym data.')} accessory="chevron" onClick={() => openRestoreSheet(authorize)} />
       <Row icon="folder" iconTint="var(--acc)" title={t('Load Routine')} subtitle={t('Create, import or export routines from one place.')} accessory="chevron" onClick={openLoadRoutine} />
-      {canUndoImport() && <Row icon="reset" iconTint="var(--orange)" title={t('Undo last import')} subtitle={t('Available until this app session ends.')} accessory="chevron" onClick={() => confirmSheet({ title: t('Undo last import?'), message: t('Restores the data that was present immediately before the import.'), confirmText: t('Restore'), onConfirm: () => { const previous = consumeImportUndo(); if (previous) { replaceState(previous, true); toast(t('Import undone')) } } })} />}
+      {canUndoImport() && <Row icon="reset" iconTint="var(--orange)" title={t('Undo last import')} subtitle={t('Available until this app session ends.')} accessory="chevron" onClick={() => confirmSheet({ title: t('Undo last import?'), message: t('Restores the data that was present immediately before the import.'), confirmText: t('Restore'), onConfirm: () => {
+        try { if (restoreImportUndo(replaceState)) toast(t('Import undone')) }
+        catch { toast(t('Could not save. Check available storage and try again.')) }
+      } })} />}
       <Row icon="trash" iconTint="var(--red)" title={t('Reset everything')} danger onClick={() => authorize(() => confirmSheet({ title: t('Reset everything?'), message: t('Deletes your plan, workouts and body weight on this device. This cannot be undone.'), confirmText: t('Delete everything'), danger: true, onConfirm: () => { replaceState(JSON.parse(JSON.stringify(DEF)), true); nav('/home'); toast(t('All data reset')) } }))} />
     </Section>
 

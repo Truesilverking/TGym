@@ -943,4 +943,8 @@ export default { ...english, ...PT_TRANSLATIONS,
 ,"Choose a valid year range.":"Escolhe um intervalo de anos válido."
 ,"Choose up to 25 years per report.":"Escolhe até 25 anos por relatório."
 ,"Complete-year reports require PDF":"Os relatórios de anos completos requerem PDF"
+,"Not Trained":"Não treinado"
+,"Partial":"Parcial"
+,"Counts training dates, not calendar days.":"Conta datas de treino, não dias do calendário."
+,"Four months per PDF page.":"Quatro meses por página PDF."
 }

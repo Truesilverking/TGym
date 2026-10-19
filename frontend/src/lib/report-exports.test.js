@@ -67,20 +67,19 @@ it('routes combined selection through the existing Streak and Consistency page b
  expect(text).toContain('Streak Report');expect(text).toContain('Consistency Report')
  expect(text).not.toContain('Progress Report');expect(text).not.toContain('Body measurements')
 })
-it('keeps complete-year filters and landscape geometry in independent and mixed combined exports',async()=>{
+it('keeps complete-year filters and readable pagination in independent and mixed combined exports',async()=>{
  const years={period:'years',fromYear:'2024',toYear:'2026',anchor:'invalid',format:'png'},before=structuredClone(S)
  for(const id of ['streak','consistency']){
   const pages=await buildDashboardReportPages(id,S,years,{now})
-  expect(pages).toHaveLength(3);expect(pages.every(page=>page.orientation==='landscape'&&page.width>page.height)).toBe(true)
+  expect(pages).toHaveLength(9);expect(pages.every(page=>!page.orientation&&page.width<page.height)).toBe(true)
   const file=await buildReportFile(id,S,years,{now})
   expect(file.name).toBe(`TGym-${id==='streak'?'Streak':'Consistency'}-Years-2024_2026.pdf`)
   expect(file.blob.type).toBe('application/pdf')
  }
  await buildDashboardReports(S,['streak','consistency'],{streak:years,consistency:{period:'full'}},{now})
  const pages=reportPagesFile.mock.calls.at(-1)[0]
- expect(pages).toHaveLength(5)
- expect(pages.slice(0,3).every(page=>page.orientation==='landscape')).toBe(true)
- expect(pages.slice(3).every(page=>!page.orientation||page.orientation==='portrait')).toBe(true)
+ expect(pages).toHaveLength(12)
+ expect(pages.every(page=>!page.orientation&&page.width<page.height)).toBe(true)
  expect(S).toEqual(before)
 })
 
