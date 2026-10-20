@@ -53,7 +53,6 @@ export default function RoutineEdit() {
   const missingCount = profile ? r.ex.filter(e => !exAvailable(S, exOr(e.id))).length : 0
 
   return <div className="narrow routine-edit">
-    <Button size="sm" onClick={()=>openActivityEditor({routineId:id})}>{t('Add activity')}</Button>
     <div className="hdr">
       <button className="iconbtn" onClick={() => nav('/plan')} aria-label={t('Routine')}><Icon name="chevronLeft" /></button>
       <div style={{ flex: 1, minWidth: 0, margin: '0 12px' }}>
@@ -67,12 +66,6 @@ export default function RoutineEdit() {
       <SelectRow icon="chartLine" title={t('Progression')} sheetTitle={t('Progression')}
         value={r.prog || 'linear'} onChange={v => update(s => { s.routines.find(x => x.id === id).prog = v })}
         options={POLICIES_FOR.reps.map(p => ({ value: p, label: t(POLICY_NAME[p]), subtitle: t(POLICY_DESC[p]) }))} />
-    </div>
-    <div className="small dim" style={{ margin: '-10px 2px 16px' }}>
-      {t('Applies to every exercise in this routine that does not set its own rule.')}
-    </div>
-    <div className="sect-b" style={{ marginBottom: 16 }}>
-      <Button onClick={()=>routineMuscleSheet(r.id)}>{t('Muscles trained')}</Button>
       <SelectRow icon="timer" title={t('Rest between sets')} value={r.restSec ?? ''} onChange={v => update(s => { const x = s.routines.find(x => x.id === id); if (v === '') delete x.restSec; else x.restSec = v })}
         options={[{ value: '', label: t('Follow global setting') }, ...[0, 30, 45, 60, 90, 120, 150, 180, 240, 300].map(v => ({ value: v, label: v ? v + 's' : t('Off') }))]} />
       <SelectRow icon="link" title={t('Rest after a superset round')} value={r.supersetRoundRestSec ?? ''} onChange={v => update(s => { const x = s.routines.find(x => x.id === id); if (v === '') delete x.supersetRoundRestSec; else x.supersetRoundRestSec = v })}
@@ -130,7 +123,10 @@ export default function RoutineEdit() {
       const load = loadOfRoutine(r)
       const { worked } = rankOf(load)
       return <div className="card" style={{ marginTop: 12 }}>
-        <h2>{t('What this session hits')}</h2>
+        <div className="row between" style={{ marginBottom: 8 }}>
+          <h2 style={{ margin: 0 }}>{t('What this session hits')}</h2>
+          <Button size="sm" variant="tinted" icon="info" onClick={() => routineMuscleSheet(r.id)}>{t('Muscles trained')}</Button>
+        </div>
         <BodyMap load={load} body={S.body} />
         <div className="mchips">
           {worked.slice(0, 6).map(m => <span key={m} className="mchip">{t(MUSCLE_NAME[m])}</span>)}
@@ -138,8 +134,11 @@ export default function RoutineEdit() {
       </div>
     })()}
 
-    <div className="small dim row" style={{ margin: '10px 2px', gap: 5 }}><Icon name="link" style={{ fontSize: 13 }} />{t('Tap the link button on an exercise to superset it with the one above — you’ll do them back-to-back.')}</div>
-    <Button variant="primary" onClick={() => exercisePicker(ex => exConfigSheet(ex, null, cfg => edit(x => { x.push({ id: ex.id, ...cfg }) }), null, r))} icon="plus">{t('Add exercise')}</Button>
+    <div style={{ height: 12 }} />
+    <div className="row" style={{ gap: 8 }}>
+      <Button variant="primary" style={{ flex: 2 }} onClick={() => exercisePicker(ex => exConfigSheet(ex, null, cfg => edit(x => { x.push({ id: ex.id, ...cfg }) }), null, r))} icon="plus">{t('Add exercise')}</Button>
+      <Button style={{ flex: 1 }} onClick={() => openActivityEditor({ routineId: id })}>{t('Add activity')}</Button>
+    </div>
     <div style={{ height: 10 }} />
     <Button variant="danger" onClick={() => confirmSheet({
       title: t('Delete routine?'), message: t('“{0}” and its exercises will be removed.', r.name), confirmText: t('Delete'), danger: true,

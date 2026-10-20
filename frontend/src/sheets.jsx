@@ -1875,8 +1875,8 @@ function FinishSummary({ w, prs, e1prs = [], presentation, close }) {
   return <div className="workout-complete-summary" style={{ textAlign: 'center', padding: '8px 0' }}>
     <StreakMilestoneCelebration claim={!dismissed && validClaim ? claim : null} onDismiss={() => setDismissed(true)} />
     <WorkoutSummaryStreak streak={streak} />
-    <div style={{ fontSize: 44, display: 'flex', justifyContent: 'center', color: 'var(--acc)' }}><Icon name="trophy" /></div>
-    <h3 style={{ margin: '8px 0' }}>{t(['abandoned','auto_completed'].includes(w.finishReason) ? 'Session recovered' : 'Workout complete!')}</h3>
+    <div className="trophy-icon-wrap"><Icon name="trophy" /></div>
+    <h3 style={{ margin: '8px 0 14px', fontSize: 24, fontWeight: 700 }}>{t(['abandoned','auto_completed'].includes(w.finishReason) ? 'Session recovered' : 'Workout complete!')}</h3>
     {['abandoned','auto_completed'].includes(w.finishReason) && <><p className="small muted">{t('Saved using recorded training time. Review or correct the duration in History.')}</p><Button onClick={()=>{close();workoutDetailSheet(w)}}>{t('Edit duration')}</Button></>}
     <div className="tiles" style={{ textAlign: 'left' }}>
       <div className="tile"><div className="l">{t('Duration')}</div><div className="v" style={{ fontSize: '1.1rem' }}>{fmtDur(workoutElapsedMs(w))}</div></div>

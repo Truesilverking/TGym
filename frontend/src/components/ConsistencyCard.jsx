@@ -14,7 +14,6 @@ export default function ConsistencyCard({ S, onTimes, onExport, now = new Date()
       </dl>
       <div className="consistency-track" role={percent == null ? undefined : 'meter'} aria-label={percent == null ? undefined : t('Completion')} aria-valuemin={percent == null ? undefined : 0} aria-valuemax={percent == null ? undefined : 100} aria-valuenow={percent ?? undefined} aria-hidden={percent == null ? true : undefined}><span style={{width:`${percent ?? 0}%`}} /></div>
       {percent == null && <p className="small muted consistency-empty">{t('No scheduled sessions to evaluate yet.')}</p>}
-      <p className="small muted">{t('Activity counts once per day, including planned and extra sessions.')}</p>
     </div>
     <dl className="consistency-secondary consistency-metrics">{[['Planned',stats.planned],['Missed',stats.missed],['Extra',stats.extra]].map(([label,value])=><div key={label}><dt>{t(label)}</dt><dd>{value}</dd></div>)}</dl>
   </section>

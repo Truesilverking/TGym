@@ -27,23 +27,23 @@
 
 :root {
   color-scheme:dark;
-  /* surfaces — dark is the default */
-  --bg:        #000000;
-  --bg-el:     #0e0e10;   /* elevated backdrop (sheets, bars) */
-  --surface:   #1c1c1e;   /* card / grouped-list fill */
-  --surface-2: #2c2c2e;   /* pressed + nested fill */
-  --surface-3: #3a3a3c;   /* controls (segmented track, switch off) */
+  /* surfaces — dark is the default (modern deep slate obsidian) */
+  --bg:        #090a10;
+  --bg-el:     rgba(18, 21, 32, 0.88);   /* elevated backdrop with glassmorphism */
+  --surface:   #131622;   /* card / grouped-list fill */
+  --surface-2: #1c2133;   /* pressed + nested fill */
+  --surface-3: #262c44;   /* controls (segmented track, switch off) */
 
   /* text */
-  --label:     #ffffff;
-  --label-2:   rgba(235,235,245,.74);
-  --label-3:   rgba(235,235,245,.66);
-  --label-4:   rgba(235,235,245,.18);
+  --label:     #f8fafc;
+  --label-2:   rgba(241, 245, 249, 0.74);
+  --label-3:   rgba(241, 245, 249, 0.54);
+  --label-4:   rgba(241, 245, 249, 0.18);
 
   /* lines */
-  --sep:       rgba(84,84,88,.60);
-  --sep-op:    rgba(84,84,88,.34);   /* for edges sitting over blur */
-  --hair:      .5px;
+  --sep:       rgba(255, 255, 255, 0.08);
+  --sep-op:    rgba(255, 255, 255, 0.05);   /* for edges sitting over blur */
+  --hair:      1px;
 
   /* Theme palette: also used for small text on tinted controls. */
   --blue:#5aa6ff; --green:#30d158; --red:#ff6961; --orange:#ff9f0a;
@@ -58,43 +58,47 @@
   --acc-line: color-mix(in srgb, var(--acc) 38%, transparent);
 
   /* geometry */
-  --r-sm:8px; --r:12px; --r-lg:16px; --r-xl:22px; --r-card:14px;
-  --pad:16px;
-  --panel-fill:linear-gradient(145deg,color-mix(in srgb,var(--label) 3%,var(--surface)),var(--surface));
-  --panel-edge:color-mix(in srgb,var(--label) 9%,transparent);
-  --panel-shadow:0 4px 16px -12px color-mix(in srgb,var(--label) 18%,transparent);
-  --control-edge:color-mix(in srgb,var(--label) 15%,transparent);
-  --space-section:24px;
-  --icon-stroke:1.7;
+  --r-sm:10px; --r:14px; --r-lg:18px; --r-xl:24px; --r-card:18px;
+  --pad:18px;
+  --panel-fill:linear-gradient(160deg, color-mix(in srgb, var(--surface-2) 40%, var(--surface)), var(--surface));
+  --panel-edge:color-mix(in srgb, var(--label) 8%, transparent);
+  --panel-shadow:0 10px 28px -10px rgba(0, 0, 0, 0.5), 0 2px 8px -2px rgba(0, 0, 0, 0.3);
+  --control-edge:color-mix(in srgb, var(--label) 14%, transparent);
+  --space-section:26px;
+  --icon-stroke:1.75;
 
   /* motion */
   --ease:cubic-bezier(.32,.72,0,1);
-  --fast:140ms; --med:220ms;
+  --fast:150ms; --med:240ms;
 
   --sab:env(safe-area-inset-bottom,0px);
   --sat:env(safe-area-inset-top,0px);
   --sal:env(safe-area-inset-left,0px);
   --sar:env(safe-area-inset-right,0px);
-  --nav-clearance:calc(88px + var(--sab));
+  --nav-clearance:calc(92px + var(--sab));
   --bottom-clearance:var(--nav-clearance);
   --available-height:100dvh;
 }
 
 :root[data-theme="light"] {
   color-scheme:light;
-  --bg:        #f2f2f7;
-  --bg-el:     #f7f7fa;
+  --bg:        #f5f7fc;
+  --bg-el:     rgba(255, 255, 255, 0.88);
   --surface:   #ffffff;
-  --surface-2: #ececef;
-  --surface-3: #e3e3e8;
+  --surface-2: #eff3fa;
+  --surface-3: #e2e8f4;
 
-  --label:     #000000;
-  --label-2:   rgba(60,60,67,.78);
-  --label-3:   rgba(60,60,67,.74);
-  --label-4:   rgba(60,60,67,.16);
+  --label:     #0f172a;
+  --label-2:   rgba(15, 23, 42, 0.74);
+  --label-3:   rgba(15, 23, 42, 0.54);
+  --label-4:   rgba(15, 23, 42, 0.15);
 
-  --sep:       rgba(60,60,67,.29);
-  --sep-op:    rgba(60,60,67,.20);
+  --sep:       rgba(15, 23, 42, 0.08);
+  --sep-op:    rgba(15, 23, 42, 0.05);
+
+  --panel-fill:#ffffff;
+  --panel-edge:rgba(15, 23, 42, 0.08);
+  --panel-shadow:0 10px 25px -8px rgba(15, 23, 42, 0.07), 0 2px 6px -1px rgba(15, 23, 42, 0.04);
 
   --blue:#0055b8; --green:#12612a; --red:#b51f18; --orange:#844800;
   --yellow:#705000; --teal:#006374; --indigo:#4846bc; --pink:#b31945;
@@ -273,6 +277,16 @@ h4.sec{
 @keyframes celebrate-pop{0%{opacity:0;transform:scale(.82)}65%{transform:scale(1.04)}100%{opacity:1;transform:none}}
 .cal-d.deload{box-shadow:inset 0 0 0 1.5px var(--purple)}.hm-c.deload{outline:1px solid var(--purple);outline-offset:-1px}
 
+/* --- finish summary celebration (Peak-End Rule) --- */
+.workout-complete-summary{position:relative;text-align:center;padding:12px 4px}
+.workout-complete-summary .trophy-icon-wrap{
+  width:76px;height:76px;margin:0 auto 12px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:38px;
+  background:radial-gradient(circle, color-mix(in srgb, var(--yellow) 22%, transparent) 0%, transparent 70%);
+  color:var(--yellow);box-shadow:0 0 28px -4px color-mix(in srgb,var(--yellow) 40%,transparent);
+  animation:celebrate-pop .6s var(--ease);
+}
+
 /* ------------------------------------------------------ inset group list -- */
 .sect{margin-bottom:var(--space-section)}
 .sect-t{
@@ -294,9 +308,10 @@ h4.sec{
 .lrow:has(.lrow-i)+.lrow:has(.lrow-i)::before{left:55px}
 .lrow.tap:active{background:var(--surface-2)}
 .lrow-i{
-  width:29px;height:29px;border-radius:7px;flex:none;font-size:18px;
+  width:34px;height:34px;border-radius:10px;flex:none;font-size:18px;
   display:flex;align-items:center;justify-content:center;
-  background:color-mix(in srgb,var(--tint,var(--acc)) 14%,var(--surface));color:var(--tint,var(--acc));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--tint,var(--acc)) 20%,transparent);
+  background:color-mix(in srgb,var(--tint,var(--acc)) 16%,var(--surface));color:var(--tint,var(--acc));
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--tint,var(--acc)) 25%,transparent);
 }
 .lrow-m{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
 .lrow-t{font-size:17px;letter-spacing:-.012em;line-height:1.25}
@@ -332,23 +347,39 @@ h4.sec{
 
 /* -------------------------------------------------------------- buttons -- */
 .btn{
-  display:inline-flex;align-items:center;justify-content:center;gap:7px;width:100%;
-  padding:14px 18px;border-radius:var(--r);font-size:17px;font-weight:600;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;
+  padding:14px 20px;border-radius:var(--r);font-size:16px;font-weight:650;
   letter-spacing:-.012em;background:var(--surface-2);color:var(--label);
-  transition:transform var(--fast) var(--ease),background var(--fast),opacity var(--fast);
+  border:1px solid var(--panel-edge);
+  box-shadow:0 2px 6px -1px rgba(0,0,0,0.15);
+  transition:transform var(--fast) var(--ease),background var(--fast),box-shadow var(--fast),opacity var(--fast);
 }
 .btn .icn{font-size:19px}
-.btn:active{transform:scale(.975)}
-.btn.primary{background:var(--acc);color:var(--on-acc)}
-.btn.primary:active{background:var(--acc-2)}
-.btn.tinted{background:var(--acc-soft);color:var(--acc)}
-.btn.danger{background:color-mix(in srgb,var(--red) 15%,transparent);color:var(--red)}
-.btn.ghost,.btn.plain{background:none;color:var(--acc);font-weight:400}
+.btn:active{transform:scale(.97)}
+.btn.primary{
+  background:linear-gradient(145deg, var(--acc), var(--acc-2));
+  color:var(--on-acc);
+  border-color:transparent;
+  box-shadow:0 4px 14px -3px color-mix(in srgb,var(--acc) 50%,transparent);
+}
+.btn.primary:active{
+  background:var(--acc-2);
+  box-shadow:0 2px 6px -1px color-mix(in srgb,var(--acc) 35%,transparent);
+}
+.btn.tinted{
+  background:var(--acc-soft);color:var(--acc);
+  border-color:color-mix(in srgb,var(--acc) 25%,transparent);
+}
+.btn.danger{
+  background:color-mix(in srgb,var(--red) 15%,transparent);color:var(--red);
+  border-color:color-mix(in srgb,var(--red) 25%,transparent);
+}
+.btn.ghost,.btn.plain{background:none;color:var(--acc);font-weight:500;border-color:transparent;box-shadow:none}
 .btn.ghost:active,.btn.plain:active{background:var(--surface-2)}
-.btn.sm{padding:8px 14px;width:auto;font-size:15px;border-radius:var(--r-sm);gap:5px}
+.btn.sm{padding:8px 14px;width:auto;font-size:14px;border-radius:var(--r-sm);gap:5px}
 .btn.sm .icn{font-size:16px}
-.btn.xs{padding:5px 10px;width:auto;font-size:13px;border-radius:7px;gap:4px}
-.btn:disabled{opacity:.32;pointer-events:none}
+.btn.xs{padding:5px 10px;width:auto;font-size:12px;border-radius:8px;gap:4px}
+.btn:disabled{opacity:.35;pointer-events:none}
 
 /* ----------------------------------------------------------- tab bar ----- */
 /* Nearly opaque, and deliberately so. At the old 72% the page read straight through the bar
@@ -358,43 +389,52 @@ h4.sec{
    the WebView recomposites the blurred region on every scroll frame, and on Android that is
    the single most expensive thing on the screen. See @supports below for the no-blur case. */
 #tabbar{
-  position:fixed;left:0;right:0;bottom:0;z-index:50;
-  display:flex;justify-content:space-around;align-items:flex-end;
-  padding:7px max(6px,var(--sar)) max(6px,var(--sab)) max(6px,var(--sal));
+  position:fixed;
+  left:max(12px,var(--sal));
+  right:max(12px,var(--sar));
+  bottom:max(10px,var(--sab));
+  max-width:560px;
+  margin:0 auto;
+  z-index:50;
+  display:flex;justify-content:space-around;align-items:center;
+  padding:8px 12px;
   background:var(--bg-el);
-  -webkit-backdrop-filter:saturate(180%) blur(10px);backdrop-filter:saturate(180%) blur(10px);
-  border-top:var(--hair) solid var(--sep-op);
+  -webkit-backdrop-filter:saturate(180%) blur(16px);backdrop-filter:saturate(180%) blur(16px);
+  border:1px solid var(--panel-edge);
+  border-radius:28px;
+  box-shadow:0 12px 32px -8px rgba(0,0,0,.5),0 4px 12px -2px rgba(0,0,0,.25);
 }
-:root[data-theme="light"] #tabbar{background:var(--bg-el)}
+:root[data-theme="light"] #tabbar{
+  background:var(--bg-el);
+  box-shadow:0 12px 30px -8px rgba(15,23,42,.12),0 4px 12px -2px rgba(15,23,42,.06);
+}
 #tabbar button{
   flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
-  color:var(--label-3);font-size:10px;font-weight:500;letter-spacing:.005em;padding-top:3px;
-  transition:color var(--fast);
+  color:var(--label-3);font-size:11px;font-weight:550;letter-spacing:.01em;padding:4px 0;
+  transition:color var(--fast),transform var(--fast);
 }
-/* The inactive tint is semi-transparent, so wherever two strokes cross inside an
-   icon (the calendar's hangers over its frame, the divider's caps on its sides)
-   the alpha doubled up and the icon read as a stack of loose layers. Carrying the
-   fade on the <svg> instead of in the stroke colour flattens the icon first and
-   fades it as one shape — and it does that for every icon, not just this one. */
-#tabbar button .icn{font-size:25px;--icon-stroke:1.65;color:var(--label)}
+#tabbar button:active{transform:scale(.92)}
+#tabbar button .icn{font-size:24px;--icon-stroke:1.75;color:var(--label);transition:transform var(--fast)}
 #tabbar button.on{color:var(--acc)}
-#tabbar button.on .icn{--icon-stroke:2;color:inherit;opacity:1}
-#tabbar button.start{margin-top:-24px}
+#tabbar button.on .icn{--icon-stroke:2.1;color:inherit;opacity:1;transform:scale(1.06)}
+#tabbar button.start{margin-top:-26px}
 #tabbar button.start .cir{
-  width:52px;height:52px;border-radius:50%;background:var(--acc);color:var(--on-acc);
+  width:52px;height:52px;border-radius:50%;
+  background:linear-gradient(145deg, var(--acc), var(--acc-2));
+  color:var(--on-acc);
   display:flex;align-items:center;justify-content:center;position:relative;
-  box-shadow:0 6px 18px -4px color-mix(in srgb,var(--acc) 55%,transparent);
-  transition:transform var(--fast) var(--ease);
+  box-shadow:0 6px 20px -3px color-mix(in srgb,var(--acc) 65%,transparent);
+  transition:transform var(--fast) var(--ease),box-shadow var(--fast) var(--ease);
 }
-#tabbar button.start:active .cir{transform:scale(.93)}
+#tabbar button.start:active .cir{transform:scale(.92);box-shadow:0 3px 10px -2px color-mix(in srgb,var(--acc) 45%,transparent)}
 #tabbar button.start .cir .icn{font-size:26px;--icon-stroke:2;color:inherit;opacity:1}
-#tabbar button.start span{color:var(--acc);font-weight:600}
+#tabbar button.start span{color:var(--acc);font-weight:650;margin-top:2px}
 /* `.cir` is itself a <span>, so the label rules above and below reach it too and
    outrank the `.cir` block — which is how the running state ended up painting an
    orange play glyph onto an orange disc. Both states restate their own colour.
    The disc is orange in either theme, so its glyph is black, not `--on-acc`. */
 #tabbar button.start .cir{color:var(--on-acc)}
-#tabbar button.start.rec .cir{background:var(--orange);color:#000;box-shadow:0 6px 18px -4px color-mix(in srgb,var(--orange) 55%,transparent)}
+#tabbar button.start.rec .cir{background:linear-gradient(145deg, #ff9f0a, #d97706);color:#000;box-shadow:0 6px 20px -3px color-mix(in srgb,var(--orange) 65%,transparent)}
 #tabbar button.start.rec span{color:var(--orange)}
 #tabbar button.start.rec .cir::after{
   content:'';position:absolute;inset:0;border-radius:50%;
@@ -418,65 +458,98 @@ h4.sec{
 }
 
 /* ------------------------------------------------------------ week strip -- */
-.week{display:flex;justify-content:space-between;gap:4px}
+.week{display:flex;justify-content:space-between;gap:6px;margin:8px 0 14px}
 .wday{
-  flex:1;text-align:center;padding:8px 2px 9px;border-radius:10px;
-  background:none;border:none;transition:background var(--fast);
+  flex:1;text-align:center;padding:10px 2px 10px;border-radius:14px;
+  background:var(--surface-2);border:1px solid transparent;
+  transition:background var(--fast),transform var(--fast),border-color var(--fast);
 }
-.wday .lbl{font-size:11px;color:var(--label-3);font-weight:500;text-transform:uppercase;letter-spacing:.03em}
+.wday:active{background:var(--surface-3);transform:scale(.96)}
+.wday .lbl{font-size:11px;color:var(--label-3);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
 .wday>span{display:block}
-.wday .num{font-size:17px;font-weight:400;margin:4px 0;letter-spacing:-.012em}
-.wday .dot{width:5px;height:5px;border-radius:50%;background:transparent;margin:0 auto}
+.wday .num{font-size:16px;font-weight:600;margin:6px 0;letter-spacing:-.015em}
+.wday .dot{width:6px;height:6px;border-radius:50%;background:transparent;margin:0 auto}
 .wday .dot.plan{background:var(--label-3)}
 .wday .dot.ovr{background:var(--orange)}
-.wday .dot.done{background:var(--acc)}
-.wday:active{background:var(--surface-2)}
+.wday .dot.done{background:var(--acc);box-shadow:0 0 8px color-mix(in srgb,var(--acc) 60%,transparent)}
+.wday.today{
+  background:color-mix(in srgb,var(--acc) 14%,var(--surface-2));
+  border-color:color-mix(in srgb,var(--acc) 38%,transparent);
+}
 .wday.today .num {
-  background: var(--acc);color: var(--on-acc);font-weight:600;
-  width:31px;height:31px;border-radius:50%;display:flex;align-items:center;
+  background: var(--acc);color: var(--on-acc);font-weight:700;
+  width:28px;height:28px;border-radius:50%;display:flex;align-items:center;
   justify-content:center;margin:2px auto;
+  box-shadow:0 3px 10px -2px color-mix(in srgb,var(--acc) 50%,transparent);
 }
 
 /* ----------------------------------------------------------------- list -- */
-.list{display:flex;flex-direction:column;gap:8px}
+.list{display:flex;flex-direction:column;gap:10px}
 .item{
-  display:flex;align-items:center;gap:12px;background:var(--surface);
-  border:1px solid var(--panel-edge);border-radius:var(--r-card);padding:12px;min-height:64px;
-  transition:background var(--fast);text-align:left;width:100%;
+  display:flex;align-items:center;gap:14px;background:var(--surface);
+  border:1px solid var(--panel-edge);border-radius:var(--r-card);padding:14px;min-height:64px;
+  box-shadow:0 2px 8px -2px rgba(0,0,0,0.15);
+  transition:transform var(--fast) var(--ease),background var(--fast),box-shadow var(--fast);
+  text-align:left;width:100%;
 }
-.item:active{background:var(--surface-2)}
-.thumb{width:50px;height:50px;border-radius:9px;object-fit:cover;background:#fff;flex:none}
+.item:active{transform:scale(.985);background:var(--surface-2)}
+.thumb{
+  width:52px;height:52px;border-radius:12px;object-fit:contain;padding:3px;
+  background:#fff;flex:none;box-shadow:0 2px 6px rgba(0,0,0,.15);
+  image-rendering:-webkit-optimize-contrast;
+  filter:contrast(1.07) saturate(1.06);
+}
 .thumb-x{
-  display:flex;align-items:center;justify-content:center;font-size:21px;
+  display:flex;align-items:center;justify-content:center;font-size:22px;padding:0;filter:none;
   background:var(--surface-2);color:var(--label-2);
 }
-.item .tt{font-size:16px;font-weight:500;overflow-wrap:anywhere;line-height:1.25;letter-spacing:-.009em}
-.item .ss{color:var(--label-2);font-size:13px;margin-top:2px}
+.library-list>.item:nth-child(n+12){
+  content-visibility:auto;
+  contain-intrinsic-size:auto none auto 72px;
+}
+.sect:nth-of-type(n+4){
+  content-visibility:auto;
+  contain-intrinsic-size:auto none auto 220px;
+}
+@supports (content-visibility:hidden){
+  [data-stats-section][hidden]{
+    display:block;
+    content-visibility:hidden;
+  }
+}
+.item .tt{font-size:16px;font-weight:600;overflow-wrap:anywhere;line-height:1.25;letter-spacing:-.01em}
+.item .ss{color:var(--label-2);font-size:13px;margin-top:3px}
 .item .grow{flex:1;min-width:0}
-.routine-exercise-open{display:flex;align-items:center;gap:12px;flex:1;min-width:0;text-align:left;min-height:44px}
+.routine-exercise-open{display:flex;align-items:center;gap:14px;flex:1;min-width:0;text-align:left;min-height:44px}
 .routine-exercise-controls .iconbtn{min-width:44px;min-height:44px}
 .routine-exercise-controls .iconbtn:disabled{opacity:.35}
-.chev{color:var(--label);flex:none;font-size:15px;--icon-stroke:2.4}
+.chev{color:var(--label-3);flex:none;font-size:15px;--icon-stroke:2.4}
 .tag{
-  display:inline-flex;align-items:center;gap:3px;background:var(--surface-2);
-  color:var(--label-2);border-radius:6px;padding:3px 7px;font-size:12px;
-  font-weight:500;text-transform:capitalize;
+  display:inline-flex;align-items:center;gap:4px;background:var(--surface-2);
+  color:var(--label-2);border-radius:99px;padding:4px 10px;font-size:12px;
+  font-weight:600;text-transform:capitalize;letter-spacing:.01em;
+  border:1px solid var(--panel-edge);
 }
-.tag.acc{background:var(--acc-soft);color:var(--acc)}
+.tag.acc{background:var(--acc-soft);color:var(--acc);border-color:color-mix(in srgb,var(--acc) 30%,transparent)}
 
 /* ---------------------------------------------------------------- chips -- */
 .chips{
-  display:flex;gap:7px;overflow-x:auto;padding-bottom:2px;
+  display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;
   scrollbar-width:none;-webkit-overflow-scrolling:touch;
 }
 .chips::-webkit-scrollbar{display:none}
 .chip{
-  flex:none;padding:6px 13px;border-radius:99px;background:var(--surface);
-  font-size:14px;font-weight:400;color:var(--label);text-transform:capitalize;
-  letter-spacing:-.006em;transition:background var(--fast),color var(--fast);
+  flex:none;padding:7px 15px;border-radius:99px;background:var(--surface);
+  border:1px solid var(--panel-edge);
+  font-size:14px;font-weight:500;color:var(--label);text-transform:capitalize;
+  letter-spacing:-.006em;transition:transform var(--fast) var(--ease),background var(--fast),color var(--fast),border-color var(--fast);
 }
-.chip:active{background:var(--surface-2)}
-.chip.on{background:var(--acc);color:var(--on-acc);font-weight:500}
+.chip:active{transform:scale(.95);background:var(--surface-2)}
+.chip.on{
+  background:linear-gradient(135deg,var(--acc),var(--acc-2));
+  color:var(--on-acc);font-weight:650;border-color:transparent;
+  box-shadow:0 3px 10px -2px color-mix(in srgb,var(--acc) 45%,transparent);
+}
 
 /* =========================== CONTROLS ==================================== */
 
@@ -638,27 +711,47 @@ h4.sec{
 
 /* --- checkbox --- */
 .chk,.ck{
-  width:30px;height:30px;border-radius:50%;flex:none;
+  width:32px;height:32px;border-radius:50%;flex:none;
   display:flex;align-items:center;justify-content:center;
-  background:none;box-shadow:inset 0 0 0 1.8px var(--label-4);color:transparent;
+  background:var(--surface-2);box-shadow:inset 0 0 0 1.5px var(--panel-edge);color:transparent;
   transition:background var(--fast),box-shadow var(--fast),color var(--fast),transform var(--fast);
 }
-.chk .icn{font-size:16px;--icon-stroke:2.6}
-.chk.on{background:var(--acc);box-shadow:none;color:var(--on-acc)}
+.chk .icn{font-size:17px;--icon-stroke:2.6}
+.chk.on{
+  background:linear-gradient(135deg,var(--acc),var(--acc-2));
+  box-shadow:0 3px 10px -2px color-mix(in srgb,var(--acc) 55%,transparent);
+  color:var(--on-acc);
+}
 .chk:active,.ck:active{transform:scale(.9)}
 .ck svg{
   width:16px;height:16px;stroke:transparent;fill:none;stroke-width:2.6;
   stroke-linecap:round;stroke-linejoin:round;transition:stroke var(--fast);
 }
-.ck.on{background:var(--acc);box-shadow:none}
+.ck.on{
+  background:linear-gradient(135deg,var(--acc),var(--acc-2));
+  box-shadow:0 3px 10px -2px color-mix(in srgb,var(--acc) 55%,transparent);
+}
 .ck.on svg{stroke:var(--on-acc)}
 
 /* ------------------------------------------------------------- workout --- */
 .wprog{height:4px;background:var(--surface-2);border-radius:99px;overflow:hidden;margin-bottom:16px}
 .wprog i{display:block;height:100%;background:var(--acc);border-radius:99px;transition:width var(--med) var(--ease)}
-.exmedia{position:relative;border-radius:var(--r-lg);overflow:hidden;background:#fff;margin-bottom:12px}
-.exmedia img,.exmedia .media-placeholder{width:100%;height:320px;object-fit:contain;display:block}
-.exmedia .media-placeholder{display:flex;align-items:center;justify-content:center;background:var(--surface-2);color:var(--label-2);font-size:40px}
+.exmedia{
+  position:relative;border-radius:var(--r-lg);overflow:hidden;
+  background:#fff;margin-bottom:12px;
+  border:1px solid var(--panel-edge);
+  box-shadow:inset 0 0 0 1px rgba(15,23,42,.06),0 8px 24px -6px rgba(0,0,0,.22);
+}
+.exmedia img,.exmedia .media-placeholder{
+  width:100%;height:260px;max-width:360px;margin:0 auto;padding:10px;
+  object-fit:contain;display:block;
+  image-rendering:-webkit-optimize-contrast;
+  filter:contrast(1.05) saturate(1.06);
+}
+.exmedia .media-placeholder{
+  max-width:none;padding:0;filter:none;
+  display:flex;align-items:center;justify-content:center;background:var(--surface-2);color:var(--label-2);font-size:40px;
+}
 .exmedia .gifhint,.exmedia .giftoggle{
   position:absolute;bottom:9px;display:inline-flex;align-items:center;gap:4px;
   background:rgba(0,0,0,.45);color:#fff;border-radius:99px;padding:5px 11px;
@@ -670,8 +763,8 @@ h4.sec{
 .exmedia .gifhint .icn,.exmedia .giftoggle .icn{font-size:13px}
 /* superset: both exercises are on screen together, so the animations have to give way —
    at 180px you had to scroll a full screen between two exercises done back-to-back */
-.exmedia.compact img,.exmedia.compact .media-placeholder{height:120px}
-.exmedia.mini img,.exmedia.mini .media-placeholder{height:84px}
+.exmedia.compact img,.exmedia.compact .media-placeholder{height:132px;padding:6px}
+.exmedia.mini img,.exmedia.mini .media-placeholder{height:88px;padding:4px}
 
 .sethead{
   display:grid;grid-template-columns:24px minmax(0,1.4fr) minmax(0,1fr) 30px 30px;align-items:center;gap:8px;padding:0 0 6px;
@@ -973,21 +1066,30 @@ h4.sec{
 .mchip.miss{background:color-mix(in srgb,var(--orange) 16%,transparent);color:var(--orange)}
 
 /* --- stat tiles --- */
-.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
-.tile{background:var(--surface);border-radius:var(--r-card);padding:14px}
-.tile .l{
-  color:var(--label-2);font-size:13px;font-weight:400;letter-spacing:-.004em;
-  text-transform:none;display:flex;align-items:center;gap:5px;
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.tile{
+  background:var(--surface);border:1px solid var(--panel-edge);border-radius:var(--r-card);
+  padding:16px;box-shadow:0 3px 10px -2px rgba(0,0,0,0.18);
+  transition:transform var(--fast) var(--ease),background var(--fast);
 }
-.tile .l .icn{font-size:14px;color:var(--label)}
-.tile .v{font-size:26px;font-weight:600;letter-spacing:-.026em;margin-top:5px;line-height:1.1}
-.tile.tappable:active{background:var(--surface-2)}
+.tile .l{
+  color:var(--label-2);font-size:13px;font-weight:500;letter-spacing:-.004em;
+  text-transform:none;display:flex;align-items:center;gap:6px;
+}
+.tile .l .icn{font-size:15px;color:var(--acc)}
+.tile .v{
+  font-size:26px;font-weight:700;letter-spacing:-.026em;margin-top:6px;line-height:1.1;
+  font-variant-numeric:tabular-nums;color:var(--label);
+}
+.tile.tappable:active{background:var(--surface-2);transform:scale(.98)}
 
 /* --- PR badge --- */
 .pr{
-  display:inline-flex;align-items:center;gap:4px;
-  background:color-mix(in srgb,var(--yellow) 18%,transparent);color:var(--yellow);
-  border-radius:6px;padding:3px 8px;font-size:12px;font-weight:500;
+  display:inline-flex;align-items:center;gap:5px;
+  background:color-mix(in srgb,var(--yellow) 16%,transparent);color:var(--yellow);
+  border:1px solid color-mix(in srgb,var(--yellow) 30%,transparent);
+  border-radius:99px;padding:4px 10px;font-size:12px;font-weight:600;
+  box-shadow:0 2px 8px -2px color-mix(in srgb,var(--yellow) 30%,transparent);
 }
 .pr .icn{font-size:13px}
 
@@ -1073,14 +1175,17 @@ h4.sec{
 
 /* --- home: today's session row --- */
 .today-row{
-  display:flex;align-items:center;justify-content:space-between;gap:10px;
-  margin-top:12px;padding:12px 14px;border-radius:var(--r);background:var(--surface-2);
-  transition:background var(--fast);width:100%;text-align:left;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  margin-top:14px;padding:14px 16px;border-radius:var(--r);
+  background:linear-gradient(145deg,var(--surface-2),color-mix(in srgb,var(--surface-3) 70%,var(--surface-2)));
+  border:1px solid var(--panel-edge);box-shadow:0 4px 14px -4px rgba(0,0,0,0.3);
+  transition:transform var(--fast) var(--ease),background var(--fast),box-shadow var(--fast);
+  width:100%;text-align:left;color:inherit;font:inherit;
 }
-.today-row:active{background:var(--surface-3)}
-.today-row .lbl2{font-size:11px;font-weight:500;letter-spacing:.03em;text-transform:uppercase;color:var(--label-3)}
+.today-row:active{transform:scale(.985);background:var(--surface-3)}
+.today-row .lbl2{font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--label-2)}
 .today-row .ttl{
-  font-weight:500;font-size:17px;line-height:1.25;text-transform:capitalize;
+  font-weight:600;font-size:17px;line-height:1.25;text-transform:capitalize;
   letter-spacing:-.012em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;
 }
 
@@ -1245,7 +1350,8 @@ body.framegym-private::after{
 .duration-readings > div:first-child dd { color:var(--acc); }
 .duration-readings > div:last-child { text-align:end; }
 .duration-track { position:relative; height:5px; border-radius:var(--r-sm); background:var(--surface-3); margin:20px 3px 4px; }
-.duration-track > span,.consistency-track > span { display:block; height:100%; background:var(--acc); border-radius:inherit; }
+.duration-track > span { display:block; height:100%; background:var(--acc); border-radius:inherit; }
+.consistency-track > span { display:block; height:100%; background:linear-gradient(90deg, color-mix(in srgb, var(--acc) 75%, transparent), var(--acc)); border-radius:inherit; box-shadow:0 0 10px color-mix(in srgb, var(--acc) 50%, transparent); }
 .duration-track > i { position:absolute; top:50%; width:3px; height:11px; border-radius:2px; background:var(--label); transform:translate(-50%,-50%); box-shadow:0 0 0 2px var(--surface); }
 .duration-legend { display:flex; align-items:center; gap:9px; line-height:1.5; margin:12px 0 0; }
 .duration-legend-key { flex:none; width:20px; height:4px; background:var(--acc); position:relative; border-radius:2px; }
@@ -1261,7 +1367,7 @@ body.framegym-private::after{
 .consistency-primary { grid-template-columns:repeat(2,minmax(0,1fr)); }
 .consistency-primary > div:last-child { text-align:end; }
 .consistency-primary dd { font-size:26px; color:var(--acc); }
-.consistency-track { height:6px; background:var(--surface-3); border-radius:var(--r-sm); overflow:hidden; margin-top:16px; }
+.consistency-track { height:8px; background:var(--surface-3); border-radius:99px; overflow:hidden; margin-top:16px; }
 .consistency-secondary { grid-template-columns:repeat(3,minmax(0,1fr)); margin-top:14px; gap:0; }
 .consistency-secondary > div { padding:4px 14px; border-inline-start:var(--hair) solid var(--sep); }
 .consistency-secondary > div:first-child { border:0; padding-inline-start:0; }
@@ -1304,8 +1410,8 @@ button:focus-visible,[role="button"]:focus-visible,summary:focus-visible,a:focus
 .center .sheet-tools { margin-top:-8px;margin-right:-8px;height:36px; }
 .empty .ico { color:var(--acc);width:58px;height:58px;align-items:center;margin:0 auto 14px;border-radius:var(--r-lg);background:var(--acc-soft); }
 .ctip { border:1px solid var(--control-edge);border-radius:var(--r);line-height:1.45; }
-#tabbar button.on { background:var(--acc-soft);border-radius:var(--r); }
-#tabbar button:not(.start) { margin:5px 2px; }
+#tabbar button.on { background:var(--acc-soft);border-radius:18px;border:1px solid color-mix(in srgb,var(--acc) 25%,transparent); }
+#tabbar button:not(.start) { margin:3px 2px; padding:6px 4px; }
 #timer { border:1px solid var(--acc-line); }
 #timer .t,.tile .v { font-variant-numeric:tabular-nums; }
 .week-schedule .item { display:grid;grid-template-columns:minmax(72px,.65fr) minmax(0,1fr) 40px 12px;gap:8px; }
@@ -1374,11 +1480,24 @@ button:focus-visible,[role="button"]:focus-visible,summary:focus-visible,a:focus
 
 /* Set consoles: each editable metric carries its label, including on narrow screens. */
 .exercise-heading{align-items:flex-start;gap:8px}.exercise-heading>div:first-child{min-width:0;overflow-wrap:anywhere}
-.sets-card{padding:10px;background:var(--panel-fill)}
-.sets-card .set-console{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:12px;margin-block:10px;border:1px solid var(--panel-edge);border-radius:var(--r-sm);background:var(--surface);opacity:1}
+.sets-card{padding:14px;background:var(--panel-fill);border-radius:var(--r-card)}
+.sets-card .set-console{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:14px;margin-block:12px;
+  border:1px solid var(--panel-edge);border-radius:var(--r);background:var(--surface);
+  box-shadow:0 3px 10px -2px rgba(0,0,0,0.18);
+  transition:border-color var(--fast),box-shadow var(--fast),background var(--fast);
+  opacity:1;
+}
 .sets-card .set-console.eff3{grid-template-columns:repeat(3,minmax(0,1fr))}
-.sets-card .set-console.current{border-color:color-mix(in srgb,var(--acc) 55%,var(--panel-edge));box-shadow:inset 3px 0 var(--acc)}
-.sets-card .set-console.done{background:color-mix(in srgb,var(--acc) 5%,var(--surface));border-color:color-mix(in srgb,var(--acc) 24%,var(--panel-edge))}
+.sets-card .set-console.current{
+  border-color:var(--acc);
+  box-shadow:0 0 16px -4px color-mix(in srgb,var(--acc) 50%,transparent), inset 3px 0 var(--acc);
+  background:color-mix(in srgb,var(--acc) 4%,var(--surface));
+}
+.sets-card .set-console.done{
+  background:color-mix(in srgb,var(--acc) 8%,var(--surface));
+  border-color:color-mix(in srgb,var(--acc) 30%,var(--panel-edge));
+}
 .set-console-head{grid-column:1/-1;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .set-number{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}.set-state{font-size:11px;color:var(--label-2)}
 .set-console.done .set-state{color:var(--acc)}
@@ -1482,7 +1601,7 @@ button:focus-visible,[role="button"]:focus-visible,summary:focus-visible,a:focus
 
 /* Shared phase labels and compact clock action preserve existing workout timing. */
 .set-phase{display:flex;align-items:center;min-height:28px;margin:9px 0 4px;padding:4px 8px;border-radius:var(--r-sm);background:var(--surface-2);font-size:11px;font-weight:650;line-height:20px;letter-spacing:.06em;text-transform:uppercase;color:var(--label-2)}
-.workout-clock-control{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:4px}.workout-clock-control .iconbtn{width:44px;height:44px;color:var(--acc);flex-shrink:0}.today-row{width:100%;text-align:left;color:inherit;background:transparent;border:0;font:inherit}
+.workout-clock-control{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:4px}.workout-clock-control .iconbtn{width:44px;height:44px;color:var(--acc);flex-shrink:0}
 .zoomcal-mini-month i{display:block;min-width:0;min-height:4px}.zoomcal-legend i.untracked{background:var(--surface-3);box-shadow:inset 0 0 0 1px var(--sep)}
 
 .routine-list.reordering{cursor:grabbing}.routine-list .dragging{outline:2px solid var(--acc);box-shadow:0 4px 16px color-mix(in srgb,var(--acc) 25%,transparent)}.routine-list .dragging .swipe-content{background:var(--surface-2)}.routine-list .drop-target{outline:2px dashed var(--acc);outline-offset:2px}.routine-list .swipe-content{-webkit-touch-callout:none}.routine-list .tt{overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}

@@ -18,11 +18,9 @@ import { useLocalNow } from '../lib/use-local-now.js'
 import { t, dateLocale } from '../lib/i18n.js'
 import { bwSheet, goalSheet, dayOverrideSheet, startFlow, guidedPlansSheet, bwDeltaColor, streakDetailSheet, sessionTimingSheet, homeCalendarSheet } from '../sheets.jsx'
 import { routineMuscleSheet } from '../components/RoutineMusclePreview.jsx'
-import LineChart from '../components/LineChart.jsx'
 import Icon from '../components/Icon.jsx'
 import { Button } from '../components/ui.jsx'
 import { glyphOf } from '../lib/glyphs.js'
-import { bmiBand, bmiFor } from '../lib/stats-insights.js'
 import { deloadStatus, streakTier, trainingStreak } from '../lib/training-plan.js'
 import StreakFlame from '../components/StreakFlame.jsx'
 import { streakStatusText } from '../components/StreakStatus.jsx'
@@ -43,7 +41,6 @@ export default function Home() {
   const bw = lastBW(statsState)
   const prevBW = statsState.bodyweight.length > 1 ? statsState.bodyweight[statsState.bodyweight.length - 2] : null
   const delta = bw && prevBW ? bw.w - prevBW.w : null
-  const bmi = bmiFor(bw?.w, S.unit, S.heightCm, S.measurementUnit)
   const streak = trainingStreak(S,today)
   const deload = deloadStatus(S,todayIso)
   const paused = isTrainingPaused(S,todayIso)
@@ -61,8 +58,6 @@ export default function Home() {
   }
   const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6)
   const wkLabel = weekOffset === 0 ? t('This week') : `${monday.getDate()} ${monday.toLocaleDateString(dateLocale(), { month: 'short' })} – ${sunday.getDate()} ${sunday.toLocaleDateString(dateLocale(), { month: 'short' })}`
-
-  const bwPoints = statsState.bodyweight.slice(-30).map(b => ({ t: b.t || new Date(b.d).getTime(), y: b.w, d: b.d }))
 
   // today's session shown right under the week strip
   const onToday = () => { if (S.active) nav('/workout'); else if (routine && nextDate === todayIso) startFlow(routine.id); else if (routine) dayOverrideSheet(nextDate); else dayOverrideSheet(todayIso) }
@@ -83,22 +78,24 @@ export default function Home() {
         <button className="iconbtn" style={{ width: 30, height: 30, fontSize: 15 }} onClick={() => setWeekOffset(w => w + 1)} aria-label={t('Next week')}><Icon name="chevronRight" /></button>
       </div>
       <div className="week">{strip}</div>
-      {routine && <button className="btn sm" onClick={()=>routineMuscleSheet(routine.id)}>{t('Muscles trained')}</button>}
-      <button type="button" className="today-row" onClick={onToday}>
-        <div className="row" style={{ gap: 9, minWidth: 0 }}>
-          <span className="lrow-i" style={{ background: S.active ? 'var(--orange)' : routine ? 'var(--acc)' : 'var(--surface-3)' }}>
-            <Icon name={S.active ? 'timer' : routine ? glyphOf(routine.emoji) : 'moon'} />
-          </span>
-          <div style={{ minWidth: 0 }}>
-            <div className="lbl2">{nextLabel}</div>
-            <div className="ttl">{S.active ? t('{0} — in progress', S.active.name)
-              : routine ? routine.name : paused ? t('Training paused') : t('No upcoming workout')}{todayOvr && routine ? ' · ' + t('rescheduled') : ''}</div>
+      <div className="row" style={{ gap: 8 }}>
+        <button type="button" className="today-row" style={{ flex: 1 }} onClick={onToday}>
+          <div className="row" style={{ gap: 9, minWidth: 0 }}>
+            <span className="lrow-i" style={{ background: S.active ? 'var(--orange)' : routine ? 'var(--acc)' : 'var(--surface-3)' }}>
+              <Icon name={S.active ? 'timer' : routine ? glyphOf(routine.emoji) : 'moon'} />
+            </span>
+            <div style={{ minWidth: 0 }}>
+              <div className="lbl2">{nextLabel}</div>
+              <div className="ttl">{S.active ? t('{0} — in progress', S.active.name)
+                : routine ? routine.name : paused ? t('Training paused') : t('No upcoming workout')}{todayOvr && routine ? ' · ' + t('rescheduled') : ''}</div>
+            </div>
           </div>
-        </div>
-        {S.active ? <span className="tag" style={{ color: 'var(--orange)', background: 'color-mix(in srgb,var(--orange) 16%,transparent)' }}>{t('Resume')}</span>
-          : routine ? <span className="tag acc">{t(nextDate === todayIso ? 'Start' : 'Scheduled')}</span>
-          : <Icon name="plus" className="chev" />}
-      </button>
+          {S.active ? <span className="tag" style={{ color: 'var(--orange)', background: 'color-mix(in srgb,var(--orange) 16%,transparent)' }}>{t('Resume')}</span>
+            : routine ? <span className="tag acc">{t(nextDate === todayIso ? 'Start' : 'Scheduled')}</span>
+            : <Icon name="plus" className="chev" />}
+        </button>
+        {routine && <button type="button" className="iconbtn" aria-label={t('Muscles trained')} title={t('Muscles trained')} onClick={() => routineMuscleSheet(routine.id)}><Icon name="info" /></button>}
+      </div>
     </div>
 
     <DailyPlan date={todayIso} compact onStart={startFlow}/>
@@ -119,17 +116,16 @@ export default function Home() {
     )}
 
     <div className="card">
-      <div className="row between" style={{ marginBottom: 6 }}>
+      <div className="row between" style={{ marginBottom: bw ? 4 : 6 }}>
         <h2 className="body-weight-title">{t('Body Weight')}</h2>
         <div className="row" style={{ gap: 8 }}>
           <Button size="sm" icon="target" style={S.targetW ? { color: 'var(--yellow)' } : undefined} onClick={goalSheet}>{S.targetW ? fmtNum(S.targetW) : t('Goal')}</Button>
           <Button size="sm" icon="plus" onClick={() => bwSheet()}>{t('Log')}</Button>
         </div>
       </div>
-      {bw ? <>
+      {bw ? (
         <div className="row" style={{ gap: 8, alignItems: 'baseline' }}>
           <div className="big">{fmtNum(bw.w)} <span className="muted" style={{ fontSize: '1rem' }}>{S.unit}</span></div>
-          {/* only when it actually moved — an unchanged weight used to read as "− 0" */}
           {!!delta && (
             <span className="small row" style={{ gap: 2, fontWeight: 500, color: bwDeltaColor(delta, bw.w) }}>
               <Icon name={delta > 0 ? 'arrowUp' : 'arrowDown'} style={{ fontSize: 12 }} />
@@ -138,15 +134,7 @@ export default function Home() {
           )}
           <span className="dim small" style={{ marginLeft: 'auto' }}>{fmtDate(bw.d, true)}</span>
         </div>
-        {S.targetW && (
-          <div className="small row" style={{ color: 'var(--yellow)', marginTop: 4, gap: 5 }}>
-            <Icon name="target" style={{ fontSize: 13 }} />
-            <span>{t('Goal')} {fmtNum(S.targetW)} {S.unit} · {Math.abs(S.targetW - bw.w) < 0.05 ? t('reached!') : t(S.targetW > bw.w ? '{0} to gain' : '{0} to lose', fmtNum(Math.abs(S.targetW - bw.w)) + ' ' + S.unit)}</span>
-          </div>
-        )}
-        {bmi && <div className="small row" style={{ marginTop: 6, gap: 5 }}><Icon name="scale" style={{ color: 'var(--orange)', fontSize: 13 }} /><span>{t('BMI')}: <b>{fmtNum(bmi)}</b> · {t(bmiBand(bmi))}</span></div>}
-        <div className="chart" style={{ marginTop: 8 }}><LineChart points={bwPoints} h={130} unit={S.unit} goal={S.targetW} /></div>
-      </> : <div className="muted small">{t("No entries yet — log your weight to start the curve. It's also asked before every workout.")}</div>}
+      ) : <div className="muted small">{t("No entries yet — log your weight to start the curve. It's also asked before every workout.")}</div>}
     </div>
 
     <TrainingPauseAction onlyPaused />

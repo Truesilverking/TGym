@@ -143,8 +143,9 @@ const ENV = import.meta.env || {}
 const IMG_BASE = ENV.VITE_IMG_BASE || 'img/'
 const GIF_BASE = ENV.VITE_GIF_BASE || 'gif/'
 const mediaSrc = (value, base) => /^(?:data:|https:\/\/)/i.test(String(value || '')) ? value : base + value
+const hdGifFile = value => String(value || '').replace(/^(\d{4})-[A-Za-z0-9]+(\.gif)$/i, '$1$2')
 export const imgSrc = ex => mediaSrc(ex?.img, IMG_BASE)
-export const gifSrc = ex => mediaSrc(ex?.gif, GIF_BASE)
+export const gifSrc = ex => mediaSrc(GIF_BASE.includes('ThienDuc3112/exercises') ? hdGifFile(ex?.gif) : ex?.gif, GIF_BASE)
 
 // Cardio exercises log time + speed instead of weight × reps.
 export const isCardio = idOrEx => (typeof idOrEx === 'string' ? EXIDX[idOrEx] : idOrEx)?.bp === 'cardio'

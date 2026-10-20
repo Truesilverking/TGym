@@ -37,11 +37,11 @@ function StartChooser() {
   if(isTrainingPaused(S,todayISO())) return <div className="narrow"><TrainingPauseCard /></div>
   return <div className="narrow">
     <div className="hdr"><div><h1>{t('Start workout')}</h1><div className="sub">{t(DAYN[new Date().getDay()])} — {todayR ? t('today is {0}', todayR.name) : t('rest day, but no one’s stopping you')}</div></div></div>
-    {todayR && <div className="card" style={{ borderColor: 'var(--acc)' }}>
+    {todayR && <div className="card" style={{ borderColor: 'color-mix(in srgb,var(--acc) 45%,transparent)', background: 'linear-gradient(160deg, color-mix(in srgb,var(--acc) 10%,var(--surface)), var(--surface))' }}>
       <h2 className="accent">{t("Today's plan")}{todayOvr ? ' · ' + t('rescheduled') : ''}</h2>
-      <div className="row between" style={{ marginBottom: 12 }}>
-        <div><div className="big">{todayR.name}</div><div className="muted small">{exCount(todayR.ex.length)}</div></div>
-        <span className="lrow-i" style={{ width: 38, height: 38, borderRadius: 9, fontSize: 22 }}><Icon name={glyphOf(todayR.emoji)} /></span>
+      <div className="row between" style={{ marginBottom: 16 }}>
+        <div><div className="big">{todayR.name}</div><div className="muted small" style={{ marginTop: 4 }}>{exCount(todayR.ex.length)}</div></div>
+        <span className="lrow-i" style={{ width: 44, height: 44, borderRadius: 12, fontSize: 24, background: 'color-mix(in srgb,var(--acc) 20%,var(--surface))' }}><Icon name={glyphOf(todayR.emoji)} /></span>
       </div>
       <Button variant="primary" icon="play" onClick={() => startFlow(todayR.id)}>{t('Start {0}', todayR.name)}</Button>
     </div>}

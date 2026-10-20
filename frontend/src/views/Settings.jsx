@@ -343,6 +343,13 @@ export default function Settings() {
       <Row icon="folder" iconTint="var(--blue)" title={t('Backup')} accessory="chevron" onClick={() => useUI.getState().openSheet(() => <BackupSheet onExport={doExport} onImport={() => authorize(() => fileRef.current?.click())} />)} />
       <Row icon="cloud" iconTint="var(--blue)" title={t('Restore')} subtitle={t('Back up, synchronize or restore your TGym data.')} accessory="chevron" onClick={() => openRestoreSheet(authorize)} />
       <Row icon="folder" iconTint="var(--acc)" title={t('Load Routine')} subtitle={t('Create, import or export routines from one place.')} accessory="chevron" onClick={openLoadRoutine} />
+      <Row icon="sparkles" iconTint="var(--yellow)" title={t('Reset demo data')} subtitle={t('Puts the example plan, workouts and weigh-ins back the way they started.')} accessory="chevron"
+        onClick={() => confirmSheet({
+          title: t('Reset demo data?'),
+          message: t('Puts the example plan, workouts and weigh-ins back the way they started.'),
+          confirmText: t('Reset'),
+          onConfirm: async () => { await resetDemo(); nav('/home'); toast(t('Demo data reset')) }
+        })} />
       {canUndoImport() && <Row icon="reset" iconTint="var(--orange)" title={t('Undo last import')} subtitle={t('Available until this app session ends.')} accessory="chevron" onClick={() => confirmSheet({ title: t('Undo last import?'), message: t('Restores the data that was present immediately before the import.'), confirmText: t('Restore'), onConfirm: () => {
         try { if (restoreImportUndo(replaceState)) toast(t('Import undone')) }
         catch { toast(t('Could not save. Check available storage and try again.')) }
