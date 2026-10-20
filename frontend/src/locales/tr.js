@@ -2,6 +2,8 @@ import english from '../lib/english-fallback.js'
 // Turkish UI strings. Keys are the English source strings (see lib/i18n.js).
 export default {
   ...english,
+  "Future dates": "Gelecek tarihler",
+  "One square per day. Total active days, not streak length.": "Her gün için bir kare. Seri uzunluğu değil, toplam aktif gün sayısı.",
   "Training days in this streak": "Bu serideki antrenman günleri",
   "Complete today's workout to keep your streak.": "Serini korumak için bugünkü antrenmanı tamamla.",
   "No workout scheduled today — streak preserved.": "Bugün planlı antrenman yok: serin korunur.",

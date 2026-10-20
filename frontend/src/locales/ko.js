@@ -2,6 +2,8 @@ import english from '../lib/english-fallback.js'
 // Korean UI strings. Keys are the English source strings (see lib/i18n.js).
 export default {
   ...english,
+  "Future dates": "미래 날짜",
+  "One square per day. Total active days, not streak length.": "하루에 한 칸입니다. 연속 기록의 길이가 아니라 전체 활동 일수입니다.",
   "Training days in this streak": "현재 연속 기록의 운동일",
   "Complete today's workout to keep your streak.": "오늘 운동을 완료해 연속 기록을 이어 가세요.",
   "No workout scheduled today — streak preserved.": "오늘 예정된 운동이 없어요: 연속 기록이 유지돼요.",

@@ -2,6 +2,8 @@ import english from '../lib/english-fallback.js'
 // French UI strings. Keys are the English source strings (see lib/i18n.js).
 export default {
   ...english,
+  "Future dates": "Dates futures",
+  "One square per day. Total active days, not streak length.": "Un carré par jour. Total des jours actifs, pas la longueur de la série.",
   "Training days in this streak": "Jours d’entraînement dans cette série",
   "Complete today's workout to keep your streak.": "Termine l’entraînement d’aujourd’hui pour conserver ta série.",
   "No workout scheduled today — streak preserved.": "Aucun entraînement prévu aujourd’hui : ta série est conservée.",

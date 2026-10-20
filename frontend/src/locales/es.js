@@ -2,6 +2,8 @@ import english from '../lib/english-fallback.js'
 // Spanish UI strings. Keys are the English source strings (see lib/i18n.js).
 export default {
   ...english,
+  "Future dates": "Fechas futuras",
+  "One square per day. Total active days, not streak length.": "Un cuadrado por día. Total de días activos, no longitud de racha.",
   "Select file": "Seleccionar archivo",
   "Correct the file errors before previewing prescriptions.": "Corrige los errores del archivo antes de ver las prescripciones.",
   "Preparing Excel template…": "Preparando la plantilla de Excel…",

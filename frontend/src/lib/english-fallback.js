@@ -1,5 +1,7 @@
 // Explicit source-language fallback. Entries in language packs override these values.
 export default {
+  "Future dates": "Future dates",
+  "One square per day. Total active days, not streak length.": "One square per day. Total active days, not streak length.",
   "Tracking since {0}": "Tracking since {0}",
   "Select file": "Select file",
   "Correct the file errors before previewing prescriptions.": "Correct the file errors before previewing prescriptions.",

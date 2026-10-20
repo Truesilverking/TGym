@@ -2,6 +2,8 @@ import english from '../lib/english-fallback.js'
 // Hindi UI strings. Keys are the English source strings (see lib/i18n.js).
 export default {
   ...english,
+  "Future dates": "आने वाली तारीखें",
+  "One square per day. Total active days, not streak length.": "हर दिन एक वर्ग। यह कुल सक्रिय दिनों की संख्या है, सिलसिले की लंबाई नहीं।",
   "Training days in this streak": "इस सिलसिले में प्रशिक्षण के दिन",
   "Complete today's workout to keep your streak.": "अपना सिलसिला बनाए रखने के लिए आज का प्रशिक्षण पूरा करें।",
   "No workout scheduled today — streak preserved.": "आज कोई प्रशिक्षण निर्धारित नहीं है: आपका सिलसिला बना रहता है।",

@@ -2,6 +2,8 @@ import english from '../lib/english-fallback.js'
 // Russian UI strings. Keys are the English source strings (see lib/i18n.js).
 export default {
   ...english,
+  "Future dates": "Будущие даты",
+  "One square per day. Total active days, not streak length.": "Один квадрат на день. Общее число активных дней, а не длина серии.",
   "Training days in this streak": "Тренировочные дни в этой серии",
   "Complete today's workout to keep your streak.": "Завершите сегодняшнюю тренировку, чтобы сохранить серию.",
   "No workout scheduled today — streak preserved.": "Сегодня тренировка не запланирована: серия сохраняется.",

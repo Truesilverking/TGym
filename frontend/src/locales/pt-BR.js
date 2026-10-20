@@ -5,6 +5,8 @@ import english from '../lib/english-fallback.js'
 import pt from './pt.js'
 
 export const PT_BR_OVERRIDES = {
+  "Future dates": "Datas futuras",
+  "One square per day. Total active days, not streak length.": "Um quadrado por dia. Total de dias ativos, não a duração da sequência.",
   "Training days in this streak": "Dias de treino nesta sequência",
   "Complete today's workout to keep your streak.": "Conclua o treino de hoje para manter sua sequência.",
   "No workout scheduled today — streak preserved.": "Sem treino programado hoje: sua sequência é preservada.",

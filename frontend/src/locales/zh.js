@@ -2,6 +2,8 @@ import english from '../lib/english-fallback.js'
 // Simplified Chinese UI strings. Keys are the English source strings (see lib/i18n.js).
 export default {
   ...english,
+  "Future dates": "未来日期",
+  "One square per day. Total active days, not streak length.": "每天一个方格。统计活跃天数总计，而非连续记录天数。",
   "Training days in this streak": "本次连续记录的训练天数",
   "Complete today's workout to keep your streak.": "完成今天的训练以保持连续记录。",
   "No workout scheduled today — streak preserved.": "今天没有计划训练：连续记录保持不变。",

@@ -1,6 +1,8 @@
 import english from '../lib/english-fallback.js'
 // Portuguese UI strings. Keys are the English source strings (see lib/i18n.js).
 export const PT_TRANSLATIONS = {
+  "Future dates": "Datas futuras",
+  "One square per day. Total active days, not streak length.": "Um quadrado por dia. Total de dias ativos, não a duração da sequência.",
   "Training days in this streak": "Dias de treino nesta sequência",
   "Complete today's workout to keep your streak.": "Conclua o treino de hoje para manter a sua sequência.",
   "No workout scheduled today — streak preserved.": "Sem treino programado hoje: a sua sequência mantém-se.",
