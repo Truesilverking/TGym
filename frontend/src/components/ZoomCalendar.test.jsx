@@ -6,6 +6,9 @@ import { ZoomCalendar, streakDetailSheet } from '../sheets.jsx'
 import { useUI } from '../store/useUI.js'
 import { useStore } from '../store/useStore.js'
 import { TRACKING_START_MARKER, calendarReportState } from '../lib/calendar-visual.js'
+import { readFileSync } from 'node:fs'
+
+const calendarStyles = readFileSync('src/components/CalendarVisual.css', 'utf8')
 import { calendarActivity, calendarActivityCount } from '../lib/calendar-view.js'
 import { _setLangState } from '../lib/i18n-core.js'
 import es from '../locales/es.js'
@@ -26,6 +29,19 @@ describe('zoom consistency calendar', () => {
   afterEach(() => { act(() => root.unmount()); host.remove(); vi.useRealTimers() })
   const render = () => act(() => root.render(<ZoomCalendar S={state()} />))
   const zoomOut = () => [...host.querySelectorAll('button')].find(b => b.getAttribute('aria-label') === 'Zoom out')
+
+  it('uses the same dashed border on future dates and their legend after the CSS cascade', () => {
+    const style = document.createElement('style')
+    style.textContent = calendarStyles
+    document.head.appendChild(style)
+    host.style.setProperty('--label-2', '#888888')
+    host.style.setProperty('--bg-el', '#111111')
+    try {
+      render()
+      expect(getComputedStyle(host.querySelector('.calendar-date[data-future="true"]')).borderStyle).toBe('dashed')
+      expect(getComputedStyle(host.querySelector('.zoomcal-future-key')).borderStyle).toBe('dashed')
+    } finally { style.remove() }
+  })
 
   it('marks deload days without replacing completion state in both day views', () => {
     const S=state(); S.trainingStartDate='2026-07-20'; S.deload={on:true,startDate:'2026-07-20',normalWeeks:6}; S.workouts[0].deload=true

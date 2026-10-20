@@ -50,7 +50,7 @@
 .zoomcal.zoomcal .zoomcal-legend i.deload { background:var(--deload); border:0; }
 .zoomcal.zoomcal .zoomcal-legend .zoomcal-time-key i { background:var(--bg-el); border:1px solid var(--label-2); }
 .zoomcal.zoomcal .zoomcal-legend .zoomcal-today-key { box-shadow:inset 0 0 0 1px var(--label); }
-.zoomcal.zoomcal .zoomcal-legend .zoomcal-future-key { border-style:dashed; }
+.zoomcal.zoomcal .zoomcal-legend i.zoomcal-future-key { border-style:dashed; }
 .calendar-export .zoomcal-day { max-width:48px; }
 @container (max-width:430px) {
   .zoomcal .zoomcal-periods.months { gap:10px 7px; }
