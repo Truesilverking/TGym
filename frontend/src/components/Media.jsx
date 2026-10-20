@@ -19,13 +19,14 @@ function useReducedMotion() {
 const animatedCustomImage = ex => !ex.gif && /^data:image\/(gif|webp)[;,]/i.test(ex.img || '')
 // Custom uploads have no separate still frame. Decode offscreen and retain a
 // small, static poster; never insert the animation while reduced motion is on.
-function usePoster(source) {
+function usePoster(source, resetKey) {
   const [poster, setPoster] = useState(null)
+  useEffect(() => { setPoster(null) }, [resetKey])
   useEffect(() => {
-    setPoster(null)
     if (!source) return
     let cancelled = false
     const image = new Image()
+    if (/^https?:\/\//i.test(source)) image.crossOrigin = 'anonymous'
     image.onload = () => {
       if (cancelled) return
       try {
@@ -59,21 +60,21 @@ function MediaImage({src,alt='',className='',...props}) {
 export default function Media({ ex, id, compact, minimizable }) {
   const reduced = useReducedMotion()
   const customAnimation = animatedCustomImage(ex)
-  const poster = usePoster(customAnimation ? ex.img : null)
   const [requestedPlayback, setRequestedPlayback] = useState(null)
   const playing = requestedPlayback ?? !reduced
+  const poster = usePoster(customAnimation ? ex.img : (playing ? gifSrc(ex) : null), ex.id)
   useEffect(() => setRequestedPlayback(null), [ex.id, reduced])
   const S = useStore(s => s.S)
   const gifSize = S.gifSize
   const update = useStore(s => s.update)
-  if (!ex.gif && !customAnimation) return ex.img ? <div className={'exmedia' + (compact ? ' compact' : '')}><MediaImage decoding="async" src={imgSrc(ex)} alt={exerciseNameFor(ex)} /></div> : null
-  const source = playing ? (customAnimation ? ex.img : gifSrc(ex)) : (customAnimation ? poster : imgSrc(ex))
+  if (!ex.gif && !customAnimation) return ex.img ? <div className={'exmedia' + (compact ? ' compact' : '')}><MediaImage fetchPriority="high" width="360" height="360" decoding="async" src={imgSrc(ex)} alt={exerciseNameFor(ex)} /></div> : null
+  const source = playing ? (customAnimation ? ex.img : gifSrc(ex)) : (customAnimation ? poster : (poster || imgSrc(ex)))
   const mini = minimizable && gifSize === 'mini'
   const toggleSize = e => { e.stopPropagation(); update(s => { s.gifSize = mini ? 'full' : 'mini' }) }
   return (
     <div className={'exmedia' + (compact ? ' compact' : '') + (mini ? ' mini' : '')} id={id}>
       <button type="button" className="media-playback" aria-label={t(playing ? 'Pause animation' : 'Play animation')} onClick={() => setRequestedPlayback(!playing)}>
-        {source ? <MediaImage decoding="async" src={source} alt={exerciseNameFor(ex)} /> : <span className="media-placeholder" role="img" aria-label={exerciseNameFor(ex)}><Icon name="dumbbell" /></span>}
+        {source ? <MediaImage fetchPriority="high" width="360" height="360" decoding="async" src={source} alt={exerciseNameFor(ex)} /> : <span className="media-placeholder" role="img" aria-label={exerciseNameFor(ex)}><Icon name="dumbbell" /></span>}
       </button>
       {minimizable && (
         <button className="giftoggle" onClick={toggleSize}>
@@ -92,7 +93,7 @@ export default function Media({ ex, id, compact, minimizable }) {
 export function Thumb({ ex }) {
   if (!ex.img) return <div className="thumb thumb-x"><Icon name="dumbbell" /></div>
   if (animatedCustomImage(ex)) return <CustomThumb ex={ex} />
-  return <MediaImage className="thumb" loading="lazy" decoding="async" src={imgSrc(ex)} alt="" />
+  return <MediaImage className="thumb" width="52" height="52" loading="lazy" decoding="async" src={imgSrc(ex)} alt="" />
 }
 
 function CustomThumb({ ex }) {

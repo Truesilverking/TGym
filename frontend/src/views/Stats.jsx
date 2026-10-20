@@ -292,9 +292,6 @@ function EffortCard({ S, exportFilters }) {
         <span className="bar"><i style={{ width: Math.round(b.n / maxBin * 100) + '%', background: b.rir <= HARD_RIR ? 'var(--yellow)' : 'var(--label-3)' }} /></span>
         <span className="v">{b.n ? b.n + ' · ' + Math.round(b.pct * 100) + '%' : '—'}</span>
       </div>)}
-      <div className="small dim" style={{ marginTop: 8 }}>
-        {t('Most working sets belong close to failure without living there — half at the floor and half at the top average out to a healthy-looking middle.')}
-      </div>
     </>}
   </div>
 }
@@ -579,8 +576,7 @@ export default function Stats() {
         <div className="row between" style={{ marginBottom: 10 }}><h2 style={{ margin: 0 }}>{t('BMI — Body Mass Index')}</h2><Button size="sm" icon="scale" onClick={heightSheet}>{S.heightCm ? fmtNum(S.heightCm) + ' ' + (S.measurementUnit || 'cm') : t('Add height')}</Button></div>
         {bmi ? <><div className="row" style={{ alignItems: 'baseline', gap: 10 }}><div className="big">{fmtNum(bmi)}</div><span className="tag acc">{t(bmiBand(bmi))}</span></div>
           <div className="small muted" style={{ marginTop: 6 }}>{t('Calculated from {0} and {1} {2}.', fmtNum(latestWeight.w) + ' ' + S.unit, fmtNum(S.heightCm), S.measurementUnit || 'cm')}</div>
-          <div className="chart" style={{ marginTop: 8 }}><LineChart points={bmiPoints} h={140} unit="IMC" color="var(--orange)" /></div>
-          <div className="small dim" style={{ marginTop: 8 }}>{t('BMI is an orientation only. It can read high in muscular people and does not measure body-fat percentage.')}</div></>
+          <div className="chart" style={{ marginTop: 8 }}><LineChart points={bmiPoints} h={140} unit="IMC" color="var(--orange)" /></div></>
           : <div className="muted small">{!S.heightCm ? t('Add your height to calculate BMI from your latest body weight.') : t('Log your body weight to calculate BMI.')}</div>}
       </div>
 
