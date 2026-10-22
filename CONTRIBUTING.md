@@ -1,76 +1,66 @@
-# Contributing to openGym
+# Contribuir a TGym
 
-Thanks for taking a look! openGym is intentionally small and dependency-light, and the goal is
-to keep it that way — easy to read, easy to self-host.
+TGym comparte una aplicación React entre web, PWA y Android/Capacitor. Antes de cambiar un área, consulta [la arquitectura](docs/ARCHITECTURE.md) y las [instrucciones del proyecto](AGENTS.md).
 
-## Project layout
+## Dos ramas permanentes
 
-```
-frontend/  React + Vite app (src/views, src/components, src/store, src/lib). Builds to static files.
-           android/ + ios/ are the Capacitor shells for the standalone mobile app (docs/MOBILE.md).
-api/       backend — server.js (Node, no framework), one dependency (@simplewebauthn/server).
-web/       multi-stage Dockerfile (builds frontend → nginx) + nginx.conf (serves app, proxies /api).
-media/     exercise img/gif (gitignored, fetched at runtime).
-docs/      self-hosting guide.
-mcp/       optional Model Context Protocol server — read-only stdio bridge for LLM apps
-           (Claude Desktop, Cursor, …) to query a user's workouts/1RM/muscle balance. Not in
-           the Docker build; only runs when an LLM client spawns it. See mcp/README.md.
-```
-
-## Running for development
-
-```bash
-cp .env.example .env
-docker compose up -d --build      # api + web + media on :8080
-# frontend hot reload:
-cd frontend && npm install && npm run dev
-# training logic (progression rules, 1RM, how a session is read back):
-cd frontend && npm test
-```
-
-## Guidelines
-
-- **Keep it dependency-light.** The frontend uses React + Router + Zustand and nothing else;
-  new deps (front or back) are a hard sell. `api/` has two (`@simplewebauthn/server` for passkeys,
-  `web-push` for notifications) — keep it near that.
-- **Match the style.** Small components, clear names, comments only where the "why" isn't obvious.
-  State lives in the Zustand store (`src/store`); pure helpers in `src/lib`.
-- **Don't commit** the exercise media (`media/`) or `data/` — they're gitignored.
-- **Test the flow** you touched — click through the affected screens (and the workout flow) in a
-  browser before opening a merge request.
-- **Training logic gets a unit test.** Anything deciding what you lift next, or reading a logged
-  session back, belongs in a pure helper in `src/lib` with tests beside it (`npm test`). These
-  rules are easy to get subtly wrong and nearly impossible to verify by clicking — the
-  progression engine grew two real bugs that only a test pinned down.
-
-## Good first issues
-
-- Additional starter plans (upper/lower, full-body, 5×5…)
-- More languages for the exercise instructions (the dataset ships several)
-- Percentage / training-max programming (5/3/1-style) on top of the progression engine in
-  `src/lib/progression.js` — the policy interface is already there
-- Accessibility passes on the workout and chart screens
-
-## Where to ask what
-
-| You have | Goes to |
+| Rama | Propósito |
 | --- | --- |
-| A quick question, or you'd rather just chat | [The Discord](https://discord.gg/e62jY6fwVb) |
-| A question, or self-hosting that won't behave | [An issue labelled `question`](https://gitlab.com/DuarteSantos8/opengym/-/issues) |
-| An idea you're not sure about yet | [An issue labelled `idea`](https://gitlab.com/DuarteSantos8/opengym/-/issues) |
-| A reproducible bug | [Issues](https://gitlab.com/DuarteSantos8/opengym/-/issues) |
-| A change you've already built | A merge request |
+| `main` | Código estable e integrado; rama predeterminada. |
+| `Dev` | Cambios en desarrollo y su validación. |
 
-GitLab has no Discussions, so questions and ideas are issues too — just labelled, so nobody
-mistakes a question for agreed-on work. An answered question is worth more than the same answer
-in a chat log: the next person searching "passkey login fails behind my reverse proxy" finds it.
-That is the one thing the Discord can't do, so if an answer there turns out to be worth keeping,
-it belongs in an issue afterwards.
+1. Revisa `git status` y conserva cualquier trabajo local existente.
+2. Trabaja en `Dev`; no crees ramas adicionales salvo que el propietario lo solicite.
+3. Ejecuta las pruebas y compilaciones correspondientes y revisa el flujo afectado.
+4. Publica los commits solicitados en `Dev` y abre un pull request de `Dev` hacia `main` cuando estén listos.
+5. Integra después de revisar el diff y las comprobaciones. Conserva `Dev` después del merge y sincronízala con `main` antes del siguiente trabajo.
 
-## Reporting bugs
+No fuerces pushes. Los cambios locales sin commit siguen siendo trabajo pendiente y no forman parte de lo publicado en GitHub.
 
-Open an issue with: what you did, what you expected, what happened, and your browser/OS. If it's
-about login/passkeys, include your `RP_ID`/`ORIGIN` (not the `data/` contents) — most login
-issues are an origin mismatch.
+Las propuestas rutinarias de Dependabot están pausadas para evitar ramas adicionales. Sus reglas de compatibilidad se conservan en `.github/dependabot.yml`; los avisos y la configuración de seguridad se mantienen. Las actualizaciones de dependencias se revisan y aplican en `Dev` cuando se soliciten.
 
-By contributing you agree your work is licensed under the project's [GNU AGPL v3.0](LICENSE).
+## Desarrollo local
+
+Requisitos: Node 22 y pnpm 10, como en GitHub Actions.
+
+```sh
+cd frontend
+pnpm install --frozen-lockfile
+pnpm run dev --mode standalone --host 127.0.0.1
+```
+
+Standalone usa un perfil local independiente, sin la API opcional. En PowerShell, usa `pnpm.cmd` o `npm.cmd` si la política bloquea los archivos `.ps1`.
+
+| Directorio | Contenido y comprobaciones |
+| --- | --- |
+| `frontend/` | React + Vite. `pnpm test`, `pnpm build`, `pnpm build:pwa` y `pnpm build:mobile`. |
+| `frontend/android/` | Proyecto Android. Gradle con JDK 21 y SDK 35. |
+| `api/` | API opcional. `npm ci` y `npm test`. |
+| `mcp/` | Servidor MCP de solo lectura. `npm ci`, `npm test` y `npm run check:node-loadable`. |
+| `tools/catalog/` | Herramientas locales de catálogo. `node --test tools/catalog/core.test.mjs` desde la raíz. |
+| `web/` | Imagen web y configuración nginx para self-hosting. |
+| `docs/` | Arquitectura, auditorías y guías de publicación. |
+
+No hay scripts frontend de lint ni typecheck. `build:mobile` sincroniza Capacitor y no compila un APK. La compilación nativa iOS requiere macOS/Xcode.
+
+## Reglas de implementación
+
+- Haz el cambio coherente más pequeño y mantén los helpers de entrenamiento existentes.
+- Usa `useStore.update` para las ediciones persistidas normales; conserva las integraciones de almacenamiento y sincronización.
+- Preserva los IDs de ejercicios y rutinas, el historial, los backups y la compatibilidad con datos antiguos.
+- Centraliza la duración en `lib/workout-time.js`; mantén separados calentamiento, trabajo, descanso y técnicas de intensidad.
+- Mantén sincronizadas las traducciones y utiliza las variables del tema y las preferencias de movimiento reducido.
+- No incluyas credenciales, claves de firma, tokens, backups privados ni rutas locales del SDK en commits o reportes públicos.
+- Prueba la lógica modificada con casos relevantes y verifica el flujo de usuario antes de integrar.
+
+## Validación y publicación
+
+Tests, Validate PWA y Validate Android comprueban los cambios pertinentes en `main` y `Dev`. Consulta cada ejecución de [GitHub Actions](https://github.com/Truesilverking/TGym/actions) antes de integrar.
+
+Integrar código y publicar una versión son pasos independientes. Android/PWA se publican con tags explícitos `vX.Y.Z`; conserva las validaciones de descarga, SHA-256, paquete, versión y firma. Las imágenes Docker siguen sus triggers existentes en `main` y en releases. Sigue [docs/RELEASING.md](docs/RELEASING.md) y verifica los artefactos y el commit remoto.
+
+## Incidencias y licencia
+
+Abre una [incidencia de TGym](https://github.com/Truesilverking/TGym/issues) con los pasos, el resultado esperado, el resultado observado y la versión/plataforma. Evita adjuntar datos privados o credenciales.
+
+Las contribuciones se distribuyen bajo la [GNU AGPL v3](LICENSE). TGym conserva el historial y las atribuciones de openGym.

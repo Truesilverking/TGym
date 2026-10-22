@@ -2,6 +2,15 @@
 
 TGym permite programar rutinas y registrar entrenamientos en Android y web/PWA. Incluye calentamientos, Working/Top/Back-off Sets, supersets, RIR/RPE, progresión, deload, cronómetros, historial, calendario, Consistency, estadísticas, Progress Report, medidas corporales e InBody.
 
+## Ramas y flujo de trabajo
+
+| Rama | Uso |
+| --- | --- |
+| [`main`](https://github.com/Truesilverking/TGym/tree/main) | Versión estable e integrada; rama principal del repositorio. |
+| [`Dev`](https://github.com/Truesilverking/TGym/tree/Dev) | Desarrollo de cambios y validación antes de integrarlos en `main`. |
+
+Trabaja en `Dev`, revisa los cambios y sus comprobaciones, y abre un pull request de `Dev` hacia `main` cuando estén listos. Conserva ambas ramas después de integrar. Las publicaciones Android/PWA requieren un tag de versión explícito; consulta [CONTRIBUTING.md](CONTRIBUTING.md) y la [guía de publicación](docs/RELEASING.md).
+
 ## Desarrollo local
 
 Requisitos: Node 22 y pnpm 10 (las versiones de CI).

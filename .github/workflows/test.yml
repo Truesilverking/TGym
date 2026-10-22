@@ -1,5 +1,4 @@
-# Runs on pull requests too — the other two workflows only fire on push to main, so
-# contributed changes used to reach main without anything ever having been run.
+# Validate changes on Dev, stable integrations on main, and pull requests.
 name: Tests
 
 on:
@@ -11,7 +10,7 @@ on:
       - 'tools/catalog/**'
       - '.github/workflows/test.yml'
   push:
-    branches: [main, feature/workout-duration, feature/ui-persistence-audit, feature/training-pause, feature/dashboard-visual-polish, feature/backoff-reps-settings, feature/session-origin-activity, feature/settings-reminders-ux]
+    branches: [main, Dev]
     paths:
       - 'frontend/**'
       - 'mcp/**'
