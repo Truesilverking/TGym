@@ -85,3 +85,39 @@ it('updates nutrition targets in store', () => {
   expect(daily.goals.protein).toBe(180)
   expect(daily.goals.water).toBe(3000)
 })
+
+import { recentFoods, customFoods, saveCustomFood, removeCustomFood, copiedItems, copyDayItems } from './nutrition.js'
+
+it('lists recent foods newest first, once each, with per-serving values', () => {
+  logFoodItem('2026-10-01', { name: 'Avena', calories: 190, protein: 7, qty: 2 })
+  logFoodItem('2026-10-02', { name: 'Huevo', calories: 74, protein: 6 })
+  logFoodItem('2026-10-02', { name: 'avena ', calories: 190, protein: 7 })
+  const recent = recentFoods(useStore.getState().S)
+  expect(recent.map(f => f.name)).toEqual(['avena', 'Huevo'])
+  expect(recent[0].calories).toBe(190)
+  expect(recentFoods(useStore.getState().S, 1)).toHaveLength(1)
+})
+
+it('saves custom foods by name and removes them', () => {
+  saveCustomFood({ name: 'Batido', calories: 300, protein: 30 })
+  saveCustomFood({ name: 'batido', calories: 320, protein: 32 })
+  let mine = customFoods(useStore.getState().S)
+  expect(mine).toHaveLength(1)
+  expect(mine[0].calories).toBe(320)
+  removeCustomFood(mine[0].id)
+  expect(customFoods(useStore.getState().S)).toEqual([])
+  expect(saveCustomFood({ name: '  ' })).toBeNull()
+})
+
+it('copies a day of meals with fresh ids and leaves water alone', () => {
+  logFoodItem('2026-10-05', { name: 'Arroz', meal: 'lunch', calories: 130 })
+  logWater('2026-10-05', 500)
+  expect(copyDayItems('2026-10-05', '2026-10-06')).toBe(1)
+  const day = getDailyNutrition(useStore.getState().S, '2026-10-06')
+  expect(day.items).toHaveLength(1)
+  expect(day.items[0].meal).toBe('lunch')
+  expect(day.items[0].id).not.toBe(getDailyNutrition(useStore.getState().S, '2026-10-05').items[0].id)
+  expect(day.waterMl).toBe(0)
+  expect(copyDayItems('2026-10-09', '2026-10-10')).toBe(0)
+  expect(copiedItems([{ id: 'x', name: 'a' }], 5)[0]).toMatchObject({ name: 'a', loggedAt: 5 })
+})

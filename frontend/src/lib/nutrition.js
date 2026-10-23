@@ -1,6 +1,5 @@
 import { useStore } from '../store/useStore.js'
 import { todayISO, uid } from './format.js'
-import { isPro } from './membership.js'
 
 export const COMMON_FOODS = [
   { id: 'f_chicken', name: 'Pechuga de Pollo', serving: '100g', calories: 165, protein: 31, carbs: 0, fat: 3.6 },
@@ -154,4 +153,75 @@ export function updateNutritionGoals(newGoals) {
       water: Math.max(500, Math.round(Number(newGoals.water) || 2500)),
     }
   })
+}
+
+const foodKey = name => String(name || '').trim().toLowerCase()
+const foodFields = item => ({
+  name: String(item.name || '').trim(),
+  serving: item.serving || '',
+  calories: Math.max(0, Math.round(Number(item.calories) || 0)),
+  protein: Math.max(0, Math.round(Number(item.protein) || 0)),
+  carbs: Math.max(0, Math.round(Number(item.carbs) || 0)),
+  fat: Math.max(0, Math.round(Number(item.fat) || 0)),
+})
+
+/** Distinct foods from the newest logs first (per-serving values), for one-tap re-logging. */
+export function recentFoods(state, limit = 8) {
+  const logs = state?.nutrition?.logs || {}
+  const seen = new Set(), out = []
+  for (const day of Object.keys(logs).sort().reverse()) {
+    // newest first; items logged in the same millisecond keep their append order (later = newer)
+    const items = (logs[day]?.items || []).map((item, i) => ({ item, i }))
+      .sort((a, b) => (b.item.loggedAt || 0) - (a.item.loggedAt || 0) || b.i - a.i).map(x => x.item)
+    for (const item of items) {
+      const key = foodKey(item.name)
+      if (!key || seen.has(key)) continue
+      seen.add(key)
+      out.push(foodFields(item))
+      if (out.length >= limit) return out
+    }
+  }
+  return out
+}
+
+/** The user's saved foods, alphabetical. */
+export const customFoods = state => [...(state?.nutrition?.customFoods || [])].sort((a, b) => a.name.localeCompare(b.name))
+
+/** Saves (or replaces, by name) a food in "My foods". */
+export function saveCustomFood(food) {
+  const entry = foodFields(food)
+  if (!entry.name) return null
+  const saved = { id: uid(), ...entry }
+  useStore.getState().update(s => {
+    if (!s.nutrition) s.nutrition = { goals: { calories: 2200, protein: 140, carbs: 220, fat: 60, water: 2500 }, logs: {}, customFoods: [] }
+    const list = (s.nutrition.customFoods || []).filter(f => foodKey(f.name) !== foodKey(entry.name))
+    s.nutrition.customFoods = [...list, saved]
+  })
+  return saved
+}
+
+export function removeCustomFood(id) {
+  useStore.getState().update(s => {
+    if (!s.nutrition?.customFoods) return
+    s.nutrition.customFoods = s.nutrition.customFoods.filter(f => f.id !== id)
+  })
+}
+
+/** Pure: fresh copies of a day's items (new ids, same meals and quantities). Water is not copied. */
+export function copiedItems(items, now = Date.now()) {
+  return (items || []).map((item, i) => ({ ...item, id: uid(), loggedAt: now + i }))
+}
+
+/** Appends every food logged on `fromIso` to `toIso`. Returns how many were copied. */
+export function copyDayItems(fromIso, toIso) {
+  const source = useStore.getState().S?.nutrition?.logs?.[fromIso]?.items || []
+  if (!source.length || fromIso === toIso) return 0
+  const copies = copiedItems(source)
+  useStore.getState().update(s => {
+    if (!s.nutrition) s.nutrition = { goals: { calories: 2200, protein: 140, carbs: 220, fat: 60, water: 2500 }, logs: {}, customFoods: [] }
+    if (!s.nutrition.logs) s.nutrition.logs = {}
+    if (!s.nutrition.logs[toIso]) s.nutrition.logs[toIso] = { items: [], waterMl: 0 }
+    s.nutrition.logs[toIso].items.push(...copies)
+  })
+  return copies.length
 }

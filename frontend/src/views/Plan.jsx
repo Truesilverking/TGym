@@ -14,7 +14,6 @@ import { Button } from '../components/ui.jsx'
 import { useEffect, useState } from 'react'
 import { glyphOf, DEFAULT_GLYPH } from '../lib/glyphs.js'
 import { routineMuscleSheet } from '../components/RoutineMusclePreview.jsx'
-import { canCreateRoutine, openProUpgradeSheet } from '../lib/membership.js'
 
 export default function Plan() {
   const nav = useNavigate()
@@ -28,10 +27,6 @@ export default function Plan() {
   }, [undoVisible])
 
   const addRoutine = () => {
-    if (!canCreateRoutine(S)) {
-      openProUpgradeSheet()
-      return
-    }
     const r = { id: uid(), name: t('New routine'), emoji: DEFAULT_GLYPH, ex: [] }
     update(s => { s.routines.push(r) })
     nav('/plan/r/' + r.id)

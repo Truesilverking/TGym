@@ -5,7 +5,7 @@ import { t } from '../lib/i18n.js'
 import { todayISO, isoOf, fmtDate } from '../lib/format.js'
 import { LB_PER_KG } from '../lib/unit-conversion.js'
 import Icon from '../components/Icon.jsx'
-import { Button, Segmented, NumberField, SearchField } from '../components/ui.jsx'
+import { Button, Segmented, NumberField, SearchField, Row, Switch } from '../components/ui.jsx'
 import {
   COMMON_FOODS,
   calculateTDEE,
@@ -14,9 +14,12 @@ import {
   removeFoodItem,
   logWater,
   updateNutritionGoals,
+  recentFoods,
+  customFoods,
+  saveCustomFood,
+  removeCustomFood,
+  copyDayItems,
 } from '../lib/nutrition.js'
-import { isPro } from '../lib/membership.js'
-import { proUpgradeSheet } from '../sheets.jsx'
 
 const MEALS = [
   { key: 'breakfast', label: 'Breakfast', icon: 'sun' },
@@ -47,7 +50,6 @@ const macroLine = item => {
 
 export default function Nutrition() {
   const S = useStore(s => s.S)
-  const pro = isPro(S)
   const today = todayISO()
   const [dateIso, setDateIso] = useState(today)
   const daily = getDailyNutrition(S, dateIso)
@@ -55,6 +57,12 @@ export default function Nutrition() {
   const isToday = dateIso === today
 
   const remaining = goals.calories - totals.calories
+  const prevIso = shiftIso(dateIso, -1)
+  const prevCount = S.nutrition?.logs?.[prevIso]?.items?.length || 0
+  const copyPrevious = () => {
+    const n = copyDayItems(prevIso, dateIso)
+    if (n) useUI.getState().toast(t('{0} foods copied from {1}', n, fmtDate(prevIso, true)))
+  }
   const macros = [
     { key: 'protein', label: 'Protein', color: 'var(--teal)' },
     { key: 'carbs', label: 'Carbs', color: 'var(--orange)' },
@@ -70,7 +78,7 @@ export default function Nutrition() {
         <span className="hdr-slot" aria-hidden="true" />
         <div className="hdr-center">
           <h1>{t('Nutrition')}</h1>
-          <div className="sub">{pro ? 'TGym Pro' : t('Local profile')}</div>
+          <div className="sub">{t('Goal: {0} kcal', goals.calories)}</div>
         </div>
         <button className="iconbtn" onClick={openGoals} aria-label={t('Nutrition goals')}><Icon name="gear" /></button>
       </div>
@@ -79,10 +87,16 @@ export default function Nutrition() {
         <button className="iconbtn" onClick={() => setDateIso(d => shiftIso(d, -1))} aria-label={t('Previous day')}><Icon name="chevronLeft" /></button>
         <button type="button" onClick={() => setDateIso(today)} disabled={isToday} aria-label={isToday ? undefined : t('Back to today')}>
           <b>{isToday ? t('Today') : fmtDate(dateIso, true)}</b>
-          <small>{fmtDate(dateIso, true, true)}</small>
+          {isToday ? <small>{fmtDate(dateIso, true, true)}</small> : <small>{t('Tap to return to today')}</small>}
         </button>
         <button className="iconbtn" onClick={() => setDateIso(d => shiftIso(d, 1))} aria-label={t('Next day')}><Icon name="chevronRight" /></button>
       </div>
+
+      {!daily.items.length && prevCount > 0 && (
+        <button type="button" className="nutri-copy" onClick={copyPrevious}>
+          <Icon name="reset" /><span>{prevCount === 1 ? t('Copy 1 food from {0}', fmtDate(prevIso, true)) : t('Copy {0} foods from {1}', prevCount, fmtDate(prevIso, true))}</span>
+        </button>
+      )}
 
       <section className="card plate" aria-label={t('Daily calories')}>
         <div className="nutri-head">
@@ -108,11 +122,6 @@ export default function Nutrition() {
           ))}
         </div>
 
-        {!pro && (
-          <button type="button" className="nutri-upsell" onClick={proUpgradeSheet}>
-            <Icon name="sparkles" /><span>{t('Unlock the advanced metabolic calculator with TGym Pro')}</span>
-          </button>
-        )}
       </section>
 
       <section className="card" aria-label={t('Hydration')} style={{ '--meter': 'var(--blue)' }}>
@@ -165,28 +174,51 @@ export default function Nutrition() {
 }
 
 function AddFoodSheet({ close, dateIso, initialMeal }) {
-  const [tab, setTab] = useState('common')
+  const S = useStore(s => s.S)
+  const toast = useUI(s => s.toast)
+  const recent = recentFoods(S)
+  const mine = customFoods(S)
+  const [tab, setTab] = useState(recent.length ? 'recent' : 'common')
   const [meal, setMeal] = useState(initialMeal || 'lunch')
   const [search, setSearch] = useState('')
   const [qty, setQty] = useState(1)
   const [name, setName] = useState('')
+  const [serving, setServing] = useState('')
   const [calories, setCalories] = useState(null)
   const [protein, setProtein] = useState(null)
   const [carbs, setCarbs] = useState(null)
   const [fat, setFat] = useState(null)
+  const [keep, setKeep] = useState(true)
 
   const query = search.trim().toLowerCase()
-  const foods = COMMON_FOODS.filter(f => f.name.toLowerCase().includes(query))
+  const matches = list => query ? list.filter(f => f.name.toLowerCase().includes(query)) : list
+  const myFoods = matches(mine)
+  const foods = matches(COMMON_FOODS)
 
-  const addCommon = food => {
+  const add = food => {
     logFoodItem(dateIso, { ...food, meal, qty: qty || 1 })
     close()
   }
   const addCustom = () => {
     if (!name.trim()) return
-    logFoodItem(dateIso, { name: name.trim(), meal, calories, protein, carbs, fat, qty: 1, serving: t('1 serving') })
+    const food = { name: name.trim(), serving: serving.trim() || t('1 serving'), calories, protein, carbs, fat }
+    if (keep) saveCustomFood(food)
+    logFoodItem(dateIso, { ...food, meal, qty: 1 })
+    toast(keep ? t('Added and saved to My foods') : t('Added'))
     close()
   }
+  const row = (food, key, onRemove) => (
+    <div key={key} className="nutri-food-row">
+      <button type="button" onClick={() => add(food)}>
+        <span style={{ flex: 1, minWidth: 0 }}>
+          <b style={{ display: 'block', fontWeight: 600 }}>{food.name}</b>
+          <small className="dim">{food.serving ? food.serving + ' · ' : ''}{macroLine({ ...food, qty: 1 })}</small>
+        </span>
+        <Icon name="plus" />
+      </button>
+      {onRemove && <button type="button" className="iconbtn" onClick={onRemove} aria-label={t('Remove {0}', food.name)}><Icon name="trash" /></button>}
+    </div>
+  )
 
   return (
     <>
@@ -197,25 +229,26 @@ function AddFoodSheet({ close, dateIso, initialMeal }) {
           <button key={m.key} type="button" className={'chip' + (meal === m.key ? ' on' : '')} aria-pressed={meal === m.key} onClick={() => setMeal(m.key)}>{t(m.label)}</button>
         ))}
       </div>
-      <Segmented options={[{ value: 'common', label: t('Common foods') }, { value: 'custom', label: t('Custom') }]} value={tab} onChange={setTab} />
+      <Segmented options={[
+        ...(recent.length ? [{ value: 'recent', label: t('Recent') }] : []),
+        { value: 'common', label: t('Foods') },
+        { value: 'custom', label: t('Create') },
+      ]} value={tab} onChange={setTab} />
       <div style={{ height: 14 }} />
-      {tab === 'common' ? (
+      {tab !== 'custom' ? (
         <>
           <div className="nutri-form" style={{ gridTemplateColumns: 'minmax(0,1fr) 92px', marginBottom: 10 }}>
             <SearchField value={search} onChange={e => setSearch(e.target.value)} onClear={() => setSearch('')} placeholder={t('Search food…')} aria-label={t('Search food…')} />
             <NumberField className="field" value={qty} onChange={setQty} aria-label={t('Servings')} title={t('Servings')} style={{ textAlign: 'center' }} />
           </div>
           <div className="nutri-food-list">
-            {foods.map(food => (
-              <button key={food.id} type="button" onClick={() => addCommon(food)}>
-                <span style={{ flex: 1, minWidth: 0 }}>
-                  <b style={{ display: 'block', fontWeight: 600 }}>{food.name}</b>
-                  <small className="dim">{food.serving} · {macroLine({ ...food, qty: 1 })}</small>
-                </span>
-                <Icon name="plus" />
-              </button>
-            ))}
-            {!foods.length && <p className="nutri-empty" style={{ padding: 12 }}>{t('No matches')}</p>}
+            {tab === 'recent' ? matches(recent).map((f, i) => row(f, 'r' + i)) : <>
+              {myFoods.length > 0 && <div className="nutri-food-group">{t('My foods')}</div>}
+              {myFoods.map(f => row(f, f.id, () => removeCustomFood(f.id)))}
+              {myFoods.length > 0 && foods.length > 0 && <div className="nutri-food-group">{t('Common foods')}</div>}
+              {foods.map(f => row(f, f.id))}
+            </>}
+            {(tab === 'recent' ? !matches(recent).length : !myFoods.length && !foods.length) && <p className="nutri-empty" style={{ padding: 12, margin: 0 }}>{t('No matches')}</p>}
           </div>
         </>
       ) : (
@@ -223,13 +256,18 @@ function AddFoodSheet({ close, dateIso, initialMeal }) {
           <div className="nutri-form">
             <label className="wide"><span className="field-label">{t('Food name')}</span>
               <input className="field" value={name} onChange={e => setName(e.target.value)} autoComplete="off" /></label>
+            <label className="wide"><span className="field-label">{t('Serving (optional)')}</span>
+              <input className="field" value={serving} onChange={e => setServing(e.target.value)} placeholder={t('e.g. 100 g or 1 cup')} autoComplete="off" /></label>
             <label><span className="field-label">{t('Calories (kcal)')}</span><NumberField className="field" decimal={false} nullable value={calories} onChange={setCalories} /></label>
             <label><span className="field-label">{t('Protein (g)')}</span><NumberField className="field" nullable value={protein} onChange={setProtein} /></label>
             <label><span className="field-label">{t('Carbs (g)')}</span><NumberField className="field" nullable value={carbs} onChange={setCarbs} /></label>
             <label><span className="field-label">{t('Fat (g)')}</span><NumberField className="field" nullable value={fat} onChange={setFat} /></label>
           </div>
+          <div className="sect-b" style={{ marginTop: 14 }}>
+            <Row title={t('Save to My foods')} subtitle={t('Find it again under Foods next time.')}><Switch checked={keep} onChange={setKeep} /></Row>
+          </div>
           <div style={{ height: 16 }} />
-          <Button variant="primary" disabled={!name.trim()} onClick={addCustom}>{t('Save food')}</Button>
+          <Button variant="primary" disabled={!name.trim()} onClick={addCustom}>{t('Add food')}</Button>
         </>
       )}
     </>

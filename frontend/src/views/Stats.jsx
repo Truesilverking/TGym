@@ -381,13 +381,18 @@ function StatsSections({ selected, onToggle }) {
   </div>
 }
 
-// Stats = the analytics hub: all charts, progress and history live here.
-export default function Stats() {
+// Body sections shown on their own screen (Progress → Body). Overview keeps them selectable.
+const BODY_SECTIONS = ['bodyweight', 'measurements', 'bmi']
+
+// Stats = the analytics hub: all charts, progress and history live here. `focus="body"`
+// renders the same cards as the Body screen: weight, measurements, BMI and InBody.
+export default function Stats({ focus = null }) {
+  const body = focus === 'body'
   const nav = useNavigate()
   const rawState = useStore(s => s.S)
   const S = useMemo(() => statisticsState(rawState), [rawState])
   const update = useStore(s => s.update)
-  const selectedSections = normalizeStatsSections(rawState.statsSections)
+  const selectedSections = body ? BODY_SECTIONS : normalizeStatsSections(rawState.statsSections)
   const sectionProps = id => ({ 'data-stats-section': id, hidden: !selectedSections.includes(id) })
   const toggleSection = id => {
     if (selectedSections.includes(id) && selectedSections.length === 1) return
@@ -527,11 +532,15 @@ export default function Stats() {
   if (showEff) exOpts.push({ value: 'effort', label: t('Effort') })
 
   return <>
-    <div className="hdr"><div><h1>{t('Stats')}</h1><div className="sub">{t('Progress & history')}</div></div>
+    <div className="hdr"><div><h1>{body ? t('Body') : t('Stats')}</h1><div className="sub">{body ? t('Weight, measurements and composition') : t('Progress & history')}</div></div>
       <div className="row" style={{ gap: 3 }}><button className="iconbtn" onClick={() => useUI.getState().openSheet(close => <ReportsExport S={rawState} pdf statsFilters={{...exportFilters.current,bodyweightRange:range,exId:curEx,exMetric,measurementSelection:bodySelection}} close={close} />)} aria-label={t('Export Reports')} title={t('Export Reports')}><Icon name="download" /></button>{!MOBILE && <button className="iconbtn" onClick={() => window.print()} aria-label={t('Print / Save as PDF')} title={t('Print / Save as PDF')}><Icon name="clipboard" /></button>}<button className="iconbtn" data-tour="inbody" onClick={inBodySheet} aria-label={t('InBody history')} title={t('InBody history')}><Icon name="person" /></button></div></div>
 
-    <ModuleSwitch items={PROGRESS_VIEWS} current="/stats" />
-    <StatsSections selected={selectedSections} onToggle={toggleSection} />
+    <ModuleSwitch items={PROGRESS_VIEWS} current={body ? '/body' : '/stats'} />
+    {body ? <button type="button" className="card inbody-entry" onClick={inBodySheet}>
+      <span className="lrow-i"><Icon name="person" /></span>
+      <span style={{ flex: 1, minWidth: 0 }}><span className="card-title">{t('InBody history')}</span><span className="small muted" style={{ display: 'block', marginTop: 2 }}>{t('Body composition results by date')}</span></span>
+      <Icon name="chevronRight" className="chev" />
+    </button> : <StatsSections selected={selectedSections} onToggle={toggleSection} />}
 
     <div {...sectionProps('history')}>
       <TrainingHistory />

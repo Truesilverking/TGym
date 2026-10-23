@@ -15,7 +15,7 @@ import { t, exerciseNameFor, dateLocale } from '../lib/i18n.js'
 import { api } from '../lib/api.js'
 import { setProgressHighWater, supersetFlowStep, restAfterSet, restOnRecheck } from '../lib/supersetFlow.js'
 import Media from '../components/Media.jsx'
-import { startFlow, exercisePicker, exConfigSheet, exerciseDetailSheet, topWeightSheet, finishWorkout, workoutCompleteSheet, confirmSheet, exerciseNoteSheet, sessionNoteSheet } from '../sheets.jsx'
+import { startFlow, exercisePicker, exConfigSheet, exerciseDetailSheet, topWeightSheet, finishWorkout, workoutCompleteSheet, confirmSheet, exerciseNoteSheet, sessionNoteSheet, plateCalculatorSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
 import { Button, Check, NumberField } from '../components/ui.jsx'
 import { nextPrescription, applyPrescription, defaultIncrement, loadingStepFor } from '../lib/progression.js'
@@ -84,6 +84,9 @@ function SupersetRemoveChoices({ indices, workout, onSelect }) {
 }
 
 /* ---------- one exercise block (reps: weight×reps · time: a held duration · cardio: duration+speed) ---------- */
+// Equipment loaded with plates on a sleeve: the plate calculator applies.
+const PLATE_LOADED = new Set(['barbell', 'olympic barbell', 'ez barbell', 'trap bar'])
+
 function ExerciseBlock({ preview, entryIdx, compact, onToggle, onField, onAddSet, onRemoveSet, onAddWarmup, onRemoveSetAt, onStartTimed, onPairPrev, onPairNext, onSubstitute }) {
   const stored = useStore(s => s.S)
   const S = preview ? {...stored, active:preview} : stored
@@ -211,6 +214,7 @@ function ExerciseBlock({ preview, entryIdx, compact, onToggle, onField, onAddSet
     <div className="row between exercise-heading" style={{ marginBottom: 6 }}>
       <div className="grow"><div className={'exercise-title' + (compact ? ' compact' : '')}>{exerciseNameFor(ex, { entry, routineId: S.active.routineId })}</div></div>
       <div className="row" style={{ gap: 2, flex: 'none' }}>
+        {!compact && PLATE_LOADED.has(ex.eq) && <button className="iconbtn" aria-label={t('Plate calculator')} title={t('Plate calculator')} onClick={() => plateCalculatorSheet((entry.sets[currentSet] ?? entry.sets[entry.sets.length - 1])?.w)}><Icon name="plate" /></button>}
         {!compact && <button className="iconbtn" aria-label={t('Substitute for this workout')} title={t('Substitute for this workout')} onClick={onSubstitute}><Icon name="shuffle" /></button>}
         <button className="iconbtn" aria-label={t('Note')} title={t('Note')}
           style={entry.note ? { color: 'var(--acc)' } : undefined}

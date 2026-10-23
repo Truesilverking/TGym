@@ -130,10 +130,6 @@
 .chip.on{background:var(--label);color:var(--bg);border-color:var(--label);box-shadow:none;font-weight:650}
 .capitalize,.tag:not(.nocap),.chip:not(.nocap){text-transform:capitalize}
 .tag.nocap,.chip.nocap{text-transform:none}
-.pro-badge{
-  display:inline-flex;align-items:center;gap:4px;font-family:var(--font-label);text-transform:uppercase;letter-spacing:.08em;
-  font-size:11px;font-weight:700;border-radius:var(--r-pill);background:var(--yellow);color:#111;border:0;box-shadow:none;padding:3px 9px;
-}
 
 /* ------------------------------------------------------------- controls -- */
 .field,.input{border-radius:var(--r-md);background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--panel-edge)}
@@ -208,9 +204,9 @@
 #tabbar button.start:active{transform:none}
 #tabbar button.start:active .cir{transform:translateY(3px)}
 #tabbar button.start span:not(.cir){color:var(--label);font-weight:700}
-#tabbar button.start.rec .cir{background:var(--orange);color:#111}
-#tabbar button.start.rec::before{background:color-mix(in srgb,var(--orange) 55%,#000);animation:hex-ping 1.9s var(--ease) infinite}
-#tabbar button.start.rec span:not(.cir){color:var(--orange)}
+#tabbar button.start.rec .cir{background:var(--acc);color:var(--on-acc)}
+#tabbar button.start.rec::before{background:var(--acc-deep);animation:hex-ping 1.9s var(--ease) infinite}
+#tabbar button.start.rec span:not(.cir){color:var(--acc)}
 @keyframes hex-ping{0%,55%{opacity:1;transform:translateX(-50%) scale(1)}100%{opacity:0;transform:translateX(-50%) scale(1.35)}}
 @media(min-width:1000px){#tabbar,:root[data-theme="light"] #tabbar{left:0;right:0;width:auto;bottom:20px;transform:none;border-radius:var(--r-xl);padding:0 10px}}
 @media(max-width:360px){
@@ -255,7 +251,11 @@
 
 .today-row{width:auto;min-width:0;border-radius:var(--r-lg);background:var(--surface-2);border:0;box-shadow:none;padding:12px 12px 12px 12px;margin-top:4px}
 .today-row:active{transform:scale(.985);background:var(--surface-3)}
-.today-row.is-active{background:color-mix(in srgb,var(--orange) 12%,var(--surface-2));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--orange) 40%,transparent)}
+.today-row.is-active{background:color-mix(in srgb,var(--acc) 12%,var(--surface-2));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--acc) 40%,transparent)}
+/* a live dot marks the session that is running, in the user's accent */
+.tag.live{display:inline-flex;align-items:center;gap:6px}
+.tag.live::before{content:'';width:7px;height:7px;border-radius:50%;background:currentColor;animation:live-dot 1.6s ease-in-out infinite}
+@keyframes live-dot{50%{opacity:.35}}
 .today-row .ttl{font-family:var(--font-body);font-weight:700;font-size:20px;line-height:1.15;letter-spacing:-.015em;margin-top:2px;text-transform:none}
 .today-row .lrow-i{width:44px;height:44px;font-size:21px;border-radius:var(--r)}
 .today-row .tag{font-size:13px;padding:6px 12px}
@@ -367,7 +367,6 @@
 .nutri-macro>small{display:block;font-size:12px;color:var(--label-3);margin-top:2px}
 .nutri-macro .nutri-figure small{font-size:13px;margin-left:3px}
 .nutri-macro .nutri-meter{height:5px;margin:8px 0 0}
-.nutri-upsell{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;margin-top:14px;min-height:44px;color:var(--acc);font-weight:650;font-size:14px;border-radius:var(--r);background:var(--acc-soft)}
 .nutri-water-top{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .nutri-water-top .nutri-figure{font-size:36px}
 .nutri-water-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}
@@ -398,30 +397,6 @@
 .nutri-result dd{margin:0;font-family:var(--font-display);font-weight:800;font-size:20px}
 @media(max-width:360px){.nutri-macros{gap:6px}.nutri-macro{padding:10px 8px}.nutri-macro .nutri-figure{font-size:24px}.nutri-figure{font-size:46px}}
 
-/* ------------------------------------------------------------------- pro -- */
-.pro-sheet{display:flex;flex-direction:column;gap:16px}
-.pro-hero{text-align:center;padding-top:4px}
-.pro-hero .pro-badge{font-size:12px;padding:4px 10px;gap:5px}
-.pro-hero h3{margin:12px 0 6px}
-.pro-hero p{max-width:34ch;margin:0 auto;line-height:1.45}
-.pro-tiers{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
-.pro-tier{padding:14px;border-radius:var(--r-lg);background:var(--surface-2);border:1px solid transparent}
-.pro-tier.featured{border-color:color-mix(in srgb,var(--yellow) 50%,transparent);background:radial-gradient(120% 100% at 100% 0%,color-mix(in srgb,var(--yellow) 14%,transparent),transparent 60%),var(--surface-2)}
-.pro-tier.featured .lbl2{color:var(--yellow)}
-.pro-tier ul{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:7px;font-size:14px;line-height:1.3}
-.pro-tier li{display:flex;gap:7px;align-items:flex-start;color:var(--label-2)}
-.pro-tier.featured li{color:var(--label);font-weight:500}
-.pro-tier li .icn{flex:none;margin-top:2px;font-size:13px;color:var(--label-3);--icon-stroke:2.6}
-.pro-tier.featured li .icn{color:var(--yellow)}
-.pro-code{padding:14px;border-radius:var(--r-lg);background:var(--surface-2)}
-.pro-code-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
-.pro-code-row .field{text-transform:uppercase;letter-spacing:.08em;font-weight:600;background:var(--surface)}
-.pro-code-row .btn{width:auto;padding-inline:18px}
-.pro-msg{margin:10px 0 0;font-size:13px;font-weight:600}
-.pro-msg.error{color:var(--red)}
-.pro-msg.ok{color:var(--green)}
-.pro-actions{display:grid;gap:8px}
-
 /* ------------------------------------------------- remaining surfaces -- */
 .consistency-summary{border-radius:var(--r-lg);background:var(--surface-2);border:0;box-shadow:none}
 .consistency-secondary>div{border-color:var(--sep)}
@@ -449,3 +424,54 @@ a.metric{text-decoration:none}
 /* on the off-white canvas, round buttons need a white fill to read as controls */
 :root[data-theme="light"] .iconbtn{background:var(--surface);box-shadow:var(--panel-shadow),inset 0 0 0 1px var(--panel-edge)}
 :root[data-theme="light"] .card .iconbtn,:root[data-theme="light"] .sheet .iconbtn{background:var(--surface-2);box-shadow:none}
+
+/* ------------------------------------------------------- plate calculator -- */
+.plate-calc .stp-w{gap:8px}
+.plate-calc .plate-target .num{font-family:var(--font-display);font-weight:800;font-size:34px}
+.plate-calc .plate-target{min-height:60px}
+.plate-calc .plate-target button{height:60px;width:56px}
+.plate-bar{position:relative;display:flex;align-items:center;gap:2px;height:132px;margin:18px 0 14px;padding:0 10px;border-radius:var(--r-lg);background:var(--surface-2);overflow:hidden}
+.plate-sleeve{flex:none;width:28px;height:14px;border-radius:3px;background:linear-gradient(180deg,#d9d9d9,#8c8c8c)}
+.plate-sleeve.end{flex:1;min-width:16px;border-radius:0 3px 3px 0}
+.plate-collar{flex:none;width:10px;height:34px;margin-right:3px;border-radius:3px;background:linear-gradient(90deg,#9a9a9a,#e6e6e6,#9a9a9a)}
+.plate-disc{flex:none;display:grid;place-items:center;border-radius:4px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.25),inset -3px 0 0 rgba(0,0,0,.18)}
+.plate-disc b{writing-mode:vertical-rl;transform:rotate(180deg);font-family:var(--font-display);font-weight:800;font-size:12px;letter-spacing:.04em;color:rgba(255,255,255,.92)}
+.plate-red{background:#d8322a}.plate-blue{background:#2f63c9}.plate-yellow{background:#e9b417}.plate-green{background:#2f9b4c}
+.plate-white{background:#ecebe6}.plate-steel{background:linear-gradient(90deg,#8d8d8d,#cfcfcf,#8d8d8d)}
+.plate-yellow b,.plate-white b,.plate-steel b{color:rgba(0,0,0,.75)}
+.plate-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:2px}
+.plate-chip{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:var(--r-pill);background:var(--surface-2);font-weight:600;font-size:14px;font-variant-numeric:tabular-nums}
+.plate-chip i{width:12px;height:12px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.25)}
+.plate-note{margin:10px 2px 0;font-size:13px;line-height:1.45;color:var(--label-2)}
+.plate-note.warn{color:var(--orange)}
+
+/* a module with many sub-screens scrolls its switch instead of squeezing labels */
+.module-switch.many{overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.module-switch.many::-webkit-scrollbar{display:none}
+.module-switch.many button{flex:1 0 auto;padding:0 14px}
+.module-switch.many .icn{display:none}
+@media(min-width:520px){.module-switch.many .icn{display:block}}
+
+/* ---------------------------------------------------------------- records -- */
+.record-list{display:flex;flex-direction:column;gap:10px}
+.record-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:6px 10px;width:100%;padding:14px;text-align:left;color:var(--label);
+  border-radius:var(--r-lg);background:var(--surface);border:1px solid var(--panel-edge);box-shadow:var(--panel-shadow)}
+.record-row:active{transform:scale(.985)}
+.record-main{min-width:0}
+.record-main b{display:block;font-weight:650;font-size:16px;text-transform:capitalize;overflow-wrap:anywhere}
+.record-main small{display:block;margin-top:2px;font-size:12px;color:var(--label-2)}
+.record-figures{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.record-figures>span{display:flex;flex-direction:column;gap:3px;padding:10px 12px;border-radius:var(--r);background:var(--surface-2)}
+.record-figures .metric-value{font-size:28px}
+.record-figures small{font-size:12px;color:var(--label-2)}
+.inbody-entry{display:flex;align-items:center;gap:12px;width:100%;text-align:left;color:var(--label)}
+.inbody-entry:active{transform:scale(.99)}
+
+/* nutrition: food rows with an optional remove action, group labels, copy-day shortcut */
+.nutri-food-row{display:flex;align-items:center;gap:2px;border-bottom:1px solid var(--sep);padding-right:6px}
+.nutri-food-row:last-child{border-bottom:0}
+.nutri-food-list .nutri-food-row>button:first-child{flex:1;min-width:0;border-bottom:0}
+.nutri-food-list .nutri-food-row>.iconbtn{width:36px;height:36px;min-height:0;padding:0;border-bottom:0;flex:none;justify-content:center;color:var(--label-3)}
+.nutri-food-group{padding:10px 14px 6px;font-family:var(--font-label);text-transform:uppercase;letter-spacing:.07em;font-size:11px;font-weight:600;color:var(--label-3);border-bottom:1px solid var(--sep)}
+.nutri-copy{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:46px;margin:0 0 14px;border-radius:var(--r-pill);background:var(--acc-soft);color:var(--acc);font-weight:650;font-size:14px}
+.nutri-copy:active{transform:scale(.98)}

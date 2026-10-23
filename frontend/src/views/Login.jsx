@@ -169,7 +169,7 @@ export default function Login() {
           ) : (
             <div className="small muted" style={{ textAlign: 'left', lineHeight: 1.4 }}>
               {canGuest
-                ? t("This browser doesn't support passkeys — you can still use openGym locally on this device.")
+                ? t("This browser doesn't support passkeys — you can still use TGym locally on this device.")
                 : t("This browser doesn't support passkeys, and this instance requires an account. Try a browser or device with passkey support.")}
             </div>
           )}

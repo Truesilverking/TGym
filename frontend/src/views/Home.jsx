@@ -88,7 +88,7 @@ export default function Home() {
       <div className="row" style={{ gap: 8 }}>
         <button type="button" className={'today-row' + (S.active ? ' is-active' : '')} style={{ flex: 1 }} onClick={onToday}>
           <div className="row" style={{ gap: 9, minWidth: 0 }}>
-            <span className="lrow-i" style={{ background: S.active ? 'var(--orange)' : routine ? 'var(--acc)' : 'var(--surface-3)', color: S.active ? '#000' : routine ? 'var(--on-acc)' : 'var(--label-2)' }}>
+            <span className="lrow-i" style={{ background: S.active || routine ? 'var(--acc)' : 'var(--surface-3)', color: S.active || routine ? 'var(--on-acc)' : 'var(--label-2)' }}>
               <Icon name={S.active ? 'timer' : routine ? glyphOf(routine.emoji) : 'moon'} />
             </span>
             <div style={{ minWidth: 0 }}>
@@ -97,7 +97,7 @@ export default function Home() {
                 : routine ? routine.name : paused ? t('Training paused') : t('No upcoming workout')}{todayOvr && routine ? ' · ' + t('rescheduled') : ''}</div>
             </div>
           </div>
-          {S.active ? <span className="tag" style={{ color: 'var(--orange)', background: 'color-mix(in srgb,var(--orange) 16%,transparent)', fontWeight: 650 }}>{t('Resume')}</span>
+          {S.active ? <span className="tag acc live">{t('Resume')}</span>
             : routine ? <span className="tag acc">{t(nextDate === todayIso ? 'Start' : 'Scheduled')}</span>
             : <Icon name="plus" className="chev" />}
         </button>
@@ -128,12 +128,12 @@ export default function Home() {
         <dl><dt className="metric-label">{t('Completion')}</dt><dd className="metric-value">{consistencyPct ?? '–'}{consistencyPct != null && <small>%</small>}</dd></dl>
         <span className="nutri-meter" aria-hidden="true"><i style={{ width: (consistencyPct ?? 0) + '%' }} /></span>
       </a>
-      <button type="button" className="metric" onClick={() => bwSheet()} style={{ '--meter': 'var(--teal)' }} aria-label={bw ? undefined : t('Log weight')}>
+      <button type="button" className="metric" onClick={() => bwSheet()} style={{ '--meter': 'var(--acc)' }} aria-label={bw ? undefined : t('Log weight')}>
         <Icon name="scale" />
         <span className="metric-value">{bw ? fmtNum(bw.w) : '–'}{bw && <small>{S.unit}</small>}</span>
         <span className="metric-label">{bw && delta ? <span style={{ color: bwDeltaColor(delta, bw.w) }}>{(delta > 0 ? '+' : '−') + fmtNum(Math.abs(delta))} </span> : null}{t('Body Weight')}</span>
       </button>
-      <a className="metric" href="#/nutrition" style={{ '--meter': 'var(--orange)' }}>
+      <a className="metric" href="#/nutrition" style={{ '--meter': 'var(--acc)' }}>
         <Icon name="fork" />
         <dl><dt className="metric-label">{t('of {0} kcal', dailyNutri.goals.calories)}</dt><dd className="metric-value">{dailyNutri.totals.calories}<small>kcal</small></dd></dl>
         <span className="nutri-meter" aria-hidden="true"><i style={{ width: nutriCalsPct + '%' }} /></span>

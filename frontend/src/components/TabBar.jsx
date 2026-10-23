@@ -17,7 +17,7 @@ export default function TabBar({ onStart }) {
   if ((!user && !isGuest) || onboarding) return null
   const cur = loc.pathname.split('/')[1] || 'home'
   // Each module owns its sub-screens: Exercises live under Plan, History/Report under Progress.
-  const owner = { history: 'stats', progress: 'stats', library: 'plan', settings: 'home', admin: 'home' }
+  const owner = { history: 'stats', progress: 'stats', body: 'stats', records: 'stats', library: 'plan', settings: 'home', admin: 'home' }
   const on = k => (owner[cur] || cur) === k
 
   const startWorkout = () => {

@@ -99,7 +99,7 @@ The official signed APK is in three places, all the same file:
 Android asks you to allow installs from the browser the first time — that's standard for any
 app outside the Play Store. Check the `.sha256` if you got the file from anywhere else.
 
-Both come out of CI: the `build:apk` job in [`.gitlab-ci.yml`](../.gitlab-ci.yml) runs
+Both come out of CI: the release workflow in [`.github/workflows/release.yml`](../.github/workflows/release.yml) runs
 `pnpm build:mobile` and `./gradlew assembleRelease`, then `zipalign`s and signs the result
 with the release key. The key lives in *protected* CI variables (`ANDROID_KEYSTORE_B64`,
 `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`), so it only exists on `main` and on `v*`

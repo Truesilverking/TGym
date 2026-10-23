@@ -13,8 +13,7 @@ import { wakeLockSupported } from '../lib/wakelock.js'
 import { t, LANGS, INSTR_LANGS, exerciseNameModeOf } from '../lib/i18n.js'
 import { DEMO, REPO, STANDALONE } from '../lib/demo.js'
 import { MOBILE, shareExport } from '../lib/mobile.js'
-import { loadStarterPlan, confirmSheet, importFromApp, equipmentProfileSheet, planImportSheet, planToolsSheet, proUpgradeSheet } from '../sheets.jsx'
-import { isPro } from '../lib/membership.js'
+import { plateCalculatorSheet, loadStarterPlan, confirmSheet, importFromApp, equipmentProfileSheet, planImportSheet, planToolsSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
 import { Section, Row, SelectRow, Switch, Segmented, Button, TextField } from '../components/ui.jsx'
 import { biometricEnabled, checkDeviceBiometry, deviceLockEnabled, enrollDeviceBiometry, removeDevicePin, setBiometricEnabled, setDevicePin, verifyDevicePin } from '../lib/app-lock.js'
@@ -179,12 +178,12 @@ export default function Settings() {
         <Row icon="sparkles" iconTint="var(--acc)" title={t('You’re in the demo')} subtitle={t('Example data, stored only in this browser — change anything you like.')} />
         <Row icon="reset" iconTint="var(--blue)" title={t('Reset demo data')} accessory="chevron"
           onClick={() => confirmSheet({ title: t('Reset demo data?'), message: t('Puts the example plan, workouts and weigh-ins back the way they started.'), confirmText: t('Reset'), onConfirm: () => { resetDemo(); nav('/home'); toast(t('Demo data reset')) } })} />
-        <Row icon="rocket" iconTint="var(--indigo)" title={t('Self-host openGym')} subtitle={t('Passkey sign-in, sync across your devices, your own data.')} accessory="chevron"
+        <Row icon="rocket" iconTint="var(--indigo)" title={t('Self-host TGym')} subtitle={t('Passkey sign-in, sync across your devices, your own data.')} accessory="chevron"
           onClick={() => window.open(REPO, '_blank', 'noopener')} />
       </> : user ? <>
         <Row icon="personCircle" iconTint="var(--grey)" title={user.name} subtitle={t('Signed in with passkey — data syncs to this profile.')} />
         {user.admin && <Row icon="wrench" iconTint="var(--indigo)" title={t('Admin dashboard')} accessory="chevron" onClick={() => nav('/admin')} />}
-        <Row icon="link" iconTint="var(--blue)" title={t('Pair the mobile app')} subtitle={t('Connect the openGym app on your phone to this account.')} accessory="chevron"
+        <Row icon="link" iconTint="var(--blue)" title={t('Pair the mobile app')} subtitle={t('Connect the TGym app on your phone to this account.')} accessory="chevron"
           onClick={() => useUI.getState().openSheet(close => <PairSheet close={close} />)} />
         <Row icon="signOut" iconTint="var(--red)" title={t('Sign out')} danger onClick={() => confirmSheet({ title: t('Sign out?'), message: t('Your saved data is synced first. Active workouts and unsent changes stay on this device.'), confirmText: t('Sign out'), danger: true, onConfirm: async () => { try { const cleared = await signOut(); nav('/home'); if (cleared === false) toast(t('Sign-out completed. Your local data was kept on this device.')) } catch { toast(t('Could not sign out. Your local data was kept. Check your connection and try again.')) } } })} />
         <Row icon="shield" iconTint="var(--red)" title={t('Sign out everywhere')} subtitle={t('Ends this profile’s sessions on all your devices.')} danger onClick={signOutEverywhere} />
@@ -204,26 +203,13 @@ export default function Settings() {
       </>}
     </Section>
 
-    {/* ---------- membership / pro ---------- */}
-    <Section title={t('Membership & licence')}>
-      <Row
-        icon="sparkles"
-        iconTint={isPro(S) ? 'var(--yellow)' : 'var(--acc)'}
-        title={isPro(S) ? t('TGym Pro is active') : t('Free mode (local)')}
-        subtitle={isPro(S)
-          ? t('Unlimited routines, advanced nutrition and elite techniques are unlocked.')
-          : t('Unlock unlimited routines, full macros and the metabolic TDEE calculator.')}
-        accessory="chevron"
-        onClick={proUpgradeSheet}
-      />
-    </Section>
 
     {/* ---------- general ---------- */}
     <Section title={t('General')} footer={t('Changing a unit automatically converts all saved values, including history and active workouts.')}>
       <SelectRow
         icon="globe" iconTint="var(--blue)" title={t('Language')}
         value={S.lang || 'en'} onChange={v => update(s => { s.lang = v })}
-        options={Object.entries(LANGS).filter(([k]) => k === 'es' || k === 'en').map(([k, name]) => ({
+        options={Object.entries(LANGS).map(([k, name]) => ({
           value: k, label: name,
           subtitle: INSTR_LANGS.includes(k) ? null : t("Exercise instructions aren't available in this language yet — they stay in English."),
         }))}
@@ -250,6 +236,7 @@ export default function Settings() {
 
     {/* ---------- during a workout ---------- */}
     <Section title={t('During a workout')} footer={wakeOK ? t('The screen stays on while a workout is running, so you don’t have to unlock your phone between sets.') : null}>
+        <Row icon="plate" iconTint="var(--acc)" title={t('Plate calculator')} subtitle={t('How to load the bar for a target weight.')} accessory="chevron" onClick={() => plateCalculatorSheet()} />
       <SelectRow icon="timer" iconTint="var(--orange)" title={t('Rest timer')}
         value={S.restSec} onChange={v => update(s => { s.restSec = v })}
         options={[{ value: 0, label: t('Off') }, ...[60, 90, 120, 150, 180].map(v => ({ value: v, label: v + 's' }))]} />
@@ -388,7 +375,7 @@ export default function Settings() {
     {!MOBILE && <Section title={t('Tip')}>
       <Row icon="lightbulb" iconTint="var(--yellow)"
         title={IS_ANDROID ? t('In Chrome: ⋮ menu → Add to Home screen') : t('In Safari: Share → Add to Home Screen')}
-        subtitle={t('to install openGym as a full-screen app.') + ' ' + (user ? t('Your data syncs with your profile — sign in anywhere to see it.') : t('Guest data stays on this device — export a backup now and then!'))} />
+        subtitle={t('to install TGym as a full-screen app.') + ' ' + (user ? t('Your data syncs with your profile — sign in anywhere to see it.') : t('Guest data stays on this device — export a backup now and then!'))} />
     </Section>}
 
     {/* The version, at the bottom of Settings — which is where the support template has been
@@ -481,7 +468,7 @@ function PushCard({ S, update, toast }) {
           (S.reminder?.tz ? ' ' + t('Timezone: {0} (auto-detected, updates if you travel).', S.reminder.tz) : '')
         : null}
     >
-      <Row icon="bell" iconTint="var(--red)" title={t('Push notifications')} subtitle={t('Rest-timer alerts, even if openGym is closed.')}>
+      <Row icon="bell" iconTint="var(--red)" title={t('Push notifications')} subtitle={t('Rest-timer alerts, even if TGym is closed.')}>
         <Switch checked={on} disabled={busy} onChange={toggle} />
       </Row>
     </Section>
@@ -531,7 +518,7 @@ function PairSheet({ close }) {
   return <>
     <h3>{t('Pair the mobile app')}</h3>
     <div className="muted small" style={{ marginBottom: 14 }}>
-      {t('On the openGym app, choose “Connect to my server”, then enter this address and the code below. It expires in 5 minutes.')}
+      {t('On the TGym app, choose “Connect to my server”, then enter this address and the code below. It expires in 5 minutes.')}
     </div>
     {err ? <div className="dim small">{err}</div> : (
       <div className="card" style={{ textAlign: 'center', fontSize: 30, fontWeight: 700, letterSpacing: '.16em', padding: '18px 0' }}>

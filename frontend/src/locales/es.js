@@ -689,7 +689,7 @@ export default {
   'Your workouts. Your weights. Your profile.': 'Tus entrenamientos. Tus pesos. Tu perfil.',
   'Sign in with passkey': 'Iniciar sesión con passkey',
   'Create new profile': 'Crear perfil nuevo',
-  "This browser doesn't support passkeys — you can still use openGym locally on this device.": 'Este navegador no admite passkeys — aun así puedes usar openGym localmente en este dispositivo.',
+  "This browser doesn't support passkeys — you can still use TGym locally on this device.": 'Este navegador no admite passkeys — aun así puedes usar TGym localmente en este dispositivo.',
   "This browser doesn't support passkeys, and this instance requires an account. Try a browser or device with passkey support.": 'Este navegador no admite passkeys y este servidor requiere una cuenta. Prueba con un navegador o dispositivo compatible con passkeys.',
   'Continue without account': 'Continuar sin cuenta',
   'Passkeys use {0} — no passwords.': 'Las passkeys usan {0} — sin contraseñas.',
@@ -743,14 +743,14 @@ export default {
   'Tip': 'Consejo',
   'In Chrome: ⋮ menu → Add to Home screen': 'En Chrome: menú ⋮ → Añadir a pantalla de inicio',
   'In Safari: Share → Add to Home Screen': 'En Safari: Compartir → Añadir a pantalla de inicio',
-  'to install openGym as a full-screen app.': 'para instalar openGym como app a pantalla completa.',
+  'to install TGym as a full-screen app.': 'para instalar TGym como app a pantalla completa.',
   'Your data syncs with your profile — sign in anywhere to see it.': 'Tus datos se sincronizan con tu perfil — inicia sesión donde sea para verlos.',
   'Guest data stays on this device — export a backup now and then!': 'Los datos de invitado se quedan en este dispositivo — ¡exporta una copia de vez en cuando!',
   'free & open source (AGPL v3)': 'gratis y de código abierto (AGPL v3)',
   'Notifications': 'Notificaciones',
   'Not supported in this browser.': 'No compatible con este navegador.',
   'Push notifications': 'Notificaciones push',
-  'Rest-timer alerts, even if openGym is closed.': 'Avisos del temporizador de descanso, incluso con openGym cerrado.',
+  'Rest-timer alerts, even if TGym is closed.': 'Avisos del temporizador de descanso, incluso con TGym cerrado.',
   'Workout day reminder': 'Recordatorio de día de entrenamiento',
   'Reminder time': 'Hora del recordatorio',
   "Only sent on days you have a routine planned and haven't logged a workout yet.": 'Solo se envía los días con rutina planificada y sin entrenamiento registrado.',
@@ -922,7 +922,7 @@ export default {
   'Use this weekly schedule': 'Usar este horario semanal',
   'Replaces your current Mon–Sun assignments.': 'Reemplaza tu asignación actual de lun–dom.',
   'Added {0} routines to your plan': 'Se añadieron {0} rutinas a tu plan',
-  'this isn’t an openGym plan file': 'esto no es un archivo de plan de openGym',
+  'this isn’t a TGym plan file': 'esto no es un archivo de plan de TGym',
   'Shared routine': 'Rutina compartida',
   'Unknown exercise': 'Ejercicio desconocido',
   'Weekly Training Plan': 'Plan de entrenamiento semanal',
@@ -1078,9 +1078,9 @@ export default {
   'Connect to my server': 'Conectar a mi servidor',
   'Sync this device to your own self-hosted openGym instead.': 'Sincroniza este dispositivo con tu propio openGym self-hosted.',
   'Pair the mobile app': 'Emparejar la app móvil',
-  'Connect the openGym app on your phone to this account.': 'Conecta la app de openGym en tu móvil a esta cuenta.',
+  'Connect the TGym app on your phone to this account.': 'Conecta la app de TGym en tu móvil a esta cuenta.',
   'Could not generate a code': 'No se pudo generar un código',
-  'On the openGym app, choose “Connect to my server”, then enter this address and the code below. It expires in 5 minutes.': 'En la app de openGym, elige «Conectar a mi servidor», luego introduce esta dirección y el código de abajo. Caduca en 5 minutos.',
+  'On the TGym app, choose “Connect to my server”, then enter this address and the code below. It expires in 5 minutes.': 'En la app de TGym, elige «Conectar a mi servidor», luego introduce esta dirección y el código de abajo. Caduca en 5 minutos.',
   'Enter your server address and the code': 'Introduce la dirección de tu servidor y el código',
   'Connected': 'Conectado',
   'Could not connect': 'No se pudo conectar',
@@ -1253,8 +1253,8 @@ export default {
   ,'My gym': 'Mi gimnasio'
   ,'Choose how to begin': 'Elige cómo comenzar'
   ,'Create from scratch': 'Crear desde cero'
-  ,'Import openGym or TGym backup': 'Importar copia de openGym o TGym'
-  ,'not a TGym or openGym backup or plan': 'no es una copia ni un plan de TGym u openGym'
+  ,'Import a backup': 'Importar una copia de seguridad'
+  ,'not a TGym backup or plan': 'no es una copia ni un plan de TGym'
   ,'Could not read that backup': 'No se pudo leer esa copia de seguridad'
   ,'Default rest': 'Descanso predeterminado'
   ,'Exercises and routines can override this later.': 'Los ejercicios y las rutinas pueden usar otros tiempos después.'
@@ -1513,7 +1513,7 @@ export default {
   ,'Reset demo data': 'Restablecer datos de demostración'
   ,'Reset demo data?': '¿Restablecer los datos de demostración?'
   ,'Self-host it in a minute →': 'Instálalo en tu propio servidor en un minuto →'
-  ,'Self-host openGym': 'Instalar openGym en tu servidor'
+  ,'Self-host TGym': 'Instalar TGym en tu servidor'
   ,'Set': 'Serie'
   ,'Start the demo': 'Iniciar la demostración'
   ,'This demo runs entirely in your browser on example data — nothing is sent anywhere. Passkey sign-in and sync across your devices come with the openGym server, which you get by self-hosting it.': 'Esta demostración funciona completamente en tu navegador con datos de ejemplo; no se envía nada. El inicio con clave de acceso y la sincronización entre dispositivos requieren instalar el servidor de openGym.'
@@ -1885,7 +1885,6 @@ export default {
 ,"{0} g protein · {1} ml water":"{0} g proteína · {1} ml agua"
 ,"Nutrition":"Nutrición"
 ,"Back to home":"Volver al inicio"
-,"Local profile":"Perfil local"
 ,"Nutrition goals":"Metas nutricionales"
 ,"Previous day":"Día anterior"
 ,"Next day":"Día siguiente"
@@ -1894,7 +1893,6 @@ export default {
 ,"Remaining":"Restante"
 ,"Over goal":"Sobre la meta"
 ,"of {0} g":"de {0} g"
-,"Unlock the advanced metabolic calculator with TGym Pro":"Desbloquea la calculadora metabólica avanzada con TGym Pro"
 ,"Hydration":"Hidratación"
 ,"Remove {0} ml of water":"Quitar {0} ml de agua"
 ,"Add {0} ml of water":"Añadir {0} ml de agua"
@@ -1958,34 +1956,6 @@ export default {
 ,"Leave local profile?":"¿Salir del perfil local?"
 ,"You will return to the welcome screen. Your local data stays safely on this device.":"Volverás a la pantalla de bienvenida. Tus datos locales se conservan de forma segura en este dispositivo."
 ,"Back at the welcome screen":"De vuelta en la bienvenida"
-,"Membership & licence":"Membresía y licencia"
-,"TGym Pro is active":"TGym Pro está activo"
-,"Free mode (local)":"Modo gratis (local)"
-,"Unlimited routines, advanced nutrition and elite techniques are unlocked.":"Tienes rutinas ilimitadas, nutrición avanzada y técnicas élite."
-,"Unlock unlimited routines, full macros and the metabolic TDEE calculator.":"Desbloquea rutinas ilimitadas, macros completos y la calculadora metabólica TDEE."
-,"Enter a code":"Introduce un código"
-,"TGym Pro activated successfully!":"¡TGym Pro activado con éxito!"
-,"TGym Pro activated":"TGym Pro activado"
-,"Invalid code. Try TGYM-PRO or ELITE":"Código no válido. Prueba con TGYM-PRO o ELITE"
-,"Free mode restored":"Modo gratis restaurado"
-,"TGym Pro activated! Enjoy every feature":"¡TGym Pro activado! Disfruta de todas las funciones"
-,"Unlock TGym Pro":"Desbloquea TGym Pro"
-,"100% local and private, with no recurring subscription.":"100% local y privado, sin suscripciones recurrentes."
-,"Free mode":"Modo gratis"
-,"Up to 3 routines":"Hasta 3 rutinas"
-,"Unlimited workouts":"Entrenamientos ilimitados"
-,"Calorie & water goals":"Metas de calorías y agua"
-,"History & charts":"Historial y gráficos"
-,"Unlimited routines":"Rutinas ilimitadas"
-,"Full macros (P/C/F)":"Macros completos (P/C/G)"
-,"Metabolic TDEE calculator":"Calculadora metabólica TDEE"
-,"Advanced techniques":"Técnicas avanzadas"
-,"Pro badge & exclusive themes":"Insignia Pro y temas exclusivos"
-,"Activate with a licence code":"Activar con código de licencia"
-,"e.g. TGYM-PRO or ELITE":"p. ej. TGYM-PRO o ELITE"
-,"Activate":"Activar"
-,"Switch back to free mode (testing)":"Volver al modo gratis (pruebas)"
-,"Try TGym Pro instantly (offline)":"Probar TGym Pro al instante (sin conexión)"
 ,"Step {0} of {1}":"Paso {0} de {1}"
 ,"Summary":"Resumen"
 ,"See progress":"Ver progreso"
@@ -1997,4 +1967,37 @@ export default {
 ,"Overview":"Resumen"
 ,"Report":"Informe"
 ,"Today, your plan, training, nutrition and progress each have their own tab.":"Hoy, tu plan, el entrenamiento, la nutrición y el progreso tienen cada uno su propia pestaña."
+,"Goal: {0} kcal":"Meta: {0} kcal"
+,"Plate calculator":"Calculadora de discos"
+,"How to load the bar for a target weight.":"Cómo cargar la barra para un peso objetivo."
+,"Total weight ({0})":"Peso total ({0})"
+,"Bar":"Barra"
+,"Empty bar":"Barra vacía"
+,"That is lighter than the bar ({0} {1}).":"Es menos que el peso de la barra ({0} {1})."
+,"Each side":"Cada lado"
+,"Just the bar.":"Solo la barra."
+,"Closest load: {0} {1}. These plates cannot make the last {2} {1}.":"Carga más cercana: {0} {1}. Con estos discos no se pueden cubrir los últimos {2} {1}."
+,"Body":"Cuerpo"
+,"Weight, measurements and composition":"Peso, medidas y composición"
+,"Body composition results by date":"Resultados de composición corporal por fecha"
+,"{0} exercises with a record":"{0} ejercicios con récord"
+,"Search exercises…":"Buscar ejercicios…"
+,"{0} sessions · last record {1}":"{0} sesiones · último récord {1}"
+,"Finish a workout with weighted sets to start your records.":"Termina un entrenamiento con series con peso para empezar tus récords."
+,"Recent":"Recientes"
+,"Foods":"Alimentos"
+,"Create":"Crear"
+,"My foods":"Mis alimentos"
+,"Serving (optional)":"Porción (opcional)"
+,"e.g. 100 g or 1 cup":"p. ej. 100 g o 1 taza"
+,"Save to My foods":"Guardar en Mis alimentos"
+,"Find it again under Foods next time.":"La próxima vez lo encontrarás en Alimentos."
+,"Added and saved to My foods":"Añadido y guardado en Mis alimentos"
+,"Added":"Añadido"
+,"{0} foods copied from {1}":"{0} alimentos copiados de {1}"
+,"Copy {0} foods from {1}":"Copiar {0} alimentos de {1}"
+,"PRs":"Récords"
+,"Personal records":"Récords personales"
+,"Copy 1 food from {0}":"Copiar 1 alimento de {0}"
+,"Tap to return to today":"Toca para volver a hoy"
 }

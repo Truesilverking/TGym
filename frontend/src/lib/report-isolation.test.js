@@ -89,4 +89,4 @@ it('exports all 255 nonempty Progress section selections without leaking unselec
  }
  expect(()=>progressReportPages(null,{report,sections:[]})).toThrow('Select at least one section.')
  expect(s).toEqual(before)
-})
+}, 20000) // 255 full renders: exhaustive by design, so it gets more than the 5 s default under a loaded CI runner

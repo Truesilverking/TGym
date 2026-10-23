@@ -3,18 +3,12 @@
 // (import.meta.glob lazy
 // loads, the React subscription hook) live in i18n.js and re-export from here.
 
-export const LANGS = {
-  en: 'English', de: 'Deutsch', es: 'Español', fr: 'Français', it: 'Italiano',
-  pt: 'Português (Portugal)', 'pt-BR': 'Português (Brasil)', pl: 'Polski',
-  tr: 'Türkçe', ru: 'Русский', zh: '中文',
-  ko: '한국어', hi: 'हिन्दी'
-}
-export const INSTR_LANGS = ['en', 'es', 'fr', 'it', 'tr', 'ru', 'zh', 'hi', 'pl', 'ko', 'pt-BR']
-export const EXERCISE_NAME_LANGS = ['es', 'pt-BR']
-export const DATE_LOCALES = {
-  en: 'en-GB', de: 'de-DE', es: 'es-ES', fr: 'fr-FR', it: 'it-IT', pt: 'pt-PT', 'pt-BR': 'pt-BR',
-  pl: 'pl-PL', tr: 'tr-TR', ru: 'ru-RU', zh: 'zh-CN', ko: 'ko-KR', hi: 'hi-IN'
-}
+// TGym ships Spanish and English. A profile saved with any other language (inherited from
+// openGym) falls back to English: setLang and _setLangState both reject unknown codes.
+export const LANGS = { en: 'English', es: 'Español' }
+export const INSTR_LANGS = ['en', 'es']
+export const EXERCISE_NAME_LANGS = ['es']
+export const DATE_LOCALES = { en: 'en-GB', es: 'es-ES' }
 
 let lang = 'en'                 // set only by _setLangState, called from i18n.js setLang
 let dict = {}                   // current locale pack (empty = English fallback)

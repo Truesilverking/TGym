@@ -116,7 +116,7 @@ export function buildPlanBundle(S, name) {
 export function parsePlan(raw) {
   const data = typeof raw === 'string' ? JSON.parse(raw) : raw
   if (!data || !(data.framegym_plan || data.opengym_plan) || !Array.isArray(data.routines)) {
-    throw new Error(t('this isn’t an openGym plan file'))
+    throw new Error(t('this isn’t a TGym plan file'))
   }
   const customEx = (Array.isArray(data.customEx) ? data.customEx : []).filter(c => c && c.id)
   const known = new Set(customEx.map(c => c.id))

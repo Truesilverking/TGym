@@ -10,6 +10,8 @@ export const PLAN_VIEWS = [
 ]
 export const PROGRESS_VIEWS = [
   { to: '/stats', icon: 'chart', label: 'Overview' },
+  { to: '/body', icon: 'scale', label: 'Body' },
+  { to: '/records', icon: 'trophy', label: 'PRs', name: 'Personal records' },
   { to: '/history', icon: 'history', label: 'History', tour: 'history' },
   { to: '/progress', icon: 'chartLine', label: 'Report', name: 'Progress Report' },
 ]
@@ -20,7 +22,7 @@ export const PROGRESS_VIEWS = [
 export default function ModuleSwitch({ items = PLAN_VIEWS, current, label }) {
   const name = label || t(items === PROGRESS_VIEWS ? 'Progress sections' : 'Plan sections')
   return (
-    <nav className="module-switch" aria-label={name}>
+    <nav className={'module-switch' + (items.length > 3 ? ' many' : '')} aria-label={name}>
       {items.map(item => (
         <button key={item.to} type="button" data-tour={item.tour} aria-label={t(item.name || item.label)} aria-current={current === item.to ? 'page' : undefined}
           onClick={() => { if (current !== item.to) nav(item.to) }}>
