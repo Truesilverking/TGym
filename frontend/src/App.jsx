@@ -30,6 +30,7 @@ import Stats from './views/Stats.jsx'
 import ProgressReport from './views/ProgressReport.jsx'
 import History from './views/History.jsx'
 import Library from './views/Library.jsx'
+import Nutrition from './views/Nutrition.jsx'
 import Settings from './views/Settings.jsx'
 import Admin from './views/Admin.jsx'
 import AppLock from './components/AppLock.jsx'
@@ -57,7 +58,7 @@ function applyPrefs(theme, accent, reduceMotion = false) {
   de.dataset.accent = ACCENTS[accent] ? accent : 'lime'
   de.dataset.reduceMotion = reduceMotion ? 'true' : 'false'
   const meta = document.querySelector('meta[name="theme-color"]')
-  if (meta) meta.content = de.dataset.theme === 'light' ? '#f2f2f7' : '#000000'
+  if (meta) meta.content = de.dataset.theme === 'light' ? '#e9e7e1' : '#0b0b0a'
   syncSystemAppearance(de.dataset.theme)
 }
 
@@ -246,6 +247,7 @@ function Shell() {
               <Route path="/progress" element={<ProgressReport />} />
               <Route path="/history" element={<History />} />
               <Route path="/library" element={<Library />} />
+              <Route path="/nutrition" element={<Nutrition />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/admin" element={user?.admin ? <Admin /> : <Navigate to="/home" replace />} />
               <Route path="*" element={<Navigate to="/home" replace />} />

@@ -24,6 +24,7 @@ import { glyphOf } from '../lib/glyphs.js'
 import { deloadStatus, streakTier, trainingStreak } from '../lib/training-plan.js'
 import StreakFlame from '../components/StreakFlame.jsx'
 import { streakStatusText } from '../components/StreakStatus.jsx'
+import { getDailyNutrition } from '../lib/nutrition.js'
 
 // Home = what to do now + a quick glance. Deep charts & history live in Stats.
 export default function Home() {
@@ -44,6 +45,8 @@ export default function Home() {
   const streak = trainingStreak(S,today)
   const deload = deloadStatus(S,todayIso)
   const paused = isTrainingPaused(S,todayIso)
+  const dailyNutri = getDailyNutrition(S, todayIso)
+  const nutriCalsPct = Math.min(100, Math.round((dailyNutri.totals.calories / Math.max(1, dailyNutri.goals.calories)) * 100))
 
   const monday = new Date(today); monday.setDate(today.getDate() - ((today.getDay() + 6) % 7) + weekOffset * 7)
   const strip = []
@@ -71,7 +74,7 @@ export default function Home() {
 
     {S.deload?.on && (deload.active || (deload.daysUntil != null && deload.daysUntil <= 7)) && <div className="card" style={{ border: '1px solid color-mix(in srgb,var(--orange) 55%,transparent)' }}><div className="row" style={{ gap: 9 }}><Icon name="arrowDown" style={{ color: 'var(--orange)' }} /><div><b>{deload.active ? t('Deload week') : t('Deload week starts soon')}</b><div className="small dim">{deload.active ? t('Load {0}% · Working sets {1}% · RIR {2}', deload.config.loadPct, deload.config.setPct, effortValue('rir', deload.config.targetRir)) : t('Starts in {0} days.', deload.daysUntil) + ' · ' + deload.start + ' – ' + deload.end}</div></div></div></div>}
 
-    <div className="card" data-tour="calendar">
+    <div className="card plate" data-tour="calendar">
       <div className="row between" style={{ marginBottom: 8 }}>
         <button className="iconbtn" style={{ width: 30, height: 30, fontSize: 15 }} onClick={() => setWeekOffset(w => w - 1)} aria-label={t('Previous week')}><Icon name="chevronLeft" /></button>
         <button className="week-expand" onClick={() => homeCalendarSheet(monday)} aria-label={t('Expand calendar')}>{wkLabel}<Icon name="chevronRight" /></button>
@@ -79,9 +82,9 @@ export default function Home() {
       </div>
       <div className="week">{strip}</div>
       <div className="row" style={{ gap: 8 }}>
-        <button type="button" className="today-row" style={{ flex: 1 }} onClick={onToday}>
+        <button type="button" className={'today-row' + (S.active ? ' is-active' : '')} style={{ flex: 1 }} onClick={onToday}>
           <div className="row" style={{ gap: 9, minWidth: 0 }}>
-            <span className="lrow-i" style={{ background: S.active ? 'var(--orange)' : routine ? 'var(--acc)' : 'var(--surface-3)' }}>
+            <span className="lrow-i" style={{ background: S.active ? 'var(--orange)' : routine ? 'var(--acc)' : 'var(--surface-3)', color: S.active ? '#000' : routine ? 'var(--on-acc)' : 'var(--label-2)' }}>
               <Icon name={S.active ? 'timer' : routine ? glyphOf(routine.emoji) : 'moon'} />
             </span>
             <div style={{ minWidth: 0 }}>
@@ -90,7 +93,7 @@ export default function Home() {
                 : routine ? routine.name : paused ? t('Training paused') : t('No upcoming workout')}{todayOvr && routine ? ' · ' + t('rescheduled') : ''}</div>
             </div>
           </div>
-          {S.active ? <span className="tag" style={{ color: 'var(--orange)', background: 'color-mix(in srgb,var(--orange) 16%,transparent)' }}>{t('Resume')}</span>
+          {S.active ? <span className="tag" style={{ color: 'var(--orange)', background: 'color-mix(in srgb,var(--orange) 16%,transparent)', fontWeight: 650 }}>{t('Resume')}</span>
             : routine ? <span className="tag acc">{t(nextDate === todayIso ? 'Start' : 'Scheduled')}</span>
             : <Icon name="plus" className="chev" />}
         </button>
@@ -136,6 +139,18 @@ export default function Home() {
         </div>
       ) : <div className="muted small">{t("No entries yet — log your weight to start the curve. It's also asked before every workout.")}</div>}
     </div>
+
+    <button type="button" className="card home-nutri" onClick={() => nav('/nutrition')}>
+      <span className="row between" style={{ marginBottom: 10 }}>
+        <span className="card-title">{t("Today's nutrition")}</span>
+        <Icon name="chevronRight" className="chev" />
+      </span>
+      <span className="row between" style={{ alignItems: 'baseline', gap: 10 }}>
+        <span className="nutri-figure">{dailyNutri.totals.calories}<small>/ {dailyNutri.goals.calories} kcal</small></span>
+        <span className="dim small">{t('{0} g protein · {1} ml water', dailyNutri.totals.protein, dailyNutri.waterMl)}</span>
+      </span>
+      <span className="nutri-meter" aria-hidden="true"><i style={{ width: nutriCalsPct + '%' }} /></span>
+    </button>
 
     <TrainingPauseAction onlyPaused />
   </div>

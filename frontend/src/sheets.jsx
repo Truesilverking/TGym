@@ -28,6 +28,7 @@ import StreakStatus from './components/StreakStatus.jsx'
 import WorkoutSummaryStreak from './components/WorkoutSummaryStreak.jsx'
 import StreakMilestoneCelebration from './components/StreakMilestoneCelebration.jsx'
 import { evaluateStreakMilestones, isCurrentStreakMilestone } from './lib/streak-milestones.js'
+import ProUpgradeSheet from './components/ProUpgradeSheet.jsx'
 import { useLocalNow } from './lib/use-local-now.js'
 import CalendarExport from './components/CalendarExport.jsx'
 import { calendarDay } from './lib/calendar-data.js'
@@ -1971,3 +1972,6 @@ export function doFinishWorkout(options = {}) {
   const presentation = { claim, shown: false }
   ui().openSheet(close => <><FinishSummary w={w} prs={prs} e1prs={e1prs} presentation={presentation} close={close} />{['inactivity','abandoned','auto_completed'].includes(w.finishReason) && <Button onClick={()=>{update(s=>resumeAutoFinished(s,w.id));close();nav('/workout')}}>{t('Continue in a new session')}</Button>}</>, { kind: 'center', locked: true })
 }
+
+export const proUpgradeSheet = () => ui().openSheet(close => <ProUpgradeSheet close={close} />)
+

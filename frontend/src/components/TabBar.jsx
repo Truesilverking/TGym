@@ -12,9 +12,11 @@ export default function TabBar({ onStart }) {
   const S = useStore(s => s.S)
   const user = useStore(s => s.user)
   const isGuest = useStore(s => s.isGuest())
-  if (!user && !isGuest) return null
+  const onboarding = useStore(s => s.needsMobileOnboarding)
+  // First-run setup is a full-screen flow: the rail would offer exits into empty screens.
+  if ((!user && !isGuest) || onboarding) return null
   const cur = loc.pathname.split('/')[1] || 'home'
-  const on = k => cur === k || (cur === 'history' && k === 'stats') || (cur === 'settings' && k === 'home')
+  const on = k => cur === k || (cur === 'history' && k === 'stats') || (cur === 'settings' && k === 'home') || (cur === 'nutrition' && k === 'home')
 
   const startWorkout = () => {
     if (!S.active) {

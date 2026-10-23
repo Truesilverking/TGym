@@ -123,3 +123,16 @@ English source produced with OpenAI Codex and Anthropic Claude Code
 language-model assistance. They are not copied from a separate Portuguese
 dataset. Their review status and translation policy are documented alongside
 the source files.
+
+## Bundled fonts
+
+The interface fonts in `frontend/src/assets/fonts/` are redistributed under the
+SIL Open Font License 1.1; the full licence text sits next to the files.
+
+- **Barlow** and **Barlow Condensed** — Copyright 2017 The Barlow Project Authors
+  (https://github.com/jpt/barlow). `OFL-Barlow.txt`.
+- **Big Shoulders Display** — Copyright 2019 The Big Shoulders Project Authors
+  (https://github.com/xotypeco/big_shoulders). `OFL-BigShoulders.txt`.
+
+They are bundled (latin and latin-extended subsets, WOFF2) so the PWA renders the
+same offline; other scripts fall back to the system font.

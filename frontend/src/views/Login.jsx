@@ -8,6 +8,8 @@ import { guestAllowed } from '../lib/guest.js'
 import { useState, useRef, useEffect } from 'react'
 import AuthIdentity from '../components/AuthIdentity.jsx'
 import { Button } from '../components/ui.jsx'
+import Icon from '../components/Icon.jsx'
+import { parseTGymJson } from '../lib/json-import.js'
 
 function RegisterSheet({ close }) {
   const { setUser, pushState, pullState, loadConfig } = useStore()
@@ -47,25 +49,69 @@ function RegisterSheet({ close }) {
 }
 
 export default function Login() {
-  const { setUser, pullState, setGuest } = useStore()
+  const { setUser, pullState, setGuest, replaceState } = useStore()
   const config = useStore(s => s.config)
   const canGuest = guestAllowed(config)
+  const fileRef = useRef(null)
+
   const signIn = async () => {
-    try { const u = await passkeyLogin(); setUser(u); await pullState(); useUI.getState().toast(t('Welcome back, {0}', u.name)) }
-    catch (e) { if (e.name !== 'NotAllowedError' && e.name !== 'AbortError') useUI.getState().toast(e.message || t('Sign-in failed')) }
+    try {
+      const u = await passkeyLogin()
+      setUser(u)
+      await pullState()
+      useUI.getState().toast(t('Welcome back, {0}', u.name))
+    } catch (e) {
+      if (e.name !== 'NotAllowedError' && e.name !== 'AbortError') {
+        useUI.getState().toast(e.message || t('Sign-in failed'))
+      }
+    }
   }
+
+  const restoreBackup = e => {
+    const f = e.target.files?.[0]
+    e.target.value = ''
+    if (!f) return
+    const rd = new FileReader()
+    rd.onload = () => {
+      try {
+        const imported = parseTGymJson(rd.result)
+        if (imported.kind === 'backup') {
+          replaceState(imported.data, false)
+          setGuest(true)
+          useUI.getState().toast(t('Backup imported'))
+        } else {
+          useUI.getState().toast(t('Invalid backup file'))
+        }
+      } catch {
+        useUI.getState().toast(t('Could not read that backup'))
+      }
+    }
+    rd.readAsText(f)
+  }
+
   const head = <AuthIdentity />
 
   // Demo build: no backend to sign in against — the only way in is the local guest profile.
   if (DEMO) return (
     <div className="narrow auth-panel">
       {head}
-      <div className="muted" style={{ marginBottom: 30 }}>{t('Live demo — everything stays in this browser.')}</div>
-      <Button variant="primary" icon="sparkles" onClick={() => setGuest(true)}>{t('Start the demo')}</Button>
-      <div className="card small muted" style={{ textAlign: 'left', marginTop: 16 }}>
-        {t('This demo runs entirely in your browser on example data — nothing is sent anywhere. Passkey sign-in and sync across your devices come with the openGym server, which you get by self-hosting it.')}
+      <div className="muted" style={{ marginBottom: 20 }}>{t('Live demo — everything stays in this browser.')}</div>
+      <div className="auth-modes">
+        <div className="auth-mode-card featured">
+          <div className="auth-mode-top">
+            <span className="auth-mode-title">
+              <Icon name="sparkles" style={{ color: 'var(--acc)' }} />
+              {t('Interactive demo')}
+            </span>
+            <span className="auth-badge">{t('Instant')}</span>
+          </div>
+          <div className="auth-mode-desc">
+            {t('Try TGym right in your browser with sample data. Nothing is sent to any server.')}
+          </div>
+          <Button variant="primary" icon="play" onClick={() => setGuest(true)}>{t('Start the demo')}</Button>
+        </div>
       </div>
-      <div className="dim small" style={{ marginTop: 22, lineHeight: 1.6 }}>
+      <div className="dim small" style={{ marginTop: 14, lineHeight: 1.6 }}>
         <a href={REPO} target="_blank" rel="noopener">{t('Self-host it in a minute →')}</a>
       </div>
     </div>
@@ -74,19 +120,75 @@ export default function Login() {
   return (
     <div className="narrow auth-panel">
       {head}
-      <div className="muted" style={{ marginBottom: 34 }}>{t('Your workouts. Your weights. Your profile.')}</div>
-      {webauthnOK() ? <>
-        <Button variant="primary" icon="person" onClick={signIn}>{t('Sign in with passkey')}</Button>
-        <div style={{ height: 10 }} />
-        <Button icon="sparkles" onClick={() => useUI.getState().openSheet(close => <RegisterSheet close={close} />)}>{t('Create new profile')}</Button>
-        {canGuest && <div style={{ height: 10 }} />}
-      </> : <div className="card small muted" style={{ textAlign: 'left' }}>{canGuest
-        ? t("This browser doesn't support passkeys — you can still use openGym locally on this device.")
-        // Without passkeys and without the guest entrance there is no way in from this browser,
-        // so say that plainly instead of offering a local profile that cannot be created.
-        : t("This browser doesn't support passkeys, and this instance requires an account. Try a browser or device with passkey support.")}</div>}
-      {canGuest && <Button variant="ghost" className="dim" onClick={() => setGuest(true)}>{t('Continue without account')}</Button>}
-      <div className="dim small" style={{ marginTop: 26, lineHeight: 1.5 }}>{t('Passkeys use {0} — no passwords.', BIO)}<br />{t('Each profile keeps its own plan, workouts & body weight.')}</div>
+      <div className="muted" style={{ marginBottom: 18 }}>{t('Your workouts. Your weights. Your profile.')}</div>
+
+      <div className="auth-modes">
+        {/* Local mode first: private, offline, no server load */}
+        {canGuest && (
+          <div className="auth-mode-card featured">
+            <div className="auth-mode-top">
+              <span className="auth-mode-title">
+                <Icon name="shield" style={{ color: 'var(--acc)' }} />
+                {t('Private local mode')}
+              </span>
+              <span className="auth-badge">
+                <Icon name="bolt" style={{ width: 12, height: 12 }} />
+                {t('Recommended')}
+              </span>
+            </div>
+            <div className="auth-mode-desc">
+              {t('Your routines, loads and history are stored only on this device. Fast, works offline and needs no server.')}
+            </div>
+            <Button variant="primary" icon="play" onClick={() => setGuest(true)}>
+              {t('Start training')}
+            </Button>
+          </div>
+        )}
+
+        {/* Optional server profile */}
+        <div className="auth-mode-card">
+          <div className="auth-mode-top">
+            <span className="auth-mode-title">
+              <Icon name="cloud" style={{ color: 'var(--blue)' }} />
+              {t('Server profile')}
+            </span>
+          </div>
+          <div className="auth-mode-desc">
+            {t('Sync and back up your workouts to your own server with a passkey or biometrics. No passwords.')}
+          </div>
+
+          {webauthnOK() ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <Button variant="tinted" icon="person" onClick={signIn}>
+                {t('Sign in with passkey')}
+              </Button>
+              <Button variant="ghost" icon="sparkles" onClick={() => useUI.getState().openSheet(close => <RegisterSheet close={close} />)}>
+                {t('Create new profile')}
+              </Button>
+            </div>
+          ) : (
+            <div className="small muted" style={{ textAlign: 'left', lineHeight: 1.4 }}>
+              {canGuest
+                ? t("This browser doesn't support passkeys — you can still use openGym locally on this device.")
+                : t("This browser doesn't support passkeys, and this instance requires an account. Try a browser or device with passkey support.")}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Restore a backup */}
+      <div style={{ marginTop: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+        <button type="button" className="auth-restore-btn" onClick={() => fileRef.current?.click()}>
+          <Icon name="upload" />
+          <span>{t('Have a backup? Restore a file')}</span>
+        </button>
+        <input ref={fileRef} type="file" accept=".json,application/json" hidden onChange={restoreBackup} />
+      </div>
+
+      <div className="auth-trust-pill">
+        <Icon name="shield" style={{ width: 13, height: 13, color: 'var(--acc)' }} />
+        <span>{t('Local-first: in local mode your data never leaves this device')}</span>
+      </div>
     </div>
   )
 }

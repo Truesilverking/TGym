@@ -13,7 +13,8 @@ import { wakeLockSupported } from '../lib/wakelock.js'
 import { t, LANGS, INSTR_LANGS, exerciseNameModeOf } from '../lib/i18n.js'
 import { DEMO, REPO, STANDALONE } from '../lib/demo.js'
 import { MOBILE, shareExport } from '../lib/mobile.js'
-import { loadStarterPlan, confirmSheet, importFromApp, equipmentProfileSheet, planImportSheet, planToolsSheet } from '../sheets.jsx'
+import { loadStarterPlan, confirmSheet, importFromApp, equipmentProfileSheet, planImportSheet, planToolsSheet, proUpgradeSheet } from '../sheets.jsx'
+import { isPro } from '../lib/membership.js'
 import Icon from '../components/Icon.jsx'
 import { Section, Row, SelectRow, Switch, Segmented, Button, TextField } from '../components/ui.jsx'
 import { biometricEnabled, checkDeviceBiometry, deviceLockEnabled, enrollDeviceBiometry, removeDevicePin, setBiometricEnabled, setDevicePin, verifyDevicePin } from '../lib/app-lock.js'
@@ -93,7 +94,7 @@ export default function Settings() {
   const serverSyncError = useStore(s => s.serverSyncError)
   const [serverSyncBusy, setServerSyncBusy] = useState(false)
   const serverSyncPending = useRef(false)
-  const { update, replaceState, setUser, pullState, pushState, signOut, signOutAll, resetDemo, disconnectServer } = useStore()
+  const { update, replaceState, setUser, pullState, pushState, signOut, signOutAll, resetDemo, disconnectServer, setGuest } = useStore()
   const toast = useUI(s => s.toast)
   const fileRef = useRef(null)
   const importRef = useRef(null)
@@ -172,8 +173,8 @@ export default function Settings() {
       <div style={{ flex: 1, marginLeft: 10 }}><h1>{t('Settings')}</h1></div>
     </div>
 
-    {/* ---------- account (demo and mobile builds have nothing to sign in to) ---------- */}
-    {!(MOBILE || STANDALONE) && <Section title={DEMO ? t('Demo') : t('Account')}>
+    {/* ---------- account ---------- */}
+    <Section title={DEMO ? t('Demo') : t('Account')}>
       {DEMO ? <>
         <Row icon="sparkles" iconTint="var(--acc)" title={t('You’re in the demo')} subtitle={t('Example data, stored only in this browser — change anything you like.')} />
         <Row icon="reset" iconTint="var(--blue)" title={t('Reset demo data')} accessory="chevron"
@@ -187,14 +188,35 @@ export default function Settings() {
           onClick={() => useUI.getState().openSheet(close => <PairSheet close={close} />)} />
         <Row icon="signOut" iconTint="var(--red)" title={t('Sign out')} danger onClick={() => confirmSheet({ title: t('Sign out?'), message: t('Your saved data is synced first. Active workouts and unsent changes stay on this device.'), confirmText: t('Sign out'), danger: true, onConfirm: async () => { try { const cleared = await signOut(); nav('/home'); if (cleared === false) toast(t('Sign-out completed. Your local data was kept on this device.')) } catch { toast(t('Could not sign out. Your local data was kept. Check your connection and try again.')) } } })} />
         <Row icon="shield" iconTint="var(--red)" title={t('Sign out everywhere')} subtitle={t('Ends this profile’s sessions on all your devices.')} danger onClick={signOutEverywhere} />
-      </> : webauthnOK() ? <>
-        <Row icon="sparkles" iconTint="var(--acc)" title={t('Create passkey profile')} subtitle={t('Keeps your data safe and separate per person.')} accessory="chevron" onClick={registerHere} />
-        <Row icon="person" iconTint="var(--blue)" title={t('Sign in with passkey')} accessory="chevron" onClick={signInHere} />
-      </> : (
-        <Row icon="lock" iconTint="var(--grey)" title={t('Passkeys not supported in this browser.')} />
-      )}
-    </Section>}
-    {!user && !DEMO && !MOBILE && !STANDALONE && <p className="sect-f" style={{ marginTop: -18, marginBottom: 22 }}>{t('Guest mode — data lives only in this browser.')}</p>}
+      </> : <>
+        <Row icon="shield" iconTint="var(--acc)" title={t('Private local mode')} subtitle={t('Your data is stored only on this device.')} />
+        {webauthnOK() && !(MOBILE || STANDALONE) && <>
+          <Row icon="sparkles" iconTint="var(--acc)" title={t('Create passkey profile')} subtitle={t('Keeps your data safe and separate per person.')} accessory="chevron" onClick={registerHere} />
+          <Row icon="person" iconTint="var(--blue)" title={t('Sign in with passkey')} accessory="chevron" onClick={signInHere} />
+        </>}
+        <Row icon="signOut" iconTint="var(--red)" title={t('Leave local profile')} danger onClick={() => confirmSheet({
+          title: t('Leave local profile?'),
+          message: t('You will return to the welcome screen. Your local data stays safely on this device.'),
+          confirmText: t('Leave local profile'),
+          danger: true,
+          onConfirm: () => { setGuest(false); nav('/home'); toast(t('Back at the welcome screen')) }
+        })} />
+      </>}
+    </Section>
+
+    {/* ---------- membership / pro ---------- */}
+    <Section title={t('Membership & licence')}>
+      <Row
+        icon="sparkles"
+        iconTint={isPro(S) ? 'var(--yellow)' : 'var(--acc)'}
+        title={isPro(S) ? t('TGym Pro is active') : t('Free mode (local)')}
+        subtitle={isPro(S)
+          ? t('Unlimited routines, advanced nutrition and elite techniques are unlocked.')
+          : t('Unlock unlimited routines, full macros and the metabolic TDEE calculator.')}
+        accessory="chevron"
+        onClick={proUpgradeSheet}
+      />
+    </Section>
 
     {/* ---------- general ---------- */}
     <Section title={t('General')} footer={t('Changing a unit automatically converts all saved values, including history and active workouts.')}>

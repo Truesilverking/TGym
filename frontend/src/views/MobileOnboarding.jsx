@@ -49,7 +49,7 @@ export default function MobileOnboarding() {
     convertMeasurementState(s, value === 'lb' ? 'in' : 'cm')
   }, false)
   return <div className="narrow onboarding-panel">
-    <div className="row between" style={{ marginBottom: 20 }}><div><h1>TGym</h1><div className="sub">{t('Initial setup')} · {step + 1}/7</div></div><Icon name="figureStrength" style={{ color: 'var(--acc)', fontSize: 34 }} /></div>
+    <div className="onboarding-head"><div><h1 className="brand-mark">TGym<i aria-hidden="true" /></h1><div className="eyebrow" style={{ marginTop: 8 }}>{t('Initial setup')}</div></div><span className="onboarding-step" aria-label={t('Step {0} of {1}', step + 1, 7)}><b>{step + 1}</b>/7</span></div>
     <progress className="onboarding-progress" value={step + 1} max={7} aria-label={t('Initial setup')} />
     {step === 0 && <><h2>{t('Language')}</h2><div className="muted" style={{ marginBottom: 16 }}>{t('You can change this later in Settings.')}</div><Segmented value={S.lang || 'es'} onChange={chooseLanguage} options={[{ value: 'es', label: 'Español' }, { value: 'en', label: 'English' }]} /><Nav next={next} /></>}
     {step === 1 && <><h2>{t('Units and experience')}</h2><div className="small muted" style={{ margin: '12px 0 6px' }}>{t('Weight unit')}</div><Segmented value={S.unit} onChange={chooseUnits} options={[{ value: 'kg', label: 'kg' }, { value: 'lb', label: 'lb' }]} /><div className="small muted" style={{ margin: '16px 0 6px' }}>{t('Training level')}</div><Segmented value={S.trainingLevel || 'beginner'} onChange={v => update(s => { s.trainingLevel = v })} options={[{ value: 'beginner', label: t('Beginner') }, { value: 'intermediate', label: t('Intermediate') }, { value: 'advanced', label: t('Advanced') }]} /><Nav next={next} /></>}

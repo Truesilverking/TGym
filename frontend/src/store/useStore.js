@@ -41,6 +41,12 @@ export const DEF = {
   // every time you do the movement ("seat 4, pin 7"). Distinct from a routine's `note`, which
   // belongs to one exercise in one plan, and from a session note, which belongs to one day.
   exNotes: {}, exerciseAliases: {}, exerciseNameMode: 'aliases', exerciseGoals: {}, avoidedExercises: {},
+  membership: { tier: 'free', activatedAt: null, source: 'local', code: null },
+  nutrition: {
+    goals: { calories: 2200, protein: 140, carbs: 220, fat: 60, water: 2500 },
+    logs: {},
+    customFoods: [],
+  },
 }
 const clone = o => JSON.parse(JSON.stringify(o))
 

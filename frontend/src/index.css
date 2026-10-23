@@ -1,6 +1,11 @@
 /* ============================================================================
-   openGym — design system
+   TGym — base layout & components
    ----------------------------------------------------------------------------
+   The visual identity ("Iron & Chalk": fonts, plate palette, machined geometry,
+   the docked tab rail and the scoreboard type) is defined by the tokens below
+   and finished in src/styles/iron.css, which loads after this file. Change the
+   look there; keep this file for structure and layout.
+
    Rebuilt around four rules, each aimed at a specific "generated" tell in the
    previous sheet:
 
@@ -27,87 +32,126 @@
 
 :root {
   color-scheme:dark;
-  /* surfaces — dark is the default (modern deep slate obsidian) */
-  --bg:        #090a10;
-  --bg-el:     rgba(18, 21, 32, 0.88);   /* elevated backdrop with glassmorphism */
-  --surface:   #131622;   /* card / grouped-list fill */
-  --surface-2: #1c2133;   /* pressed + nested fill */
-  --surface-3: #262c44;   /* controls (segmented track, switch off) */
+  /* Iron & Chalk (see src/styles/iron.css): dark is "iron" — warm graphite, not blue-black —
+     so the chalk-white text and the plate-coloured accent carry all the colour. */
+  --bg:        #0b0b0a;
+  --bg-el:     #141412;   /* sheets, menus and the docked tab rail: opaque, no glass */
+  --surface:   #151513;   /* primary card / panel fill */
+  --surface-2: #1e1e1b;   /* interactive / nested / pressed fill */
+  --surface-3: #2a2a26;   /* controls, segmented tracks, active steppers */
 
-  /* text */
-  --label:     #f8fafc;
-  --label-2:   rgba(241, 245, 249, 0.74);
-  --label-3:   rgba(241, 245, 249, 0.54);
-  --label-4:   rgba(241, 245, 249, 0.18);
+  /* text hierarchy: chalk on iron */
+  --label:     #f1efe8;
+  --label-2:   rgba(241, 239, 232, 0.72);
+  --label-3:   rgba(241, 239, 232, 0.50);
+  --label-4:   rgba(241, 239, 232, 0.16);
 
-  /* lines */
-  --sep:       rgba(255, 255, 255, 0.08);
-  --sep-op:    rgba(255, 255, 255, 0.05);   /* for edges sitting over blur */
+  /* lines & hairlines */
+  --sep:       rgba(241, 239, 232, 0.09);
+  --sep-op:    rgba(241, 239, 232, 0.06);
   --hair:      1px;
 
-  /* Theme palette: also used for small text on tinted controls. */
-  --blue:#5aa6ff; --green:#30d158; --red:#ff6961; --orange:#ff9f0a;
-  --yellow:#ffd60a; --teal:#40c8e0; --indigo:#aaa8ff; --pink:#ff6b8c;
-  --purple:#cc80f5; --mint:#63e6e2; --brown:#ac8e68; --grey:#8e8e93;
+  /* type: Barlow for reading, Barlow Condensed for stencilled labels,
+     Big Shoulders for scoreboard numbers and titles. System fallbacks cover
+     Cyrillic, CJK and Devanagari locales glyph by glyph. */
+  --font-body:'Barlow',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,system-ui,sans-serif;
+  --font-label:'Barlow Condensed','Barlow','Arial Narrow',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --font-display:'Big Shoulders Display','Barlow Condensed','Arial Narrow',-apple-system,'Segoe UI',system-ui,sans-serif;
 
-  /* accent (per-account, synced) */
+  /* Palette: the colours of calibrated bumper plates (25 red, 20 blue, 15 yellow, 10 green),
+     pushed a little brighter so small labels keep 4.5:1 against iron. */
+  --blue:#4a8cf0; --green:#46b964; --red:#f0473c; --orange:#f2902a;
+  --yellow:#f5c518; --teal:#2fbcb3; --indigo:#8f88f2; --pink:#f0588d;
+  --purple:#b47aec; --mint:#3bd2b6; --brown:#bb9c7c; --grey:#9c9a91;
+
+  /* accent (customizable, synced) */
   --acc:  var(--green);
-  --acc-2:#248a3d;
-  --on-acc:#000000;
+  --acc-2:#1ca672;
+  --on-acc:#04140b;
   --acc-soft: color-mix(in srgb, var(--acc) 16%, transparent);
   --acc-line: color-mix(in srgb, var(--acc) 38%, transparent);
+  --acc-glow: 0 0 24px -4px color-mix(in srgb, var(--acc) 42%, transparent);
 
-  /* geometry */
-  --r-sm:10px; --r:14px; --r-lg:18px; --r-xl:24px; --r-card:18px;
-  --pad:18px;
-  --panel-fill:linear-gradient(160deg, color-mix(in srgb, var(--surface-2) 40%, var(--surface)), var(--surface));
-  --panel-edge:color-mix(in srgb, var(--label) 8%, transparent);
-  --panel-shadow:0 10px 28px -10px rgba(0, 0, 0, 0.5), 0 2px 8px -2px rgba(0, 0, 0, 0.3);
-  --control-edge:color-mix(in srgb, var(--label) 14%, transparent);
-  --space-section:26px;
-  --icon-stroke:1.75;
+  /* standardized spacing scale (4/8pt system) */
+  --space-3xs:2px;
+  --space-2xs:4px;
+  --space-xs:6px;
+  --space-sm:8px;
+  --space-md:12px;
+  --space-base:16px;
+  --space-lg:20px;
+  --space-xl:24px;
+  --space-2xl:32px;
+  --space-section:28px;
 
-  /* motion */
+  /* geometry: machined, not inflated. Small radii everywhere; pills are reserved for
+     things that are genuinely round (switch tracks, dots). */
+  --r-xs:2px;
+  --r-sm:3px;
+  --r-md:4px;
+  --r:4px;
+  --r-lg:6px;
+  --r-xl:8px;
+  --r-card:4px;
+  --r-pill:9999px;
+  --pad:clamp(14px, 3.8vw, 20px);
+  --chalk-corner:11px;   /* size of the cut mark painted in a card's top-left corner */
+
+  /* surfaces & elevation: flat plates with a hard edge — no blurred glows */
+  --panel-fill:var(--surface);
+  --panel-edge:rgba(241, 239, 232, 0.10);
+  --panel-shadow:inset 0 1px 0 rgba(241, 239, 232, 0.035);
+  --control-edge:color-mix(in srgb, var(--label) 16%, transparent);
+  --shadow-subtle:none;
+  --shadow-float:0 18px 40px -12px rgba(0, 0, 0, 0.7);
+  --acc-deep:color-mix(in srgb, var(--acc) 55%, #000);   /* the plate's shadowed rim */
+  --icon-stroke:1.9;
+
+  /* motion physics */
   --ease:cubic-bezier(.32,.72,0,1);
   --fast:150ms; --med:240ms;
 
+  /* safe area and anti-collision clearances */
   --sab:env(safe-area-inset-bottom,0px);
   --sat:env(safe-area-inset-top,0px);
   --sal:env(safe-area-inset-left,0px);
   --sar:env(safe-area-inset-right,0px);
-  --nav-clearance:calc(92px + var(--sab));
+  --tabbar-height:64px;   /* docked rail, safe-area padding is added below it */
+  --nav-clearance:calc(var(--tabbar-height) + var(--sab) + 8px);
   --bottom-clearance:var(--nav-clearance);
   --available-height:100dvh;
 }
 
 :root[data-theme="light"] {
   color-scheme:light;
-  --bg:        #f5f7fc;
-  --bg-el:     rgba(255, 255, 255, 0.88);
-  --surface:   #ffffff;
-  --surface-2: #eff3fa;
-  --surface-3: #e2e8f4;
+  /* "chalk": the light theme is a chalked concrete floor, warm and matte, with ink-black type */
+  --bg:        #e9e7e1;
+  --bg-el:     #f4f3ef;
+  --surface:   #f7f6f2;
+  --surface-2: #e1ded6;
+  --surface-3: #d4d0c6;
 
-  --label:     #0f172a;
-  --label-2:   rgba(15, 23, 42, 0.74);
-  --label-3:   rgba(15, 23, 42, 0.54);
-  --label-4:   rgba(15, 23, 42, 0.15);
+  --label:     #161512;
+  --label-2:   rgba(22, 21, 18, 0.74);
+  --label-3:   rgba(22, 21, 18, 0.56);
+  --label-4:   rgba(22, 21, 18, 0.16);
 
-  --sep:       rgba(15, 23, 42, 0.08);
-  --sep-op:    rgba(15, 23, 42, 0.05);
+  --sep:       rgba(22, 21, 18, 0.10);
+  --sep-op:    rgba(22, 21, 18, 0.06);
 
-  --panel-fill:#ffffff;
-  --panel-edge:rgba(15, 23, 42, 0.08);
-  --panel-shadow:0 10px 25px -8px rgba(15, 23, 42, 0.07), 0 2px 6px -1px rgba(15, 23, 42, 0.04);
+  --panel-fill:var(--surface);
+  --panel-edge:rgba(22, 21, 18, 0.14);
+  --panel-shadow:0 1px 0 rgba(22, 21, 18, 0.06);
+  --shadow-float:0 18px 36px -12px rgba(22, 21, 18, 0.22);
 
-  --blue:#0055b8; --green:#12612a; --red:#b51f18; --orange:#844800;
-  --yellow:#705000; --teal:#006374; --indigo:#4846bc; --pink:#b31945;
-  --purple:#793394; --mint:#00675f; --brown:#795537; --grey:#65656b;
-  --acc-2:#248a3d;
+  --blue:#1d5fc4; --green:#1f7a3a; --red:#bf2a20; --orange:#8a4a00;
+  --yellow:#6e5200; --teal:#00675f; --indigo:#4846bc; --pink:#b31945;
+  --purple:#793394; --mint:#00675f; --brown:#795537; --grey:#5f5d56;
+  --acc-2:#1f7a3a;
   --on-acc:#ffffff;
 }
 
-/* accents — Apple's system colours, so a recolour never looks off-system */
+/* accents — the user's choice, painted with the plate palette above */
 :root[data-accent="lime"]  { --acc:var(--green);  --acc-2:#248a3d; --on-acc:#000 }
 :root[data-accent="sky"]   { --acc:var(--blue);   --acc-2:#0060df; --on-acc:#fff }
 :root[data-accent="orange"]{ --acc:var(--orange); --acc-2:#c76b00; --on-acc:#000 }
@@ -133,8 +177,8 @@ html{
 }
 body{
   background:var(--bg);color:var(--label);
-  font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','SF Pro Display','Segoe UI',Roboto,system-ui,sans-serif;
-  font-size:17px;line-height:1.29;letter-spacing:-.01em;
+  font-family:var(--font-body);
+  font-size:17px;line-height:1.3;letter-spacing:0;
   min-height:100svh;min-height:var(--available-height);overscroll-behavior-y:none;overflow-x:clip;
   -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
   touch-action:manipulation;
@@ -183,12 +227,19 @@ button,.chip,.tile,.item,.wday,.cal-d,.swatch,.hm-c,.lrow,.seg button,.stp butto
 
 /* ---------------------------------------------------------------- layout -- */
 #app{
-  padding:max(var(--sat),8px) max(var(--pad),var(--sar)) calc(var(--bottom-clearance) + 16px) max(var(--pad),var(--sal));
+  padding:max(var(--sat),10px) max(var(--pad),var(--sar)) calc(var(--bottom-clearance) + 20px) max(var(--pad),var(--sal));
   width:100%;min-width:0;min-height:var(--available-height);margin:0 auto;
+}
+/* when RestTimer is running, guarantee extra clearance so no element is occluded */
+body.resting{
+  --bottom-clearance:calc(var(--nav-clearance) + 78px);
+}
+.narrow{
+  width:100%;max-width:680px;margin-left:auto;margin-right:auto;min-width:0;
 }
 /* while the rest timer floats above the tab bar, keep its height scrollable-past
    (the rest variant is two rows tall — ~44px more than the single-row work timer) */
-html{scroll-padding-top:calc(var(--sat) + 8px);scroll-padding-bottom:calc(var(--bottom-clearance) + 16px)}
+html{scroll-padding-top:calc(var(--sat) + 8px);scroll-padding-bottom:calc(var(--bottom-clearance) + 20px)}
 #root{min-height:100svh;min-height:var(--available-height);background:var(--bg)}
 /* Opaque protection keeps scrolling text out of an overlaid iOS status bar. */
 #root::before{content:"";position:fixed;inset:0 0 auto;height:var(--sat);background:var(--bg);z-index:70;pointer-events:none}
@@ -197,13 +248,13 @@ html{scroll-padding-top:calc(var(--sat) + 8px);scroll-padding-bottom:calc(var(--
 :root[data-keyboard="true"] #tabbar,:root[data-keyboard="true"] #timer{display:none}
 @media (max-height:400px){body:has(input:focus,textarea:focus,[contenteditable="true"]:focus) #tabbar,body:has(input:focus,textarea:focus,[contenteditable="true"]:focus) #timer{display:none}}
 @media (pointer:coarse){input,select,textarea{font-size:16px}}
-@keyframes viewfade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+@keyframes viewfade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .vfade{animation:viewfade var(--med) var(--ease)}
 
 /* large title, the way a nav bar does it */
-.hdr{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin:8px 0 18px}
+.hdr{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:var(--space-md);margin:8px 0 var(--space-lg)}
 .hdr > div{min-width:0}
-.hdr h1{font-size:34px;line-height:1.06;font-weight:700;letter-spacing:-.028em}
+.hdr h1{font-size:clamp(26px, 6.5vw, 34px);line-height:1.1;font-weight:700;letter-spacing:-.028em}
 .hdr .sub{color:var(--label-2);font-size:15px;letter-spacing:-.006em;margin-top:4px}
 .hdr-centered{display:grid;grid-template-columns:36px minmax(0,1fr) 36px;align-items:center}
 .hdr-centered .hdr-center{text-align:center;min-width:0}
@@ -215,31 +266,34 @@ html{scroll-padding-top:calc(var(--sat) + 8px);scroll-padding-bottom:calc(var(--
 .hdr-centered .sub{margin-top:0}
 
 .iconbtn{
-  width:36px;height:36px;border-radius:50%;flex:none;
+  width:38px;height:38px;border-radius:50%;flex:none;
   background:var(--surface);color:var(--label);
+  border:1px solid var(--panel-edge);
   display:flex;align-items:center;justify-content:center;font-size:18px;
-  transition:background var(--fast),transform var(--fast);
+  box-shadow:var(--shadow-subtle);
+  transition:background var(--fast),transform var(--fast),border-color var(--fast);
 }
 .iconbtn:active{background:var(--surface-2);transform:scale(.92)}
-.iconbtn.on-ss{background:var(--acc-soft);color:var(--acc)}
+.iconbtn.on-ss{background:var(--acc-soft);color:var(--acc);border-color:var(--acc-line)}
 
 h4.sec{
-  font-size:13px;font-weight:400;letter-spacing:-.004em;color:var(--label-2);
+  font-size:13px;font-weight:600;letter-spacing:-.004em;color:var(--label-2);
   text-transform:none;margin:22px 0 8px;padding:0 4px;
 }
 .card h2{
-  font-size:16px;font-weight:600;letter-spacing:-.012em;color:var(--label);
+  font-size:17px;font-weight:650;letter-spacing:-.015em;color:var(--label);
   text-transform:none;margin:0 0 12px;
 }
-.divider{height:var(--hair);background:var(--sep);margin:14px 0;border:0}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.row{display:flex;align-items:center;gap:12px}
+.divider{height:var(--hair);background:var(--sep);margin:16px 0;border:0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-md)}
+.row{display:flex;align-items:center;gap:var(--space-md)}
 .row.between{justify-content:space-between}
 
 /* ----------------------------------------------------------------- card -- */
 .card{
   background:var(--panel-fill);border:1px solid var(--panel-edge);border-radius:var(--r-card);
-  box-shadow:var(--panel-shadow);padding:var(--pad);margin-bottom:14px;
+  box-shadow:var(--panel-shadow);padding:var(--pad);margin-bottom:var(--space-base);
+  position:relative;
 }
 .card .big{font-size:30px;font-weight:600;letter-spacing:-.026em;line-height:1.1}
 /* Stats keeps hidden cards mounted so their independent filters survive toggling. */
@@ -348,10 +402,11 @@ h4.sec{
 /* -------------------------------------------------------------- buttons -- */
 .btn{
   display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;
-  padding:14px 20px;border-radius:var(--r);font-size:16px;font-weight:650;
+  min-height:48px;
+  padding:12px 20px;border-radius:var(--r);font-size:16px;font-weight:650;
   letter-spacing:-.012em;background:var(--surface-2);color:var(--label);
   border:1px solid var(--panel-edge);
-  box-shadow:0 2px 6px -1px rgba(0,0,0,0.15);
+  box-shadow:var(--shadow-subtle);
   transition:transform var(--fast) var(--ease),background var(--fast),box-shadow var(--fast),opacity var(--fast);
 }
 .btn .icn{font-size:19px}
@@ -360,11 +415,11 @@ h4.sec{
   background:linear-gradient(145deg, var(--acc), var(--acc-2));
   color:var(--on-acc);
   border-color:transparent;
-  box-shadow:0 4px 14px -3px color-mix(in srgb,var(--acc) 50%,transparent);
+  box-shadow:0 6px 20px -4px color-mix(in srgb,var(--acc) 50%,transparent);
 }
 .btn.primary:active{
   background:var(--acc-2);
-  box-shadow:0 2px 6px -1px color-mix(in srgb,var(--acc) 35%,transparent);
+  box-shadow:0 2px 8px -1px color-mix(in srgb,var(--acc) 35%,transparent);
 }
 .btn.tinted{
   background:var(--acc-soft);color:var(--acc);
@@ -374,11 +429,11 @@ h4.sec{
   background:color-mix(in srgb,var(--red) 15%,transparent);color:var(--red);
   border-color:color-mix(in srgb,var(--red) 25%,transparent);
 }
-.btn.ghost,.btn.plain{background:none;color:var(--acc);font-weight:500;border-color:transparent;box-shadow:none}
+.btn.ghost,.btn.plain{background:none;color:var(--acc);font-weight:550;border-color:transparent;box-shadow:none;min-height:44px}
 .btn.ghost:active,.btn.plain:active{background:var(--surface-2)}
-.btn.sm{padding:8px 14px;width:auto;font-size:14px;border-radius:var(--r-sm);gap:5px}
+.btn.sm{padding:8px 14px;width:auto;min-height:38px;font-size:14px;border-radius:var(--r-sm);gap:5px}
 .btn.sm .icn{font-size:16px}
-.btn.xs{padding:5px 10px;width:auto;font-size:12px;border-radius:8px;gap:4px}
+.btn.xs{padding:5px 10px;width:auto;min-height:28px;font-size:12px;border-radius:8px;gap:4px}
 .btn:disabled{opacity:.35;pointer-events:none}
 
 /* ----------------------------------------------------------- tab bar ----- */
@@ -734,8 +789,8 @@ h4.sec{
 .ck.on svg{stroke:var(--on-acc)}
 
 /* ------------------------------------------------------------- workout --- */
-.wprog{height:4px;background:var(--surface-2);border-radius:99px;overflow:hidden;margin-bottom:16px}
-.wprog i{display:block;height:100%;background:var(--acc);border-radius:99px;transition:width var(--med) var(--ease)}
+.wprog{height:6px;background:var(--surface-3);border-radius:99px;overflow:hidden;margin-bottom:18px;border:1px solid var(--panel-edge)}
+.wprog i{display:block;height:100%;background:linear-gradient(90deg,var(--acc),color-mix(in srgb,var(--acc) 75%,var(--teal)));border-radius:99px;box-shadow:0 0 12px var(--acc-soft);transition:width var(--med) var(--ease)}
 .exmedia{
   position:relative;border-radius:var(--r-lg);overflow:hidden;
   background:#fff;margin-bottom:12px;
@@ -1179,41 +1234,60 @@ h4.sec{
   margin-top:14px;padding:14px 16px;border-radius:var(--r);
   background:linear-gradient(145deg,var(--surface-2),color-mix(in srgb,var(--surface-3) 70%,var(--surface-2)));
   border:1px solid var(--panel-edge);box-shadow:0 4px 14px -4px rgba(0,0,0,0.3);
-  transition:transform var(--fast) var(--ease),background var(--fast),box-shadow var(--fast);
+  transition:transform var(--fast) var(--ease),background var(--fast),box-shadow var(--fast),border-color var(--fast);
   width:100%;text-align:left;color:inherit;font:inherit;
 }
 .today-row:active{transform:scale(.985);background:var(--surface-3)}
+.today-row.is-active{
+  border-color:color-mix(in srgb,var(--orange) 60%,transparent);
+  background:linear-gradient(145deg,color-mix(in srgb,var(--orange) 14%,var(--surface-2)),var(--surface-2));
+  box-shadow:0 6px 20px -4px color-mix(in srgb,var(--orange) 30%,transparent);
+}
 .today-row .lbl2{font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--label-2)}
 .today-row .ttl{
   font-weight:600;font-size:17px;line-height:1.25;text-transform:capitalize;
   letter-spacing:-.012em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;
 }
 
-/* --------------------------------------------------- desktop (≥1000px) --- */
+/* --------------------------------------------------- responsive (tablets & desktop) --- */
 .cols{display:block}
-@media (min-width:1000px) and (hover:hover){
-  #app{max-width:1080px;padding-top:max(32px,var(--sat))}
-  .cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
+@media (min-width:640px){
+  .narrow{max-width:680px}
+}
+@media (min-width:1000px){
+  #app{max-width:1120px;padding-top:max(28px,var(--sat))}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
   .cols>*{min-width:0}
-  #app .list{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  #app .list{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   #modal-root .list,.narrow .list{display:flex;flex-direction:column}
-  .narrow{max-width:640px;margin:0 auto}
+  .narrow{max-width:720px;margin:0 auto}
   .tiles{grid-template-columns:repeat(4,1fr)}
   .cols .tiles{grid-template-columns:1fr 1fr}
   #tabbar{
-    left:50%;right:auto;bottom:16px;transform:translateX(-50%);width:520px;
+    left:50%;right:auto;bottom:20px;transform:translateX(-50%);width:540px;
     border:var(--hair) solid var(--sep-op);border-radius:var(--r-xl);
-    padding:7px 10px 9px;box-shadow:0 12px 40px -10px rgba(0,0,0,.5);
+    padding:8px 12px;box-shadow:var(--shadow-float);
   }
   #tabbar button.start{margin-top:-26px}
-  .sheet{left:50%;right:auto;margin-left:-320px;width:640px;border-radius:var(--r-xl) var(--r-xl) 0 0}
-  .center{width:340px}
-  #timer{left:50%;right:auto;margin-left:-260px;width:520px}
-  /* 520px fits the clock, the bar and all three controls on one line again */
+  .sheet{left:50%;right:auto;margin-left:-340px;width:680px;border-radius:var(--r-xl) var(--r-xl) 0 0}
+  .center{width:380px}
+  #timer{left:50%;right:auto;margin-left:-270px;width:540px}
+  /* 540px fits the clock, the bar and all three controls on one line again */
   #timer.rest{flex-direction:row;align-items:center;gap:14px}
   #timer.rest .head{flex:1;min-width:0}
   .exmedia img,.exmedia .media-placeholder{height:380px}
   .hm-wrap{display:flex;flex-direction:column;align-items:center}
+}
+@media (max-width:360px){
+  #app{padding-left:10px;padding-right:10px}
+  .hdr{gap:8px;margin-bottom:14px}
+  .card{padding:12px;border-radius:14px}
+  #tabbar{padding:5px 6px;border-radius:24px}
+  #tabbar button{font-size:10px;gap:2px}
+  #tabbar button .icn{font-size:20px}
+  #tabbar button.start .cir{width:46px;height:46px}
+  #tabbar button.start .cir .icn{font-size:22px}
+  #tabbar button.start span{font-size:10px}
 }
 h4.sec.week-schedule-title{font-size:18px;font-weight:650;color:var(--label);letter-spacing:-.018em;margin-top:10px}
 .routine-list{display:flex;flex-direction:column;gap:10px}
@@ -1490,13 +1564,13 @@ button:focus-visible,[role="button"]:focus-visible,summary:focus-visible,a:focus
 }
 .sets-card .set-console.eff3{grid-template-columns:repeat(3,minmax(0,1fr))}
 .sets-card .set-console.current{
-  border-color:var(--acc);
-  box-shadow:0 0 16px -4px color-mix(in srgb,var(--acc) 50%,transparent), inset 3px 0 var(--acc);
-  background:color-mix(in srgb,var(--acc) 4%,var(--surface));
+  border-color:color-mix(in srgb,var(--acc) 65%,var(--panel-edge));
+  box-shadow:0 4px 20px -4px color-mix(in srgb,var(--acc) 30%,transparent), inset 3.5px 0 var(--acc);
+  background:linear-gradient(165deg,color-mix(in srgb,var(--acc) 8%,var(--surface)),var(--surface));
 }
 .sets-card .set-console.done{
-  background:color-mix(in srgb,var(--acc) 8%,var(--surface));
-  border-color:color-mix(in srgb,var(--acc) 30%,var(--panel-edge));
+  background:color-mix(in srgb,var(--acc) 7%,var(--surface));
+  border-color:color-mix(in srgb,var(--acc) 25%,var(--panel-edge));
 }
 .set-console-head{grid-column:1/-1;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .set-number{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}.set-state{font-size:11px;color:var(--label-2)}
@@ -1504,10 +1578,11 @@ button:focus-visible,[role="button"]:focus-visible,summary:focus-visible,a:focus
 .set-console-actions{display:flex;align-items:center;gap:6px;margin-left:auto}
 .set-console-actions>.chk,.set-console-actions>.setgo,.set-console-actions>.iconbtn{min-width:44px;min-height:44px}
 .set-metric{min-width:0}.set-metric>label{display:flex;align-items:center;min-height:30px;margin-bottom:5px;font-size:11px;font-weight:600;line-height:1.25;color:var(--label-2);overflow-wrap:anywhere}
-.set-console .set-metric .stp{display:grid;grid-template-columns:1fr 1fr;gap:0;overflow:hidden;min-width:0;border:1px solid var(--panel-edge);border-radius:var(--r-sm);background:var(--surface-2)}
+.set-console .set-metric .stp{display:grid;grid-template-columns:1fr 1fr;gap:0;overflow:hidden;min-width:0;border:1px solid var(--panel-edge);border-radius:var(--r-sm);background:var(--surface-2);box-shadow:var(--shadow-subtle)}
 .set-console .set-metric .stp .val{grid-column:1/-1;grid-row:1;min-width:0;padding:8px 2px}
-.set-console .set-metric .stp .num{width:100%;font-size:18px;font-weight:650;line-height:24px;text-align:center;font-variant-numeric:tabular-nums}
-.set-console .set-metric .stp button{grid-row:2;width:100%;height:44px;min-width:0;background:var(--surface);border-top:1px solid var(--sep);border-radius:0}
+.set-console .set-metric .stp .num{width:100%;font-size:18px;font-weight:700;line-height:24px;text-align:center;font-variant-numeric:tabular-nums}
+.set-console .set-metric .stp button{grid-row:2;width:100%;height:44px;min-width:0;background:var(--surface);border-top:1px solid var(--sep);border-radius:0;transition:background var(--fast),transform var(--fast)}
+.set-console .set-metric .stp button:active{background:var(--surface-3);transform:scale(.96)}
 .set-console .set-metric .stp button:last-child{border-left:1px solid var(--sep)}
 .set-console .set-metric .stp.effort-failure .num{font-size:13px}
 .set-console .set-metric .stp.disabled{min-height:87px;display:flex;align-items:center;justify-content:center;color:var(--label-3)}
@@ -1533,6 +1608,32 @@ button:focus-visible,[role="button"]:focus-visible,summary:focus-visible,a:focus
 .auth-panel .auth-code.recovery{font-size:16px;letter-spacing:.08em}
 .auth-pin-progress{display:flex;gap:8px;margin-top:12px}.auth-pin-progress>span{width:22px;height:3px;border-radius:3px;background:var(--sep)}.auth-pin-progress>.filled{background:var(--acc)}
 .auth-panel>.btn{min-height:48px;white-space:normal;line-height:1.35}.auth-panel>.dim{max-width:38ch}
+.auth-modes{width:100%;display:flex;flex-direction:column;gap:14px;margin:20px 0 20px}
+.auth-mode-card{
+  width:100%;text-align:left;background:var(--surface);
+  border:1px solid var(--panel-edge);border-radius:var(--r-card);
+  padding:var(--pad);position:relative;transition:border-color var(--fast),transform var(--fast);
+}
+.auth-mode-card.featured{
+  border-color:color-mix(in srgb,var(--acc) 45%,transparent);
+  background:linear-gradient(165deg,color-mix(in srgb,var(--acc) 10%,var(--surface)),var(--surface));
+  box-shadow:0 8px 24px -6px color-mix(in srgb,var(--acc) 22%,transparent);
+}
+.auth-mode-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.auth-badge{
+  display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:var(--r-pill);
+  font-size:11px;font-weight:650;letter-spacing:.03em;text-transform:uppercase;
+  background:var(--acc-soft);color:var(--acc);border:1px solid color-mix(in srgb,var(--acc) 30%,transparent);
+}
+.auth-mode-title{font-size:17px;font-weight:650;letter-spacing:-.015em;color:var(--label);display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.auth-mode-desc{font-size:13px;color:var(--label-2);line-height:1.45;margin-bottom:14px}
+.auth-restore-btn{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--label-2);background:none;padding:8px 12px;border-radius:var(--r-sm);transition:color var(--fast);cursor:pointer}
+.auth-restore-btn:active{color:var(--label);transform:scale(.98)}
+.auth-trust-pill{
+  display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--label-3);
+  padding:6px 14px;border-radius:var(--r-pill);background:var(--surface-2);border:1px solid var(--panel-edge);
+  margin-top:16px;line-height:1.3;text-align:center;
+}
 @media(max-height:700px){.auth-panel{padding-block:20px;margin-block:8px}.auth-orbit{width:110px;height:110px;margin-bottom:12px}.auth-identity{margin-bottom:12px}.auth-identity h1{font-size:42px}}
 
 .set-metric>label{justify-content:space-between;flex-wrap:wrap;gap:3px}.set-metric>label small{font-size:11px;color:var(--acc);font-variant-numeric:tabular-nums}.set-phase{font-size:12px;font-weight:650;color:var(--label-2);margin:14px 3px 4px}
@@ -1629,3 +1730,39 @@ button:focus-visible,[role="button"]:focus-visible,summary:focus-visible,a:focus
 .sets-card .set-console.set-reps-console{grid-template-columns:repeat(2,minmax(0,1fr))}
 .set-reps-console>.set-metric{width:min(100%,18rem);justify-self:center}
 .set-reps-console>.set-actual-reps,.set-reps-console:not(.set-support-pair)>.set-metric{grid-column:1/-1}
+
+/* Pro Upgrade Sheet & Neo-Tactile Badges */
+.pro-sheet {
+  max-width: 500px;
+  margin: 0 auto;
+}
+.pro-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: var(--r-pill);
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 140, 0, 0.2));
+  color: #ffd700;
+  border: 1px solid rgba(255, 215, 0, 0.5);
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
+}
+
+/* Nutrition Progress & Neo-Cards */
+.nutrition-macro-bar {
+  display: flex;
+  height: 6px;
+  width: 100%;
+  border-radius: var(--r-pill);
+  overflow: hidden;
+  background: var(--surface-3);
+}
+.nutrition-macro-bar > div {
+  height: 100%;
+  transition: width var(--t-fast) var(--ease-tactile);
+}
+
