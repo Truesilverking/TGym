@@ -7,6 +7,8 @@ import TrainingHistory from '../components/TrainingHistory.jsx'
 import ReportsExport from '../components/ReportsExport.jsx'
 import { statisticsState } from '../lib/training-history.js'
 import ConsistencyCard from '../components/ConsistencyCard.jsx'
+import CalendarExport from '../components/CalendarExport.jsx'
+import ModuleSwitch, { PROGRESS_VIEWS } from '../components/ModuleSwitch.jsx'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
@@ -526,8 +528,9 @@ export default function Stats() {
 
   return <>
     <div className="hdr"><div><h1>{t('Stats')}</h1><div className="sub">{t('Progress & history')}</div></div>
-      <div className="row" style={{ gap: 3 }}><button className="iconbtn" onClick={() => nav('/nutrition')} aria-label={t('Nutrition')} title={t('Nutrition')}><Icon name="bolt" /></button><button className="iconbtn" onClick={() => useUI.getState().openSheet(close => <ReportsExport S={rawState} pdf statsFilters={{...exportFilters.current,bodyweightRange:range,exId:curEx,exMetric,measurementSelection:bodySelection}} close={close} />)} aria-label={t('Export Reports')} title={t('Export Reports')}><Icon name="download" /></button>{!MOBILE && <button className="iconbtn" onClick={() => window.print()} aria-label={t('Print / Save as PDF')} title={t('Print / Save as PDF')}><Icon name="clipboard" /></button>}<button className="iconbtn" onClick={() => nav('/progress')} aria-label={t('Progress Report')} title={t('Progress Report')}><Icon name="chart" /></button><button className="iconbtn" data-tour="history" onClick={() => nav('/history')} aria-label={t('History')}><Icon name="history" /></button><button className="iconbtn" data-tour="inbody" onClick={inBodySheet} aria-label={t('InBody history')} title={t('InBody history')}><Icon name="person" /></button></div></div>
+      <div className="row" style={{ gap: 3 }}><button className="iconbtn" onClick={() => useUI.getState().openSheet(close => <ReportsExport S={rawState} pdf statsFilters={{...exportFilters.current,bodyweightRange:range,exId:curEx,exMetric,measurementSelection:bodySelection}} close={close} />)} aria-label={t('Export Reports')} title={t('Export Reports')}><Icon name="download" /></button>{!MOBILE && <button className="iconbtn" onClick={() => window.print()} aria-label={t('Print / Save as PDF')} title={t('Print / Save as PDF')}><Icon name="clipboard" /></button>}<button className="iconbtn" data-tour="inbody" onClick={inBodySheet} aria-label={t('InBody history')} title={t('InBody history')}><Icon name="person" /></button></div></div>
 
+    <ModuleSwitch items={PROGRESS_VIEWS} current="/stats" />
     <StatsSections selected={selectedSections} onToggle={toggleSection} />
 
     <div {...sectionProps('history')}>
@@ -540,7 +543,7 @@ export default function Stats() {
       </div>
     </div>
 
-    <div {...sectionProps('consistency')} data-tour="progress"><ConsistencyCard S={S} onTimes={sessionTimingSheet} /></div>
+    <div {...sectionProps('consistency')} data-tour="progress"><ConsistencyCard S={S} onTimes={sessionTimingSheet} onExport={() => useUI.getState().openSheet(close => <CalendarExport S={rawState} anchor={new Date()} close={close} reportType="consistency" />)} /></div>
 
     <div {...sectionProps('overview')}><HybridSummary S={S} exportFilters={exportFilters} /></div>
     <div {...sectionProps('duration')}><RoutineDuration S={S} exportFilters={exportFilters} /></div>

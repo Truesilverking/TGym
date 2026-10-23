@@ -1,4 +1,5 @@
 import RoutineList from '../components/RoutineList.jsx'
+import ModuleSwitch from '../components/ModuleSwitch.jsx'
 import { reorderRoutine, orderedRoutines } from '../lib/routine-order.js'
 import { routineIds, removeRoutineAssignments } from '../lib/daily-plan.js'
 import { openActivityEditor } from '../components/Activities.jsx'
@@ -79,6 +80,7 @@ export default function Plan() {
       <div className="hdr-center"><h1>{t('Routine')}</h1></div>
       <button className="iconbtn" onClick={() => planToolsSheet({ mode: 'export' })} aria-label={t('Share your plan')} title={t('Share your plan')}><Icon name="upload" /></button>
     </div>
+    <ModuleSwitch current="/plan" />
     <div className="cols"><div>
       <div className="week-schedule-header">
         <h4 className="sec week-schedule-title">{t('Week schedule')}</h4>

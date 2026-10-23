@@ -13,6 +13,7 @@ import { MOBILE } from '../lib/mobile.js'
 import './ProgressReport.css'
 import { PROGRESS_SECTIONS } from '../lib/progress-sections.js'
 import { buildProgressFile, saveProgressFile } from '../lib/progress-file.js'
+import ModuleSwitch, { PROGRESS_VIEWS } from '../components/ModuleSwitch.jsx'
 
 export const metricLabel = m => m.muscle?t(m.label,t(m.muscle)):t(m.label)
 const value = (n,u='') => n==null?'—':`${fmtNum(n)}${u?' '+t(u):''}`
@@ -82,6 +83,7 @@ export default function ProgressReport() {
   }
   return <DashboardContext.Provider value={dashboard}><div className="progress-report">
     <div className="hdr"><div><h1 data-tour="report">{t('Progress Report')}</h1><p className="sub">{t('Baseline → Current → Change → Trend')}</p></div><Button size="sm" onClick={()=>nav('/stats')}>{t('Back')}</Button></div>
+<ModuleSwitch items={PROGRESS_VIEWS} current="/progress" />
     <div className="card progress-controls"><label>{t('Period')}<select className="input" disabled={busy} value={period} onChange={e=>setPeriod(e.target.value)}>{PROGRESS_PERIODS.map(([v,l])=><option key={v} value={v}>{t(l)}</option>)}</select></label><label>{t('Section')}<select className="input" value={section} onChange={e=>setSection(e.target.value)}>{PROGRESS_SECTIONS.map(([id,title])=><option key={id} value={id}>{t(title)}</option>)}</select></label>{period==='custom'&&<><label>{t('From')}<input className="input" type="date" disabled={busy} value={from} max={to} onChange={e=>setFrom(e.target.value)}/></label><label>{t('To')}<input className="input" type="date" disabled={busy} value={to} min={from} max={today} onChange={e=>setTo(e.target.value)}/></label></>}<Button variant="primary" icon="download" disabled={busy||!!report.range.error} onClick={()=>setExportOpen(true)}>{t(busy?'Working…':'Export Progress Report')} · PDF</Button></div>
     {file&&<section className="card progress-file" aria-label={t('Export Progress Report')}><p role="status"><b>{file.name}</b></p><div className="progress-actions"><Button variant="primary" icon="download" disabled={busy} onClick={download}>{t(MOBILE?'Share / save':'Download')}</Button>{!MOBILE&&<a className="btn" href={file.url} target="_blank" rel="noopener noreferrer">{t('Open')}</a>}</div></section>}
     {(error||report.range.error)&&<p role="alert">{error||t(report.range.error)}</p>}

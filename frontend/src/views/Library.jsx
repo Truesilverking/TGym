@@ -9,6 +9,7 @@ import { Thumb } from '../components/Media.jsx'
 import { exerciseDetailSheet, addToRoutineSheet, customExSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
 import { Button, SearchField } from '../components/ui.jsx'
+import ModuleSwitch from '../components/ModuleSwitch.jsx'
 
 export default function Library() {
   const S = useStore(s => s.S)
@@ -48,6 +49,7 @@ export default function Library() {
 
   return <>
     <div className="hdr hdr-centered"><span className="hdr-slot" aria-hidden="true" /><div className="hdr-center"><h1>{t('Exercises')}</h1></div><span className="hdr-slot" aria-hidden="true" /></div>
+    <ModuleSwitch current="/library" />
     <SearchField aria-label={t('Search…')} placeholder={t('Search…')} value={q} onChange={e => { setQ(e.target.value); setShown(40) }} onClear={() => { setQ(''); setShown(40) }} />
     {profile && <div className="small dim row" style={{ margin: '-4px 2px 10px', gap: 6, alignItems: 'center' }}>
       <Icon name="dumbbell" style={{ fontSize: 13 }} />

@@ -4,6 +4,7 @@ import {createRoot} from 'react-dom/client'
 import {MemoryRouter} from 'react-router-dom'
 import {it,expect,beforeEach,afterEach,vi} from 'vitest'
 import Home from './Home.jsx'
+import Stats from './Stats.jsx'
 import {ZoomCalendar,dayOverrideSheet} from '../sheets.jsx'
 import {DEF,useStore} from '../store/useStore.js'
 import {useUI} from '../store/useUI.js'
@@ -12,8 +13,10 @@ let root,host,S
 beforeEach(()=>{globalThis.IS_REACT_ACT_ENVIRONMENT=true;vi.useFakeTimers();vi.setSystemTime(new Date('2026-09-28T12:00:00'));localStorage.clear();S={...structuredClone(DEF),lang:'en',trainingStartDate:'2026-07-15',routines:[{id:'upper',name:'Upper A',ex:[]},{id:'lower',name:'Lower A',ex:[]}],week:{1:['upper'],2:['lower']}};useStore.setState({S,user:null});useUI.setState({sheets:[]});host=document.createElement('div');document.body.append(host);root=createRoot(host)})
 afterEach(()=>{act(()=>root.unmount());host.remove();vi.clearAllTimers();vi.useRealTimers();vi.clearAllMocks()})
 const mount=()=>act(()=>root.render(<MemoryRouter><Home/></MemoryRouter>))
+// Consistency lives in Progress; Today keeps the streak and a glance tile.
+const mountWithProgress=()=>act(()=>root.render(<MemoryRouter><Home/><Stats/></MemoryRouter>))
 it('opens the explicit consistency report from its own section without a global export shortcut',()=>{
- mount();const before=JSON.stringify(useStore.getState().S)
+ mountWithProgress();const before=JSON.stringify(useStore.getState().S)
  const section=host.querySelector('.consistency-card')
  const buttons=[...section.querySelectorAll('button')].filter(b=>b.getAttribute('aria-label')==='Consistency Report')
  expect(buttons).toHaveLength(1);expect(host.textContent).not.toContain('Export Reports')
@@ -29,7 +32,7 @@ it('opens the explicit consistency report from its own section without a global 
  act(()=>sheetRoot.unmount());useUI.getState().closeAll()
 })
 it('reflects today activity and the daily streak without marking added exercises as extras',()=>{
- S.trainingStartDate='2026-09-28';S.workouts=[{id:'planned',d:'2026-09-28',routineId:'upper',sessionOrigin:{type:'planned',routineId:'upper'},entries:['replaced','added1','added2','added3'].map(id=>({id,sets:[{done:true,r:8,w:50}]}))}];useStore.setState({S});mount()
+ S.trainingStartDate='2026-09-28';S.workouts=[{id:'planned',d:'2026-09-28',routineId:'upper',sessionOrigin:{type:'planned',routineId:'upper'},entries:['replaced','added1','added2','added3'].map(id=>({id,sets:[{done:true,r:8,w:50}]}))}];useStore.setState({S});mountWithProgress()
  const metric=label=>[...host.querySelectorAll('dt')].find(el=>el.textContent===label)?.nextElementSibling.textContent
  expect(metric('Planned')).toBe('1');expect(metric('Extra')).toBe('0');expect(metric('Active days')).toBe('1');expect(metric('Completion')).toBe('100%');expect(host.querySelector('.header-streak b').textContent).toBe('1')
  act(()=>useStore.getState().update(s=>s.workouts.push({...s.workouts[0],id:'extra',routineId:null,sessionOrigin:{type:'extra',routineId:null}})))

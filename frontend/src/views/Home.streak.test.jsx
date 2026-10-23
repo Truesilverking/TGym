@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import Home from './Home.jsx'
+import Stats from './Stats.jsx'
 import { DEF, useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { bindUI } from '../components/ui.jsx'
@@ -34,7 +35,8 @@ const fixture = () => ({
 let host, root
 const flame = () => host.querySelector('.header-streak b').textContent
 const metric = label => [...host.querySelectorAll('.consistency-card dt')].find(node => node.textContent === label)?.nextElementSibling.textContent
-const mount = Component => act(() => root.render(<MemoryRouter><Component /></MemoryRouter>))
+// Today owns the flame; the consistency metrics it is checked against live in Progress.
+const mount = (Component, Progress = Component === Home ? Stats : null) => act(() => root.render(<MemoryRouter><Component />{Progress ? <Progress /> : null}</MemoryRouter>))
 
 beforeEach(() => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true
@@ -96,7 +98,8 @@ it('loads the same four-day flame after a fresh store and Home boot from the sav
   const { useStore: reopened } = await import('../store/useStore.js')
   await reopened.getState().boot()
   const { default: ReopenedHome } = await import('./Home.jsx')
-  mount(ReopenedHome)
+  const { default: ReopenedStats } = await import('./Stats.jsx')
+  mount(ReopenedHome, ReopenedStats)
   expect(flame()).toBe('4')
   expect(reopened.getState().S.workouts).toEqual(saved.workouts)
   expect(metric('Planned')).toBe('2'); expect(metric('Extra')).toBe('3')

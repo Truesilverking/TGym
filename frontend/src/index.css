@@ -34,11 +34,11 @@
   color-scheme:dark;
   /* Iron & Chalk (see src/styles/iron.css): dark is "iron" — warm graphite, not blue-black —
      so the chalk-white text and the plate-coloured accent carry all the colour. */
-  --bg:        #0b0b0a;
-  --bg-el:     #141412;   /* sheets, menus and the docked tab rail: opaque, no glass */
-  --surface:   #151513;   /* primary card / panel fill */
-  --surface-2: #1e1e1b;   /* interactive / nested / pressed fill */
-  --surface-3: #2a2a26;   /* controls, segmented tracks, active steppers */
+  --bg:        #0d0d0c;
+  --bg-el:     #191917;   /* sheets and menus (opaque); the tab bar adds blur on top */
+  --surface:   #171715;   /* primary card / panel fill */
+  --surface-2: #222220;   /* interactive / nested / pressed fill */
+  --surface-3: #2d2d2a;   /* controls, segmented tracks, active steppers */
 
   /* text hierarchy: chalk on iron */
   --label:     #f1efe8;
@@ -84,23 +84,21 @@
   --space-2xl:32px;
   --space-section:28px;
 
-  /* geometry: machined, not inflated. Small radii everywhere; pills are reserved for
-     things that are genuinely round (switch tracks, dots). */
-  --r-xs:2px;
-  --r-sm:3px;
-  --r-md:4px;
-  --r:4px;
-  --r-lg:6px;
-  --r-xl:8px;
-  --r-card:4px;
+  /* geometry: soft, current-generation radii; pills for chips, tags and the tab bar */
+  --r-xs:6px;
+  --r-sm:10px;
+  --r-md:12px;
+  --r:14px;
+  --r-lg:18px;
+  --r-xl:26px;
+  --r-card:20px;
   --r-pill:9999px;
-  --pad:clamp(14px, 3.8vw, 20px);
-  --chalk-corner:11px;   /* size of the cut mark painted in a card's top-left corner */
+  --pad:clamp(16px, 4.2vw, 20px);
 
-  /* surfaces & elevation: flat plates with a hard edge — no blurred glows */
+  /* surfaces & elevation: flat fills with a hairline edge */
   --panel-fill:var(--surface);
-  --panel-edge:rgba(241, 239, 232, 0.10);
-  --panel-shadow:inset 0 1px 0 rgba(241, 239, 232, 0.035);
+  --panel-edge:rgba(241, 239, 232, 0.07);
+  --panel-shadow:none;
   --control-edge:color-mix(in srgb, var(--label) 16%, transparent);
   --shadow-subtle:none;
   --shadow-float:0 18px 40px -12px rgba(0, 0, 0, 0.7);
@@ -116,20 +114,20 @@
   --sat:env(safe-area-inset-top,0px);
   --sal:env(safe-area-inset-left,0px);
   --sar:env(safe-area-inset-right,0px);
-  --tabbar-height:64px;   /* docked rail, safe-area padding is added below it */
-  --nav-clearance:calc(var(--tabbar-height) + var(--sab) + 8px);
+  --tabbar-height:66px;   /* floating bar; it sits 12px above the safe area */
+  --nav-clearance:calc(var(--tabbar-height) + max(12px, var(--sab)) + 12px);
   --bottom-clearance:var(--nav-clearance);
   --available-height:100dvh;
 }
 
 :root[data-theme="light"] {
   color-scheme:light;
-  /* "chalk": the light theme is a chalked concrete floor, warm and matte, with ink-black type */
-  --bg:        #e9e7e1;
-  --bg-el:     #f4f3ef;
-  --surface:   #f7f6f2;
-  --surface-2: #e1ded6;
-  --surface-3: #d4d0c6;
+  /* "chalk": warm off-white canvas, white cards, ink-black type */
+  --bg:        #f3f2ee;
+  --bg-el:     #ffffff;
+  --surface:   #ffffff;
+  --surface-2: #f0eee8;
+  --surface-3: #e4e1d9;
 
   --label:     #161512;
   --label-2:   rgba(22, 21, 18, 0.74);
@@ -140,8 +138,8 @@
   --sep-op:    rgba(22, 21, 18, 0.06);
 
   --panel-fill:var(--surface);
-  --panel-edge:rgba(22, 21, 18, 0.14);
-  --panel-shadow:0 1px 0 rgba(22, 21, 18, 0.06);
+  --panel-edge:rgba(22, 21, 18, 0.08);
+  --panel-shadow:0 1px 2px rgba(22, 21, 18, 0.04), 0 8px 24px -16px rgba(22, 21, 18, 0.18);
   --shadow-float:0 18px 36px -12px rgba(22, 21, 18, 0.22);
 
   --blue:#1d5fc4; --green:#1f7a3a; --red:#bf2a20; --orange:#8a4a00;

@@ -8,7 +8,7 @@ import './AppTour.css'
 
 export const TOUR_STEPS = [
   ['/home','calendar','Your training at a glance','Your streak rewards scheduled days. Open the calendar to plan and review.'],
-  ['/home','navigation','Move around TGym','Home, routines, training, stats and exercises stay one tap away.'],
+  ['/home','navigation','Move around TGym','Today, your plan, training, nutrition and progress each have their own tab.'],
   ['/plan','routine','Build your week','Create routines, assign training days and reorder with arrows or a short hold and drag.'],
   ['/home','start','Start or resume','Start today’s routine here. Your active workout stays available.'],
   ['/workout','sets','Log each set','Enter weight, reps and RIR, then check the set when completed. This preview saves nothing.'],

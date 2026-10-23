@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { t } from '../lib/i18n.js'
@@ -47,7 +46,6 @@ const macroLine = item => {
 }
 
 export default function Nutrition() {
-  const nav = useNavigate()
   const S = useStore(s => s.S)
   const pro = isPro(S)
   const today = todayISO()
@@ -69,7 +67,7 @@ export default function Nutrition() {
   return (
     <div className="narrow">
       <div className="hdr hdr-centered">
-        <button className="iconbtn" onClick={() => nav('/home')} aria-label={t('Back to home')}><Icon name="chevronLeft" /></button>
+        <span className="hdr-slot" aria-hidden="true" />
         <div className="hdr-center">
           <h1>{t('Nutrition')}</h1>
           <div className="sub">{pro ? 'TGym Pro' : t('Local profile')}</div>
