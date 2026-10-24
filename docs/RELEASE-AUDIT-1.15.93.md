@@ -1,6 +1,6 @@
 # TGym 1.15.93 / Android 129
 
-Release candidate integrating the verified local experience changes over the published 1.15.77 baseline. Publication, official signed artifacts and update notification delivery are pending the exact-source release pipeline; the results below distinguish completed local checks from those pending steps.
+**Published and verified**, integrating the local experience changes over the 1.15.77 baseline. Runtime source: `f9850f6ce0448764cef6df6e0c2a357bfc95f214`, annotated tag [v1.15.93](https://github.com/Truesilverking/TGym/releases/tag/v1.15.93). The release pipeline, official artifacts, public PWA and update notification service acceptance passed. [Structured evidence](RELEASE-EVIDENCE-1.15.93.json) records the exact source, runs, hashes and remaining device-specific boundaries.
 
 ## Changes
 
@@ -37,8 +37,30 @@ Public screenshots use **fictitious browser profiles**, not personal device phot
 
 ## Publication gate and remaining evidence
 
-Before the version tag, the same source commit must pass Tests, Validate PWA, Validate Android and the signed Android candidate workflow. Official APK/AAB identity, signing continuity, version 1.15.93 / code 129, hashes and public metadata must then agree. Only the normal release pipeline sends the update topics; no separate resend is planned.
+All required workflows passed for the same runtime source before the version tag:
+
+| Check | Confirmed result |
+| --- | --- |
+| [Tests](https://github.com/Truesilverking/TGym/actions/runs/40063083214) and [PR Tests](https://github.com/Truesilverking/TGym/actions/runs/40063086410) | **2373 frontend tests / 213 files**, API 16, MCP 37, catalogue 6 and Node/locale checks passed. The exact-source CI suite is clean; it supersedes the local timeout limitation above. |
+| [Validate PWA](https://github.com/Truesilverking/TGym/actions/runs/40063083195) | Complete frontend suite and PWA build passed. |
+| [Validate Android](https://github.com/Truesilverking/TGym/actions/runs/40063083197) | Compilation, Android lint and **15 instrumented tests, zero failures, zero skipped**. Counts were independently checked against the HTML report, class pages and source test methods; the uploaded artifact contains HTML rather than JUnit XML. |
+| [Signed candidate](https://github.com/Truesilverking/TGym/actions/runs/40063101333) | Production package, version/code, official certificate, APK/AAB signatures, build metadata and checksums verified before tagging. |
+| [Release](https://github.com/Truesilverking/TGym/actions/runs/40063641537) | **Success**: signed APK/AAB, GitHub Release, Pages deployment, public metadata checks and update topic sends. |
+
+The public APK and the Pages mirror are byte-identical: SHA-256 `18c58d0f062116f5b9d7c33cd77470c1a128fbda375fbee59b2f8b6b65560eb7`. AAB SHA-256: `f76748b74df776dcbcc370ec017b68a320e6068d804a68d6ab32bda3a960824e`. Both checksums and signatures passed. The retained production certificate is `8ee233c984615e2b3f6f083dc0c47d148bb8956ff7caca97be0b9a0d260e6082`; package `app.framegym.mobile` is not debuggable. All 66 shared APK runtime assets match the signed candidate, and all **62 deployed PWA files** match the release Pages artifact. Public manifest/build metadata identifies the same runtime commit and version/code.
+
+The release pipeline received FCM acceptance once for each intended topic, `tgym_updates` and `tgym_updates_v2`, at 2026-10-24 04:50:06 UTC. No manual resend was dispatched. This proves service acceptance, not reception on a particular phone.
+
+## Isolated PWA update and offline preservation
+
+A persistent, fictitious Edge profile first loaded **1.15.77 offline** under its original service worker with the existing cached shell. The normal Check/Update flow then activated **1.15.93** from the published runtime source and committed a valid pre-update backup. All previous fields, history, preferences, custom exercise and paused active session/set entries remained intact, with no duplicates. The protected original-field CRC remained `abc4dad2` before and after.
+
+The only additive preference was the source-defined default `streakCalendarShowProfile:false`, absent in the old profile. The complete new-profile checksum therefore differs; this is not described as byte-identical whole-profile JSON. The initial strict-check expectation and transport recovery were retained locally, without changing app source or repeating the update. Up-to-date detection, offline reload, two persistent-browser restarts offline and the IndexedDB current mirror passed with zero page errors or warnings. The actual installed desktop PWA and Pixel were not used for this isolated migration test.
+
+## Integration and boundaries
+
+Changes and the release tag are available on GitHub from `Dev`. [PR #12](https://github.com/Truesilverking/TGym/pull/12) integrates the same work into `main`; its required independent review remains pending. Branch protection was not changed or bypassed. Later evidence-only commits may update these documents without changing the tagged runtime source.
 
 The existing production update/installer validation remains intact: trusted source, SHA-256, package, newer version and installed signing identity. Profile storage keys, exercise/routine IDs, portable backup compatibility and the shared workout clock are retained. The release never seeds the QA demonstration history into user profiles.
 
-Physical iPhone acceptance, actual notification reception/speaker audibility and production-device installation remain separate from browser, emulator, scheduling and service-acceptance evidence. The final CI, publication and public-artifact results will be recorded here after completion. Private backups, real-device screenshots, personal media and unrelated local projects are excluded from the public commit.
+Physical iPhone acceptance, actual notification reception/speaker audibility and production-device installation remain separate from browser, emulator, scheduling and service-acceptance evidence. Private backups, real-device screenshots, personal media and unrelated local projects are excluded from the public commit.

@@ -1,6 +1,6 @@
 # TGym releases and verification
 
-Current candidate: **1.15.93 / Android 129**. The last publicly verified release at the start of this publication is **1.15.77 / Android 113**, source `b3ef639e0be8ba3ae4430b2320314d9e44a566fa`. Exact-source checks, signed artifacts, public update availability and notification acceptance for the candidate are tracked in [RELEASE-AUDIT-1.15.93.md](RELEASE-AUDIT-1.15.93.md). Production publication is not claimed until those checks complete.
+Current published release: **1.15.93 / Android 129**, runtime source `f9850f6ce0448764cef6df6e0c2a357bfc95f214`. Exact-source checks, signed artifacts, public update availability, isolated PWA 77-to-93 preservation and notification service acceptance passed. See [RELEASE-AUDIT-1.15.93.md](RELEASE-AUDIT-1.15.93.md) and [structured evidence](RELEASE-EVIDENCE-1.15.93.json). The previous public baseline was 1.15.77 / 113, source `b3ef639e0be8ba3ae4430b2320314d9e44a566fa`; physical phone receipt/production installation and iPhone acceptance remain separate, unverified boundaries.
 
 Development uses `Dev`; `main` retains its required independent review and status checks. A release tag may reference the fully validated `Dev` commit while its integration PR awaits that review. Do not disable branch protection or send an additional resend notification to complete a normal release.
 
