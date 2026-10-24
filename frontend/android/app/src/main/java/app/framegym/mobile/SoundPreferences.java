@@ -148,6 +148,15 @@ final class SoundPreferences {
         return new JSONObject().put("audible", audible).put("muted", muted).put("silent", silent);
     }
 
+    static JSONObject fallbackChannels(Context context,boolean vibration) throws Exception {
+        String muted="tgym_sound_fallback_v2_"+(vibration?"v":"n"),silent="tgym_sound_fallback_v2_n";
+        if(Build.VERSION.SDK_INT>=26){
+            NotificationManager manager=(NotificationManager)context.getSystemService(Context.NOTIFICATION_SERVICE);
+            createChannel(context,manager,muted,null,vibration);createChannel(context,manager,silent,null,false);
+        }
+        return new JSONObject().put("channels",new JSONObject().put("audible",muted).put("muted",muted).put("silent",silent)).put("notificationSoundsSupported",Build.VERSION.SDK_INT>=26);
+    }
+
     @android.annotation.TargetApi(26)
     private static void createChannel(Context context, NotificationManager manager, String id, Uri sound, boolean vibration) {
         if (sound != null) {
@@ -162,19 +171,27 @@ final class SoundPreferences {
 
     static String notificationChannel(Context context, long now) throws Exception {
         JSONObject config = config(context);
-        return channels(context).getString(quiet(config, now) ? "silent" : config.optBoolean("enabled", true) ? "audible" : "muted");
+        try{return channels(context).getString(quiet(config, now) ? "silent" : config.optBoolean("enabled", true)&&config.optBoolean("notificationEnabled",true) ? "audible" : "muted");}
+        catch(Exception error){
+            Log.w("TGymAudio","Alert sound unavailable; retaining silent notification delivery",error);
+            return fallbackChannels(context,config.optBoolean("vibration",true)).getJSONObject("channels").getString(quiet(config,now)?"silent":"muted");
+        }
     }
 
     /** Persist the deadline before playing so JS, service refresh and process recreation cannot double-alert. */
     static synchronized boolean claimRest(Context context, long occurrence) {
+        return claimTimer(context,"rest",occurrence);
+    }
+    static synchronized boolean claimTimer(Context context,String event,long occurrence) {
         if (occurrence <= 0) return true;
         SharedPreferences prefs = context.getSharedPreferences(PREFS, 0);
-        if (prefs.getLong("lastRest", 0) >= occurrence) return false;
-        return prefs.edit().putLong("lastRest", occurrence).commit();
+        String key="rest".equals(event)?"lastRest":"lastWork";
+        if (prefs.getLong(key, 0) >= occurrence) return false;
+        return prefs.edit().putLong(key, occurrence).commit();
     }
 
     static synchronized boolean play(Context context, String event, boolean preview, long occurrence) {
-        if ("rest".equals(event) && !preview && !claimRest(context, occurrence)) return false;
+        if (("rest".equals(event)||"work".equals(event)) && !preview && !claimTimer(context,event,occurrence)) return false;
         JSONObject config = config(context);
         if (!preview && quiet(config, System.currentTimeMillis())) return false;
         // Respect Android silent/vibrate/DND modes as well as TGym's own preferences.
@@ -190,13 +207,15 @@ final class SoundPreferences {
                 else vibrator.vibrate(pattern, -1, attributes());
             }
         }
-        if (!config.optBoolean("enabled", true) || audio.getRingerMode() != AudioManager.RINGER_MODE_NORMAL) return false;
+        if (!config.optBoolean("enabled", true) || ("notification".equals(event)&&!config.optBoolean("notificationEnabled",true)) || audio.getRingerMode() != AudioManager.RINGER_MODE_NORMAL) return false;
         Uri uri = soundUri(context, config, event);
         if (uri == null) return false;
         stop();
         try {
             MediaPlayer next = new MediaPlayer();
             player = next;
+            // Hold CPU only while the short clip plays; release() clears the lock.
+            next.setWakeMode(context, android.os.PowerManager.PARTIAL_WAKE_LOCK);
             next.setAudioAttributes(attributes());
             next.setDataSource(context, uri);
             next.setOnCompletionListener(done -> { synchronized (SoundPreferences.class) { if (player == done) player = null; done.release(); } });

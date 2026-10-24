@@ -5,6 +5,7 @@ import android.graphics.Color;
 import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
+import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.view.View;
@@ -13,13 +14,58 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 import com.getcapacitor.BridgeActivity;
+import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
+import java.util.Collections;
 
 @CapacitorPlugin(name = "SystemAppearance")
 public class SystemAppearancePlugin extends Plugin {
+    /** A fixed HTML control has no Android child View. Keep its small exclusion
+     * in window coordinates so scrolling WebView content cannot move the area. */
+    @PluginMethod public void setGestureExclusion(PluginCall call) {
+        boolean enabled = Boolean.TRUE.equals(call.getBoolean("enabled", false));
+        double left=call.getDouble("left",0.0), top=call.getDouble("top",0.0);
+        double right=call.getDouble("right",0.0), bottom=call.getDouble("bottom",0.0);
+        double viewportWidth=call.getDouble("viewportWidth",0.0), viewportHeight=call.getDouble("viewportHeight",0.0);
+        getActivity().runOnUiThread(() -> {
+            Window window=getActivity().getWindow();
+            try {
+                View web=((BridgeActivity)getActivity()).getBridge().getWebView();
+                int[] origin=new int[2]; web.getLocationInWindow(origin);
+                Rect rect=enabled?gestureExclusionRect(web.getWidth(),web.getHeight(),origin[0],origin[1],
+                    viewportWidth,viewportHeight,left,top,right,bottom):null;
+                boolean applied=applyGestureExclusion(window,rect);
+                JSObject result=new JSObject(); result.put("applied",applied); result.put("enabled",applied&&rect!=null);
+                call.resolve(result);
+            } catch (RuntimeException error) {
+                applyGestureExclusion(window,null);
+                call.reject("Cannot synchronize the floating control gesture area",error);
+            }
+        });
+    }
+
+    static Rect gestureExclusionRect(int width,int height,int originX,int originY,
+            double viewportWidth,double viewportHeight,double left,double top,double right,double bottom) {
+        for(double value:new double[]{viewportWidth,viewportHeight,left,top,right,bottom})
+            if(Double.isNaN(value)||Double.isInfinite(value))throw new IllegalArgumentException("Gesture bounds must be finite");
+        if(width<=0||height<=0||viewportWidth<=0||viewportHeight<=0||right<=left||bottom<=top||right-left>96||bottom-top>96)
+            throw new IllegalArgumentException("Only a small visible control can exclude system gestures");
+        double l=Math.max(0,Math.min(viewportWidth,left)),r=Math.max(0,Math.min(viewportWidth,right));
+        double t=Math.max(0,Math.min(viewportHeight,top)),b=Math.max(0,Math.min(viewportHeight,bottom));
+        if(r<=l||b<=t)return null;
+        return new Rect(originX+(int)Math.floor(l*width/viewportWidth),originY+(int)Math.floor(t*height/viewportHeight),
+            originX+(int)Math.ceil(r*width/viewportWidth),originY+(int)Math.ceil(b*height/viewportHeight));
+    }
+
+    static boolean applyGestureExclusion(Window window,Rect rect) {
+        if(Build.VERSION.SDK_INT<29)return false;
+        window.setSystemGestureExclusionRects(rect==null?Collections.emptyList():Collections.singletonList(rect));
+        return true;
+    }
+
     @PluginMethod public void setTheme(PluginCall call) {
         boolean light = Boolean.TRUE.equals(call.getBoolean("light", false));
         getActivity().runOnUiThread(() -> {

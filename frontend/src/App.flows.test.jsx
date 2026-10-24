@@ -180,7 +180,9 @@ it('records trusted recovery input after controlled onChange and persists the re
   mirror.value={...structuredClone(DEF),lang:'en',hasCompletedOnboarding:true,hasCompletedAppTour:true,sound:false,
     active:{id:'recovery-input',d:todayISO(),start:now-45*minute,name:'Recovery input',lastUserInteractionAt:now-40*minute,timerPausedAt:now-10*minute,pauseReason:'inactivity',entries:[{id:'0025',target:{mode:'reps'},sets:[{done:false,w:20,r:8}]}]}}
   await mount()
-  const field=host.querySelector('.center input[type="number"]')
+  expect(host.querySelector('.inactivity-editor input')).toBeNull()
+  await click('Update time')
+  const field=host.querySelector('.inactivity-editor input')
   expect(field.value).toBe('35')
   vi.setSystemTime(now+1000)
   await act(()=>{
@@ -190,8 +192,13 @@ it('records trusted recovery input after controlled onChange and persists the re
     field.dispatchEvent(input)
   })
   expect(field.value).toBe('40')
+  // Trusted input metadata is persisted after the input burst and first paint; its timestamp is
+  // still the input time rather than the later batched storage write.
+  await act(async()=>vi.advanceTimersByTimeAsync(900))
   expect(useStore.getState().S.active.lastUserInteractionAt).toBe(now+1000)
   await click('Save duration')
+  expect(useStore.getState().S.active.accumulatedActiveDuration).not.toBe(40*minute)
+  await click('Save changes')
   expect(useStore.getState().S.active.accumulatedActiveDuration).toBe(40*minute)
   expect(useStore.getState().S.active.pauseReason).toBe('inactivity')
   expect(useStore.getState().S.workouts).toEqual([])

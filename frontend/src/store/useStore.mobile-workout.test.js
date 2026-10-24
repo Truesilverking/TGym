@@ -136,3 +136,75 @@ it('restores imported sound bytes and all sound choices after closing and losing
   expect(restored.sounds.countdown).toBe('silent')
   expect(JSON.parse(localStorage.getItem('gym_state_v1')).customSounds).toEqual([clip])
 })
+
+it('reuses the exact confirmed primary serialization and refuses it for another state identity',async()=>{
+ native.save.mockResolvedValue(true)
+ useStore.getState().update(s=>{s.active={id:'cache',start:Date.now(),lastUserInteractionAt:Date.now(),entries:[]};s.customEx=[{id:'custom',img:'data:image/gif;base64,large'}]})
+ const current=useStore.getState().S,confirmed=localStorage.getItem('gym_state_v1')
+ await vi.advanceTimersByTimeAsync(800)
+ expect(native.save.mock.calls.at(-1)).toEqual([current,confirmed])
+ useStore.setState({S:{...current,active:{...current.active,note:'other identity'}}})
+ await useStore.getState().flushPersistence()
+ expect(native.save.mock.calls.at(-1)[0]).toBe(useStore.getState().S)
+ expect(native.save.mock.calls.at(-1)[1]).toBeUndefined()
+})
+
+it('keeps an ordinary reminder edit pending across metadata saves and skips later clock-only reconciliation',async()=>{
+ native.save.mockResolvedValue(true)
+ useStore.setState({S:{...structuredClone(DEF),active:{id:'metadata',start:Date.now(),lastUserInteractionAt:Date.now(),entries:[]}}})
+ await useStore.getState().flushPersistence();vi.clearAllMocks()
+ useStore.getState().update(s=>{s.reminder.time='10:30'})
+ await vi.advanceTimersByTimeAsync(200)
+ useStore.getState().recordInteraction()
+ await vi.advanceTimersByTimeAsync(800)
+ expect(native.reminder).toHaveBeenCalledOnce()
+ expect(native.reminder.mock.calls[0][0].reminder.time).toBe('10:30')
+ const firstTimestamp=native.save.mock.calls[0][0].active.lastUserInteractionAt
+ useStore.getState().recordInteraction()
+ await vi.advanceTimersByTimeAsync(800)
+ expect(native.reminder).toHaveBeenCalledOnce();expect(native.save).toHaveBeenCalledTimes(2)
+ expect(native.save.mock.calls[1][0].active.lastUserInteractionAt).toBeGreaterThan(firstTimestamp)
+ expect(native.save.mock.calls[1][1]).toBe(localStorage.getItem('gym_state_v1'))
+})
+
+it('flushes pending ordinary reminder edits on background once and cancels the delayed work',async()=>{
+ native.save.mockResolvedValue(true)
+ useStore.setState({S:{...structuredClone(DEF),active:{id:'background',start:Date.now(),lastUserInteractionAt:Date.now(),entries:[]}}})
+ await useStore.getState().flushPersistence();vi.clearAllMocks()
+ useStore.getState().update(s=>{s.reminder.time='11:45'})
+ useStore.getState().recordInteraction(Date.now(),{defer:true})
+ window.dispatchEvent(new Event('pagehide'))
+ expect(native.reminder).toHaveBeenCalledOnce();expect(native.save).toHaveBeenCalledOnce()
+ expect(native.reminder.mock.calls[0][0].reminder.time).toBe('11:45')
+ expect(native.save.mock.calls[0][1]).toBe(localStorage.getItem('gym_state_v1'))
+ await vi.advanceTimersByTimeAsync(2500)
+ expect(native.reminder).toHaveBeenCalledOnce();expect(native.save).toHaveBeenCalledOnce()
+})
+
+it('never reuses the serialization of a failed newer draft',async()=>{
+ native.save.mockResolvedValue(true)
+ useStore.getState().update(s=>{s.active={id:'approved',start:Date.now(),lastUserInteractionAt:Date.now(),entries:[]}})
+ await vi.advanceTimersByTimeAsync(800)
+ const approved=useStore.getState().S,confirmed=localStorage.getItem('gym_state_v1'),original=localStorage.setItem
+ const write=vi.spyOn(localStorage,'setItem').mockImplementation(function(key,value){if(key==='gym_state_v1')throw new Error('disk unavailable');return original.call(this,key,value)})
+ try{expect(()=>useStore.getState().update(s=>{s.active.note='uncommitted'})).toThrow('disk unavailable')}
+ finally{write.mockRestore()}
+ await useStore.getState().flushPersistence()
+ expect(useStore.getState().S).toBe(approved)
+ expect(native.save.mock.calls.at(-1)).toEqual([approved,confirmed])
+ expect(JSON.parse(native.save.mock.calls.at(-1)[1]).active.note).toBeUndefined()
+})
+
+it('persists background clock-only input without requesting another reminder reconciliation',async()=>{
+ native.save.mockResolvedValue(true)
+ useStore.setState({S:{...structuredClone(DEF),active:{id:'clock-only',start:Date.now(),lastUserInteractionAt:Date.now(),entries:[]}}})
+ await useStore.getState().flushPersistence();vi.clearAllMocks()
+ await vi.advanceTimersByTimeAsync(50)
+ const captured=Date.now()
+ useStore.getState().recordInteraction(captured,{defer:true})
+ window.dispatchEvent(new Event('pagehide'))
+ expect(native.save).toHaveBeenCalledOnce();expect(native.reminder).not.toHaveBeenCalled()
+ expect(JSON.parse(native.save.mock.calls[0][1]).active.lastUserInteractionAt).toBe(captured)
+ await vi.advanceTimersByTimeAsync(2500)
+ expect(native.save).toHaveBeenCalledOnce();expect(native.reminder).not.toHaveBeenCalled()
+})

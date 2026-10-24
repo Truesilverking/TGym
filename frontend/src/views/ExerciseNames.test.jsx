@@ -39,11 +39,13 @@ beforeEach(async () => {
   vi.setSystemTime(new Date('2026-10-06T12:00:00'))
   await setLang('en')
   localStorage.clear()
-  useUI.setState({ sheets: [], timer: null, work: null, toastMsg: '' })
+  useUI.setState({ sheets: [], timer: null, work: null, toastMsg: '', appTourRequest: null, appTourWorkoutPreview: false })
   bindUI(useUI)
   const S = structuredClone(DEF)
   Object.assign(S, {
     lang: 'en', exerciseNameMode: 'aliases', sound: false,
+    // These assertions exercise an established profile's real session, outside the tour preview.
+    hasCompletedOnboarding: true, hasCompletedAppTour: true,
     customEx: [{ id: 'custom-names', n: 'My base movement', custom: true, bp: 'chest', tg: 'pectorals', eq: 'body weight', st: [] }],
     exerciseAliases: { '0025': 'Shared nickname', 'custom-names': 'Shared nickname' },
     routines: [{ id: 'names-plan', name: 'Name test', ex: [{ id: '0025', reps: 8, sets: 1 }, { id: 'custom-names', reps: 8, sets: 1 }] }],

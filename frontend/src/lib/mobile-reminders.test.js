@@ -1,6 +1,7 @@
 import {beforeEach,afterEach,describe,expect,it,vi} from 'vitest'
 import {MEASUREMENT_NOTIFICATION_IDS} from './measurement-reminders.js'
 import {WORKOUT_NOTIFICATION_IDS,DELOAD_NOTIFICATION_IDS} from './workout-reminders.js'
+import es from '../locales/es.js'
 
 const native = vi.hoisted(() => {
   const pending = new Map()
@@ -11,11 +12,12 @@ const native = vi.hoisted(() => {
     checkPermissions:vi.fn(async () => ({display:'granted'})),
     requestPermissions:vi.fn(async () => ({display:'granted'})),
     sounds:vi.fn(async () => ({channels:{silent:'silent',muted:'muted',audible:'audible'},notificationSoundsSupported:true})),
+    fallback:vi.fn(async()=>({channels:{silent:'fallback-quiet',muted:'fallback-muted',audible:'fallback-muted'},notificationSoundsSupported:true})),
     finish:vi.fn(async () => {}),
   }
 })
 vi.mock('@capacitor/local-notifications',()=>({LocalNotifications:native}))
-vi.mock('./native-sound.js',()=>({syncNativeSounds:native.sounds,finishNativeSoundSync:native.finish}))
+vi.mock('./native-sound.js',()=>({syncNativeSounds:native.sounds,finishNativeSoundSync:native.finish,fallbackNativeSounds:native.fallback}))
 let mobile
 const state = () => ({accent:'lime',sound:true,routines:[{id:'a',name:'Upper'},{id:'b',name:'Lower'}],week:{4:['a'],5:['b']},dayPlan:{},workouts:[],bodyweight:[],measurements:[],reminder:{on:true,time:'08:00',nextTime:'19:00'},measurementReminders:{notifications:true,time:'09:00',items:{weight:{enabled:true,anchorDate:'2026-09-10',intervalUnit:'weeks',intervalValue:1}}},deload:{on:false,notifications:true}})
 beforeEach(async () => {
@@ -27,11 +29,91 @@ beforeEach(async () => {
   native.checkPermissions.mockResolvedValue({display:'granted'})
   native.requestPermissions.mockImplementation(async () => {native.checkPermissions.mockResolvedValue({display:'granted'});return {display:'granted'}})
   native.sounds.mockResolvedValue({channels:{silent:'silent',muted:'muted',audible:'audible'},notificationSoundsSupported:true})
+  native.fallback.mockResolvedValue({channels:{silent:'fallback-quiet',muted:'fallback-muted',audible:'fallback-muted'},notificationSoundsSupported:true})
   mobile = await import('./mobile.js')
 })
 afterEach(()=>vi.useRealTimers())
 
 describe('serialized, independently reconciled native reminders',()=>{
+  it.each([['en',{},'Today','Tomorrow'],['es',es,'Hoy','Mañana']])('uses %s weekly relative text and preserves explicit dated plans and scheduling payloads',async(lang,dict,today,tomorrow)=>{
+    const {_setLangState,t}=await import('./i18n-core.js'),{fmtScheduledDate}=await import('./format.js')
+    _setLangState(lang,dict)
+    const S=state(),before=structuredClone(S)
+    S.measurementReminders.notifications=false;before.measurementReminders.notifications=false
+    expect(await mobile.syncReminder(S)).toBe(true)
+    expect(native.pending.get(100).body).toBe(t('{0} is scheduled for {1}.','Upper',today))
+    expect(native.pending.get(101).body).toBe(t('{0} is scheduled for {1}.','Lower',tomorrow))
+    const original=[native.pending.get(100),native.pending.get(101)].map(notice=>structuredClone(notice))
+    expect(native.cancel).toHaveBeenCalledExactlyOnceWith({notifications:[...WORKOUT_NOTIFICATION_IDS,3000].map(id=>({id}))})
+    native.cancel.mockClear();native.schedule.mockClear()
+    expect(await mobile.syncReminder(S)).toBe(true)
+    expect(native.cancel).not.toHaveBeenCalled();expect(native.schedule).not.toHaveBeenCalled()
+    expect(mobile.getReminderStatus().workout.nextDate).toBe('2026-09-10')
+    S.dayPlan={'2026-09-10':['a'],'2026-09-11':['b']}
+    expect(await mobile.syncReminder(S)).toBe(true)
+    for(const previous of original){
+      const actual=native.pending.get(previous.id),{body:oldText,...oldPayload}=previous,{body:newText,...newPayload}=actual
+      expect(newPayload).toEqual(oldPayload)
+      expect(newText).toBe(t('{0} is scheduled for {1}.',previous.id===100?'Upper':'Lower',fmtScheduledDate(previous.extra.date)))
+      expect(newText).not.toBe(oldText)
+    }
+    expect(S).toEqual({...before,dayPlan:{'2026-09-10':['a'],'2026-09-11':['b']}})
+    _setLangState('en',{})
+  })
+  it('formats a future native reminder relative to its firing date and preserves its existing metadata',async()=>{
+    const plans=await import('./workout-reminders.js')
+    const at=new Date('2026-09-12T19:00:00'),notice={id:101,kind:'next',routineId:'b',name:'Lower',remaining:1,date:'2026-09-13',at}
+    const spy=vi.spyOn(plans,'workoutNotificationPlan').mockReturnValue([notice])
+    try{
+      const S=state();S.measurementReminders.notifications=false
+      expect(await mobile.syncReminder(S)).toBe(true)
+      expect(native.pending.get(101)).toMatchObject({id:101,title:'Next workout reminder',body:'Lower is scheduled for Tomorrow.',schedule:{at,allowWhileIdle:true},extra:{type:'workout',routineId:'b',date:'2026-09-13',tgymReminderAt:+at}})
+      expect(native.pending.size).toBe(1)
+    }finally{spy.mockRestore()}
+  })
+  it('captures only reminder inputs, never reading unrelated media, while keeping complete legacy rows',async()=>{
+    const S=state(),readMedia=vi.fn(()=>{throw new Error('Unrelated media must not be read')})
+    for(const key of ['customEx','profile','inbody','equipProfiles'])Object.defineProperty(S,key,{enumerable:true,get:readMedia})
+    S.active={id:'live',entries:[{id:'legacy',sets:[{done:false,r:8}]}]}
+    S.workouts=[{id:'historic',d:'2026-09-03',routineId:'a',name:'Upper',legacyUnknown:{keep:true},entries:[{id:'legacy',sets:[{done:true,r:8,mode:'reps'}]}]}]
+    const original=structuredClone(S.workouts),syncing=mobile.syncReminder(S)
+    S.reminder.time='10:30';S.workouts[0].legacyUnknown.keep=false
+    expect(await syncing).toBe(true);expect(readMedia).not.toHaveBeenCalled()
+    const snapshot=native.sounds.mock.calls[0][0]
+    expect(snapshot.reminder.time).toBe('08:00');expect(snapshot.workouts).toEqual(original)
+    expect(snapshot.active).toEqual(S.active);expect(snapshot.routines).toEqual(S.routines)
+    for(const key of ['customEx','profile','inbody','equipProfiles'])expect(Object.hasOwn(snapshot,key)).toBe(false)
+    expect(native.pending.size).toBe(3)
+  })
+  it('silences notification audio without disabling or duplicating delivery and preserves master mute',async()=>{
+    const S=state();S.notificationSoundOn=false
+    expect(await mobile.syncReminder(S)).toBe(true)
+    expect(native.pending.size).toBe(3);expect([...native.pending.values()].every(n=>n.channelId==='muted')).toBe(true)
+    native.schedule.mockClear();await mobile.syncReminder(S);expect(native.schedule).not.toHaveBeenCalled()
+    S.notificationSoundOn=true;S.soundMuted=true;await mobile.syncReminder(S)
+    expect(native.pending.size).toBe(3);expect([...native.pending.values()].every(n=>n.channelId==='muted')).toBe(true)
+    expect(S.reminder.on).toBe(true);expect(S.measurementReminders.notifications).toBe(true)
+  })
+  it('keeps delivery with explicit silent fallback after sound configuration fails, then safely recovers',async()=>{
+    const S=state();await mobile.syncReminder(S);native.finish.mockClear()
+    native.sounds.mockRejectedValueOnce(new Error('file unavailable'))
+    expect(await mobile.syncReminder(S)).toBe(true)
+    expect(native.fallback).toHaveBeenCalledWith(S);expect(native.pending.size).toBe(3)
+    expect([...native.pending.values()].every(n=>n.channelId==='fallback-muted')).toBe(true)
+    expect(mobile.getReminderStatus().measurement).toMatchObject({status:'configured',count:1,error:'Notifications are scheduled without sound. The selected sound could not be applied.'})
+    expect(native.finish).not.toHaveBeenCalled()
+    expect(await mobile.syncReminder(S)).toBe(true)
+    expect(native.pending.size).toBe(3);expect(mobile.getReminderStatus().measurement.error).toBeNull();expect(native.finish).toHaveBeenCalledOnce()
+  })
+  it('retains existing alarms when sound and fallback channels both fail, while an explicit off still cancels',async()=>{
+    const S=state();await mobile.syncReminder(S);const before=[...native.pending.values()]
+    native.finish.mockClear();native.cancel.mockClear();native.schedule.mockClear()
+    native.sounds.mockRejectedValue(new Error('file unavailable'));native.fallback.mockRejectedValue(new Error('channels unavailable'))
+    expect(await mobile.syncReminder(S)).toBe(false)
+    expect([...native.pending.values()]).toEqual(before);expect(native.cancel).not.toHaveBeenCalled();expect(native.finish).not.toHaveBeenCalled()
+    S.measurementReminders.notifications=false;await mobile.syncReminder(S)
+    expect(native.pending.has(2000)).toBe(false);expect(native.pending.size).toBe(2);expect(mobile.getReminderStatus().measurement.status).toBe('off')
+  })
   it('does not recreate notifications for repeated saves, restores or concurrent foreground checks',async()=>{
     const S=state()
     expect(await Promise.all([mobile.syncReminder(S),mobile.syncReminder(structuredClone(S)),mobile.syncReminder(S)])).toEqual([true,true,true])

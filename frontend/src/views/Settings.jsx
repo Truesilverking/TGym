@@ -28,7 +28,9 @@ import { APP_REPOSITORY, ORIGINAL_OPENGYM_REPOSITORY } from '../lib/app-meta.js'
 import { ReminderStatus } from '../components/ReminderPanel.jsx'
 import MeasurementReminders from '../components/MeasurementReminders.jsx'
 import WorkoutReminderSettings from '../components/WorkoutReminderSettings.jsx'
+import {InAppReminderSettings} from '../components/InAppReminders.jsx'
 import DeloadSettings from '../components/DeloadSettings.jsx'
+import { openLocalProfile } from '../components/LocalProfile.jsx'
 
 function BackupSheet({ onExport, onImport }) {
   const autoBackup = useStore(s => !!s.S.autoBackup)
@@ -166,12 +168,13 @@ export default function Settings() {
     },
   })
 
-  return <div className="narrow">
+  return <div className="narrow settings-page">
     <div className="hdr">
       <button className="iconbtn" onClick={() => nav('/home')} aria-label={t('Home')}><Icon name="chevronLeft" /></button>
       <div style={{ flex: 1, marginLeft: 10 }}><h1>{t('Settings')}</h1></div>
     </div>
 
+    <div data-tour="profile"><Section title={t('Profile')}><Row icon="personCircle" iconTint="var(--acc)" title={S.profile?.name || user?.name || t('Profile')} subtitle={t('Name, photo and personal data')} accessory="chevron" onClick={openLocalProfile} /></Section></div>
     {/* ---------- account (demo and mobile builds have nothing to sign in to) ---------- */}
     {!(MOBILE || STANDALONE) && <Section title={DEMO ? t('Demo') : t('Account')}>
       {DEMO ? <>
@@ -197,7 +200,7 @@ export default function Settings() {
     {!user && !DEMO && !MOBILE && !STANDALONE && <p className="sect-f" style={{ marginTop: -18, marginBottom: 22 }}>{t('Guest mode — data lives only in this browser.')}</p>}
 
     {/* ---------- general ---------- */}
-    <Section title={t('General')} footer={t('Changing a unit automatically converts all saved values, including history and active workouts.')}>
+    <Section className="profile-preferences" title={t('General')} footer={t('Changing a unit automatically converts all saved values, including history and active workouts.')}>
       <SelectRow
         icon="globe" iconTint="var(--blue)" title={t('Language')}
         value={S.lang || 'en'} onChange={v => update(s => { s.lang = v })}
@@ -218,7 +221,7 @@ export default function Settings() {
       <Row icon="figureStrength" iconTint="var(--purple)" title={t('Measurement unit')}><Segmented className="seg-inline" options={[{ value: 'cm', label: 'cm' }, { value: 'in', label: 'in' }]} value={S.measurementUnit || 'cm'} onChange={v => update(s => { convertMeasurementState(s, v) })} /></Row>
     </Section>
 
-    <Section title={t('Privacy')} footer={t('When enabled, TGym locks after being in the background for 5 minutes.')}>
+    <Section data-tour="privacy" title={t('Privacy')} footer={t('When enabled, TGym locks after being in the background for 5 minutes.')}>
       <Row icon="lock" iconTint="var(--red)" title={t('App lock')} subtitle={lockOn ? t('4-digit PIN · locks after 5 minutes') : t('Protect TGym on this device')} accessory="chevron" onClick={editDeviceLock} />
       {(MOBILE || STANDALONE) && <Row icon="personCircle" iconTint="var(--blue)" title={t('Fingerprint or Face ID')}
         subtitle={!lockOn ? t('Create the TGym PIN first.') : bioAvailable ? t('Unlock with the biometrics enrolled on this phone.') : t('No compatible biometric authentication is enrolled.')}>
@@ -227,7 +230,7 @@ export default function Settings() {
     </Section>
 
     {/* ---------- during a workout ---------- */}
-    <Section title={t('During a workout')} footer={wakeOK ? t('The screen stays on while a workout is running, so you don’t have to unlock your phone between sets.') : null}>
+    <Section data-tour="during-workout" title={t('During a workout')} footer={wakeOK ? t('The screen stays on while a workout is running, so you don’t have to unlock your phone between sets.') : null}>
       <SelectRow icon="timer" iconTint="var(--orange)" title={t('Rest timer')}
         value={S.restSec} onChange={v => update(s => { s.restSec = v })}
         options={[{ value: 0, label: t('Off') }, ...[60, 90, 120, 150, 180].map(v => ({ value: v, label: v + 's' }))]} />
@@ -278,7 +281,8 @@ export default function Settings() {
 
     <DeloadSettings S={S} update={update} toast={toast} reminderStatus={MOBILE && S.deload?.on && S.deload?.notifications !== false ? <ReminderStatus kind="deload" enabled /> : null} />
 
-    <Section title={t('Reminders')} className="settings-reminders">
+    <Section data-tour="reminders" title={t('Reminders')} className="settings-reminders">
+      <InAppReminderSettings/>
       <MeasurementReminders settingsOnly />
       {(MOBILE || !user) && <WorkoutReminderSettings />}
     </Section>
@@ -293,7 +297,7 @@ export default function Settings() {
     <EquipmentCard S={S} update={update} />
 
     {/* ---------- appearance ---------- */}
-    <Section title={t('Appearance')} footer={DEMO || MOBILE ? undefined : t('synced with your profile')}>
+    <Section data-tour="preferences" title={t('Appearance')} footer={DEMO || MOBILE ? undefined : t('synced with your profile')}>
       <Row icon="moon" iconTint="var(--indigo)" title={t('Theme')}>
         <Segmented
           className="seg-inline"
@@ -327,7 +331,7 @@ export default function Settings() {
     </Section>
 
     {/* ---------- data: fill it, bring things over, back it up, wipe it ---------- */}
-    <Section title={t('Data')}>
+    <Section data-tour="data" title={t('Data')}>
       <Row icon="lock" iconTint="var(--acc)" title={t('All Data stays on this device')} subtitle={user
         ? t('This profile also syncs with your connected server. Cloud backups and exported copies leave this device when you choose them.')
         : t('Stored locally by default. Connecting a server, enabling cloud backup or sharing an export sends a copy outside this device.')} />

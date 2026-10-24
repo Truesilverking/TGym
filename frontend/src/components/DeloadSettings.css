@@ -10,6 +10,7 @@
 .deload-settings-chevron.expanded{transform:rotate(180deg)}
 .deload-settings-panel{border-top:var(--hair) solid var(--sep);animation:deload-settings-in .16s ease-out}
 .deload-settings-panel[hidden]{display:none}
+.deload-settings>.reminder-feedback{justify-content:center;text-align:center;padding:0 14px}.deload-settings>.reminder-feedback>span{flex:0 1 auto}
 .deload-settings-date{justify-content:space-between;flex-wrap:wrap}
 .deload-settings-date .input{width:150px;max-width:100%;flex:0 1 150px;min-height:44px}
 .deload-settings-date .input[aria-invalid="true"]{border-color:var(--red)}

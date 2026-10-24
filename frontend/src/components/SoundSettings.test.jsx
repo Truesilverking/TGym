@@ -51,6 +51,14 @@ beforeEach(async () => {
 afterEach(async () => { if (root) await act(() => root.unmount()); root = null; container.remove() })
 
 describe('sound preferences', () => {
+  it('toggles notification sound without changing notification delivery, master mute or event selections',async()=>{
+    const before={...useStore.getState().S,reminder:{on:true},measurementReminders:{notifications:true},soundMuted:true}
+    await act(()=>useStore.setState({S:before}))
+    const row=[...container.querySelectorAll('div')].find(el=>el.firstChild?.textContent==='Notification sound')
+    await act(()=>row.querySelector('[role=switch]').click())
+    expect(useStore.getState().S).toEqual({...before,notificationSoundOn:false})
+    expect(stopSound).toHaveBeenCalled()
+  })
   it('stores each selection independently and stops preview playback when dismissed', async () => {
     await choose('Rest finished', 'chime')
     await choose('Set completed', 'silent')

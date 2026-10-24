@@ -12,6 +12,23 @@ export function measurementPosition(key,viewBox,body='male') {
   return [x+px*w,y+(body==='female'?py*.95+.025:py)*h]
 }
 
+// Allocate separate label slots outside the existing anatomy. Sorting both ends
+// from top to bottom avoids stacked labels when several measurements share a zone.
+export function measurementCalloutSlots(metrics) {
+  const sides = { left: [], right: [] }
+  for (const metric of metrics || []) {
+    const position = MEASUREMENT_ZONES[metric.key]
+    if (!position || metric.last == null && metric.first == null) continue
+    const side = position[0] < .5 || position[0] === .5 && metric.key !== 'hips' ? 'left' : 'right'
+    sides[side].push(metric)
+  }
+  for (const list of Object.values(sides)) list.sort((a,b)=>MEASUREMENT_ZONES[a.key][1]-MEASUREMENT_ZONES[b.key][1] || a.key.localeCompare(b.key))
+  const rows = Math.max(sides.left.length, sides.right.length, 1)
+  return { rows, slots: Object.entries(sides).flatMap(([side,list]) => list.map((metric,index)=>({
+    metric, side, row: list.length > 1 ? Math.round(index * (rows-1) / (list.length-1)) + 1 : Math.ceil(rows / 2),
+  }))) }
+}
+
 export function measurementMapSvg(geometry,body,metrics) {
   const view=(geometry?.[body]||geometry?.male)?.front
   if(!view)return ''

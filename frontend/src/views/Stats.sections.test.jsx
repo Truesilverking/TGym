@@ -6,9 +6,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useStore, DEF } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { bindUI } from '../components/ui.jsx'
-import { setLang } from '../lib/i18n.js'
-import { STATS_SECTIONS } from '../lib/stats-sections.js'
+import { setLang, t } from '../lib/i18n.js'
+import { STATS_VIEW_SECTIONS as STATS_SECTIONS } from '../lib/stats-sections.js'
 import Stats from './Stats.jsx'
+import BodyMap from '../components/BodyMap.jsx'
+import {migrateState} from '../lib/state-migrations.js'
+import {sessionTiming} from '../lib/workout-time.js'
 
 vi.mock('../sheets.jsx', () => ({
   bwSheet: () => {}, goalSheet: () => {}, measurementsSheet: () => {}, heightSheet: () => {},
@@ -18,7 +21,7 @@ vi.mock('../sheets.jsx', () => ({
 vi.mock('../components/LineChart.jsx', () => ({ default: () => React.createElement('div') }))
 vi.mock('../components/MeasurementBodyMap.jsx', () => ({ default: () => React.createElement('div') }))
 vi.mock('../components/BodyMap.jsx', () => ({
-  default: () => React.createElement('div'), BodyMapLegend: () => React.createElement('div'),
+  default: vi.fn(() => React.createElement('div')), BodyMapLegend: () => React.createElement('div'),
 }))
 
 const NOW = new Date('2026-10-06T12:00:00-04:00').getTime()
@@ -126,24 +129,29 @@ describe('configurable Stats sections', () => {
     expect(localStorage.getItem('gym_state_v1')).toBeNull()
   })
 
-  it('starts with a closed compact selector before the section content', async () => {
+  it('keeps an accessible floating section arrow outside the header actions', async () => {
     await renderStats()
     expect(sectionsTrigger().getAttribute('aria-expanded')).toBe('false')
     expect(sectionsTrigger().getAttribute('aria-controls')).toBe('stats-sections-menu')
     expect(sectionsMenu()).toBeNull()
     expect(host.querySelectorAll('[role="checkbox"]')).toHaveLength(0)
     expect(sectionsTrigger().compareDocumentPosition(section('history')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    expect(host.querySelector('.stats-sections-label').textContent).toBe('Sections')
-    expect(sectionsTrigger().querySelector('.lrow-v').textContent).toBe('2 sections selected')
+    expect(sectionsTrigger().closest('.stats-header-actions,.stats-header')).toBeNull()
+    expect(sectionsTrigger().parentElement.classList.contains('stats-view-control')).toBe(true)
+    expect(host.querySelectorAll('[data-tour="stats-view"]')).toHaveLength(1)
+    expect(sectionsTrigger().getAttribute('aria-label')).toBe('Stats view settings')
+    expect(host.querySelector('.stats-sections-label')).toBeNull()
+    expect(sectionsTrigger().textContent).toBe('')
+    expect(host.querySelector('.stats-order-actions')).toBeNull()
     expect(visibleSections()).toEqual(['history', 'consistency'])
   })
 
-  it('opens all existing section choices in a labeled group', async () => {
+  it('opens all section choices in a labeled desktop popover', async () => {
     await renderStats()
     await openSections()
     expect(sectionsTrigger().getAttribute('aria-expanded')).toBe('true')
-    expect(sectionsMenu().getAttribute('role')).toBe('group')
-    expect(sectionsMenu().getAttribute('aria-label')).toBe('Sections')
+    expect(sectionsMenu().getAttribute('role')).toBe('dialog')
+    expect(sectionsMenu().getAttribute('aria-label')).toBe('Stats view settings')
     expect(sectionsMenu().getAttribute('role')).not.toBe('menu')
     expect(host.querySelectorAll('[role="checkbox"]')).toHaveLength(STATS_SECTIONS.length)
     for (const [id] of STATS_SECTIONS) expect(checkbox(id)).toBeTruthy()
@@ -152,11 +160,55 @@ describe('configurable Stats sections', () => {
     expect(host.textContent).toContain('Select at least one section.')
   })
 
+  it('defers unselected maps until first opened and retains their controls after hiding', async () => {
+    await renderStats()
+    expect(section('muscles').children).toHaveLength(0)
+    expect(section('measurements').children).toHaveLength(0)
+    await toggle('muscles')
+    expect(section('muscles').children.length).toBeGreaterThan(0)
+    await click(button(section('muscles'),'Strength'))
+    await toggle('muscles')
+    expect(section('muscles').hidden).toBe(true)
+    expect(button(section('muscles'),'Strength').getAttribute('aria-pressed')).toBe('true')
+    await toggle('muscles')
+    expect(button(section('muscles'),'Strength').getAttribute('aria-pressed')).toBe('true')
+  })
+
+  it('keeps visible charts stable through an input-only persisted clock update', async () => {
+    const S=state()
+    S.statsSections=['history','muscles']
+    S.active=sessionTiming({id:'active',start:NOW-60000,lastUserInteractionAt:NOW-1000,entries:[]},NOW)
+    useStore.setState({S:migrateState(S)})
+    await renderStats()
+    const calls=BodyMap.mock.calls.length
+    await act(async()=>{
+      vi.advanceTimersByTime(10)
+      useStore.getState().recordInteraction(Date.now())
+    })
+    expect(useStore.getState().S.active.lastUserInteractionAt).toBe(NOW+10)
+    expect(JSON.parse(localStorage.getItem('gym_state_v1')).active.lastUserInteractionAt).toBe(NOW+10)
+    expect(BodyMap.mock.calls.length).toBe(calls)
+    // Shell also re-renders its route element for every live-store notification.
+    await renderStats()
+    expect(BodyMap.mock.calls.length).toBe(calls)
+    await act(async()=>useStore.getState().update(s=>{s.workouts.push({...s.workouts[0],id:'another'})}))
+    expect(BodyMap.mock.calls.length).toBeGreaterThan(calls)
+  })
+
+  it('refreshes translations when the language pack arrives without a profile edit', async () => {
+    await renderStats()
+    const before=useStore.getState().S,heading=host.querySelector('.stats-header h1').textContent
+    await act(async()=>{await setLang('es')})
+    expect(host.querySelector('.stats-header h1').textContent).toBe(t('Stats'))
+    expect(host.querySelector('.stats-header h1').textContent).not.toBe(heading)
+    expect(useStore.getState().S).toBe(before)
+    expect(localStorage.getItem('gym_state_v1')).toBeNull()
+  })
+
   it('renders one saved nondefault section without reactivating either initial section', async () => {
     useStore.setState({ S: { ...state(), statsSections: ['bodyweight', 'retired-section', 'bodyweight'] } })
     await renderStats()
     expect(visibleSections()).toEqual(['bodyweight'])
-    expect(sectionsTrigger().querySelector('.lrow-v').textContent).toBe('Body Weight')
     await openSections()
     expect(checkbox('history').getAttribute('aria-checked')).toBe('false')
     expect(checkbox('consistency').getAttribute('aria-checked')).toBe('false')
@@ -178,12 +230,12 @@ describe('configurable Stats sections', () => {
 
   it('keeps multiple selections in their original order without duplicates', async () => {
     await renderStats()
-    await toggle('recent')
+    await toggle('bmi')
     await toggle('exercise')
     await toggle('overview')
     await toggle('duration')
 
-    expect(visibleSections()).toEqual(['history', 'consistency', 'overview', 'duration', 'exercise', 'recent'])
+    expect(visibleSections()).toEqual(['history', 'consistency', 'bmi', 'exercise', 'overview', 'duration'])
     for (const id of visibleSections()) expect(host.querySelectorAll(`[data-stats-section="${id}"]`)).toHaveLength(1)
     expect(visibleSections()).not.toContain('bodyweight')
   })
@@ -198,7 +250,6 @@ describe('configurable Stats sections', () => {
 
     expect(visibleSections()).toEqual(['bodyweight'])
     expect(checkbox('bodyweight').getAttribute('aria-checked')).toBe('true')
-    expect(sectionsTrigger().querySelector('.lrow-v').textContent).toBe('Body Weight')
     expect(useStore.getState().S.statsSections).toEqual(['bodyweight'])
     expect(host.textContent).toContain('Select at least one section.')
   })
@@ -227,7 +278,7 @@ describe('configurable Stats sections', () => {
     expect(checkbox('consistency').getAttribute('aria-checked')).toBe('false')
   })
 
-  it('keeps the dropdown open while selecting and deselecting sections', async () => {
+  it('keeps the popover open while selecting and deselecting sections', async () => {
     await renderStats()
     await openSections()
     await click(checkbox('bodyweight'))
@@ -275,6 +326,81 @@ describe('configurable Stats sections', () => {
     expect(sectionsMenu()).toBeNull()
     expect(sectionsTrigger().getAttribute('aria-expanded')).toBe('false')
     expect(visibleSections()).toEqual(['history', 'consistency'])
+  })
+
+  it('dismisses the desktop popover when keyboard focus moves outside without stealing focus', async () => {
+    await renderStats()
+    await openSections()
+    const outside = document.createElement('button')
+    document.body.append(outside)
+    try {
+      await act(async () => { outside.focus() })
+      expect(sectionsMenu()).toBeNull()
+      expect(document.activeElement).toBe(outside)
+      expect(useStore.getState().S.statsSectionOrder).toBeUndefined()
+    } finally { outside.remove() }
+  })
+
+  it('persists selection order immediately and appends a reselected section at the end', async () => {
+    await renderStats()
+    await toggle('bodyweight')
+    await toggle('history')
+    await toggle('history')
+    expect(visibleSections()).toEqual(['consistency', 'bodyweight', 'history'])
+    expect(button(sectionsMenu(), 'Edit order')).toBeUndefined()
+    expect(button(sectionsMenu(), 'Save')).toBeUndefined()
+    expect(button(sectionsMenu(), 'Cancel')).toBeUndefined()
+    expect(host.querySelector('.stats-order-actions')).toBeNull()
+    expect([...sectionsMenu().querySelectorAll('.stats-selection-position')].map(node => node.textContent)).toEqual(['3', '1', '2'])
+    const saved = JSON.parse(localStorage.getItem('gym_state_v1'))
+    expect(saved.statsSections).toEqual(['consistency', 'bodyweight', 'history'])
+    expect(saved.statsSectionOrder).toEqual(saved.statsSections)
+    await renderStats(false)
+    useStore.setState({ S: { ...structuredClone(DEF), ...saved } })
+    await renderStats()
+    expect(visibleSections()).toEqual(['consistency', 'bodyweight', 'history'])
+  })
+
+  it('reads a previously saved explicit order without resetting the selection', async () => {
+    const S = { ...state(), statsSections: ['history', 'bodyweight'], statsSectionOrder: ['bodyweight', 'history', 'recent'] }
+    useStore.setState({ S })
+    await renderStats()
+    expect(visibleSections()).toEqual(['bodyweight', 'history'])
+    expect(useStore.getState().S).toBe(S)
+    expect(localStorage.getItem('gym_state_v1')).toBeNull()
+  })
+
+  it('removes Recent workouts from Stats without deleting workouts or its History action', async () => {
+    const S = { ...state(), statsSections: ['history', 'recent'] }
+    useStore.setState({ S })
+    await renderStats()
+    await openSections()
+    expect(checkbox('recent')).toBeUndefined()
+    expect(section('recent')).toBeNull()
+    expect(host.querySelector('button[aria-label="History"]')).not.toBeNull()
+    expect(useStore.getState().S.workouts).toEqual(S.workouts)
+  })
+
+  it('uses the shared mobile sheet and retains card filters while selection changes its order', async () => {
+    vi.spyOn(window, 'matchMedia').mockImplementation(query => ({ matches: query === '(max-width: 639px)', media: query }))
+    useStore.setState({ S: { ...state(), statsSections: ['history', 'muscles'] } })
+    await renderStats()
+    await click(button(section('muscles'), '30d'))
+    await click(button(section('muscles'), 'Strength'))
+    await openSections()
+    expect(useUI.getState().sheets).toHaveLength(1)
+    expect(sectionsMenu().closest('[data-test-sheet]')).not.toBeNull()
+    expect(sectionsMenu().classList.contains('stats-customization-sheet')).toBe(true)
+    expect(host.querySelector('.stats-customization-popover')).toBeNull()
+    expect(sectionsMenu().querySelector('.stats-customization-options').hasAttribute('data-nodrag')).toBe(true)
+    await toggle('history')
+    await toggle('history')
+    expect(visibleSections()).toEqual(['muscles', 'history'])
+    expect(button(section('muscles'), 'Strength').getAttribute('aria-pressed')).toBe('true')
+    await click(button(sectionsMenu(), 'Done'))
+    expect(sectionsMenu()).toBeNull()
+    await click(button(section('muscles'), 'Muscle balance'))
+    expect(button(section('muscles'), '30d').getAttribute('aria-pressed')).toBe('true')
   })
 
   it('preserves the muscle view and range while hiding and showing its section', async () => {

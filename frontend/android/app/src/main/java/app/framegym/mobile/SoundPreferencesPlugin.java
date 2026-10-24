@@ -17,6 +17,10 @@ public class SoundPreferencesPlugin extends Plugin {
         JSObject result = new JSObject(); result.put("handled", true); result.put("played", played); call.resolve(result);
     }
     @PluginMethod public void stop(PluginCall call) { SoundPreferences.stop(); call.resolve(); }
+    @PluginMethod public void fallbackChannels(PluginCall call){
+        try{call.resolve(JSObject.fromJSONObject(SoundPreferences.fallbackChannels(getContext(),call.getBoolean("vibration",true))));}
+        catch(Exception error){call.reject("Cannot configure silent notification channels",error);}
+    }
     @PluginMethod public void prune(PluginCall call) {
         try { SoundPreferences.prune(getContext(), call.getObject("channels", new JSObject())); call.resolve(); }
         catch (Exception error) { call.reject("Cannot clean up old sounds", error); }

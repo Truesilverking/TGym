@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.15.93
+
+- Refresh Training, Streak Calendar and Home Body Weight while preserving history, routine/exercise identity, calendar rules and exports.
+- Add movable Stats section selection with locally saved selection/order, clearer duration summaries and responsive Before/After measurement comparisons.
+- Simplify reminder settings, provide readable time controls and configurable in-app reminders, and label recurring workouts Today/Tomorrow while retaining explicit dates for dated plans.
+- Improve the replay tour, unlock layout and local name/photo profile without requiring a cloud account. Keep tour workout previews separate from recorded data.
+- Display time-mode cardio edits in minutes using compatible stored seconds; protect inactivity time editing behind its explicit action. Preserve shared workout/rest timing and native notification validation.
+- Reduce repeated rendering and metadata persistence work without changing training calculations or personal data. Independent catalogue updating remains a documented proposal.
+
 ## 1.15.70
 
 - Add Complete years to Streak and Consistency reports: choose the first and last year and export one landscape PDF page for each complete year, with all twelve months, clear day numbers, fixed status colors and the matching legend.

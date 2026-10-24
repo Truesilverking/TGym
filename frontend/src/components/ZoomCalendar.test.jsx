@@ -387,14 +387,17 @@ describe('unified activity calendar presentation', () => {
     expect(JSON.stringify(S)).toBe(before)
   })
 
-  it('opens the Streak detail at the annual calendar while preserving the normal calendar default', () => {
+  it('opens the Streak detail at the week calendar with bottom export and independent recent workouts', () => {
     const S = { ...originalState, ...fixture() }
     useStore.setState({ S })
     act(() => streakDetailSheet())
     const sheet = useUI.getState().sheets.at(-1)
     act(() => root.render(sheet.render(() => {})))
-    expect(host.querySelector('.zoomcal').getAttribute('data-level')).toBe('months')
-    expect(host.querySelectorAll('.zoomcal-month-card')).toHaveLength(12)
+    expect(host.querySelector('.zoomcal').getAttribute('data-level')).toBe('week')
+    expect(host.querySelectorAll('.zoomcal-week .zoomcal-day')).toHaveLength(7)
+    expect(host.querySelector('.zoomcal-toolbar .calendar-export-button')).toBeNull()
+    expect(host.querySelector('.zoomcal-export-wrap .calendar-export-button')).not.toBeNull()
+    expect(host.querySelector('.streak-recent-workouts').closest('.zoomcal')).toBeNull()
     act(() => root.render(<ZoomCalendar key="default" S={S} />))
     expect(host.querySelector('.zoomcal').getAttribute('data-level')).toBe('week')
   })

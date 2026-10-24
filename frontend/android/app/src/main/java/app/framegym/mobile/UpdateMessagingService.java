@@ -33,7 +33,7 @@ public class UpdateMessagingService extends MessagingService {
             try { notice.setColor(android.graphics.Color.parseColor(config.optString("accentColor"))); } catch (IllegalArgumentException ignored) {}
             if (Build.VERSION.SDK_INT < 26) {
                 boolean quiet = SoundPreferences.quiet(config, System.currentTimeMillis());
-                notice.setSound(!quiet && config.optBoolean("enabled", true) ? SoundPreferences.soundUri(this, config, "notification") : null);
+                notice.setSound(!quiet && config.optBoolean("enabled", true) && config.optBoolean("notificationEnabled",true) ? SoundPreferences.soundUri(this, config, "notification") : null);
                 notice.setVibrate(!quiet && config.optBoolean("vibration", true) ? new long[]{0,200,100,200} : new long[]{0});
             }
             ((NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE)).notify(3300, notice.build());

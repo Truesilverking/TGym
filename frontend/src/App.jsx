@@ -90,7 +90,7 @@ function Shell() {
   useEffect(() => {
     if (ready && !MOBILE) syncWebAudioPreferences(S)
     if (ready) void syncNativeSounds(S).catch(error => reportSoundError('native-configure', error))
-  }, [ready, S.sound, S.soundMuted, S.soundVolume, S.sounds, S.customSounds, S.vibration, S.reminder, S.accent, langV])
+  }, [ready, S.sound, S.soundMuted, S.soundVolume, S.notificationSoundOn, S.sounds, S.customSounds, S.vibration, S.reminder, S.accent, langV])
   useEffect(() => {
     const unlock = event => { if (event.isTrusted) primeAudio() }
     // touchend/click cover mobile user activation; capture works inside nested dialogs.
@@ -126,19 +126,22 @@ function Shell() {
   useEffect(()=>{
     if (!ready) return
     const check=()=>{
+      if(useUI.getState().appTourRequest || useUI.getState().appTourWorkoutPreview)return
       const active=useStore.getState().reconcileActiveClock()
       if(active?.pauseReason==='inactivity')workoutInactivitySheet()
     }
     const foreground=()=>{if(document.visibilityState==='visible')check()}
     const interact=event=>{
+      if(event.target?.closest?.('.app-tour, .tour-replay') || useUI.getState().appTourRequest || useUI.getState().appTourWorkoutPreview)return
       if(!event.isTrusted || document.visibilityState==='hidden' || !event.target?.closest?.('#app, [role="dialog"], #tabbar'))return
       const active=useStore.getState().S.active
       if(!active)return
       const reconciled=useStore.getState().reconcileActiveClock()
       if(active.timerPausedAt == null && reconciled?.pauseReason==='inactivity'){event.preventDefault();event.stopImmediatePropagation();workoutInactivitySheet();return}
-      useStore.getState().recordInteraction()
+      useStore.getState().recordInteraction(Date.now(), {defer:true})
     }
     const beforeInput=event=>{
+      if(event.target?.closest?.('.app-tour, .tour-replay') || useUI.getState().appTourRequest || useUI.getState().appTourWorkoutPreview)return
       if(!event.isTrusted || document.visibilityState==='hidden' || !event.target?.closest?.('#app, [role="dialog"], #tabbar'))return
       const active=useStore.getState().S.active
       if(!active)return

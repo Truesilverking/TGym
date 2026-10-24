@@ -7,7 +7,8 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
-import { exOr } from '../lib/exercises.js'
+import { exOr, isCardio } from '../lib/exercises.js'
+import { ACTIVITY_TYPES } from '../lib/activities.js'
 import { lastEntryFor, bestWeightFor, buildSets, freestyleConfig, defaultConfig, setsDoneActive, supersetUnits, unitOf, setLabel, modeOf, isBw, isPerSide, sideReps, displayReps, storedReps, repStep, fmtSec, EFFORT, effortOf, stepEffort, cascadeWeight, cascadeTopBackWeight, cascadeTopBackReps, insertWarmupRow, removeRowAt, pairAdjacent, unpairSuperset, cleanupSg, applyIntensifierPlan, pinnedNoteFor, exNoteFor, rerampWarmups } from '../lib/history.js'
 import { fmtNum, fmtDate, todayISO, exCount, DAYN } from '../lib/format.js'
 import { playAppSound, vibrate } from '../lib/sound.js'
@@ -152,6 +153,10 @@ function ExerciseBlock({ preview, entryIdx, compact, onToggle, onField, onAddSet
   // stepper instead of two, which is the whole point of the flag. Adding a belt weight in the
   // config brings it back, now labelled as the addition it is.
   const cfg = { ...(entry.target || {}), id: entry.id }
+  // Existing time-mode cardio rows store seconds (e.g. treadmill sec:1200).
+  // Present those durations in minutes without changing their mode, timer or storage.
+  // Ordinary holds keep their seconds editor; use identity/metadata, never display names.
+  const timedInMinutes = timed && (isCardio(ex) || isCardio(entry.exercise) || ACTIVITY_TYPES.some(activity => activity.id === (cfg.activityType || entry.exercise?.activityType || ex.activityType)))
   const bw = !cardio && isBw(cfg)
   const added = bw && (entry.logAddedWeight || entry.sets.some(s => s.w > 0))
   const loadStep = cfg.inc > 0 ? cfg.inc : defaultIncrement(entry.id, S.unit)
@@ -159,7 +164,7 @@ function ExerciseBlock({ preview, entryIdx, compact, onToggle, onField, onAddSet
   // Legacy unilateral totals step in pairs; new per-side prescriptions retain their count.
   const repCol = { f: 'r', step: repStep(cfg), dec: false, hd: isPerSide(cfg) ? t('Actual reps per side') : t('Actual reps') }
   const col1 = cardio ? { f: 'min', step: 1, dec: true, hd: t('Duration (min)') }
-    : timed ? { f: 'sec', step: 5, dec: false, hd: t('Seconds') }
+    : timed ? { f: 'sec', step: timedInMinutes ? 60 : 5, dec: timedInMinutes, scale: timedInMinutes ? 60 : 1, hd: t(timedInMinutes ? 'Minutes' : 'Seconds') }
       : (bw && !added) ? repCol : loadCol
   const col2 = cardio ? { f: 'speed', step: 0.5, dec: true, hd: t('Speed (km/h)') }
     : timed ? ((bw && !added) ? null : loadCol)
@@ -187,12 +192,13 @@ function ExerciseBlock({ preview, entryIdx, compact, onToggle, onField, onAddSet
   // Uses the shared stepper markup so a set row picks up the same control styling
   // as every other +/- field in the app.
   const displayValidation = (s, i) => Object.fromEntries(Object.entries(actualRepValidation(entry, s, i)).map(([key, value]) => [key, displayReps(value, cfg)]))
+  const metricValue = (s, col) => col.f === 'r' ? displayReps(s.r, cfg) : col.scale === 60 && s[col.f] != null ? s[col.f] / 60 : s[col.f]
   const cell = (s, i, col, cls) => (
     <div key={col.f} className={'set-metric ' + cls + (col.f === 'r' ? ' set-actual-reps' : '')}><label htmlFor={`workout-${entryIdx}-${i}-${col.f}`}>{col.hd}{col.eff === 'rir' && targetRirRangeFor(cfg,s.role) && <small>{rirRangeLabel(targetRirRangeFor(cfg,s.role))}</small>}</label><div className={'stp' + (col.eff === 'rir' && s[col.f] != null && s[col.f] !== '' && Number(s[col.f]) === 0 ? ' effort-failure' : '')}>
       <button type="button" aria-label={t('Decrease')} onClick={() => bump(s, i, col, -1)}><Icon name="minus" /></button>
-      <span className="val"><NumberField retainInvalid key={`${entryIdx}-${i}-${col.f}`} id={`workout-${entryIdx}-${i}-${col.f}`} data-nodrag validation={col.f === 'r' ? displayValidation(s,i) : col.eff ? {max: col.max, step: col.step} : ['min','sec'].includes(col.f) ? {min: 1} : {}} decimal={col.dec} nullable={col.opt} value={col.f === 'r' ? displayReps(s.r, cfg) ?? '' : s[col.f] ?? ''}
+      <span className="val"><NumberField retainInvalid key={`${entryIdx}-${i}-${col.f}`} id={`workout-${entryIdx}-${i}-${col.f}`} data-nodrag validation={col.f === 'r' ? displayValidation(s,i) : col.eff ? {max: col.max, step: col.step} : ['min','sec'].includes(col.f) ? {min: 1 / (col.scale || 1)} : {}} decimal={col.dec} nullable={col.opt} value={metricValue(s,col) ?? ''}
         displayValue={col.eff && s[col.f] != null && s[col.f] !== '' ? effortValue(col.eff, s[col.f]) : undefined} aria-label={col.hd}
-        onChange={v => onField(i, col.f, col.f === 'r' ? storedReps(v, cfg) : v)} /></span>
+        onChange={v => onField(i, col.f, col.f === 'r' ? storedReps(v, cfg) : col.scale === 60 ? Math.round(v * 60) : v)} /></span>
       <button type="button" aria-label={t('Increase')} onClick={() => bump(s, i, col, 1)}><Icon name="plus" /></button>
     </div></div>
   )
@@ -277,7 +283,7 @@ function ExerciseBlock({ preview, entryIdx, compact, onToggle, onField, onAddSet
               <button type="button" className="set-undo" aria-label={`${t('Undo Completed')} · ${t('Set')} ${phaseNum}`} onClick={() => onToggle(i)}>{t('Undo Completed')}</button>
             </div>
             <dl className="set-summary-values">
-              {[col1, col2].filter(Boolean).map(col => <div key={col.f}><dt>{col.hd}</dt><dd>{Number(col.f === 'r' ? displayReps(s.r ?? 0, cfg) : s[col.f] ?? 0).toLocaleString(dateLocale(), {maximumFractionDigits: 10})}</dd></div>)}
+              {[col1, col2].filter(Boolean).map(col => <div key={col.f}><dt>{col.hd}</dt><dd>{Number(metricValue(s,col) ?? 0).toLocaleString(dateLocale(), {maximumFractionDigits: 10})}</dd></div>)}
               {mode === 'reps' && ['rir','rpe'].filter(k => s[k] != null || (col3?.eff || 'rir') === k).map(k => <div key={k}><dt>{k.toUpperCase()}</dt><dd>{s[k] == null ? '—' : effortValue(k, s[k])}</dd></div>)}
               {timed && isPerSide(cfg) && ['left','right'].map(side => <div key={side}><dt>{t(side === 'left' ? 'Left' : 'Right')}</dt><dd>{fmtSec(s[`${side}Sec`] ?? s.sec)}</dd></div>)}
             </dl>
@@ -737,7 +743,10 @@ function WorkoutTourPreview() {
   return <div className="narrow workout-tour-preview"><p className="tag acc">{t('Practice preview - nothing is saved')}</p><ExerciseBlock preview={tourWorkout} entryIdx={0} onToggle={noop} onField={noop} onAddSet={noop} onRemoveSet={noop} onAddWarmup={noop} onPairPrev={noop} onPairNext={noop}/></div>
 }
 export default function Workout() {
-  const preview = useUI(s=>s.appTourWorkoutPreview)
+  // A replay request or first tour can arrive before AppTour's effects mount.
+  // Keep the real session's effects out of that initial render as well.
+  const preview = useUI(s=>!!s.appTourWorkoutPreview || !!s.appTourRequest)
+  const firstTour=useStore(s=>s.S.hasCompletedOnboarding && !s.S.hasCompletedAppTour)
   const active = useStore(s => s.S.active)
-  return preview ? <WorkoutTourPreview /> : active ? <ActiveWorkout /> : <StartChooser />
+  return preview||firstTour ? <WorkoutTourPreview /> : active ? <ActiveWorkout /> : <StartChooser />
 }

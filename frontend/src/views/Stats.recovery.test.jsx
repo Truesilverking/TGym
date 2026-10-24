@@ -116,7 +116,8 @@ function resetFixture(workouts = lifecycleWorkouts()) {
   mocks.S.workouts = workouts
   mocks.maps.length = 0
   mocks.mapMounts = 0
-  delete mocks.S.statsSections
+  // These recovery/rep tests exercise the selected cards, not hidden pre-mounts.
+  mocks.S.statsSections=['history','consistency','muscles','exercise']
   delete mocks.S.trainingStartDate
 }
 
@@ -124,8 +125,11 @@ function installDom() {
   dom = new Window({ url: 'http://localhost/' })
   globalThis.window = dom
   globalThis.document = dom.document
+  globalThis.getComputedStyle = dom.getComputedStyle.bind(dom)
+  globalThis.requestAnimationFrame = dom.requestAnimationFrame.bind(dom)
+  globalThis.cancelAnimationFrame = dom.cancelAnimationFrame.bind(dom)
   Object.defineProperty(globalThis, 'navigator', { configurable: true, value: dom.navigator })
-  for (const key of ['HTMLElement', 'HTMLIFrameElement', 'Node', 'Element', 'Event', 'MouseEvent']) {
+  for (const key of ['HTMLElement', 'HTMLIFrameElement', 'Node', 'Element', 'Event', 'MouseEvent', 'PointerEvent', 'ResizeObserver', 'MutationObserver', 'IntersectionObserver']) {
     globalThis[key] = dom[key]
   }
   globalThis.IS_REACT_ACT_ENVIRONMENT = true

@@ -39,3 +39,8 @@ export async function stopNativeSound() {
 export async function finishNativeSoundSync(settings) {
   if (android() && settings?.channels) { try { await native.prune({channels:settings.channels}) } catch (error) { console.warn('[TGym audio] native cleanup failed', error?.message) } }
 }
+
+export async function fallbackNativeSounds(S){
+  if(!android())return null
+  return native.fallbackChannels({vibration:S?.vibration!==false})
+}

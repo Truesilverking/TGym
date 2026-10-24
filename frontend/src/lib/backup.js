@@ -27,7 +27,13 @@ export function portableState(state) {
   return data
 }
 export function validateBackupState(data) {
-  if (data?.trainingStartDate != null && (!Number.isFinite(dayNumber(data.trainingStartDate)) || !validateTrainingHistory(data.trainingStartDate, data.trainingHistory))) throw new Error('Invalid training history')
+  if (data?.trainingStartDate != null) {
+    // Legacy profiles may have a training start without historical estimates.
+    // Validate that date with a temporary zero-estimate shape, retaining the
+    // original null/absent field and the same future-date/malformed-history checks.
+    const history = data.trainingHistory ?? { trackedFrom: data.trainingStartDate, historicalWorkouts: 0, workoutsPerWeek: 0 }
+    if (!Number.isFinite(dayNumber(data.trainingStartDate)) || !validateTrainingHistory(data.trainingStartDate, history)) throw new Error('Invalid training history')
+  }
   if (!data || typeof data !== 'object' || Array.isArray(data) || !Array.isArray(data.workouts) || !Array.isArray(data.routines)) throw new Error('Invalid backup data')
   for (const key of ['workouts','routines','customEx','bodyweight','measurements','inbody','heightHistory','equipProfiles','trainingPauses']) {
     if (data[key] !== undefined && (!Array.isArray(data[key]) || data[key].some(v => !v || typeof v !== 'object' || Array.isArray(v)))) throw new Error(`Invalid backup field: ${key}`)

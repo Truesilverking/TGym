@@ -8,6 +8,9 @@ describe('portable sound preferences', () => {
   it('keeps old profiles audible with original defaults for every event', () => {
     for (const { id } of SOUND_EVENTS) expect(soundChoice({}, id).id).toBe('classic')
     expect(nativeSoundConfig({ sound: false, vibration: false }).enabled).toBe(false)
+    expect(nativeSoundConfig({sound:false}).notificationEnabled).toBe(true)
+    expect(nativeSoundConfig({notificationSoundOn:false})).toMatchObject({enabled:true,notificationEnabled:false})
+    for(const prefs of [{sound:false},{soundMuted:true},{soundVolume:0}])expect(nativeSoundConfig({...prefs,notificationSoundOn:true}).enabled).toBe(false)
   })
   it('renders each preset/event as a valid bounded PCM WAV', () => {
     for (const preset of SOUND_PRESETS.filter(p => p.id !== 'silent')) for (const event of SOUND_EVENTS) {
@@ -41,10 +44,10 @@ describe('portable sound preferences', () => {
     expect(S.customSounds).toEqual([{ id: 'custom_y' }])
   })
   it('preserves this device sound choices and assets together during cloud merges', () => {
-    const local = { sounds: { rest: 'custom_x' }, customSounds: [{ id: 'custom_x', data: 'local' }] }
-    const remote = { sounds: { rest: 'custom_y' }, customSounds: [{ id: 'custom_y', data: 'remote' }] }
+    const local = { notificationSoundOn:false, sounds: { rest: 'custom_x' }, customSounds: [{ id: 'custom_x', data: 'local' }] }
+    const remote = { notificationSoundOn:true, sounds: { rest: 'custom_y' }, customSounds: [{ id: 'custom_y', data: 'remote' }] }
     const { merged, conflicts } = mergeTGymStates(local, remote)
-    expect(merged.sounds).toEqual(local.sounds); expect(merged.customSounds).toEqual(local.customSounds); expect(conflicts).toEqual([])
+    expect(merged.notificationSoundOn).toBe(false);expect(merged.sounds).toEqual(local.sounds); expect(merged.customSounds).toEqual(local.customSounds); expect(conflicts).toEqual([])
   })
   it('handles overnight and daytime quiet hours', () => {
     const S = { reminder: { quietOn: true, quietStart: '22:00', quietEnd: '07:00' } }

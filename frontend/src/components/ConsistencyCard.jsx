@@ -5,7 +5,7 @@ import { Button } from './ui.jsx'
 export default function ConsistencyCard({ S, onTimes, onExport, now = new Date() }) {
   const stats = routineConsistency(S,56,now)
   const percent = stats.rate == null ? null : Math.round(stats.rate * 100)
-  return <section className="card consistency-card insight-panel">
+  return <section className="card consistency-card insight-panel" data-tour="consistency">
     <div className="consistency-heading insight-heading"><div><h2>{t('Consistency')}</h2><p className="muted small">{t('Last 8 weeks')}</p></div><div className="consistency-actions">{onExport && <Button className="times-action consistency-download" icon="download" aria-label={t('Consistency Report')} title={t('Consistency Report')} onClick={onExport} />}<Button className="times-action" icon="timer" onClick={onTimes}>{t('Times')}</Button></div></div>
     <div className="consistency-summary">
       <dl className="consistency-primary consistency-metrics">

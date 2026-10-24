@@ -9,7 +9,7 @@ import { isTrainingPaused } from './lib/training-pause.js'
 import MetricFields from './components/MetricFields.jsx'
 import { upsertBodyRecord, parseMetrics, validMeasurementDate, recordHeight } from './lib/body-records.js'
 import MeasurementReminders from './components/MeasurementReminders.jsx'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useStore } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
 import { EXDB, EXIDX, BODYPARTS, isCardio, isBodyweightEq, allExercises, equipmentOf, smOf, exerciseSearchScore, exOr } from './lib/exercises.js'
@@ -34,7 +34,6 @@ import { calendarDay } from './lib/calendar-data.js'
 import { calendarActivity, calendarActivityCount, calendarMonth } from './lib/calendar-view.js'
 import { calendarState, calendarLegend, calendarVisualStyle, TRACKING_START_MARKER } from './lib/calendar-visual.js'
 import './components/CalendarVisual.css'
-import { nextScheduledWorkout } from './lib/consistency.js'
 import { startSessionOrigin, hasWorkoutActivity } from './lib/session-activity.js'
 import { Button, Slider, Switch, Segmented, SelectRow, Row, TextField, MultiSelectRow, NumberField } from './components/ui.jsx'
 import { glyphOf, GLYPH_GROUPS, DEFAULT_GLYPH } from './lib/glyphs.js'
@@ -60,6 +59,7 @@ import LineChart from './components/LineChart.jsx'
 import { pauseWorkoutClock, resumeWorkoutClock, workoutElapsedMs, correctWorkoutDuration } from './lib/workout-time.js'
 import { effectiveWorkoutComplete, resumeAutoFinished, ensureWorkoutCompletionPaused } from './lib/workout-lifecycle.js'
 import { routineMuscleSheet } from './components/RoutineMusclePreview.jsx'
+import './components/WorkoutInactivity.css'
 import { effortValue } from './lib/history.js'
 
 const S = () => useStore.getState().S
@@ -1226,10 +1226,14 @@ export const dayAssignSheet = day => ui().openSheet(close => <DayAssign day={day
 
 function StreakDetail() {
   const st = useStore(s => s.S)
+  const change = useStore(s => s.update)
   const now = useLocalNow()
   const streak = trainingStreak(st, now)
-  const next = nextScheduledWorkout(st, now)
-  const recent = streak.rows.slice(-20).reverse()
+  const [showAllRecent, setShowAllRecent] = useState(false)
+  const [profileControlsOpen, setProfileControlsOpen] = useState(false)
+  const profileControlsId = useId()
+  const recent = loggedWorkouts(st).filter(hasWorkoutActivity).sort((a,b) => (b.d || '').localeCompare(a.d || '') || Number(b.start || b.end || 0) - Number(a.start || a.end || 0))
+  const shownRecent = showAllRecent ? recent : recent.slice(0,5)
   return <>
     <div className={'streak-hero compact streak-main streak-' + streakTier(streak.current)} data-streak-state={streak.state}>
       <StreakFlame value={streak.current} />
@@ -1242,11 +1246,14 @@ function StreakDetail() {
       <div className="tile"><div className="l">{t('Best streak')}</div><div className="v">{streak.best}</div></div>
       <div className="tile"><div className="l">{t('Next milestone')}</div><div className="v">{streak.nextMilestone}</div></div>
     </div>
-    {next ? <div className="card"><div className="small dim">{t('Next scheduled workout')}</div><div style={{ fontWeight: 600, marginTop: 4 }}>{fmtScheduledDate(next)}</div></div> : <div className="card"><div className="small dim">{t('Next scheduled workout')}</div><div className="muted" style={{ marginTop: 4 }}>{t('No upcoming workout')}</div></div>}
-    <h4 className="sec">{t('Consistency calendar')}</h4>
-    <ZoomCalendar S={st} initialLevel="months" onDay={iso => { const rows = st.workouts.filter(w => w.d === iso); if (rows.length) workoutDetailSheet(rows[rows.length - 1]) }} />
-    <h4 className="sec">{t('Recent workouts')}</h4>
-    <div className="list">{recent.map(r => { const workout = st.workouts.filter(w => w.d === r.iso).at(-1); const routine = st.routines.find(x => x.id === effectiveRoutineId(st, r.iso)); const routineName = workout?.name || routine?.name || ''; return <div className="item recent-streak-item" key={r.iso} aria-label={`${fmtDate(r.iso, true)}, ${t(r.status === 'completed' ? 'Completed' : r.status === 'missed' ? 'Not completed' : 'Pending')}, ${routineName}`}><span className="lrow-i" style={{ color: r.status === 'completed' ? 'var(--green)' : r.status === 'missed' ? 'var(--red)' : 'var(--label-2)' }}><Icon name={r.status === 'completed' ? 'checkCircle' : r.status === 'missed' ? 'xmark' : 'clock'} /></span><div className="grow recent-streak-row"><div className="tt">{fmtDate(r.iso, true)}<span className="recent-routine-name">{routineName}</span></div></div></div>})}</div>
+    {(!st.streakCalendarShowProfile || profileControlsOpen) && <div className="streak-profile-tools" id={profileControlsId}><button type="button" className="iconbtn" aria-pressed={!!st.streakCalendarShowProfile} aria-label={t(st.streakCalendarShowProfile ? 'Hide profile' : 'Show profile')} title={t(st.streakCalendarShowProfile ? 'Hide profile' : 'Show profile')} onClick={()=>{change(s=>{s.streakCalendarShowProfile=!s.streakCalendarShowProfile});setProfileControlsOpen(false)}}><Icon name="person"/></button></div>}
+    {st.streakCalendarShowProfile && <button type="button" className="streak-profile" aria-label={t('Profile visibility')} aria-expanded={profileControlsOpen} aria-controls={profileControlsOpen ? profileControlsId : undefined} onClick={()=>setProfileControlsOpen(open=>!open)}><span className="streak-profile-avatar">{st.profile?.photo ? <img src={st.profile.photo} alt={t('Profile photo')}/> : st.profile?.name?.trim() ? st.profile.name.trim().split(/\s+/).slice(0,2).map(part=>[...part][0]).join('').toLocaleUpperCase() : <Icon name="person"/>}</span>{st.profile?.name?.trim()&&<span className="streak-profile-name">{st.profile.name.trim()}</span>}</button>}
+    <ZoomCalendar S={st} streakView levels={['week','month','months']} onDay={iso => { const rows = recent.filter(w => w.d === iso); if (rows.length) workoutDetailSheet(rows[0]) }} />
+    <section className="streak-recent-workouts" aria-label={t('Recent workouts')}>
+      <h4 className="sec">{t('Recent workouts')}</h4>
+      {recent.length ? <div className="list">{shownRecent.map((workout,index) => <button type="button" className="item recent-streak-item" key={workout.id || `${workout.d}-${index}`} data-workout-id={workout.id} onClick={() => workoutDetailSheet(workout)}><span className="lrow-i" style={{color:'var(--green)'}}><Icon name="checkCircle" /></span><div className="grow recent-streak-row"><div className="tt">{fmtDate(workout.d,true)}<span className="recent-routine-name">{workout.name || st.routines.find(r=>r.id===workout.routineId)?.name || ''}</span></div></div><Icon name="chevronRight" /></button>)}</div> : <div className="muted small">{t('No workouts yet')}</div>}
+      {!showAllRecent && recent.length > 5 && <Button className="recent-show-more" onClick={() => setShowAllRecent(true)}>{t('Show more')}</Button>}
+    </section>
   </>
 }
 export const streakDetailSheet = () => ui().openSheet(() => <StreakDetail />)
@@ -1411,7 +1418,7 @@ function WorkoutDetail({ w: original, close }) {
 export const workoutDetailSheet = w => ui().openSheet(close => <WorkoutDetail w={w} close={close} />)
 
 /* ============================ calendar ============================ */
-export function ZoomCalendar({ S: st, onDay, initialLevel = 'week', initialAnchor, exporting = false, includeMeasurements = true, levels = ['week', 'month', 'months', 'years'], editable = false }) {
+export function ZoomCalendar({ S: st, onDay, initialLevel = 'week', initialAnchor, exporting = false, includeMeasurements = true, levels = ['week', 'month', 'months', 'years'], editable = false, streakView = false }) {
   const [level, setLevel] = useState(initialLevel)
   const [anchor, setAnchor] = useState(() => initialAnchor ? new Date(initialAnchor) : new Date())
   const [selected, setSelected] = useState(todayISO())
@@ -1444,20 +1451,21 @@ export function ZoomCalendar({ S: st, onDay, initialLevel = 'week', initialAncho
     const deload = calendarDeload(st, iso), isToday = iso === today, future = iso > today
     const attributes = {
       'data-date': iso, 'data-status': state.status, 'data-active': activity.dates.has(iso), 'data-future': future,
-      'aria-label': `${fmtDate(iso, true, true)}, ${name}, ${t(visual.label)}${isToday ? ', ' + t('Today') : ''}${future ? ', ' + t('Future dates') : ''}${!mini && state.measurements.length ? ', ' + t('Measurement reminder') : ''}`,
+      'aria-label': `${fmtDate(iso, true, true)}, ${name}, ${t(visual.label)}${isToday ? ', ' + t('Today') : ''}${future ? ', ' + t('Future dates') : ''}${streakView && iso===trackedSince ? ', '+t('Tracking start') : ''}${!mini && state.measurements.length ? ', ' + t('Measurement reminder') : ''}`,
       'aria-current': isToday ? 'date' : undefined,
       style: calendarVisualStyle(state.status),
       title: `${iso}, ${t(visual.label)}${deload ? ', ' + t('Deload week') : ''}`,
       className: `calendar-date ${mini ? 'zoomcal-mini-cell' : 'zoomcal-day'} ${state.status}${deload ? ' deload' : ''}${isToday ? ' today' : ''}${iso === selected ? ' selected' : ''}`,
     }
-    if (mini) return <i key={iso} {...attributes} role="img"><b className="zoomcal-mini-day" aria-hidden="true">{Number(iso.slice(-2))}</b></i>
+    const trackingMarker=streakView&&!exporting&&iso===trackedSince ? <span className="calendar-tracking-marker" data-tracking-start={trackedSince} aria-hidden="true" style={{'--tracking-fill':TRACKING_START_MARKER.fill,'--tracking-border':TRACKING_START_MARKER.border}}/> : null
+    if (mini) return <i key={iso} {...attributes} role="img"><b className="zoomcal-mini-day" aria-hidden="true">{Number(iso.slice(-2))}</b>{trackingMarker}</i>
     return <div key={iso} className="zoomcal-day-wrap">
-      <button {...attributes} onClick={() => selectDay(iso)}><b>{Number(iso.slice(-2))}</b>{(!exporting && includeMeasurements && state.measurements.length > 0) && <span className="measurement-calendar-dot" aria-label={t('Measurement reminder')}>•</span>}</button>
+      <button {...attributes} onClick={() => selectDay(iso)}><b>{Number(iso.slice(-2))}</b>{trackingMarker}{(!exporting && includeMeasurements && state.measurements.length > 0) && <span className="measurement-calendar-dot" aria-label={t('Measurement reminder')}>•</span>}</button>
       {(!exporting && showRoutine) && <span className="zoomcal-routine" title={name}>{name}</span>}
     </div>
   }
   const weekdayHeaders = mini => ['Mo','Tu','We','Th','Fr','Sa','Su'].map(day => <small key={day} className={mini ? 'zoomcal-mini-weekday' : undefined} aria-hidden={mini || undefined}>{t(day)}</small>)
-  const monthMap = month => <span className="zoomcal-mini-month">{weekdayHeaders(true)}{Array.from({length:month.offset},(_,i)=><i key={'e'+i} className="placeholder" aria-hidden="true"/>)}{month.days.map(iso=>dateCell(iso,{mini:true}))}</span>
+  const monthMap = month => <span className="zoomcal-mini-month">{!streakView&&weekdayHeaders(true)}{Array.from({length:month.offset},(_,i)=><i key={'e'+i} className="placeholder" aria-hidden="true"/>)}{month.days.map(iso=>dateCell(iso,{mini:true}))}</span>
   let body, title, periodStart, periodEnd
   if (level === 'week') {
     const start = new Date(anchor); start.setHours(12,0,0,0); start.setDate(start.getDate() - ((start.getDay()+6)%7))
@@ -1475,7 +1483,7 @@ export function ZoomCalendar({ S: st, onDay, initialLevel = 'week', initialAncho
     const y=anchor.getFullYear(); title=String(y); periodStart=`${y}-01-01`; periodEnd=`${y}-12-31`
     body=<div className="zoomcal-periods months">{MONTHS_LONG.map((name,m)=>{
       const month=calendarMonth(y,m), count=calendarActivityCount(activity,month.start,month.end)
-      return <button key={name} className="zoomcal-month-card" data-month={month.start.slice(0,7)} data-active-days={count} aria-label={`${t(name)} ${y}, ${t('Active days')}: ${count}. ${t('Zoom in')}`} onClick={()=>{setAnchor(new Date(y,m,1,12));setLevel('month')}}><span className="zoomcal-period-head"><b>{t(name)}</b><em>{count}</em></span>{monthMap(month)}<small>{t('Active days')}</small></button>
+      return <button key={name} className="zoomcal-month-card" data-month={month.start.slice(0,7)} data-active-days={count} aria-label={`${t(name)} ${y}, ${t('Active days')}: ${count}. ${t('Zoom in')}`} onClick={()=>{setAnchor(new Date(y,m,1,12));setLevel('month')}}><span className="zoomcal-period-head"><b>{t(name)}</b><em>{count}</em></span>{monthMap(month)}{!streakView&&<small>{t('Active days')}</small>}</button>
     })}</div>
   } else {
     const y=Math.floor(anchor.getFullYear()/12)*12; title=`${y}–${y+11}`; periodStart=`${y}-01-01`; periodEnd=`${y+11}-12-31`
@@ -1491,25 +1499,32 @@ export function ZoomCalendar({ S: st, onDay, initialLevel = 'week', initialAncho
   const selectedState=dayState(selected), selectedWorkout=selectedState.workouts.at(-1)
   const visibleStart=new Date(anchor); visibleStart.setDate(visibleStart.getDate()-(visibleStart.getDay()+6)%7)
   const isDeloadVisible=level==='week'&&Array.from({length:7},(_,i)=>{const date=new Date(visibleStart);date.setDate(date.getDate()+i);return calendarDeload(st,isoOf(date))}).some(Boolean)
-  return <div className="zoomcal" data-level={level}>
-    <div className="zoomcal-toolbar">{!exporting&&<Segmented value={level==='years'?'months':level} onChange={setLevel} options={[{value:'week',label:t('Week')},{value:'month',label:t('Month')},{value:'months',label:t('Year')}].filter(option=>levels.includes(option.value))}/>}<div className="zoomcal-scale"><button className="iconbtn" aria-label={t('Zoom out')} title={t('Zoom out')} disabled={zi>=levels.length-1} onClick={()=>setLevel(levels[zi+1])}><Icon name="minus"/></button><button className="iconbtn" aria-label={t('Zoom in')} title={t('Zoom in')} disabled={zi<=0} onClick={()=>setLevel(levels[zi-1])}><Icon name="plus"/></button></div></div>
-    <div className="zoomcal-nav"><button className="iconbtn" aria-label={t('Prev')} onClick={()=>shift(-1)}><Icon name="chevronLeft"/></button><div className="zoomcal-title"><b>{title}</b></div><button className="iconbtn" aria-label={t('Next')} onClick={()=>shift(1)}><Icon name="chevronRight"/></button></div>
-    <div className="zoomcal-period-active" data-active-days={activeCount} data-period-start={periodStart} data-period-end={periodEnd}><div><b>{t('Active days')}</b><p>{t('One square per day. Total active days, not streak length.')}</p></div><strong>{activeCount}</strong></div>
-    <div className="zoomcal-tracking-start" data-tracking-start={trackedSince} style={{'--tracking-fill':TRACKING_START_MARKER.fill,'--tracking-border':TRACKING_START_MARKER.border}}><i aria-hidden="true"/><span>{t('Tracking since {0}',fmtDate(trackedSince,true,true))}</span></div>
+  const exportCalendar = () => ui().openSheet(close=><CalendarExport S={st} anchor={anchor} close={close}/>)
+  const viewOptions=[{value:'week',label:t('Week')},{value:'month',label:t('Month')},{value:'months',label:t('Year')}].filter(option=>levels.includes(option.value))
+  const visiblePeriod = level==='week' ? `${Number(periodStart.slice(-2))}-${Number(periodEnd.slice(-2))}` : level==='month' ? t(MONTHS_LONG[anchor.getMonth()]) : title
+  const openView=()=>ui().openSheet(close=><><h3>{t('Calendar view')}</h3><div className="sect-b" role="radiogroup" aria-label={t('Calendar view')}>{viewOptions.map(option=><button type="button" className="lrow tap" role="radio" aria-checked={level===option.value} key={option.value} onClick={()=>{setLevel(option.value);close()}}><span className="lrow-m"><span className="lrow-t">{option.label}</span></span>{level===option.value&&<Icon name="check" className="lrow-k"/>}</button>)}</div></>)
+  const periodCount=<div className="zoomcal-period-active" data-active-days={activeCount} data-period-start={periodStart} data-period-end={periodEnd}>{!streakView&&<div><b>{t('Active days')}</b><p>{t('One square per day. Total active days, not streak length.')}</p></div>}<strong aria-label={streakView ? `${t('Active days')}: ${activeCount}` : undefined}>{activeCount}</strong></div>
+  return <div className={'zoomcal' + (streakView ? ' streak-calendar' : '')} data-level={level} data-tour={streakView ? 'streak-calendar' : undefined}>
+    {!streakView&&<div className="zoomcal-toolbar">{!exporting&&<Segmented value={level==='years'?'months':level} onChange={setLevel} options={viewOptions}/>}<div className="zoomcal-scale"><button className="iconbtn" aria-label={t('Zoom out')} title={t('Zoom out')} disabled={zi>=levels.length-1} onClick={()=>setLevel(levels[zi+1])}><Icon name="minus"/></button><button className="iconbtn" aria-label={t('Zoom in')} title={t('Zoom in')} disabled={zi<=0} onClick={()=>setLevel(levels[zi-1])}><Icon name="plus"/></button></div></div>}
+    <div className="zoomcal-nav"><button className="iconbtn" aria-label={t('Prev')} onClick={()=>shift(-1)}><Icon name="chevronLeft"/></button>{streakView ? <div className="zoomcal-period-heading"><button type="button" className="zoomcal-period-picker" aria-label={`${t('Calendar view')}: ${viewOptions.find(option=>option.value===level)?.label || t('Year')}, ${title}`} aria-haspopup="dialog" onClick={openView}><b>{visiblePeriod}</b><Icon name="chevronDown"/></button>{periodCount}</div> : <div className="zoomcal-title"><b>{title}</b></div>}<button className="iconbtn" aria-label={t('Next')} onClick={()=>shift(1)}><Icon name="chevronRight"/></button></div>
+    {!streakView&&periodCount}
+    {!streakView&&<div className="zoomcal-tracking-start" data-tracking-start={trackedSince} style={{'--tracking-fill':TRACKING_START_MARKER.fill,'--tracking-border':TRACKING_START_MARKER.border}}><i aria-hidden="true"/><span>{t('Tracking since {0}',fmtDate(trackedSince,true,true))}</span></div>}
     {body}
     <div className="zoomcal-legend">
       {isDeloadVisible&&<span><i className="deload"/>{t('Deload Week')}</span>}
       {calendarLegend().map(visual=><span key={visual.status} data-legend={visual.status}><i aria-hidden="true" className={visual.status} style={calendarVisualStyle(visual.status)}/>{t(visual.label)}</span>)}
-      <span className="zoomcal-time-key"><i className="zoomcal-today-key" aria-hidden="true"/>{t('Today')}</span><span className="zoomcal-time-key"><i className="zoomcal-future-key" aria-hidden="true"/>{t('Future dates')}</span>
+      {streakView&&trackedSince>=periodStart&&trackedSince<=periodEnd&&<span data-legend="tracking-start"><i className="calendar-tracking-key" aria-hidden="true" style={{background:TRACKING_START_MARKER.fill,borderColor:TRACKING_START_MARKER.border}}/>{t('Tracking start')}</span>}
+      {!streakView&&<><span className="zoomcal-time-key"><i className="zoomcal-today-key" aria-hidden="true"/>{t('Today')}</span><span className="zoomcal-time-key"><i className="zoomcal-future-key" aria-hidden="true"/>{t('Future dates')}</span></>}
     </div>
-    {!exporting&&(level==='week'||level==='month')&&<div className={`zoomcal-selection ${selectedState.status}`} style={calendarVisualStyle(selectedState.status)}><div><b>{fmtDate(selected,true)}</b>{selectedState.status!=='untracked'&&<span>{selectedWorkout?.name||st.routines.find(r=>r.id===effectiveRoutineId(st,selected))?.name||t(calendarState(selectedState.status).label)}</span>}</div>{selectedWorkout&&<Icon name="chevronRight"/>}</div>}
-    {!exporting&&<DailyPlan date={selected} compact onStart={selected===today?startFlow:undefined}/>}
+    {!exporting&&streakView&&selectedState.planned&&<div className="zoomcal-streak-muscles"><Button size="sm" onClick={()=>routineMuscleSheet(effectiveRoutineId(st,selected))}>{t('Muscles trained')}</Button></div>}
+    {!exporting&&!streakView&&(level==='week'||level==='month')&&<div className={`zoomcal-selection ${selectedState.status}`} style={calendarVisualStyle(selectedState.status)}><div><b>{fmtDate(selected,true)}</b>{selectedState.status!=='untracked'&&<span>{selectedWorkout?.name||st.routines.find(r=>r.id===effectiveRoutineId(st,selected))?.name||t(calendarState(selectedState.status).label)}</span>}</div>{selectedWorkout&&<Icon name="chevronRight"/>}</div>}
+    {!exporting&&!streakView&&<DailyPlan date={selected} compact onStart={selected===today?startFlow:undefined}/>}
     {!exporting&&editable&&<div className="zoomcal-schedule-actions"><Button size="sm" onClick={()=>dayOverrideSheet(selected)}>{t('Edit schedule')}</Button>{nextDailyRoutine(st,selected)&&<Button size="sm" onClick={()=>startFlow(nextDailyRoutine(st,selected).id)}>{t('Start workout')}</Button>}</div>}
-    {!exporting&&<div className="zoomcal-actions-row">
+    {!exporting&&!streakView&&<div className="zoomcal-actions-row">
       {includeMeasurements&&selectedState.measurements.map(reminder=><Button key={reminder.id} size="sm" onClick={()=>openMeasurementEntry(reminder.metric)}>{t(reminder.label)}</Button>)}
       {selectedState.planned&&<Button size="sm" onClick={()=>routineMuscleSheet(effectiveRoutineId(st,selected))}>{t('Muscles trained')}</Button>}
     </div>}
-    {!exporting&&<div className="zoomcal-export-wrap"><Button className="calendar-export-button" icon="download" onClick={()=>ui().openSheet(close=><CalendarExport S={st} anchor={anchor} close={close}/>)}>{t('Export Calendar')}</Button></div>}
+    {!exporting&&<div className="zoomcal-export-wrap"><Button className="calendar-export-button" icon="download" onClick={exportCalendar}>{t('Export Calendar')}</Button></div>}
   </div>
 }
 
@@ -1588,7 +1603,10 @@ const clockMinutes = minutes => new Date(2000, 0, 1, 0, minutes).toLocaleTimeStr
 
 function SessionTiming() {
   const st = useStore(s => s.S)
+  const [showAllRecent, setShowAllRecent] = useState(false)
   const summary = sessionTimingSummary(statisticsState(st).workouts)
+  const recent = [...summary.sessions].reverse()
+  const shownRecent = showAllRecent ? recent : recent.slice(0,3)
   const points = summary.sessions.map(w => ({ t: w.start, d: w.d, y: Math.round(w.durationMs / 60000), note: w.name }))
   return <><h3 className="times-title">{t('Training times and duration')}</h3>
     {!summary.sessions.length ? <div className="muted small">{t('Finish a timed workout to see these statistics.')}</div> : <>
@@ -1600,9 +1618,10 @@ function SessionTiming() {
       </div>
       <h4 className="sec">{t('Duration trend')}</h4><div className="chart"><LineChart points={points} h={150} unit="min" color="var(--blue)" /></div>
       <h4 className="sec">{t('Recent session times')}</h4>
-      <div className="list">{[...summary.sessions].reverse().slice(0, 30).map(w => <div className="item" key={w.id || w.start} onClick={() => workoutDetailSheet(w)}>
+      <div className="list recent-session-times" data-tour="session-times">{shownRecent.map(w => <button type="button" className="item" key={w.id || w.start} data-workout-id={w.id} onClick={() => workoutDetailSheet(w)}>
         <span className="lrow-i"><Icon name="clock" /></span><div className="grow"><div className="tt">{w.name}</div><div className="ss">{fmtDate(w.d, true)} · {clockAt(w.start)}–{clockAt(w.end)}</div></div><span className="tag nocap">{fmtDur(w.durationMs)}</span>
-      </div>)}</div>
+      </button>)}</div>
+      {!showAllRecent && recent.length > 3 && <Button className="recent-show-more" onClick={() => setShowAllRecent(true)}>{t('Show more')}</Button>}
       <div className="small dim" style={{ marginTop: 10 }}>{t('Only completed, unique sessions with valid recorded durations are included. Long sessions are not excluded just for their length.')}</div>
     </>}
   </>
@@ -1833,25 +1852,34 @@ function WorkoutInactivity({ close }) {
   const active=useStore(s=>s.S.active)
   const [duration,setDuration]=useState(()=>String(Math.round(workoutElapsedMs(S().active)/6000)/10))
   const [error,setError]=useState('')
+  const [editing,setEditing]=useState(false)
   useEffect(()=>{if(!active || active.pauseReason!=='inactivity')close()},[active?.id,active?.pauseReason])
   if(!active)return null
-  return <>
+  const reviewDuration=()=>{
+    const draft=duration.trim().replace(',','.')
+    if(!/^\d+(?:\.\d+)?$/.test(draft) || !correctWorkoutDuration(S().active,draft)){setError(t('Enter a valid duration ending before now.'));return}
+    const id=active.id
+    confirmSheet({title:t('Update workout duration?'),message:t('The recorded duration will change to {0} minutes. Your sets will stay the same.',draft),confirmText:t('Save changes'),onConfirm:()=>{
+      const current=S().active
+      if(!current || current.id!==id || current.pauseReason!=='inactivity')return
+      const corrected=correctWorkoutDuration(current,draft)
+      if(!corrected){setError(t('Enter a valid duration ending before now.'));return}
+      try{update(s=>{if(s.active?.id===id&&s.active.pauseReason==='inactivity')s.active=corrected});setError('');setEditing(false);toast(t('Workout updated'))}
+      catch{setError(t('Could not save changes. Try again.'))}
+    }})
+  }
+  return <div className="workout-inactivity">
+    <span className="inactivity-symbol" aria-hidden="true"><Icon name="timer"/></span>
     <h3>{t('Workout paused after inactivity')}</h3>
     <p className="small muted">{t('The timer paused 30 minutes after your last interaction. Your sets are preserved. Review the duration, then continue or finish.')}</p>
-    <p>{t('Duration')}: {fmtDur(workoutElapsedMs(active))}</p>
-    <label>{t('Duration (minutes)')}<input className="input" type="number" min="0.1" step="0.1" value={duration} onChange={event=>setDuration(event.target.value)}/></label>
-    {error&&<p role="alert">{error}</p>}
-    <Button onClick={()=>{
-      const corrected=correctWorkoutDuration(S().active,duration)
-      if(!corrected){setError(t('Enter a valid duration ending before now.'));return}
-      update(s=>{if(s.active?.id===corrected.id)s.active=corrected})
-      setError('');toast(t('Workout updated'))
-    }}>{t('Save duration')}</Button>
-    <div style={{height:12}}/>
-    <Button variant="primary" onClick={()=>{resumeActiveWorkoutClock();close();nav('/workout')}}>{t('Continue workout')}</Button>
-    <div style={{height:8}}/>
-    <Button onClick={()=>finishWorkout()}>{t('Finish workout')}</Button>
-  </>
+    <div className="inactivity-clock"><span>{t('Duration')}</span><strong>{fmtDur(workoutElapsedMs(active))}</strong><Button size="sm" icon="pencil" aria-expanded={editing} onClick={()=>{setDuration(String(Math.round(workoutElapsedMs(active)/6000)/10));setError('');setEditing(v=>!v)}}>{t('Update time')}</Button></div>
+    {editing&&<form className="inactivity-editor" onSubmit={event=>{event.preventDefault();reviewDuration()}}>
+      <label>{t('Duration (minutes)')}<input className="input" type="text" inputMode="decimal" value={duration} onChange={event=>{setDuration(event.target.value);setError('')}}/></label>
+      <div className="inactivity-edit-actions"><Button type="button" size="sm" onClick={()=>{setEditing(false);setError('')}}>{t('Cancel')}</Button><Button type="submit" size="sm">{t('Save duration')}</Button></div>
+    </form>}
+    {error&&<p role="alert" className="inactivity-error">{error}</p>}
+    <div className="inactivity-decisions"><Button variant="primary" icon="play" onClick={()=>{resumeActiveWorkoutClock();close();nav('/workout')}}>{t('Continue workout')}</Button><Button icon="check" onClick={()=>finishWorkout()}>{t('Finish workout')}</Button></div>
+  </div>
 }
 let inactivityDecision=null
 export const workoutInactivitySheet=()=>{

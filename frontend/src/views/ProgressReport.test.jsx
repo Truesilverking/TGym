@@ -29,7 +29,7 @@ it('uses daily activity and stable session origin in Progress and its export',as
  await generate();expect(mock.build.mock.calls[0][0].summary).toMatchObject({activeDays:1,planned:1,extra:1,rate:1})
 })
 it('changes periods, renders sufficient/insufficient data and exports the selected range',async()=>{
- mount();expect(host.textContent).toContain('+5 cm');expect(host.textContent).toContain('+16.7%')
+ mount();expect(host.textContent).toContain('↑ 5 cm');expect(host.textContent).toContain('+16.7%')
  act(()=>{const el=host.querySelector('select');el.value='1';el.dispatchEvent(new Event('change',{bubbles:true}))})
  expect(host.textContent).toContain('More data needed');expect(host.textContent).not.toContain('+16.7%')
  const create=vi.spyOn(URL,'createObjectURL').mockReturnValue('blob:report'),click=vi.spyOn(HTMLAnchorElement.prototype,'click').mockImplementation(()=>{})
@@ -49,7 +49,7 @@ it('includes a workout completed this afternoon in current-day duration totals',
 it('recovers from generation failures without losing the report',async()=>{
  mock.build.mockRejectedValueOnce(new Error('Canvas unavailable'));mount()
  await generate()
- expect(host.querySelector('[role="alert"]').textContent).toContain('Could not export');expect(host.textContent).toContain('+5 cm')
+ expect(host.querySelector('[role="alert"]').textContent).toContain('Could not export');expect(host.textContent).toContain('↑ 5 cm')
  await generate()
  expect(host.querySelector('[role="alert"]')).toBeNull();expect(host.querySelector('.progress-file')).not.toBeNull()
 })
@@ -93,7 +93,7 @@ it('discards a generated snapshot when persisted data changes during generation'
 })
 
 it('shows body-only history without unrelated empty workout sections',()=>{
- mount();expect(host.textContent).toContain('Body Progress');expect(host.textContent).toContain('+5 cm')
+ mount();expect(host.textContent).toContain('Body Progress');expect(host.textContent).toContain('↑ 5 cm')
  expect(host.querySelector('.body-stats')).not.toBeNull()
  for(const label of ['Exercise Progress','Training volume','Training consistency','Activity Progress','Personal Records'])expect([...host.querySelectorAll('summary')].some(el=>el.textContent===label)).toBe(false)
  expect(host.querySelectorAll('.progress-values time')).toHaveLength(2)
@@ -103,8 +103,8 @@ it('opens independent report sections instead of rendering every metric at once'
  act(()=>root.render(<MemoryRouter><ProgressReport/></MemoryRouter>))
  expect(host.querySelectorAll('.progress-controls select')[1].options).toHaveLength(8)
  expect(host.querySelector('.progress-metric')).toBeNull()
- selectSection('Body Progress');expect(host.textContent).toContain('+5 cm')
- selectSection('InBody history');expect(host.textContent).not.toContain('+5 cm');expect(host.textContent).toContain('No comparable history')
+ selectSection('Body Progress');expect(host.textContent).toContain('↑ 5 cm')
+ selectSection('InBody history');expect(host.textContent).not.toContain('↑ 5 cm');expect(host.textContent).toContain('No comparable history')
 })
 
 it('keeps recorded body data visible in the overview when there are no workouts',()=>{
@@ -132,6 +132,6 @@ it('preserves expanded charts when navigating sections',()=>{
 it('compares exact selected records and exports the same date selection',async()=>{
  mock.S.measurements.push({d:'2026-09-24',neck:40});mount()
  act(()=>{const el=host.querySelector('.body-dates select');el.value='1';el.dispatchEvent(new Event('change',{bubbles:true}))})
- expect(host.querySelector('.body-detail').textContent).toContain('+5 cm')
+ expect(host.querySelector('.body-detail').textContent).toContain('↑ 5 cm')
  await generate();expect(mock.build.mock.calls[0][1].bodySelection).toEqual({before:'1',after:'2'})
 })

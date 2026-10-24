@@ -61,7 +61,7 @@ export async function playAppSound(S, event, { preview = false, occurrence, soun
       if (isSoundQuiet(S)) { publish({ status:'idle' }); return false }
       if (S?.vibration !== false && event !== 'countdown' && event !== 'notification') vibrate(event === 'set' ? 30 : [200, 100, 200])
     } else await stopNativeSound()
-    if (!soundEnabled(S) || choice.id === 'silent') { publish({ status:'idle' }); return false }
+    if (!soundEnabled(S) || choice.id === 'silent' || (!preview&&event==='notification'&&S?.notificationSoundOn===false)) { publish({ status:'idle' }); return false }
     await readyContext(context)
     let buffer = buffers.get(choice.data)
     if (!buffer) {

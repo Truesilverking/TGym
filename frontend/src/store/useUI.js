@@ -5,6 +5,7 @@ import { api } from '../lib/api.js'
 import { t } from '../lib/i18n.js'
 import { useStore } from './useStore.js'
 import { resumeWorkoutClock, recordWorkoutActivity } from '../lib/workout-time.js'
+import {syncWorkoutNotification} from '../lib/workout-notification.js'
 
 // Fire-and-forget: lets the server push a "rest over" alert if this tab gets suspended
 // before the local timer completes. No-ops for guests / offline.
@@ -108,6 +109,7 @@ export const useUI = create((set, get) => ({
     const timer = { left: sec, total: restored?.total ?? sec, endsAt }
     saveRest(timer)
     set({ timer })
+    void syncWorkoutNotification(useStore.getState().S.active,timer)
     requestRestNotificationPermission()
     pushRestTimer(sec)
     timerTick = () => {
@@ -135,6 +137,7 @@ export const useUI = create((set, get) => ({
     if (left <= 0) { get().stopRest(); return }
     set({ timer: { ...tm, left, total: tm.total + sec, endsAt: tm.endsAt + sec * 1000 } })
     saveRest(get().timer)
+    void syncWorkoutNotification(useStore.getState().S.active,get().timer)
     pushRestTimer(left)
   },
   stopRest() {
@@ -143,6 +146,7 @@ export const useUI = create((set, get) => ({
     if (get().timer) cancelPushRestTimer()
     saveRest(null)
     set({ timer: null })
+    void syncWorkoutNotification(useStore.getState().S.active,null)
   },
   restoreRest() {
     if (get().timer) return
@@ -171,15 +175,16 @@ export const useUI = create((set, get) => ({
     // The optional reader keeps exercise presentation live when names/preferences change.
     // It is ephemeral UI state; the timer deadline and completion callback stay untouched.
     set({ work: { left: total, total, endsAt, label, getLabel } })
+    void syncWorkoutNotification(useStore.getState().S.active,null)
     workTick = () => {
       const wk = get().work
       if (!wk) return
       if (!useStore.getState().S.active) { get().stopWork(); return }
-      const left = Math.max(0, Math.round((wk.endsAt - Date.now()) / 1000))
+      const left = Math.max(0, Math.ceil((wk.endsAt - Date.now()) / 1000))
       if (left === wk.left) return
       const prefs = useStore.getState().S
       if (left <= 0) {
-        void playAppSound(prefs, 'work')
+        void playAppSound(prefs, 'work', {occurrence:wk.endsAt})
         const done = workDone
         get().stopWork()
         if (done) done(wk.total, { timedOut: true, completedAt: wk.endsAt })
@@ -210,5 +215,6 @@ export const useUI = create((set, get) => ({
     if (workTick) document.removeEventListener('visibilitychange', workTick); workTick = null
     workDone = null
     set({ work: null })
+    void syncWorkoutNotification(useStore.getState().S.active,get().timer)
   }
 }))

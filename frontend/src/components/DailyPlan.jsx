@@ -5,6 +5,7 @@ import { todayISO, DAYN, fmtDate } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
 import Icon from './Icon.jsx'
 import { Button } from './ui.jsx'
+import ReminderTimeField from './ReminderTimeField.jsx'
 
 export function ScheduleEditor({ day, iso, close }) {
   const S = useStore(s=>s.S), update = useStore(s=>s.update), nav = useNavigate()
@@ -22,7 +23,7 @@ export function ScheduleEditor({ day, iso, close }) {
     })}</ol>
     {!ids.length && <p className="muted">{t('Rest day')}</p>}
     <div className="schedule-add">{S.routines.filter(r=>!ids.includes(r.id)).map(r=><Button key={r.id} icon="plus" onClick={()=>save([...ids,r.id])}>{r.name}</Button>)}</div>
-    {S.reminder?.on && <label className="schedule-reminder">{t('Workout reminder')}<input aria-label={t('Workout reminder')} type="time" value={S.reminder.dayTimes?.[weekday] || S.reminder.time || '08:00'} onChange={e=>update(s=>{s.reminder.dayTimes={...s.reminder.dayTimes,[weekday]:e.target.value}})}/></label>}
+    {S.reminder?.on && <div className="schedule-reminder"><ReminderTimeField label={t('Workout reminder')} value={S.reminder.dayTimes?.[weekday] ?? S.reminder.time ?? '08:00'} showZone onChange={value=>update(s=>{s.reminder.dayTimes={...s.reminder.dayTimes,[weekday]:value}})}/></div>}
     {iso && S.dayPlan?.[iso] !== undefined && <Button onClick={()=>update(s=>{delete s.dayPlan[iso]})}>{t('Back to weekly plan')}</Button>}
     <Button variant="primary" onClick={close}>{t('Done')}</Button>
   </div>
