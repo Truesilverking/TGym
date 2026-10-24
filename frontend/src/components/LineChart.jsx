@@ -12,7 +12,7 @@ const W = 340   // viewBox width; the svg stretches to its container, height com
 // opts: { h, unit, color, axes, goal, invert }
 //   invert flips the y axis, for a scale that counts down as it gets harder (RIR). Without it
 //   a curve of reps-in-reserve reads upside down, with the hardest sets at the floor.
-export default function LineChart({ points, h = 150, unit = '', color = 'var(--acc)', axes = true, goal = null, invert = false }) {
+export default function LineChart({ points, h = 150, unit = '', color = 'var(--acc)', axes = true, goal = null, invert = false, formatValue }) {
   const svgRef = useRef(null)
   const wrapRef = useRef(null)
   const tipRef = useRef(null)
@@ -141,7 +141,7 @@ export default function LineChart({ points, h = 150, unit = '', color = 'var(--a
         </g>}
       </svg>
       {hover && <div className="ctip" ref={tipRef}>
-        {fmtDate(hover.iso, true, showYear)} · {fmtNum(hover.v)}{unit ? ' ' + unit : ''}{hover.note ? ' · ' + hover.note : ''}
+        {fmtDate(hover.iso, true, showYear)} · {formatValue ? formatValue(hover.v) : fmtNum(hover.v) + (unit ? ' ' + unit : '')}{hover.note ? ' · ' + hover.note : ''}
       </div>}
     </div>
   )

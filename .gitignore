@@ -7,6 +7,9 @@ data/
 
 # Local config
 .env
+*.jks
+.env.local
+.env.*.local
 
 # Build output / deps
 frontend/dist/
@@ -20,3 +23,6 @@ node_modules/
 node_modules
 .claude/
 .agents/
+
+# Generated real PCM fixtures for Android audio instrumentation
+frontend/android/app/src/androidTest/assets/audio-audit.json

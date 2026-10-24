@@ -1,3 +1,5 @@
+import { validateTrainingHistory } from './training-history.js'
+import { dayNumber } from './training-pause.js'
 // Portable training state only. Device credentials and authentication are never portable.
 export const BACKUP_SCHEMA = 1
 const blocked = new Set(['__proto__', 'prototype', 'constructor', 'accessToken', 'refreshToken', 'password', 'pin', 'pinHash', 'recoveryKey', 'idToken'])
@@ -25,12 +27,38 @@ export function portableState(state) {
   return data
 }
 export function validateBackupState(data) {
+  if (data?.trainingStartDate != null) {
+    // Legacy profiles may have a training start without historical estimates.
+    // Validate that date with a temporary zero-estimate shape, retaining the
+    // original null/absent field and the same future-date/malformed-history checks.
+    const history = data.trainingHistory ?? { trackedFrom: data.trainingStartDate, historicalWorkouts: 0, workoutsPerWeek: 0 }
+    if (!Number.isFinite(dayNumber(data.trainingStartDate)) || !validateTrainingHistory(data.trainingStartDate, history)) throw new Error('Invalid training history')
+  }
   if (!data || typeof data !== 'object' || Array.isArray(data) || !Array.isArray(data.workouts) || !Array.isArray(data.routines)) throw new Error('Invalid backup data')
-  for (const key of ['workouts','routines','customEx','bodyweight','measurements','inbody','equipProfiles']) {
+  for (const key of ['workouts','routines','customEx','bodyweight','measurements','inbody','heightHistory','equipProfiles','trainingPauses']) {
     if (data[key] !== undefined && (!Array.isArray(data[key]) || data[key].some(v => !v || typeof v !== 'object' || Array.isArray(v)))) throw new Error(`Invalid backup field: ${key}`)
   }
+  if (data.trainingPauses?.some(p=>!p.id || !Number.isFinite(dayNumber(p.start)) || (p.end != null && (!Number.isFinite(dayNumber(p.end)) || p.end < p.start)))) throw new Error('Invalid training pause')
   if (data.unit !== undefined && !['kg','lb'].includes(data.unit)) throw new Error('Invalid weight unit')
   if (data.active !== undefined && data.active !== null && (typeof data.active !== 'object' || Array.isArray(data.active))) throw new Error('Invalid active workout')
+  const object = value => value && typeof value === 'object' && !Array.isArray(value)
+  const records = (value, field) => {
+    if (value === undefined) return [] // Older backups may omit optional collections.
+    if (!Array.isArray(value) || value.some(row => !object(row))) throw new Error(`Invalid backup field: ${field}`)
+    return value
+  }
+  if (data.routineOrder !== undefined && (!Array.isArray(data.routineOrder) || data.routineOrder.some(id => typeof id !== 'string'))) throw new Error('Invalid backup field: routineOrder')
+  for (const routine of data.routines) records(routine.ex, 'routines.ex')
+  for (const workout of [...data.workouts, ...(data.active ? [data.active] : [])]) {
+    for (const entry of records(workout.entries, 'workouts.entries')) {
+      for (const set of records(entry.sets, 'workouts.entries.sets')) {
+        records(set.drops, 'sets.drops'); records(set.clusters, 'sets.clusters')
+      }
+    }
+  }
+  for (const key of ['week', 'dayPlan', 'daySkipped']) {
+    if (data[key] != null && (!object(data[key]) || Object.values(data[key]).some(value => value != null && typeof value !== 'string' && (!Array.isArray(value) || value.some(id => typeof id !== 'string'))))) throw new Error(`Invalid backup field: ${key}`)
+  }
   return clean(data)
 }
 export function createBackup(state, now = new Date()) {

@@ -1,3 +1,6 @@
+import { createBackup } from './backup.js'
+import { soundEnabled } from './sound-preferences.js'
+import { fmtScheduledDate, isoOf } from './format.js'
 // Mobile build (VITE_MOBILE=1) — the standalone app-store version (Capacitor native shell).
 //
 // There is no backend: nothing to sign in to, everything lives on the phone. Unlike guest
@@ -10,32 +13,41 @@
 // Like the demo build, MOBILE is replaced at build time, so all of this folds away in
 // web bundles; the Capacitor plugins are only ever imported behind it.
 import { t } from './i18n-core.js'
-import { todayISO } from './format.js'
-import { measurementNotificationPlan, MEASUREMENT_NOTIFICATION_IDS } from './measurement-reminders.js'
-import { workoutNotificationPlan, WORKOUT_NOTIFICATION_IDS, deloadNotificationPlan, DELOAD_NOTIFICATION_IDS } from './workout-reminders.js'
-import { lastWorkoutActivity, INACTIVITY_WARNING_MINUTES } from './workout-time.js'
+import { todayISO, ACCENTS } from './format.js'
+import { measurementNotificationPlan, measurementReminderValidation, MEASUREMENT_NOTIFICATION_IDS } from './measurement-reminders.js'
+import { workoutNotificationPlan, workoutReminderValidation, WORKOUT_NOTIFICATION_IDS, deloadNotificationPlan, DELOAD_NOTIFICATION_IDS } from './workout-reminders.js'
+import { workoutReminderDateLabel } from './workout-reminder-label.js'
+import { syncNativeSounds, finishNativeSoundSync, fallbackNativeSounds } from './native-sound.js'
+import { readProfileSnapshot, writeProfileSnapshot, readProfileClockJournal, writeProfileClockJournal, profileClockJournalAvailable } from './native-profile-snapshot.js'
+import { overlayClockJournal } from './workout-clock-journal.js'
 
 export const MOBILE = import.meta.env.VITE_MOBILE === '1'
 
-const FILE = 'framegym-state.json'
-
 export async function nativeLoad() {
   try {
-    const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem')
-    const r = await Filesystem.readFile({ path: FILE, directory: Directory.Data, encoding: Encoding.UTF8 })
-    return JSON.parse(r.data)
+    const state=JSON.parse(await readProfileSnapshot())
+    return overlayClockJournal(state, await readProfileClockJournal())
   } catch (e) { return null }   // first launch, or unreadable — localStorage copy takes over
 }
 
+export const nativeClockJournalAvailable = profileClockJournalAvailable
+// Independent tiny IO can run between full-profile chunks instead of waiting
+// behind the complete snapshot transaction in nativeSaveQueue.
+export async function nativeSaveClockJournal(journal) {
+  try { await writeProfileClockJournal(journal); return true } catch { return false }
+}
+
 let nativeSaveQueue = Promise.resolve()
-export function nativeSave(state) {
-  const data = JSON.stringify(state)
+export function nativeSave(state, confirmedSerialization) {
+  // The store supplies this only for the exact immutable state whose primary
+  // write succeeded. Other callers retain the original snapshot-at-call contract.
+  const data = typeof confirmedSerialization === 'string' ? confirmedSerialization : JSON.stringify(state)
   // A pending debounced write must not finish after a newer immediate clock snapshot.
   nativeSaveQueue = nativeSaveQueue.then(async () => {
     try {
-      const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem')
-      await Filesystem.writeFile({ path: FILE, directory: Directory.Data, data, encoding: Encoding.UTF8 })
-    } catch (e) { /* keep the localStorage copy */ }
+      await writeProfileSnapshot(data)
+      return true
+    } catch (e) { return false /* keep the localStorage copy */ }
   })
   return nativeSaveQueue
 }
@@ -61,50 +73,147 @@ export async function saveRemoteFile(data) {
   } catch (e) { /* worst case: onboarding asks again next launch */ }
 }
 
-// (Re)schedule the workout-day reminder: one repeating notification per weekday that has a
-// routine in the weekly plan. Cheap enough to run after any state change — the plan or the
-// reminder time may just have been edited. `interactive` gates the OS permission prompt to
-// the Settings toggle; a background resync never pops a dialog.
+// Reconcile each reminder family with the native pending list. Opening Settings, restoring
+// a profile and foreground checks do not replace unchanged alarms. `interactive` is only
+// passed by an explicit enable/retry action; background reconciliation never asks permission.
+const reminderKinds = ['workout', 'measurement', 'deload']
+const ownedReminderIds = {workout:[...WORKOUT_NOTIFICATION_IDS,3000], measurement:MEASUREMENT_NOTIFICATION_IDS, deload:DELOAD_NOTIFICATION_IDS}
+const reminderListeners = new Set()
+let reminderStatus = Object.fromEntries(reminderKinds.map(kind => [kind,{status:MOBILE ? 'syncing' : 'unsupported',count:0,nextAt:null,error:null,validation:null}]))
+export const getReminderStatus = () => reminderStatus
+export const reminderSyncStatus = kind => reminderStatus[kind]
+export function subscribeReminderStatus(listener) {
+  reminderListeners.add(listener)
+  return () => reminderListeners.delete(listener)
+}
+function setReminderStatus(kind, status, notices = [], error = null, validation = null) {
+  const next = {status,count:status === 'configured' ? notices.length : 0,nextAt:status === 'configured' && notices.length ? notices[0].schedule.at.toISOString() : null,error,validation}
+  if(kind==='workout')next.nextDate=status==='configured'&&notices.length?notices[0].extra?.date??null:null
+  if (JSON.stringify(next) === JSON.stringify(reminderStatus[kind])) return
+  reminderStatus = {...reminderStatus,[kind]:next}
+  for (const listener of reminderListeners) listener()
+}
+const stableValue = value => value instanceof Date ? value.toISOString() : Array.isArray(value) ? value.map(stableValue) : value && typeof value === 'object' ? Object.fromEntries(Object.keys(value).sort().map(key => [key,stableValue(value[key])])) : value
+const noticeIdentity = notice => {
+  const at = +new Date(notice.schedule?.at)
+  // Android's pending list can contain Java Date strings with local zone abbreviations
+  // (e.g. AST), which JavaScript cannot parse. Our stable epoch preserves that comparison.
+  return JSON.stringify(stableValue({id:notice.id,title:notice.title,body:notice.body,at:Number.isFinite(at) ? at : notice.extra?.tgymReminderAt,extra:notice.extra || {}}))
+}
+function samePending(pending, desired) {
+  const identities = new Map(pending.map(notice => [notice.id,noticeIdentity(notice)]))
+  return pending.length === desired.length && desired.every(notice => identities.get(notice.id) === noticeIdentity(notice))
+}
+async function verifyReminderPending(LocalNotifications, kind, notices) {
+  let pending
+  // iOS resolves schedule/cancel before its notification-center write completes. Poll
+  // read-only at most twice more; never repeat the mutation or hide a persistent mismatch.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt) await new Promise(resolve => setTimeout(resolve,200))
+    try { pending = (await LocalNotifications.getPending()).notifications || [] }
+    catch (error) { throw Object.assign(new Error('Reminder scheduling verification failed'),{pendingReadFailed:true,cause:error}) }
+    if (samePending(pending.filter(notice => ownedReminderIds[kind].includes(notice.id)),notices)) return pending
+  }
+  throw Object.assign(new Error('Reminder scheduling could not be verified'),{pending})
+}
+const lastScheduled = new Map()
 let reminderQueue = Promise.resolve()
-export function syncReminder(S, interactive = false) {
-  const snapshot = structuredClone(S)
-  reminderQueue = reminderQueue.catch(() => false).then(() => syncReminderNow(snapshot, interactive))
+// Reminder calculations never read exercise media, profile photos, InBody images,
+// equipment or presentation preferences. Keep complete workout rows and routines
+// for legacy activity/origin matching; the existing helpers remain authoritative.
+const reminderSnapshotKeys = ['accent','sound','soundMuted','soundVolume','notificationSoundOn','vibration','sounds','customSounds','reminder','measurementReminders','heightCm','heightRecordedAt','bodyweight','measurements','routines','week','dayPlan','daySkipped','scheduleStarted','trainingPauses','workouts','active','deload']
+export function syncReminder(S, interactive = false, requestedKind = null) {
+  const snapshot = structuredClone(Object.fromEntries(reminderSnapshotKeys.filter(key=>Object.hasOwn(S,key)).map(key=>[key,S[key]])))
+  reminderQueue = reminderQueue.catch(() => false).then(() => syncReminderNow(snapshot, interactive, requestedKind))
   return reminderQueue
 }
-async function syncReminderNow(S, interactive = false) {
+async function syncReminderNow(S, interactive = false, requestedKind = null) {
+  const now = new Date()
+  const families = {
+    workout:{enabled:!!S.reminder?.on,validation:workoutReminderValidation(S)},
+    measurement:{enabled:!!S.measurementReminders?.notifications,validation:measurementReminderValidation(S)},
+    deload:{enabled:!!S.deload?.on && S.deload?.notifications !== false,validation:{valid:true,reason:null}},
+  }
+  let soundSettings, verified = false
   try {
     const { LocalNotifications } = await import('@capacitor/local-notifications')
-    await LocalNotifications.cancel({ notifications: WORKOUT_NOTIFICATION_IDS.map(id => ({ id })) })
-    await LocalNotifications.cancel({ notifications: MEASUREMENT_NOTIFICATION_IDS.map(id => ({id})) })
-    await LocalNotifications.cancel({ notifications: [{id:3000}] })
-    await LocalNotifications.cancel({ notifications: DELOAD_NOTIFICATION_IDS.map(id => ({id})) })
-    const r = S.reminder
-    if (!r?.on && !S.measurementReminders?.notifications && !S.active && !(S.deload?.on && S.deload?.notifications)) return true
-    let perm = await LocalNotifications.checkPermissions()
-    if (perm.display !== 'granted' && interactive) perm = await LocalNotifications.requestPermissions()
-    if (perm.display !== 'granted') return false
-    const deloadNotices = deloadNotificationPlan(S).map(n => ({id:n.id, title:t('Deload week'), body:t('Deload: {0} – {1}. Follow your reduced training targets.',n.start,n.end), schedule:{at:n.at,allowWhileIdle:true},extra:{type:'deload'}}))
-    if (deloadNotices.length) await LocalNotifications.schedule({notifications:deloadNotices})
-    if (S.active && S.active.timerPausedAt == null) {
-      const at = new Date(lastWorkoutActivity(S.active) + INACTIVITY_WARNING_MINUTES * 60000)
-      if (at > new Date()) await LocalNotifications.schedule({notifications:[{id:3000,title:t('Still training?'),body:t('No activity has been recorded for a while.'),schedule:{at,allowWhileIdle:true},extra:{type:'workout',routineId:S.active.routineId,date:S.active.d}}]})
+    const enabled = reminderKinds.some(kind => families[kind].enabled && families[kind].validation.valid)
+    let perm = enabled ? await LocalNotifications.checkPermissions() : {display:'granted'}
+    const requestable = requestedKind ? families[requestedKind]?.enabled && families[requestedKind]?.validation.valid : enabled
+    if (interactive && requestable && ['prompt','prompt-with-rationale'].includes(perm.display)) perm = await LocalNotifications.requestPermissions()
+    let soundError = null
+    if (enabled && perm.display === 'granted') {
+      try { soundSettings = await syncNativeSounds(S) } catch (error) {
+        soundError = error
+        try{soundSettings=await fallbackNativeSounds(S)}catch{/* Preserve existing alarms if even the silent channel is unavailable. */}
+      }
     }
-    const measurementNotices = measurementNotificationPlan(S).map(group => ({
+    const decorate = notices => notices.map(n => {
+      const sound = notificationSoundOptions(S,soundSettings,n.schedule?.at), iconColor = ACCENTS[S.accent] || ACCENTS.red
+      // getPending omits native channel/icon properties, so retain our applied identity in
+      // extra for reconciliation after reopening as well as within the current process.
+      return {...n,...sound,smallIcon:'ic_workout_notification',iconColor,extra:{...n.extra,tgymReminderAt:+n.schedule.at,tgymReminderStyle:JSON.stringify([sound.channelId || null,'ic_workout_notification',iconColor])}}
+    }).sort((a,b)=>+a.schedule.at - +b.schedule.at || a.id - b.id)
+    families.deload.notices = deloadNotificationPlan(S, now).map(n => ({id:n.id, title:t('Deload week'), body:t('Deload: {0} – {1}. Follow your reduced training targets.',n.start,n.end), schedule:{at:n.at,allowWhileIdle:true},extra:{type:'deload'}}))
+    families.measurement.notices = measurementNotificationPlan(S, now).map(group => ({
       id: group.id, title: t('Time to update your measurements'), body: group.labels.map(label => t(label)).join(', '),
       schedule: { at: group.at, allowWhileIdle: true }, extra: { type: 'measurement', metrics: group.metrics },
     }))
-    if (measurementNotices.length) await LocalNotifications.schedule({ notifications: measurementNotices })
-    if (!r?.on) return true
-    const notifications = workoutNotificationPlan(S).map(notice => ({
+    families.workout.notices = workoutNotificationPlan(S, now).map(notice => ({
       id: notice.id,
       title: t(notice.kind === 'today' ? 'Workout reminder' : 'Next workout reminder'),
-      body: notice.kind === 'today' ? t('You still have {0} scheduled for today.', notice.name) : t('{0} is scheduled for {1}.',notice.name,notice.date),
+      body: t('{0} is scheduled for {1}.',notice.name,workoutReminderDateLabel(S,notice.date,isoOf(notice.at),fmtScheduledDate)) + (notice.remaining>1 ? ' · '+t('{0} workouts remaining',notice.remaining) : ''),
       schedule: {at:notice.at,allowWhileIdle:true},
       extra: {type:'workout',routineId:notice.routineId,date:notice.date},
     }))
-    if (notifications.length) await LocalNotifications.schedule({ notifications })
-    return true
-  } catch (e) { return false }
+    let pending = (await LocalNotifications.getPending()).notifications || [], successful = true
+    for (const kind of reminderKinds) {
+      const family = families[kind]
+      if(family.enabled&&soundError&&!soundSettings){setReminderStatus(kind,'error',[],'Reminder scheduling failed');successful=false;continue}
+      const status = !family.enabled ? 'off' : !family.validation.valid ? 'incomplete' : perm.display !== 'granted' ? 'permission-denied' : 'configured'
+      const notices = status === 'configured' ? decorate(family.notices) : []
+      const fingerprint = JSON.stringify(notices)
+      const owned = pending.filter(notice => ownedReminderIds[kind].includes(notice.id))
+      try {
+        if (!samePending(owned, notices) || (lastScheduled.has(kind) && lastScheduled.get(kind) !== fingerprint)) {
+          setReminderStatus(kind,'syncing')
+          await LocalNotifications.cancel({notifications:ownedReminderIds[kind].map(id => ({id}))})
+          if (notices.length) await LocalNotifications.schedule({notifications:notices})
+          pending = await verifyReminderPending(LocalNotifications,kind,notices)
+        }
+        lastScheduled.set(kind,fingerprint)
+        setReminderStatus(kind,status,notices,soundError ? 'Notifications are scheduled without sound. The selected sound could not be applied.' : null,family.validation.valid ? null : family.validation.reason)
+        if (family.enabled && status !== 'configured') successful = false
+      } catch (error) {
+        lastScheduled.delete(kind)
+        setReminderStatus(kind,'error',[],'Reminder scheduling failed')
+        successful = false
+        if (error.pendingReadFailed) throw error
+        // A failed measurement update must not prevent reconciliation of workout/deload.
+        pending = error.pending || (await LocalNotifications.getPending()).notifications || []
+      }
+    }
+    verified = successful&&!soundError
+    return requestedKind && families[requestedKind] ? ['off','configured'].includes(reminderStatus[requestedKind].status) : successful
+  } catch (error) {
+    const unsupported = ['UNIMPLEMENTED','NOT_IMPLEMENTED'].includes(error?.code)
+    for (const kind of reminderKinds) setReminderStatus(kind,unsupported ? 'unsupported' : 'error',[],unsupported ? null : 'Reminder scheduling failed')
+    return false
+  } finally {
+    // Native cleanup removes old channels and sound files. Preserve them whenever a
+    // failed family may still reference its old alarm, even if the requested one succeeded.
+    if (verified) await finishNativeSoundSync(soundSettings)
+  }
+}
+
+export function notificationSoundOptions(S, native, at = new Date()) {
+  if (!native?.channels || !native.notificationSoundsSupported) return {}
+  const r = S.reminder || {}, date = new Date(at)
+  const time = `${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`
+  const start = /^([01]\d|2[0-3]):[0-5]\d$/.test(r.quietStart || '') ? r.quietStart : '22:00'
+  const end = /^([01]\d|2[0-3]):[0-5]\d$/.test(r.quietEnd || '') ? r.quietEnd : '07:00'
+  const quiet = r.quietOn && (start < end ? time >= start && time < end : start !== end && (time >= start || time < end))
+  return {channelId:native.channels[quiet ? 'silent' : !soundEnabled(S) || S.notificationSoundOn===false ? 'muted' : 'audible']}
 }
 
 // WKWebView can't do blob-URL downloads, so the backup goes out through the OS share sheet
@@ -125,6 +234,18 @@ export async function shareBase64(base64, filename) {
   await Share.share({ title: filename, url: w.uri })
 }
 
+// Multiple independent report files in one OS share sheet; never concatenate bytes.
+export async function shareReportFiles(files) {
+  const { Filesystem, Directory } = await import('@capacitor/filesystem')
+  const { Share } = await import('@capacitor/share')
+  const uris = []
+  for (const file of files) {
+    const saved = await Filesystem.writeFile({ path: file.name, directory: Directory.Cache, data: file.base64 })
+    uris.push(saved.uri)
+  }
+  await Share.share({ title: t('Export Reports'), files: uris })
+}
+
 // "Auto-backup on changes" (Settings): a dated snapshot dropped into the Documents folder —
 // visible in Files (iOS) / a file manager (Android), unlike the private mirror nativeSave keeps
 // — so whatever the user points at that folder (a sync app, a manual copy) always has something
@@ -135,7 +256,7 @@ export async function writeAutoBackup(state) {
     await Filesystem.writeFile({
       path: `framegym-backup-${todayISO()}.json`,
       directory: Directory.Documents,
-      data: JSON.stringify((await import('./backup.js')).createBackup(state)),
+      data: JSON.stringify(createBackup(state)),
       encoding: Encoding.UTF8,
       recursive: true,
     })

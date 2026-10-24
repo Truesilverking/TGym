@@ -1,0 +1,282 @@
+import { forwardRef, memo, useEffect, useId, useImperativeHandle, useMemo, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
+import { NumberField } from './ui.jsx'
+import { dateLocale, t } from '../lib/i18n.js'
+import { RULER_PIXELS_PER_UNIT, rulerReleaseVelocity, rulerCoast } from '../lib/bodyweight-ruler.js'
+import './BodyWeightPicker.css'
+
+const PIXELS_PER_TICK = RULER_PIXELS_PER_UNIT / 10
+const positive = value => typeof value === 'number' && Number.isFinite(value) && value > 0
+const clamp = (value, min, max) => Math.max(min, Math.min(max, value))
+const reduceMotion = () => document.documentElement.dataset.reduceMotion === 'true' || document.documentElement.classList.contains('reduceMotion') || !!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches
+
+const RulerTicksGroup = memo(function RulerTicksGroup({ tile, min, max, formatter }) {
+  return Array.from({ length:20 }, (_, index) => {
+    const tick = tile * 20 + index
+    const amount = tick / 10, major = tick % 10 === 0, half = tick % 5 === 0
+    return <span key={tick} className={'bodyweight-picker-tick' + (major ? ' major' : half ? ' half' : '') + (amount < min || amount > max ? ' outside' : '')}
+      style={{ left:`${index * PIXELS_PER_TICK}px` }}>
+      <i/>{major && <span>{formatter.format(amount)}</span>}
+    </span>
+  })
+})
+
+const RulerTicks = memo(function RulerTicks({ anchor, min, max, formatter }) {
+  return Array.from({ length:7 }, (_, index) => {
+    const tile = anchor + index - 3
+    return <span key={tile} className="bodyweight-picker-tile" style={{ left:`calc(50% + ${(tile - anchor) * 20 * PIXELS_PER_TICK}px)` }}>
+      <RulerTicksGroup tile={tile} min={min} max={max} formatter={formatter}/>
+    </span>
+  })
+})
+
+// Display and local draft use the configured profile unit. Conversion and
+// rounding of saved history remain the parent editor's job.
+const BodyWeightPicker = forwardRef(function BodyWeightPicker({ value, onChange, unit, disabled = false, onValidityChange }, ref) {
+  const canonicalUnit = unit === 'lb' ? 'lb' : 'kg'
+  const shownUnit = canonicalUnit
+  const [bounds] = useState(() => ({
+    min: positive(value) ? Math.min(1, value) : 1,
+    max: Math.max(canonicalUnit === 'lb' ? 660 : 300, positive(value) ? value : 0),
+  }))
+  const [invalidText, setInvalidText] = useState(null)
+  const [manualValue, setManualValue] = useState(null)
+  const [inputLength, setInputLength] = useState(null)
+  const [preview, setPreview] = useState(null)
+  const ruler = useRef(null), gesture = useRef(null), lastEmitted = useRef(value)
+  const root = useRef(null)
+  const motion = useRef(null), frame = useRef(null), pointerFrame = useRef(null)
+  const lastValid = useRef(positive(value) ? value : canonicalUnit === 'lb' ? 154 : 70)
+  const hintId = useId(), errorId = useId()
+  const validNumber = n => positive(n) && n >= bounds.min && n <= bounds.max
+  if (validNumber(value)) lastValid.current = value
+  const valid = invalidText === null && validNumber(value)
+  const canonicalShown = preview ?? (validNumber(value) ? value : lastValid.current)
+  const shown = canonicalShown
+  const min = bounds.min, max = bounds.max
+  // Keep an imported boundary re-enterable if its visible tenth rounds outside
+  // the exact legacy value. Only explicit edits are clamped to that boundary.
+  const manualMin = Math.min(min, Math.round(min * 10) / 10)
+  const manualMax = Math.max(max, Math.round(max * 10) / 10)
+  const validManual = next => positive(next) && next >= manualMin && next <= manualMax
+  // A frame may have queued a newer draft before React paints it. Read the
+  // committed input for explicit actions so the saved weight matches the screen.
+  const readVisible = () => {
+    const text = root.current?.querySelector('input')?.value.replace(/,/g, '.') ?? ''
+    const number = text.trim() === '' ? null : Number(text)
+    return /^\d*(?:\.\d*)?$/.test(text) && validManual(number) ? clamp(number, min, max) : null
+  }
+  useImperativeHandle(ref, () => ({ getValue:readVisible }))
+  const locale = dateLocale()
+  const formatter = useMemo(() => new Intl.NumberFormat(locale, { maximumFractionDigits: 1, useGrouping:false }), [locale])
+  const format = n => formatter.format(n)
+  const currentInvalid = preview === null && !valid
+  const fieldValue = currentInvalid ? null : preview === null && manualValue !== null ? manualValue : shown
+  const fieldText = currentInvalid ? invalidText ?? (value == null ? '' : String(value)) : format(fieldValue)
+
+  useEffect(() => { onValidityChange?.(valid) }, [valid, onValidityChange])
+
+  const release = g => { try { ruler.current?.releasePointerCapture?.(g.id) } catch { /* Already released by the browser. */ } }
+  const clearPointerFrame = () => {
+    if (pointerFrame.current !== null) cancelAnimationFrame(pointerFrame.current)
+    pointerFrame.current = null
+  }
+  const cancel = () => {
+    const g = gesture.current
+    if (!g) return
+    gesture.current = null
+    clearPointerFrame()
+    release(g)
+    setPreview(null)
+  }
+  const stopMotion = (freezeVisible = true) => {
+    const moving = motion.current
+    let stopped = moving?.shown
+    motion.current = null
+    if (frame.current !== null) cancelAnimationFrame(frame.current)
+    frame.current = null
+    if (moving) {
+      if (freezeVisible) {
+        const visible = readVisible()
+        if (visible !== null) { stopped = visible; publish(visible) }
+      }
+      // Disabling or changing only the unit must not emit an old value or lose
+      // the painted local draft. A new controlled value takes precedence.
+      setPreview(!freezeVisible && Object.is(lastEmitted.current, value) ? readVisible() : null)
+    }
+    return stopped
+  }
+  const stopAll = () => { stopMotion(); cancel() }
+  useEffect(() => {
+    // Capture starts only once horizontal intent is clear. A pending tap released
+    // outside the ruler must still be discarded, without owning vertical scroll.
+    const hidden = () => { if (document.hidden) stopAll() }
+    const outside = event => { if (!ruler.current?.contains(event.target)) stopMotion() }
+    const media = window.matchMedia?.('(prefers-reduced-motion: reduce)')
+    const reduced = () => { if (reduceMotion()) stopMotion() }
+    const observer = new MutationObserver(reduced)
+    observer.observe(document.documentElement, { attributes:true, attributeFilter:['class','data-reduce-motion'] })
+    media?.addEventListener?.('change', reduced)
+    window.addEventListener('pointerup', cancel)
+    window.addEventListener('pointercancel', cancel)
+    window.addEventListener('pointerdown', outside, true)
+    window.addEventListener('blur', stopAll)
+    document.addEventListener('visibilitychange', hidden)
+    return () => {
+      const g = gesture.current; gesture.current = null; if (g) release(g)
+      motion.current = null
+      if (frame.current !== null) cancelAnimationFrame(frame.current)
+      frame.current = null
+      clearPointerFrame()
+      observer.disconnect(); media?.removeEventListener?.('change', reduced)
+      window.removeEventListener('pointerup', cancel)
+      window.removeEventListener('pointercancel', cancel)
+      window.removeEventListener('pointerdown', outside, true)
+      window.removeEventListener('blur', stopAll)
+      document.removeEventListener('visibilitychange', hidden)
+    }
+  }, [])
+  useEffect(() => {
+    const g = gesture.current
+    if (g && (disabled || !Object.is(g.original, value) || g.unit !== canonicalUnit)) cancel()
+    if (motion.current && (disabled || motion.current.unit !== canonicalUnit || !Object.is(lastEmitted.current, value))) stopMotion(false)
+    if (!Object.is(lastEmitted.current, value)) {
+      setPreview(null); setInvalidText(null); setManualValue(null); setInputLength(null)
+      lastEmitted.current = value
+    }
+  }, [value, canonicalUnit, disabled])
+
+  const publish = (next, manual = null) => {
+    if (disabled || !validNumber(next)) return
+    lastEmitted.current = next
+    lastValid.current = next
+    setPreview(null); setInvalidText(null); setManualValue(manual)
+    if (manual === null) setInputLength(null)
+    onValidityChange?.(true)
+    onChange(next)
+  }
+  const manualInput = event => {
+    if (disabled) return
+    stopMotion()
+    setPreview(null)
+    const raw = event.currentTarget.value, text = raw.replace(/,/g, '.')
+    setInputLength(raw.length)
+    const parsed = text.trim() === '' || text === '.' ? null : Number(text)
+    const okay = /^\d*(?:\.\d*)?$/.test(text) && validManual(parsed)
+    if (!okay) { setInvalidText(raw); setManualValue(null); onValidityChange?.(false) }
+  }
+  const edit = next => {
+    if (disabled) return
+    stopMotion()
+    if (next == null) { setInvalidText(''); setManualValue(null); onValidityChange?.(false); return }
+    if (!validManual(next)) return
+    const canonical = clamp(next, bounds.min, bounds.max)
+    publish(canonical, next)
+  }
+  const fromPointer = (event, g) => {
+    return clamp(g.shown + (g.x - event.clientX) / RULER_PIXELS_PER_UNIT, g.min, g.max)
+  }
+  const remember = (event, g) => {
+    g.samples.push({ x:event.clientX, t:event.timeStamp })
+    g.samples = g.samples.filter(sample => sample.t >= event.timeStamp - 120).slice(-16)
+  }
+  const publishShown = (next, force = false) => {
+    const canonical = clamp(Math.round(next * 10) / 10, min, max)
+    if (!Object.is(canonical, lastEmitted.current) || force) publish(canonical)
+  }
+  const coast = (start, velocity) => {
+    if (!velocity || reduceMotion()) return
+    const moving = { shown:start, unit:canonicalUnit, started:performance.now() }
+    motion.current = moving
+    const step = now => {
+      if (motion.current !== moving) return
+      const next = rulerCoast(start, velocity, now - moving.started, min, max)
+      moving.shown = next.shown
+      // Animation stays inside the picker. Explicit actions read the painted
+      // input, and the parent receives the settled draft once rather than a
+      // complete sheet rerender for every moving tenth.
+      if (next.done) { publishShown(next.shown); motion.current = null; frame.current = null; setPreview(null); return }
+      setPreview(next.shown)
+      frame.current = requestAnimationFrame(step)
+    }
+    frame.current = requestAnimationFrame(step)
+  }
+  const pointerDown = event => {
+    if (disabled || event.button !== 0 || event.isPrimary === false || gesture.current) return
+    const starting = stopMotion() ?? shown
+    setManualValue(null); setInputLength(null)
+    gesture.current = { id:event.pointerId, x:event.clientX, y:event.clientY, original:lastEmitted.current, unit:canonicalUnit, shown:starting, min, max, horizontal:false, samples:[{ x:event.clientX, t:event.timeStamp }] }
+  }
+  const pointerMove = event => {
+    const g = gesture.current
+    if (!g || g.id !== event.pointerId) return
+    remember(event, g)
+    const x = Math.abs(event.clientX - g.x), y = Math.abs(event.clientY - g.y)
+    if (!g.horizontal) {
+      if (y > 6 && y >= x) { cancel(); return }
+      if (x <= 6 || x <= y * 1.15) return
+      g.horizontal = true
+      try { event.currentTarget.setPointerCapture?.(g.id) } catch { /* Pointer may have ended. */ }
+    }
+    event.preventDefault()
+    g.latest = fromPointer(event, g)
+    if (pointerFrame.current === null) pointerFrame.current = requestAnimationFrame(() => {
+      pointerFrame.current = null
+      if (gesture.current === g) setPreview(g.latest)
+    })
+  }
+  const pointerUp = event => {
+    const g = gesture.current
+    if (!g || g.id !== event.pointerId) return
+    gesture.current = null; clearPointerFrame(); release(g); setPreview(null)
+    if (!g.horizontal || disabled) return
+    event.preventDefault()
+    remember(event, g)
+    const next = fromPointer(event, g)
+    publishShown(next, !valid)
+    coast(next, rulerReleaseVelocity(g.samples, event.timeStamp))
+  }
+  const keyDown = event => {
+    if (event.key === 'Escape' && (gesture.current || motion.current)) { event.preventDefault(); event.stopPropagation(); stopAll(); return }
+    if (disabled) return
+    const change = ['ArrowRight','ArrowUp'].includes(event.key) ? .1 : ['ArrowLeft','ArrowDown'].includes(event.key) ? -.1 : event.key === 'PageUp' ? 1 : event.key === 'PageDown' ? -1 : null
+    if (change == null && !['Home','End'].includes(event.key)) return
+    event.preventDefault(); event.stopPropagation()
+    const current = stopMotion() ?? shown; cancel()
+    const next = event.key === 'Home' ? min : event.key === 'End' ? max : clamp(Math.round((current + change) * 10) / 10, min, max)
+    const canonical = clamp(next, bounds.min, bounds.max)
+    if (!Object.is(canonical, lastEmitted.current) || !valid) publish(canonical)
+  }
+  // Seven compact tiles keep both paint bounds and reused tick coordinates
+  // local. Shifting the window moves six retained wrappers, not every mark.
+  const railAnchor = Math.floor(shown / 2)
+  // Reserve every configured integer digit plus the decimal tenth. Crossing an
+  // integer must not resize the number and move its unit during a fast flight.
+  const readoutWidth = Math.min(8, Math.max(5.25, Math.floor(Math.log10(Math.max(1, max))) + 3.25))
+  const hint = t('Slide the ruler or tap the number to enter your weight.')
+
+  return <div ref={root} className={'bodyweight-picker' + (disabled ? ' is-disabled' : '')} data-nodrag>
+    <div className="bodyweight-picker-readout" onBlurCapture={() => { setInputLength(null); if (valid) setManualValue(null) }}>
+      <NumberField key={shownUnit} value={fieldValue} displayValue={fieldText} nullable retainInvalid
+        validation={{ min:manualMin, max:manualMax }} decimal disabled={disabled} aria-label={t('Weight')}
+        aria-invalid={currentInvalid || undefined} aria-describedby={currentInvalid ? errorId : hintId}
+        style={{ width:`${Math.max(readoutWidth, Math.min(8, (inputLength ?? 0) + .25))}ch` }}
+        onFocus={event => { if (motion.current) flushSync(stopMotion); event.currentTarget.select() }} onInput={manualInput} onChange={edit}/>
+      <span className="bodyweight-picker-unit" aria-hidden="true">{shownUnit}</span>
+    </div>
+    <div ref={ruler} className="bodyweight-picker-ruler" role="slider" tabIndex={disabled ? -1 : 0}
+      aria-label={t('Weight ruler')} aria-valuemin={min} aria-valuemax={max} aria-valuenow={shown}
+      aria-valuetext={`${format(shown)} ${shownUnit}`} aria-orientation="horizontal" aria-disabled={disabled || undefined}
+      aria-keyshortcuts="ArrowLeft ArrowRight ArrowUp ArrowDown PageUp PageDown Home End"
+      aria-describedby={hintId} data-nodrag data-interaction-quiet-ms="1800"
+      onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerUp} onPointerCancel={cancel} onLostPointerCapture={cancel} onKeyDown={keyDown}
+      onContextMenu={event => event.preventDefault()}>
+      <div className="bodyweight-picker-ticks" aria-hidden="true" style={{ transform:`translate3d(${(railAnchor * 2 - shown) * RULER_PIXELS_PER_UNIT}px,0,0)` }}><RulerTicks anchor={railAnchor} min={min} max={max} formatter={formatter}/></div>
+      <span className="bodyweight-picker-marker" aria-hidden="true"/>
+    </div>
+    <p id={hintId} className="bodyweight-picker-hint">{hint}</p>
+    {currentInvalid && <p id={errorId} className="bodyweight-picker-error" role="alert">{t('Enter a valid weight')}</p>}
+  </div>
+})
+
+export default BodyWeightPicker

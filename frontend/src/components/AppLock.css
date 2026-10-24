@@ -1,0 +1,9 @@
+.lock-screen{min-height:100dvh;display:grid;align-items:center;padding-block:env(safe-area-inset-top) env(safe-area-inset-bottom)}
+.auth-lock.auth-panel{width:calc(100% - 24px);min-height:0;margin:20px auto;padding:32px 24px}
+.auth-lock .auth-prompt{font-size:17px;font-weight:650;margin:4px 0 14px;line-height:1.4}
+.lock-key-field{position:relative;width:100%;max-width:320px}
+.auth-lock .lock-key-field .auth-code{max-width:none;padding-inline:48px;min-height:60px;box-sizing:border-box}
+.lock-visibility{position:absolute;right:5px;top:8px;width:44px;height:44px;color:var(--label-2)}
+.lock-error{min-height:1.5em;font-size:14px;color:var(--red);line-height:1.5;margin:12px 0 6px;max-width:320px}
+.auth-lock .lock-submit{width:100%;max-width:320px;margin-top:4px}
+@media(max-height:650px){.lock-screen{align-items:start}.auth-lock.auth-panel{padding:18px 20px;margin-block:8px}.auth-lock .auth-orbit{display:none}.auth-lock .auth-identity{margin-bottom:8px}.auth-lock .auth-identity h1{font-size:36px}.auth-lock .auth-identity-rule{display:none}}

@@ -1,9 +1,11 @@
+import { scheduledRoutineIds, loggedWorkouts } from './daily-plan.js'
+import { hasWorkoutActivity } from './session-activity.js'
 // Pure helpers over the state object S (ported 1:1 from the vanilla app).
 import { todayISO, isoOf, weekKey, fmtNum } from './format.js'
 import { isCardio, isBodyweightEq } from './exercises.js'
 import { phaseForSet, modeForSet, modeForEntry, isWarmupRow, normalizeMode, extraVolumeOf, nextDropWeight, splitBurstReps } from './workout-model.js'
 import { warmupPrescription, recalculatePendingWarmups } from './warmup.js'
-import { seedPlannedRir } from './training-plan.js'
+import { seedPlannedRir, backoffWeightFor, backoffRepsFor } from './training-plan.js'
 const objectOf = value => value && typeof value === 'object' && !Array.isArray(value) ? value : {}
 // Completed-state-independent work rows whose authoritative mode matches the requested mode.
 const workRowsForMode = (entry = {}, mode = 'reps') => {
@@ -40,21 +42,31 @@ export const isTimed = cfg => modeOf(cfg) === 'time'
 //                asked for only once you say there is some. Seeded from the equipment field.
 //                Spelled out rather than `bw`, which a workout already uses for the weigh-in
 //                it was logged at — two different things one letter apart is a bug waiting.
-//   side       — the exercise is unilateral. You still log what you did: 16, the total across
-//                both sides. The split is derived for planning ("8 per side"), never entered
-//                — a number that sometimes means one side and sometimes both is the thing
-//                that made this ambiguous in the first place, and one rep count that always
-//                means the same thing beats two that need a legend.
+//   side       — the exercise is unilateral. Legacy targets store the total across sides;
+//                new targets mark repsPerSide so the entered count applies to each side.
+//                Confirmations never rewrite the saved rep count or multiply volume.
 // Both are absent on every plan, workout and backup written before they existed, and absent
 // reads as false, so nothing needs migrating.
 export const isBw = cfg => (cfg && cfg.bodyweight != null ? !!cfg.bodyweight : isBodyweightEq(cfg && cfg.id))
 export const isPerSide = cfg => !!(cfg && cfg.side)
-// What one side did, for display only. Half of an odd total is shown as it falls (8.5) rather
-// than rounded away: it means the sides were not even, which is worth seeing.
-export const sideReps = reps => (reps || 0) / 2
-// Unilateral work moves in pairs, so its rep target steps by two — 16, 18, 20 — and a total
-// that stayed odd would put a rep on one side and not the other.
-export const repStep = cfg => (isPerSide(cfg) ? 2 : 1)
+// Read legacy storage without exposing both-side totals as the rep input.
+export const sideReps = (reps, cfg) => (reps || 0) / (cfg?.repsPerSide ? 1 : 2)
+// Legacy totals move in pairs; explicit per-side counts move one rep at a time.
+export const repStep = cfg => (isPerSide(cfg) && !cfg.repsPerSide ? 2 : 1)
+// UI counts always mean repetitions on one side. Keep legacy storage/calculations intact.
+const repStorageFactor = cfg => modeOf(cfg) === 'reps' && isPerSide(cfg) && !cfg.repsPerSide ? 2 : 1
+export const displayReps = (value, cfg) => value == null || value === '' || !Number.isFinite(Number(value)) ? value : Number(value) / repStorageFactor(cfg)
+export const storedReps = (value, cfg) => value == null || value === '' || !Number.isFinite(Number(value)) ? value : Number(value) * repStorageFactor(cfg)
+// Used when the user changes side semantics, so toggling the option keeps the visible count.
+export function displayRepConfig(cfg) {
+  const out = { ...cfg }
+  for (const key of ['reps', 'repsMin', 'repsMax', 'topRepsMin', 'topRepsMax', 'backoffRepsMin', 'backoffRepsMax', 'backoffRepOffset']) {
+    if (out[key] != null) out[key] = displayReps(out[key], cfg)
+  }
+  if (cfg.intensifier?.totalReps != null) out.intensifier = { ...cfg.intensifier, totalReps: displayReps(cfg.intensifier.totalReps, cfg) }
+  return out
+}
+
 
 // mm:ss for a work duration — seconds alone read badly past a minute ("90 s" vs "1:30").
 export function fmtSec(sec) {
@@ -73,6 +85,13 @@ export const EFFORT = {
   rir: { f: 'rir', hd: 'RIR', step: 0.5, min: 0, max: 10 },
   rpe: { f: 'rpe', hd: 'RPE', step: 0.5, min: 6, max: 10 }
 }
+// Display-only names: keep zero numeric in workouts, targets, exports and calculations.
+export const effortValue = (kind, value) =>
+  value == null || value === '' ? '—' : kind === 'rir' && Number(value) === 0 ? t('Failure') : fmtNum(value)
+export const effortLabel = (kind, value) =>
+  value == null || value === '' ? '—' : kind === 'rir' && Number(value) === 0 ? t('Failure') : `${EFFORT[kind]?.hd || kind} ${fmtNum(value)}`
+export const rirRangeLabel = range => range
+  ? effortValue('rir', range.min) + (range.max !== range.min ? `–${effortValue('rir', range.max)}` : '') : ''
 // One tap of an effort stepper. Empty is not 0 — an unlogged effort must not become "went to
 // failure" from one stray tap — so − on an empty cell leaves it empty, and + starts at the
 // bottom of the scale and walks up from there in even steps. Stepping back off the bottom
@@ -102,7 +121,7 @@ export const effortOf = S => {
 // The "(RIR 2)" / "(RPE 8)" tail on a set summary, empty when nothing was logged.
 const effortTail = s => {
   const k = s.rir != null ? 'rir' : s.rpe != null ? 'rpe' : null
-  return k ? ` (${EFFORT[k].hd} ${fmtNum(s[k])})` : ''
+  return k ? ` (${effortLabel(k, s[k])})` : ''
 }
 
 // One-line summary of a logged set. `cfg` carries the mode when the caller has it (a routine
@@ -118,9 +137,8 @@ export function setLabel(id, s, cfg) {
   }
   // Bodyweight reads as what you did — "12", or "+10 × 12" once there is a belt involved —
   // rather than "0×12", which says a set was performed with no weight and means nothing.
-  // A per-side set needs no mark here: the number logged is the total, the same as every
-  // other set in the app.
-  const reps = s.r || 0
+  // Present old and new per-side rows with the same count and unit.
+  const reps = fmtNum(displayReps(s.r || 0, c)) + (isPerSide(c) ? ` ${t('/ side')}` : '')
   if (isBw({ ...c, id: c.id ?? id })) {
     const load = s.w > 0 ? `+${fmtNum(s.w)} × ` : ''
     return `${load}${reps}` + effortTail(s)
@@ -144,13 +162,13 @@ export function exLine(cfg, unit) {
   const n = cfg.sets || 1
   // Added weight reads as added: "+10 kg" on a dip belt, "60 kg" on a barbell.
   const load = cfg.weight ? ' · ' + (isBw(cfg) ? '+' : '') + fmtNum(cfg.weight) + ' ' + unit : ''
-  if (mode === 'cardio') return `${n} × ${cfg.min || 20} min @ ${fmtNum(cfg.speed || 8)} km/h`
+  if (mode === 'cardio') return `${n} × ${cfg.min || 20} min @ ${fmtNum(cfg.speed ?? 8)} km/h`
   if (mode === 'time') return `${n} × ${fmtSec(cfg.sec || 45)}${isPerSide(cfg) ? ` ${t('/ side')}` : ''}${load}`
-  // This is the line with room for it, so the split is spelled out: "3 × 16 · 8/side".
-  const split = isPerSide(cfg) ? ' · ' + t('{0}/side', fmtNum(sideReps(cfg.reps))) : ''
-  const range = cfg.repRange !== false && cfg.repsMin > 0 && cfg.repsMin < cfg.reps ? `${cfg.repsMin}–${cfg.reps}` : cfg.reps
-  if (cfg.setScheme === 'topback') return `${cfg.topSets || 1} Top + ${cfg.backoffSets || 2} Back-off · ${range} reps${load}`
-  return `${n} × ${range}${load}${split}`
+  const side = isPerSide(cfg) ? ` ${t('/ side')}` : ''
+  const [low, high] = [cfg.repsMin, cfg.reps].map(value => { const count = displayReps(value, cfg); return typeof count === 'number' ? fmtNum(count) : count })
+  const range = cfg.repRange !== false && cfg.repsMin > 0 && cfg.repsMin < cfg.reps ? `${low}–${high}` : high
+  if (cfg.setScheme === 'topback') return `${cfg.topSets || 1} Top + ${cfg.backoffSets || 2} Back-off · ${range} reps${side}${load}`
+  return `${n} × ${range}${side}${load}`
 }
 
 // Drop superset ids that no longer have an adjacent partner (after unlink/reorder/remove).
@@ -281,13 +299,7 @@ export function bestWeightFor(S, exId) {
   }))
   return best
 }
-export function effectiveRoutineId(S, iso) {
-  const ov = S.dayPlan[iso]
-  if (ov === 'rest') return null
-  if (ov && S.routines.some(r => r.id === ov)) return ov
-  const wd = new Date(iso + 'T12:00:00').getDay()
-  return S.week[wd] || null
-}
+export const effectiveRoutineId = (S, iso) => scheduledRoutineIds(S,iso)[0] || null
 export function effectiveRoutine(S, iso) {
   const id = effectiveRoutineId(S, iso)
   return id ? S.routines.find(r => r.id === id) || null : null
@@ -327,7 +339,7 @@ function buildWorkSets(S, cfg, options = {}) {
   if (mode === 'cardio') {
     for (let i = 0; i < n; i++) {
       const prev = prevAt(i)
-      sets.push({ min: prev ? prev.min : (cfg.min || 20), speed: prev ? prev.speed : (cfg.speed || 8), done: false })
+      sets.push({ min: prev ? prev.min : (cfg.min || 20), speed: prev ? prev.speed : (cfg.speed ?? 8), done: false })
     }
     return sets
   }
@@ -393,9 +405,9 @@ export function applyIntensifierPlan(sets, cfg) {
 }
 export function workoutVolume(w) {
   let v = 0
-  // No special case for unilateral work: a per-side set logs its total, so both sides are
-  // already in the rep count that arrives here. Drop-set drops and rest-pause bursts add their
-  // own weight x reps on top of the row's main/activation set (see extraVolumeOf).
+  // Count each saved row once; side confirmations never multiply recorded reps or volume.
+  // Drop-set drops and rest-pause bursts add their own weight x reps on top of the
+  // row's main/activation set (see extraVolumeOf).
   // Warm-ups are excluded here as everywhere else. The config sheet promises it in so many
   // words ("left out of volume, records and progression") and every other consumer already
   // does it; this line was the one that did not, which only stopped being harmless when a
@@ -433,7 +445,7 @@ export function unitOf(units, idx) { return units.find(u => u.includes(idx)) || 
 
 export function streakWeeks(S) {
   if (!S.workouts.length) return 0
-  const weeks = new Set(S.workouts.map(w => weekKey(w.d)))
+  const weeks = new Set(loggedWorkouts(S).filter(hasWorkoutActivity).map(w => weekKey(w.d)))
   let streak = 0
   const cur = new Date()
   for (let i = 0; i < 520; i++) {
@@ -449,16 +461,29 @@ export function streakWeeks(S) {
  * Cascade a weight change forward: following sets of the same warm-up flag that are still
  * undone take the new value (null deletes the key). Done sets are never rewritten.
  */
+const preservesInput = (row, field) => row.done || row.leftDone || row.rightDone || row.manualFields?.[field]
 export function cascadeWeight(rows, from, value) {
   const warm = isWarmupRow(rows[from])
   const next = rows.map(row => ({ ...row }))
   for (let j = from + 1; j < next.length; j++) {
-    if (isWarmupRow(next[j]) === warm && !next[j].done) {
+    if (isWarmupRow(next[j]) === warm && !preservesInput(next[j], 'w')) {
       if (value == null) delete next[j].w
       else next[j].w = value
     }
   }
   return next
+}
+
+// A contiguous Top block and its following Back-offs form one prescription group.
+// Resolve against row order each time, so removing a row never leaves dangling links.
+function topBackGroup(rows, from) {
+  let start = from
+  while (start > 0 && rows[start - 1].role === rows[from].role && !isWarmupRow(rows[start - 1])) start--
+  if (rows[from].role === 'backoff') while (start > 0 && rows[start - 1].role === 'top' && !isWarmupRow(rows[start - 1])) start--
+  let end = start
+  while (end < rows.length && rows[end].role === 'top' && !isWarmupRow(rows[end])) end++
+  while (end < rows.length && rows[end].role === 'backoff' && !isWarmupRow(rows[end])) end++
+  return { start, end }
 }
 
 /** Keep a Top/Back-off session proportional without ever rewriting performed work. */
@@ -467,15 +492,14 @@ export function cascadeTopBackWeight(rows, from, value, cfg, step = 2.5) {
   const next = rows.map(row => ({ ...row }))
   const edited = next[from]
   if (!edited || isWarmupRow(edited)) return cascadeWeight(rows, from, value)
+  if (edited.done || edited.leftDone || edited.rightDone) return next
+  const group = topBackGroup(next, from)
   if (value == null) delete edited.w
   else edited.w = value
   if (edited.role === 'top') {
-    const pct = Math.min(50, Math.max(1, Number(cfg.backoffPct) || 10))
-    const raw = Number(value) * (1 - pct / 100)
-    const increment = Number(step) > 0 ? Number(step) : 2.5
-    const backoff = Number.isFinite(raw) ? Math.round(raw / increment) * increment : null
+    const backoff = backoffWeightFor(value, cfg, step)
     next.forEach((row, index) => {
-      if (index === from || row.done || isWarmupRow(row)) return
+      if (index < group.start || index >= group.end || index === from || preservesInput(row, 'w') || isWarmupRow(row)) return
       if (row.role === 'top') {
         if (value == null) delete row.w; else row.w = value
       } else if (row.role === 'backoff') {
@@ -483,9 +507,9 @@ export function cascadeTopBackWeight(rows, from, value, cfg, step = 2.5) {
       }
     })
   } else if (edited.role === 'backoff') {
-    for (let j = from + 1; j < next.length; j++) {
+    for (let j = from + 1; j < group.end; j++) {
       const row = next[j]
-      if (row.role !== 'backoff' || row.done || isWarmupRow(row)) continue
+      if (row.role !== 'backoff' || preservesInput(row, 'w') || isWarmupRow(row)) continue
       if (value == null) delete row.w; else row.w = value
     }
   }
@@ -497,13 +521,12 @@ export function cascadeTopBackReps(rows, from, value, cfg) {
   const next = rows.map(row => ({ ...row }))
   const edited = next[from]
   if (!edited || isWarmupRow(edited)) return next
+  if (edited.done || edited.leftDone || edited.rightDone) return next
+  const group = topBackGroup(next, from)
   edited.r = Math.max(0, Math.round(Number(value) || 0))
   if (cfg?.setScheme !== 'topback' || cfg.autoBackoffReps === false) return next
-  const derived = Number(cfg.backoffRepOffset) - 0
-  const legacy = Number(cfg.backoffRepsMax) - Number(cfg.topRepsMax)
-  const offset = Number.isFinite(derived) && cfg.backoffRepOffset != null ? Math.max(0, Math.min(5, Math.round(derived))) : Number.isFinite(legacy) && legacy >= 0 && legacy <= 5 ? Math.round(legacy) : 2
-  if (edited.role === 'top') next.forEach((row, index) => { if (index !== from && row.role === 'backoff' && !row.done) row.r = edited.r + offset })
-  else if (edited.role === 'backoff') for (let i = from + 1; i < next.length; i++) if (next[i].role === 'backoff' && !next[i].done) next[i].r = edited.r
+  if (edited.role === 'top') next.forEach((row, index) => { if (index >= group.start && index < group.end && index !== from && row.role === 'backoff' && !preservesInput(row, 'r')) row.r = backoffRepsFor(edited.r, cfg) })
+  else if (edited.role === 'backoff') for (let i = from + 1; i < group.end; i++) if (next[i].role === 'backoff' && !preservesInput(next[i], 'r')) next[i].r = edited.r
   return next
 }
 

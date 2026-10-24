@@ -19,9 +19,11 @@ function convertEntry(entry, factor, unit) {
   change(entry, 'topW', factor)
   change(entry, 'topWeight', factor)
   change(entry, 'weight', factor)
-  change(entry, 'inc', factor)
+  if ((entry?.mode || entry?.target?.mode) !== 'time') change(entry, 'inc', factor)
   change(entry?.target, 'weight', factor)
-  change(entry?.target, 'inc', factor)
+  if ((entry?.target?.mode || entry?.mode) !== 'time') change(entry?.target, 'inc', factor)
+  // Loading grids are weights even for timed holds; preserve their precision across units.
+  for (const cfg of [entry, entry?.target]) if (cfg && finite(cfg.loadingStep)) cfg.loadingStep = Math.round(Number(cfg.loadingStep) * factor * 1e6) / 1e6
   if (entry?.target?.unit) entry.target.unit = unit
   // A saved workout contains an array of performed sets, while a routine contains the
   // prescribed set count as a number (`sets: 4`). Both pass through this function.
@@ -53,8 +55,11 @@ export function convertWeightState(state, nextUnit) {
 
   change(state, 'targetW', factor)
   ;(Array.isArray(state.bodyweight) ? state.bodyweight : []).forEach(row => {
-    change(row, 'w', factor)
-    if (Array.isArray(row.samples)) row.samples.forEach(sample => change(sample, 'w', factor))
+    const source=row.unit==='lb'||row.unit==='kg'?row.unit:previous
+    const rowFactor=source===next?1:next==='lb'?LB_PER_KG:1/LB_PER_KG
+    change(row, 'w', rowFactor)
+    if (Array.isArray(row.samples)) row.samples.forEach(sample => change(sample, 'w', rowFactor))
+    if (row.unit) row.unit=next
   })
   Object.values(state.exWeights || {}).forEach(row => change(row, 'w', factor))
   Object.values(state.exerciseGoals || {}).forEach(goal => change(goal, 'weight', factor))
@@ -80,7 +85,12 @@ export function convertMeasurementState(state, nextUnit) {
   const keys = new Set(MEASURE_FIELDS.map(([key]) => key))
   // Old backups used one arm/thigh/calf value; keep those compatible too.
   ;['arm', 'thigh', 'calf'].forEach(key => keys.add(key))
-  ;(Array.isArray(state.measurements) ? state.measurements : []).forEach(row => keys.forEach(key => change(row, key, factor)))
+  ;(Array.isArray(state.measurements) ? state.measurements : []).forEach(row => {
+    const source = row.unit === 'in' || row.unit === 'cm' ? row.unit : previous
+    const rowFactor = source === next ? 1 : next === 'in' ? 1 / CM_PER_IN : CM_PER_IN
+    keys.forEach(key => change(row, key, rowFactor))
+    if (row.unit) row.unit = next
+  })
   state.measurementUnit = next
   return state
 }

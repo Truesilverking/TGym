@@ -1,6 +1,244 @@
 import english from '../lib/english-fallback.js'
 // Spanish UI strings. Keys are the English source strings (see lib/i18n.js).
 export default {
+  ...english,
+  "Kilograms": "Kilos",
+  "Pounds": "Libras",
+  "Weight ruler": "Regla de peso",
+  "Slide the ruler or tap the number to enter your weight.": "Desliza la regla o toca el número para introducir tu peso.",
+  "Future dates": "Fechas futuras",
+  "One square per day. Total active days, not streak length.": "Un cuadrado por día. Total de días activos, no longitud de racha.",
+  "Select file": "Seleccionar archivo",
+  "Correct the file errors before previewing prescriptions.": "Corrige los errores del archivo antes de ver las prescripciones.",
+  "Preparing Excel template…": "Preparando la plantilla de Excel…",
+  "No routines will be imported with the current choices. Choose a copy or replacement to continue.": "No se importará ninguna rutina con las elecciones actuales. Elige una copia o un reemplazo para continuar.",
+  "This routine ID already exists": "Este ID de rutina ya existe",
+  "Equivalent prescription already exists": "Ya existe una prescripción equivalente",
+  "Same name, different routine identity": "Mismo nombre, distinta identidad de rutina",
+  "This ID is referenced by your history or calendar": "Este ID está asociado a tu historial o calendario",
+  "Choose the intended import action": "Elige cómo deseas importar",
+  "Calendar on {0}: {1}": "Calendario del {0}: {1}",
+  "Two selected routines cannot replace the same existing routine. Keep or copy one before importing.": "Dos rutinas seleccionadas no pueden reemplazar la misma rutina existente. Conserva o copia una antes de importar.",
+  "Routine file action": "Acción del archivo de rutinas",
+  "Export routines": "Exportar rutinas",
+  "Choose your routine file": "Elige tu archivo de rutinas",
+  "Review routines": "Revisa las rutinas",
+  "Ready to import": "Todo listo para importar",
+  "Importing routines": "Importando rutinas",
+  "Import complete": "Importación completa",
+  "Import progress": "Progreso de importación",
+  "File": "Archivo",
+  "Review": "Revisión",
+  "Import": "Importar",
+  "Choose a TGym JSON or Excel file to review its routines before adding them.": "Elige un archivo JSON o Excel de TGym para revisar sus rutinas antes de añadirlas.",
+  "Your existing workouts and preferences are preserved.": "Se conservan tus entrenamientos y preferencias.",
+  "Reading routine file…": "Leyendo el archivo de rutinas…",
+  "Change file": "Cambiar archivo",
+  "{0} routines selected": "{0} rutinas seleccionadas",
+  "Deselect all": "Deseleccionar todas",
+  "Include {0}": "Incluir {0}",
+  "{0} exercises": "{0} ejercicios",
+  "Details for {0}": "Detalles de {0}",
+  "Weight units": "Unidades de peso",
+  "Weights are previewed in {0}. The source file stays unchanged.": "Los pesos se muestran en {0}. El archivo original se conserva.",
+  "Convert weights to {0}": "Convertir los pesos a {0}",
+  "Leave this off to add routines without changing your calendar.": "Déjalo desactivado para añadir rutinas sin cambiar tu calendario.",
+  "{0} calendar days will be updated. Existing unrelated routines stay scheduled.": "Se actualizarán {0} días del calendario. Las demás rutinas conservarán su programación.",
+  "Calendar conflict on {0}: existing routines are preserved.": "Coincidencia en el calendario el {0}: se conservan las rutinas existentes.",
+  "Prescription settings": "Ajustes de las prescripciones",
+  "The complete file is checked. Correct every error before continuing.": "Se comprueba el archivo completo. Corrige todos los errores antes de continuar.",
+  "These routines are already kept on this device. Choose a copy or replacement to import them.": "Estas rutinas ya se conservan en este dispositivo. Elige una copia o un reemplazo para importarlas.",
+  "{0} routines ready to import": "{0} rutinas listas para importar",
+  "New routines": "Rutinas nuevas",
+  "Replacements": "Reemplazos",
+  "Custom exercises": "Ejercicios personalizados",
+  "Weight unit": "Unidad de peso",
+  "Calendar": "Calendario",
+  "Apply imported schedule": "Aplicar la programación importada",
+  "Keep current calendar": "Conservar el calendario actual",
+  "Saving your selected routines…": "Guardando las rutinas seleccionadas…",
+  "Keep TGym open until saving finishes.": "Mantén TGym abierto hasta que termine el guardado.",
+  "{0} routines imported successfully.": "Se importaron {0} rutinas correctamente.",
+  "Import {0} routines": "Importar {0} rutinas",
+  "View routines": "Ver rutinas",
+  "Select at least one routine to import.": "Selecciona al menos una rutina para importar.",
+  "Select only routines present in this file.": "Selecciona solo rutinas que estén en este archivo.",
+  "Use a whole number between {0} and {1}.": "Usa un número entero entre {0} y {1}.",
+  "Use a number between {0} and {1}.": "Usa un número entre {0} y {1}.",
+  "The file is incomplete or is not valid JSON. Export it again from TGym without changing its format.": "El archivo está incompleto o no es JSON válido. Vuelve a exportarlo desde TGym sin cambiar su formato.",
+  "The transfer exceeds the 15 MiB limit. Export fewer selected routines while retaining their required resources.": "La transferencia supera el límite de 15 MiB. Exporta menos rutinas seleccionadas conservando los recursos que necesitan.",
+  "This format version is not supported. Export the routines again with a compatible TGym version.": "Esta versión del formato no es compatible. Vuelve a exportar las rutinas con una versión compatible de TGym.",
+  "The file must declare kg or lb and its exercise load units must match. For a legacy file, choose its original unit explicitly.": "El archivo debe indicar kg o lb y las unidades de sus cargas deben coincidir. Si es un archivo antiguo, elige su unidad original.",
+  "This field contains an unsafe identity or private metadata. Obtain a new TGym export without credentials or device-local data.": "Este campo contiene una identidad no válida o datos privados. Obtén una nueva exportación de TGym sin credenciales ni datos exclusivos del dispositivo.",
+  "This file contains workout results. Use full-backup import for history and a routine-only export for prescriptions.": "Este archivo contiene resultados de entrenamientos. Importa una copia de seguridad completa para el historial y un archivo de rutinas para las prescripciones.",
+  "Restore the required source metadata from the original TGym export. Missing exercise definitions or preference values cannot be guessed.": "Restaura los datos de origen necesarios desde la exportación original de TGym. No se pueden deducir las definiciones de ejercicios ni las preferencias ausentes.",
+  "An exercise resource is missing or cannot be transferred. Restore its original definition and media, or use a permanent public HTTPS URL.": "Falta un recurso de un ejercicio o no se puede transferir. Restaura su definición y sus recursos originales, o usa una URL HTTPS pública permanente.",
+  "Restore unique stable routine and exercise IDs from the original export. Names and nicknames cannot replace identities.": "Restaura los IDs únicos de rutinas y ejercicios desde la exportación original. Los nombres y apodos no sustituyen sus identidades.",
+  "The order must include each routine ID exactly once. Restore the original routine order.": "El orden debe incluir cada ID de rutina una sola vez. Restaura el orden original de las rutinas.",
+  "Restore the prescribed sets and rep or time targets from the original export. Missing values are not zero.": "Restaura las series y los objetivos de repeticiones o tiempo desde la exportación original. Los valores ausentes no equivalen a cero.",
+  "The minimum cannot exceed the maximum. Correct the indicated rep or RIR range using the original prescription.": "El mínimo no puede superar al máximo. Corrige el rango de repeticiones o RIR indicado según la prescripción original.",
+  "Use a true or false value for this option, as recorded in the original export.": "Usa true o false para esta opción según la exportación original.",
+  "Use an array of text values for this field, as recorded in the original export.": "Usa una lista de textos para este campo según la exportación original.",
+  "Use text for this field and preserve the original note or nickname.": "Usa texto para este campo y conserva la nota o el apodo original.",
+  "Use a valid date in YYYY-MM-DD format. An enabled deload cycle must retain its original start date.": "Usa una fecha válida con formato AAAA-MM-DD. Un ciclo de deload activado debe conservar su fecha de inicio original.",
+  "A superset needs at least two consecutive exercises with the same group ID. Restore their original order and grouping.": "Una superserie necesita al menos dos ejercicios consecutivos con el mismo ID de grupo. Restaura su orden y agrupación originales.",
+  "Restore the catalogue name and ID exactly. Put a display nickname in the nickname field.": "Restaura exactamente el nombre y el ID del catálogo. Introduce los apodos en el campo de apodo.",
+  "Choose a supported TGym option for this field. If it is unknown, restore the original configuration before importing.": "Elige una opción compatible de TGym para este campo. Si es desconocida, restaura la configuración original antes de importar.",
+  "The workbook structure is incomplete or incompatible. Use the TGym template and retain its metadata sheets.": "La estructura de Excel está incompleta o no es compatible. Usa la plantilla de TGym y conserva sus hojas de datos.",
+  "This field could not be validated. Correct its indicated value using the original TGym export, then select the file again.": "No se pudo validar este campo. Corrige el valor indicado según la exportación original de TGym y vuelve a seleccionar el archivo.",
+  "Deload execution differs on this device. Imported routines follow this device's existing deload calendar and pauses; global settings remain unchanged.": "La ejecución del deload difiere en este dispositivo. Las rutinas importadas siguen su calendario de deload y sus pausas actuales; los ajustes generales se conservan.",
+  "Deload settings match. Imported routines use this device's existing calendar and pauses; no global settings change.": "Los ajustes del deload coinciden. Las rutinas importadas usan el calendario y las pausas actuales de este dispositivo; los ajustes generales se conservan.",
+  "Imported Top/Back-off prescriptions keep their explicit rules. This device's global Back-off preference remains unchanged.": "Las prescripciones Top/Back-off importadas conservan sus reglas explícitas. La preferencia general de Back-off de este dispositivo se mantiene.",
+  "This technical recovery bundle keeps the saved profile text and every readable offline resource. It lists missing resources and cannot be imported as a normal TGym backup.": "Este archivo técnico de recuperación conserva el texto del perfil guardado y todos los recursos offline que se puedan leer. Indica los recursos ausentes y no se puede importar como una copia de seguridad normal de TGym.",
+  "Retry loading saved data": "Reintentar cargar los datos guardados",
+  "Recovery bundle prepared: {0} resources included · {1} unavailable.": "Archivo de recuperación preparado: {0} recursos incluidos · {1} no disponibles.",
+  "Download recovery bundle": "Descargar archivo de recuperación",
+  "Could not complete recovery. Your saved data was kept. Retry when storage access is available.": "No se pudo completar la recuperación. Tus datos guardados se conservaron. Reintenta cuando se pueda acceder al almacenamiento.",
+  "The import could not be saved because the storage quota for TGym was exceeded. Your previous data is unchanged.": "No se pudo guardar la importación porque se superó la cuota de almacenamiento de TGym. Tus datos anteriores se conservaron.",
+  "The browser did not permit TGym to access storage or the selected file. Your previous data is unchanged.": "El navegador no permitió a TGym acceder al almacenamiento o al archivo seleccionado. Tus datos anteriores se conservaron.",
+  "The file does not pass routine format validation. Review the file errors or choose another TGym export. Your previous data is unchanged.": "El archivo no supera la validación del formato de rutinas. Revisa los errores del archivo o elige otra exportación de TGym. Tus datos anteriores se conservaron.",
+  "TGym could not apply the selected import adaptations safely. Review your choices and retry. Your previous data is unchanged.": "TGym no pudo aplicar correctamente las adaptaciones seleccionadas. Revisa tus elecciones y reintenta. Tus datos anteriores se conservaron.",
+  "TGym could not read the selected file. Check access to the file and select it again. Your previous data is unchanged.": "TGym no pudo leer el archivo seleccionado. Revisa el acceso al archivo y selecciónalo de nuevo. Tus datos anteriores se conservaron.",
+  "TGym could not save the complete import. Your previous data is unchanged. Keep this review open and retry, or cancel.": "TGym no pudo guardar la importación completa. Tus datos anteriores se conservaron. Mantén esta revisión abierta y reintenta, o cancela.",
+  "Keep this review open to retry, or cancel. You can export a full backup from Settings. Check browser storage restrictions and available device storage before trying again.": "Mantén esta revisión abierta para reintentar, o cancela. Puedes exportar una copia de seguridad completa desde Ajustes. Revisa las restricciones de almacenamiento del navegador y el espacio disponible del dispositivo antes de volver a intentarlo.",
+  "Saving import…": "Guardando importación…",
+  "Retry import": "Reintentar importación",
+  "File unit: {0} · This device: {1}": "Unidad del archivo: {0} · Este dispositivo: {1}",
+  "Not recorded": "No registrada",
+  "Technical details": "Detalles técnicos",
+  "Effort scale differs ({0} → {1}). Destination preferences remain unchanged; imported RIR prescriptions are preserved.": "La escala de esfuerzo difiere ({0} → {1}). Se mantienen las preferencias de este dispositivo y las prescripciones de RIR importadas.",
+  "Deload is enabled in the source or destination. The destination personal calendar, pauses and history determine deload execution; review and accept this adaptation. Destination settings remain unchanged.": "El deload está activado en el origen o en este dispositivo. El calendario personal, las pausas y el historial de este dispositivo determinan cuándo se aplica el deload; revisa y acepta esta adaptación. Los ajustes de este dispositivo se mantienen.",
+  "Legacy version 1: source preferences were applied only to the imported prescriptions. Review the preview before accepting.": "Versión antigua 1: las preferencias de origen se aplicaron solo a las prescripciones importadas. Revisa la vista previa antes de aceptar.",
+  "Legacy version 1 did not record its source preferences. Missing defaults use the current TGym settings shown in the preview; confirm this adaptation or obtain a version 2 export.": "La versión antigua 1 no registró sus preferencias de origen. Los valores ausentes usan los ajustes actuales de TGym que muestra la vista previa; confirma esta adaptación u obtén una exportación de la versión 2.",
+  "The full custom exercise definition and media are missing. Restore the _TGym sheet or export JSON from the source device. Visible catalogue names cannot reconstruct the exercise or its resources.": "Faltan la definición completa y los recursos del ejercicio personalizado. Restaura la hoja _TGym o exporta JSON desde el dispositivo de origen. Los nombres visibles del catálogo no permiten reconstruir el ejercicio ni sus recursos.",
+  "The routines are saved locally. Could not finish saving the local copy. Check available storage and retry saving; the import will not be repeated.": "Las rutinas se guardaron en este dispositivo. No se pudo completar la copia local. Revisa el espacio disponible y reintenta guardar; la importación no se repetirá.",
+  "The complete import is saved locally. Retry saving the local copy.": "La importación completa está guardada en este dispositivo. Reintenta guardar la copia local.",
+  "Choose an existing exercise instead": "Elegir un ejercicio existente en su lugar",
+  "Review the settings that differ on this device:": "Revisa los ajustes que difieren en este dispositivo:",
+  "I accept these adaptations for this import": "Acepto estas adaptaciones para esta importación",
+  "Routine prescriptions retain their transferred settings. This device keeps its global preferences and workout history.": "Las prescripciones conservan los ajustes transferidos. Este dispositivo mantiene sus preferencias generales y su historial de entrenamientos.",
+  "Could not save the pre-update backup. Check available storage and try again. Your TGym data was kept.": "No se pudo guardar la copia previa a la actualización. Revisa el espacio disponible e inténtalo de nuevo. Tus datos de TGym se conservaron.",
+  "Training days in this streak": "Días de entrenamiento en esta racha",
+  "Complete today's workout to keep your streak.": "Completa el entrenamiento de hoy para mantener tu racha.",
+  "No workout scheduled today — streak preserved.": "Sin entrenamiento programado hoy: tu racha se conserva.",
+  "Training paused — streak preserved.": "Entrenamiento en pausa: tu racha se conserva.",
+  "Streak interrupted. Complete a workout to start a new one.": "Racha interrumpida. Completa un entrenamiento para empezar otra.",
+  "Complete a workout to start a streak.": "Completa un entrenamiento para empezar una racha.",
+  "Completed training days, counted once per day. Scheduled rest days preserve the streak.": "Días de entrenamiento cumplidos, contados una vez por fecha. Los descansos programados conservan la racha.",
+  "Week and month equivalents use completed training days: 7 per week and 30 per month.": "Equivalencias según días de entrenamiento cumplidos: 7 por semana y 30 por mes.",
+  "{0} weeks of consistency!": "¡{0} semanas de constancia!",
+  "You are building a lasting habit. Keep it going!": "Estás creando un hábito duradero. ¡Sigue así!",
+  "Next milestone: {0} weeks": "Siguiente hito: {0} semanas",
+  "Close celebration": "Cerrar celebración",
+  "1 week": "1 semana",
+  "{0} weeks": "{0} semanas",
+  "1 month": "1 mes",
+  "{0} months": "{0} meses",
+  "1 day": "1 día",
+  "Workout paused after inactivity": "Entrenamiento pausado por inactividad",
+  "The timer paused 30 minutes after your last interaction. Your sets are preserved. Review the duration, then continue or finish.": "El cronómetro se pausó 30 minutos después de tu última interacción. Tus series se conservan. Revisa la duración y luego continúa o finaliza.",
+  "Timer paused. Reviewing this screen does not count as training. Finish or continue when ready.": "Cronómetro pausado. Revisar esta pantalla no cuenta como entrenamiento. Finaliza o continúa cuando quieras.",
+  "Exercise names": "Nombres de ejercicios",
+  "My aliases": "Mis apodos",
+  "Original names": "Nombres originales",
+  "Original name": "Nombre original",
+  "Choose which names appear throughout TGym. Missing aliases use the original name; your aliases are kept.": "Elige los nombres que muestra TGym. Sin apodo se usa el original; tus apodos siempre se conservan.",
+  "Sections": "Secciones",
+  "{0} sections selected": "{0} seleccionadas",
+  "Server synchronization failed. Your local data was kept.": "La sincronización con el servidor falló. Tus datos locales se conservaron.",
+  "Add a workout to your schedule": "Añade un entrenamiento a tu calendario",
+  "Check your reminder settings.": "Revisa la configuración del recordatorio.",
+  "Checking notification schedule…": "Comprobando los avisos programados…",
+  "Choose a valid cycle start date.": "Elige una fecha válida para iniciar el ciclo.",
+  "Could not save changes. Try again.": "No se pudieron guardar los cambios. Inténtalo de nuevo.",
+  "Could not schedule notifications. Try again.": "No se pudieron programar los avisos. Inténtalo de nuevo.",
+  "Device alerts are available in the mobile app. Calendar reminders stay visible here.": "Los avisos del dispositivo están disponibles en la app móvil. Aquí puedes ver los recordatorios en el calendario.",
+  "Frequency": "Frecuencia",
+  "Next notification: {0}": "Próximo aviso: {0}",
+  "No notifications pending. Your reminder settings are saved.": "No hay avisos pendientes. La configuración del recordatorio está guardada.",
+  "One notification time for all enabled measurements.": "Un mismo horario para todas las mediciones activadas.",
+  "Overdue reminders remain in the calendar; no repeated alerts are sent.": "Los recordatorios vencidos siguen en el calendario; no se envían avisos repetidos.",
+  "Reminders": "Recordatorios",
+  "Stored locally by default. Connecting a server, enabling cloud backup or sharing an export sends a copy outside this device.": "Los datos se guardan localmente por defecto. Al conectar un servidor, activar la copia en la nube o compartir una exportación, se envía una copia fuera de este dispositivo.",
+  "The next-workout reminder is sent in advance at this time.": "El aviso del próximo entrenamiento se envía con antelación a esta hora.",
+  "This profile also syncs with your connected server. Cloud backups and exported copies leave this device when you choose them.": "Este perfil también se sincroniza con el servidor conectado. Las copias en la nube y las exportaciones salen del dispositivo cuando eliges usarlas.",
+  "Times by training day": "Horario por día de entrenamiento",
+  "Training days": "Días de entrenamiento",
+  "Turn it on when you want reminders for your planned workouts.": "Actívalo para recibir recordatorios de tus entrenamientos planificados.",
+  "Uses your training calendar. Completed workouts and training breaks are respected.": "Usa tu calendario de entrenamiento. Respeta las sesiones completadas y las pausas de entrenamiento.",
+  "Choose at least one measurement": "Elige al menos un tipo de medición",
+  "Enter a valid time": "Introduce una hora válida",
+  "Enter a valid frequency": "Introduce una frecuencia válida",
+  "Enter a valid date": "Introduce una fecha válida",
+  "Reminder scheduling failed": "No se pudo programar el recordatorio",
+
+  'Download': 'Descargar',
+  'Scheduled': 'Programados',
+  "Synchronize all devices before replacing a changed cloud backup.": "La copia en la nube cambió. Vuelve a sincronizar los dispositivos antes de reemplazarla.",
+  "Sign-out completed. Your local data was kept on this device.": "La sesión se cerró. Tus datos locales se conservaron en este dispositivo.",
+  "Could not sign out. Your local data was kept. Check your connection and try again.": "No se pudo cerrar la sesión. Tus datos locales se conservaron. Revisa la conexión e inténtalo de nuevo.",
+  "This device": "Este dispositivo",
+  "Other device": "Otro dispositivo",
+"Session ended after inactivity":"Sesión finalizada por inactividad",
+"Saved at the 30-minute inactivity limit. Your logged sets are preserved.":"Guardada al cumplirse 30 minutos sin actividad. Se conservan las series registradas.",
+
+  "Continue in a new session": "Continuar en una sesión nueva",
+  "Previous week": "Semana anterior",
+  "Next week": "Semana siguiente",
+  "Move up": "Subir",
+  "Move down": "Bajar",
+  "revoke": "Revocar",
+  "clear log": "Borrar registro",
+  "refresh": "Actualizar",
+  "push enabled": "Notificaciones activadas",
+  "Invalid activity import": "Importación de actividad no válida",
+
+  "Your private training space": "Tu espacio privado de entrenamiento",
+  "Built around your progress": "Diseñado para tu progreso",
+  "Both sides": "Ambos lados",
+  "Left": "Izquierdo",
+  "Right": "Derecho",
+  "Current": "Actual",
+  "Pending": "Pendiente",
+  "Decrease": "Reducir",
+  "Increase": "Aumentar",
+  "Reps stay the same for each side. Confirm both sides to complete the set.": "Las repeticiones se mantienen por lado. Confirma ambos lados para completar la serie.",
+
+  'Pause': 'Pausa',
+"Help": "Ayuda",
+"On Android 7 or earlier, scheduled reminders use the device notification sound.": "En Android 7 o anterior, los recordatorios programados usan el sonido de notificación del dispositivo.",
+"Failure": "Fallo",
+"Rest finished": "Fin del descanso",
+"Work timer finished": "Fin del temporizador de trabajo",
+"Final countdown": "Cuenta atrás final",
+"Set completed": "Serie completada",
+"Workout completed": "Entrenamiento completado",
+"Classic": "Clásico",
+"Chime": "Campana",
+"Pulse": "Pulso",
+"Soft": "Suave",
+"Silent": "Silencio",
+"Sound preferences": "Preferencias de sonido",
+"Alert tones and your own short sounds": "Tonos de alerta y tus propios sonidos breves",
+"Choose a sound for each alert. Preview works even when sounds are turned off.": "Elige un sonido para cada alerta. Puedes escucharlo aunque los sonidos estén desactivados.",
+"Sounds are off. Enable Sounds in Settings to hear these alerts.": "Los sonidos están desactivados. Activa Sonidos en Ajustes para escuchar estas alertas.",
+"Preview {0}": "Escuchar {0}",
+"Custom sounds": "Sonidos personalizados",
+"Add up to {0} short audio files, each no longer than {1} seconds and smaller than 2 MB.": "Añade hasta {0} archivos de audio breves de un máximo de {1} segundos y menos de 2 MB cada uno.",
+"Your device’s volume, silent mode and notification settings still apply. Browser notifications may use the system sound.": "Se siguen aplicando el volumen, el modo silencio y los ajustes de notificación del dispositivo. Las notificaciones del navegador pueden usar el sonido del sistema.",
+"Import audio": "Importar audio",
+"Reading audio…": "Leyendo audio…",
+"Add custom sound": "Añadir sonido personalizado",
+"{0} seconds": "{0} segundos",
+"Delete {0}": "Eliminar {0}",
+"Could not play this sound. Try another audio file.": "No se pudo reproducir este sonido. Prueba con otro archivo de audio.",
+"Remove a custom sound before adding another.": "Elimina un sonido personalizado antes de añadir otro.",
+"Sound added. Choose it for an alert above.": "Sonido añadido. Asígnalo a una alerta de arriba.",
+"Choose an audio file smaller than 2 MB.": "Elige un archivo de audio de menos de 2 MB.",
+"Choose a sound no longer than {0} seconds.": "Elige un sonido de un máximo de {0} segundos.",
+"This audio could not be read. Try a different MP3, WAV or OGG file.": "No se pudo leer este audio. Prueba con otro archivo MP3, WAV u OGG.",
+"Sound removed. Alerts using it now use Classic.": "Sonido eliminado. Las alertas que lo usaban ahora utilizan Clásico.",
+"Could not save the sound. Free some storage and try again.": "No se pudo guardar el sonido. Libera espacio y vuelve a intentarlo.",
 "Deload follows your cycle from Monday. Saved workouts stay unchanged. Alerts use your reminder time and respect quiet hours.": "La descarga sigue tu ciclo desde el lunes. Los entrenamientos guardados no cambian. Los avisos usan tu hora de recordatorio y respetan las horas de no molestar.",
 "Deload alerts": "Avisos de descarga",
 "One day before and on the first day.": "Un día antes y el primer día.",
@@ -8,7 +246,123 @@ export default {
 "Purple marks reduced training days.": "El morado marca los días de descarga.",
 "Deload: {0} – {1}. Follow your reduced training targets.": "Descarga: {0} – {1}. Sigue tus objetivos de entrenamiento reducidos.",
 "Load {0}% · Working sets {1}% · RIR {2}": "Carga {0}% · Series de trabajo {1}% · RIR {2}",
-  ...english,
+"Back": "Atrás",
+"Activities": "Actividades",
+"Activity details": "Detalles de la actividad",
+"Activity type": "Tipo de actividad",
+"Log activity": "Registrar actividad",
+"Plan activity": "Planificar actividad",
+"Edit activity": "Editar actividad",
+"Add activity": "Añadir actividad",
+"Add to existing routine": "Añadir a una rutina existente",
+"Create activity routine": "Crear rutina de actividad",
+"Specific date": "Fecha específica",
+"Weekly": "Semanal",
+"Running": "Carrera",
+"Walking": "Caminata",
+"Cycling": "Ciclismo",
+"Hiking": "Senderismo",
+"Mobility": "Movilidad",
+"Recovery": "Recuperación",
+"Other activity": "Otra actividad",
+"Strength activity": "Actividad de fuerza",
+"Optional measurements": "Mediciones opcionales",
+"Leave unavailable measurements empty.": "Deja vacías las mediciones que no tengas.",
+"Distance (km)": "Distancia (km)",
+"Average heart rate (bpm)": "Frecuencia cardíaca media (lpm)",
+"Energy (kcal)": "Energía (kcal)",
+"Steps": "Pasos",
+"Elevation gain (m)": "Desnivel positivo (m)",
+"Heart rate zone": "Zona de frecuencia cardíaca",
+"Perceived effort (1–10)": "Esfuerzo percibido (1–10)",
+"Pace (min/km)": "Ritmo (min/km)",
+"Source": "Origen",
+"Manual": "Manual",
+"Training overview": "Resumen del entrenamiento",
+"Strength sessions": "Sesiones de fuerza",
+"Runs": "Carreras",
+"Other cardio": "Otro cardio",
+"Recovery sessions": "Sesiones de recuperación",
+"Active days": "Días activos",
+"Total time (min)": "Tiempo total (min)",
+"Activity effort load (minutes × RPE)": "Carga de actividad (minutos × RPE)",
+"{0} rated activities": "{0} actividades con esfuerzo registrado",
+"Hybrid sessions may appear in several categories. Total time and active days are counted once. Activity effort is separate from strength volume.": "Las sesiones híbridas pueden aparecer en varias categorías. El tiempo total y los días activos se cuentan una sola vez. El esfuerzo de actividad se muestra separado del volumen de fuerza.",
+"Activity routines use your calendar, reminders and streak rules. Adding an activity to a routine creates a hybrid session.": "Las rutinas de actividad usan tu calendario, recordatorios y reglas de racha. Añadir una actividad a una rutina crea una sesión híbrida.",
+"Plan and record activities alongside your strength training.": "Planifica y registra actividades junto a tus entrenamientos de fuerza.",
+"Read exercise sessions from the last 30 days on Android 14 or newer. Imports include type, duration and source. Other measurements can be entered manually. No location routes or write permissions are requested. Imported records stay in your history and backups after disconnecting.": "Lee sesiones de ejercicio de los últimos 30 días en Android 14 o posterior. Importa tipo, duración y origen. Puedes registrar otras mediciones manualmente. No solicita rutas de ubicación ni permisos de escritura. Los registros importados permanecen en tu historial y copias de seguridad al desconectar.",
+"Disconnect stops TGym sync. Revoke system access in Manage permissions.": "Desconectar detiene la sincronización de TGym. Revoca el acceso del sistema en Gestionar permisos.",
+"Apple Health, Garmin, Fitbit and WHOOP direct connections are not available in this build. You can record activities manually; compatible Android apps can share exercise sessions through Health Connect.": "Esta versión no dispone de conexiones directas con Apple Health, Garmin, Fitbit ni WHOOP. Puedes registrar actividades manualmente; las apps Android compatibles pueden compartir sesiones mediante Health Connect.",
+"Allow exercise access": "Permitir acceso a ejercicios",
+"Manage permissions": "Gestionar permisos",
+"Connected": "Conectado",
+"Not connected": "Desconectado",
+"Unavailable on this device": "No disponible en este dispositivo",
+"Checking…": "Comprobando…",
+"Sync now": "Sincronizar ahora",
+"Disconnect": "Desconectar",
+"Last sync": "Última sincronización",
+"Activity history": "Historial de actividades",
+"No activities yet.": "Todavía no hay actividades.",
+"Added {0} · updated {1} · unchanged {2}": "Añadidas {0} · actualizadas {1} · sin cambios {2}",
+"Health data could not be read. Check permissions and try again.": "No se pudieron leer los datos de salud. Revisa los permisos e inténtalo de nuevo.",
+"Invalid activity value": "Hay una medición fuera del rango permitido.",
+"Invalid activity date or duration": "Revisa la fecha y la duración. La actividad debe haber terminado y durar entre 0,1 y 1440 minutos.",
+"Choose a date or weekdays": "Selecciona una fecha o días de la semana.",
+"This day already has a routine. Add the activity to that routine instead.": "Este día ya tiene una rutina. Añade la actividad a esa rutina.",
+"Activity already belongs to this routine": "Esta actividad ya está en la rutina.",
+"Routine no longer exists": "La rutina ya no existe.",
+"Activity no longer exists": "La actividad ya no existe.",
+"Activities and health data": "Actividades y datos de salud",
+"App tour": "Recorrido de la app",
+"Replay App Tour": "Repetir recorrido de la app",
+"Your training at a glance": "Tu entrenamiento de un vistazo",
+"Your streak rewards scheduled days. Open the calendar to plan and review.": "Tu racha cuenta los días planificados. Abre el calendario para planificar y revisar.",
+"Build your week": "Organiza tu semana",
+"Combine strength, running and recovery in your routines and weekly plan.": "Combina fuerza, carreras y recuperación en tus rutinas y plan semanal.",
+"Start or resume": "Empieza o continúa",
+"Start today’s routine here. Your active workout stays available.": "Inicia aquí la rutina de hoy. Tu entrenamiento activo seguirá disponible.",
+"See your progress": "Mira tu progreso",
+"Review strength and activity metrics, history and reports.": "Consulta métricas de fuerza y actividad, historial e informes.",
+"Take a training break": "Descansa del entrenamiento",
+"Pause for illness or travel. Protect your streak and resume when ready.": "Pausa por enfermedad o viaje. Protege tu racha y continúa cuando estés listo.",
+"Make TGym yours": "Personaliza TGym",
+"Log other activities, connect supported health data and adjust your preferences.": "Registra otras actividades, conecta datos de salud compatibles y ajusta tus preferencias.",
+"Could not save. Check available storage and try again.": "No se pudo guardar. Comprueba el espacio disponible e inténtalo de nuevo.",
+"Protect your streak during a break": "Protege tu racha durante un descanso",
+"Resume when you are ready": "Continúa cuando estés listo",
+"Saved data needs attention": "Revisa tus datos guardados",
+"Your saved profile has not been overwritten. Export it before restoring a backup or opening a newer app version.": "Tu perfil guardado no se ha sobrescrito. Expórtalo antes de restaurar una copia o abrir una versión más reciente.",
+"Export saved data": "Exportar datos guardados",
+
+'How this pause works':'Cómo funciona la pausa',
+"Training paused": "Entrenamiento en pausa",
+"Training break": "Pausa del plan",
+"Training resumed": "Entrenamiento reanudado",
+"Pause training": "Pausar entrenamientos",
+"Resume training": "Reanudar entrenamientos",
+"Retry saving": "Reintentar guardado",
+"Paused from {0}. Resume when you are ready.": "Pausa desde el {0}. Reanuda cuando estés listo.",
+"Pause for illness, travel or recovery. Your streak is protected without adding training days.": "Pausa por enfermedad, viaje o recuperación. Tu racha se conserva sin sumar días de entrenamiento.",
+"Workout and deload alerts stop. The deload cycle freezes; resuming shifts it by the paused days. Your usual weekdays stay unchanged, with no catch-up backlog.": "Se suspenden los avisos de entrenamiento y descarga. El ciclo de descarga se detiene y se desplaza por los días pausados al reanudar. Mantienes tus días habituales, sin acumular sesiones pendientes.",
+"Starts today, or tomorrow if you already logged a workout today. Previous missed days stay unchanged.": "Empieza hoy, o mañana si ya registraste un entrenamiento hoy. Las ausencias anteriores no cambian.",
+"Finish or discard the active workout before pausing your plan.": "Finaliza o descarta la sesión activa antes de pausar el plan.",
+"The cycle starts on Monday. Training breaks freeze it and shift its dates. Saved workouts stay unchanged. Alerts respect quiet hours.": "El ciclo comienza un lunes. Las pausas lo detienen y desplazan sus fechas. Los entrenamientos guardados no cambian. Los avisos respetan las horas de no molestar.",
+"Saved, but reminder updates failed. Reopen the app to retry.": "Guardado, pero no se pudieron actualizar los avisos. Reabre la app para reintentar.",
+
+"Torso": "Torso",
+"Body composition": "Composición corporal",
+"Metabolism": "Metabolismo",
+"Water and nutrients": "Agua y nutrientes",
+"Edit InBody result": "Editar resultado de InBody",
+"Enter a positive number.": "Introduce un número positivo.",
+"Enter a value above 0 and up to 100.": "Introduce un valor mayor que 0 y hasta 100.",
+"Check the date and highlighted values.": "Comprueba la fecha y los valores resaltados.",
+
+"Arms": "Brazos",
+"A measurement already exists on this date. Edit it from history.": "Ya existe una medición en esta fecha. Edítala desde el historial.",
+"Could not save. Check available storage and try again.": "No se pudo guardar. Comprueba el espacio disponible e inténtalo de nuevo.",
+
 "Month": "Mes",
 "Consistency": "Constancia",
 "Last 8 weeks": "Últimas 8 semanas",
@@ -129,7 +483,7 @@ export default {
   'Thursday': 'Jueves', 'Friday': 'Viernes', 'Saturday': 'Sábado',
   'Su': 'Do', 'Mo': 'Lu', 'Tu': 'Ma', 'We': 'Mi', 'Th': 'Ju', 'Fr': 'Vi', 'Sa': 'Sá',
   'Mon': 'Lun', 'Wed': 'Mié', 'Fri': 'Vie',
-  'Jan': 'Ene', 'Feb': 'Feb', 'Mar': 'Mar', 'Apr': 'Abr', 'May': 'May', 'Jun': 'Jun',
+  'Jan': 'Ene', 'Feb': 'Feb', 'Mar': 'Mar', 'Apr': 'Abr', 'May': 'Mayo', 'Jun': 'Jun',
   'Jul': 'Jul', 'Aug': 'Ago', 'Sep': 'Sep', 'Oct': 'Oct', 'Nov': 'Nov', 'Dec': 'Dic',
   'January': 'Enero', 'February': 'Febrero', 'March': 'Marzo', 'April': 'Abril',
   'June': 'Junio', 'July': 'Julio', 'August': 'Agosto', 'September': 'Septiembre',
@@ -1214,6 +1568,13 @@ export default {
   ,'Back up, synchronize or restore your TGym data.': 'Guarda una copia, sincroniza o restaura tus datos de TGym.'
   ,'Body fat': 'Grasa corporal'
   ,'Check for updates': 'Buscar actualizaciones'
+  ,'Checking for updates…': 'Buscando actualizaciones…'
+  ,'Could not check for updates. Check your connection and try again.': 'No se pudo buscar actualizaciones. Comprueba tu conexión e inténtalo de nuevo.'
+  ,'Period': 'Período'
+  ,'Format': 'Formato'
+  ,'Year': 'Año'
+  ,'Export': 'Exportar'
+  ,'Open': 'Abrir'
   ,'Cloud backup status': 'Estado de la copia en la nube'
   ,'End': 'Fin'
   ,'Later': 'Más tarde'
@@ -1237,4 +1598,377 @@ export default {
   ,'Synchronizing…': 'Sincronizando…'
   ,'Synchronize now': 'Sincronizar ahora'
   ,'Camera permission is required to scan the QR code.': 'Se necesita permiso para usar la cámara y escanear el código QR.'
+  ,"Training history settings": "Configuración del historial de entrenamiento"
+  ,"Training history": "Historial de entrenamiento"
+  ,"Since when have you trained consistently?": "¿Desde qué fecha entrenas de forma consistente?"
+  ,"Confirm your start date. Earlier records are kept; statistics use the selected period.": "Confirma tu fecha de inicio. Los registros anteriores se conservan; las estadísticas usan el período seleccionado."
+  ,"App tracking began": "Inicio del seguimiento en la app"
+  ,"Estimated workouts before app tracking": "Entrenamientos estimados antes del seguimiento"
+  ,"Usual workouts per week before tracking": "Entrenamientos habituales por semana antes del seguimiento"
+  ,"Estimates only add to your lifetime total. They do not create sessions, streaks, durations or calendar results. Dates before tracking are not missed workouts.": "Las estimaciones solo se suman al total histórico. No crean sesiones, rachas, duraciones ni resultados del calendario. Los días anteriores al seguimiento no cuentan como faltas."
+  ,"Check the dates and estimates. Prior workouts require a start before tracking began.": "Revisa las fechas y estimaciones. Para incluir entrenamientos previos, la fecha de inicio debe ser anterior al seguimiento."
+  ,"Training since {0}": "Entrenando desde {0}"
+  ,"Total workouts": "Entrenamientos totales"
+  ,"Average workouts per week": "Promedio de entrenamientos por semana"
+  ,"Currently scheduled per week": "Programados por semana actualmente"
+  ,"{0} recorded · {1} estimated before tracking": "{0} registrados · {1} estimados antes del seguimiento"
+  ,"Weekly average includes all calendar days since your start, including breaks.": "El promedio semanal incluye todos los días desde el inicio, incluidas las pausas."
+  ,"Not tracking yet": "Sin seguimiento todavía"
+  ,"Recorded workouts": "Entrenamientos registrados"
+  ,"Plan your time with the typical length of each routine.": "Organiza tu tiempo según la duración habitual de cada rutina."
+  ,"Last 30 days": "Últimos 30 días"
+  ,"Last 3 months": "Últimos 3 meses"
+  ,"Last 12 months": "Últimos 12 meses"
+  ,"All time": "Todo el historial"
+  ,"Median": "Mediana"
+  ,"Bar: average · marker: median. Longer does not mean better.": "Barra: promedio · marca: mediana. Más tiempo no significa mejor rendimiento."
+  ,"No scheduled sessions to evaluate yet.": "Aún no hay sesiones programadas que evaluar."
+  ,"Recent sessions": "Sesiones recientes"
+  ,"Set {0}": "Serie {0}"
+  ,"Close": "Cerrar"
+  ,"Clear": "Limpiar"
+  ,"Listen before choosing. Preview never changes your saved sound.": "Escucha antes de elegir. La vista previa no cambia el sonido guardado."
+  ,"Audio is muted. Enable Sounds, turn off Mute and raise the volume to preview.": "El audio está silenciado. Activa Sonidos, desactiva Silencio y sube el volumen para escuchar."
+  ,"Audio is blocked. Tap Play again to enable it.": "El audio está bloqueado. Pulsa Reproducir de nuevo para activarlo."
+  ,"Could not play this sound. Check device volume and try again.": "No se pudo reproducir. Revisa el volumen del dispositivo e inténtalo de nuevo."
+  ,"Could not sync alert sounds. Try again.": "No se pudieron sincronizar los sonidos de alerta. Inténtalo de nuevo."
+  ,"Stop {0}": "Detener {0}"
+  ,"Playing: {0}": "Reproduciendo: {0}"
+  ,"Loading: {0}": "Cargando: {0}"
+  ,"Mute": "Silencio"
+  ,"Actual reps": "Reps realizadas"
+  ,"Actual reps per side": "Reps realizadas por lado"
+  ,"Target reps": "Reps objetivo"
+  ,"Free reps": "Reps libres"
+  ,"Log added weight": "Registrar peso añadido"
+  ,"Tap a value to type your result. Targets are a guide.": "Toca un valor para escribir tu resultado. Los objetivos son una guía."
+  ,"Enter a valid number": "Introduce un número válido"
+  ,"Arrange your routines in training order. Each routine is a separate session.": "Ordena tus rutinas. Cada una se registra como una sesión independiente."
+  ,"Daily training plan": "Plan de entrenamiento del día"
+  ,"{0}/{1} completed": "{0}/{1} completadas"
+  ,"Remove routine": "Quitar rutina"
+  ,"Skipped": "Omitida"
+  ,"Skip today": "Omitir hoy"
+  ,"{0} activities": "{0} actividades"
+  ,"{0} workouts remaining": "Quedan {0} entrenamientos"
+  ,"Tap a number to edit. Reps follow the target range.": "Toca un número para editar. Las reps deben estar dentro del objetivo."
+  ,"Workout {0} of {1}": "Entrenamiento {0} de {1}"
+  ,"Workout paused": "Entrenamiento pausado"
+  ,"Workout active": "Entrenamiento activo"
+  ,"Set {0} of {1}": "Serie {0} de {1}"
+  ,"Open workout": "Abrir entrenamiento"
+  ,"Next workout": "Siguiente entrenamiento"
+  ,"Later": "Más tarde"
+  ,"Return to your workout": "Vuelve a tu entrenamiento"
+  ,"Partially completed": "Completado parcialmente",
+  "Undo Completed": "Deshacer completada",
+  "Muscles trained: front view": "Músculos trabajados: vista frontal",
+  "Muscles trained: back view": "Músculos trabajados: vista posterior",
+  "Pause animation": "Pausar animación",
+  "Play animation": "Reproducir animación",
+  "Your saved data is synced first. Active workouts and unsent changes stay on this device.": "Primero se sincronizan tus datos guardados. Los entrenamientos activos y los cambios sin enviar se conservan en este dispositivo.",
+  "Progress Report": "Reporte de Progreso",
+  "Baseline → Current → Change → Trend": "Inicio → Actualidad → Cambio → Tendencia",
+  "Since Start": "Desde el inicio",
+  "1 Month": "1 mes",
+  "3 Months": "3 meses",
+  "6 Months": "6 meses",
+  "1 Year": "1 año",
+  "Custom Range": "Rango personalizado",
+  "Choose a valid date range.": "Selecciona un rango de fechas válido.",
+  "No data in this period.": "No hay datos en este período.",
+  "Insufficient Data": "Datos insuficientes",
+  "Changed": "Cambio",
+  "Stable": "Estable",
+  "More data needed": "Se necesitan más datos",
+  "InBody weight": "Peso de InBody",
+  "BMI from recorded height": "IMC con altura registrada",
+  "Load": "Carga",
+  "Work duration": "Duración de la actividad",
+  "Training volume": "Volumen de entrenamiento",
+  "Total reps": "Repeticiones totales",
+  "Volume per workout": "Volumen por entrenamiento",
+  "Workout duration": "Duración del entrenamiento",
+  "Weekly volume": "Volumen semanal",
+  "Weekly sets": "Series semanales",
+  "Weekly reps": "Repeticiones semanales",
+  "Workouts per week": "Entrenamientos por semana",
+  "Muscle volume: {0}": "Volumen muscular: {0}",
+  "Average heart rate": "Frecuencia cardíaca media",
+  "Reps at the same load": "Repeticiones con la misma carga",
+  "Baseline": "Inicio",
+  "Trend": "Tendencia",
+  "Increasing": "En aumento",
+  "Decreasing": "En descenso",
+  "From": "Desde",
+  "To": "Hasta",
+  "Export Progress Report": "Exportar reporte de progreso",
+  "Could not export. Try again.": "No se pudo exportar. Inténtalo de nuevo.",
+  "Your progress": "Tu progreso",
+  "Personal Records": "Récords personales",
+  "Average duration (min)": "Duración media (min)",
+  "Only recorded data. Changes are not automatically improvements.": "Solo datos registrados. Los cambios no representan mejoras automáticamente.",
+  "Highlights": "Cambios destacados",
+  "Body Progress": "Progreso corporal",
+  "Exercise Progress": "Progreso por ejercicio",
+  "No comparable history in this period.": "No hay historial comparable en este período.",
+  "Comparisons separate mode, set type, role, bodyweight and per-side logging. RIR is interpreted with load and reps.": "Las comparaciones separan modalidad, tipo y función de la serie, peso corporal y registro por lado. El RIR se interpreta junto con la carga y las repeticiones.",
+  "Sessions": "Sesiones",
+  "Weekly comparisons use complete Monday–Sunday weeks only. Partial weeks are listed separately.": "Las comparaciones semanales usan solo semanas completas de lunes a domingo. Las semanas parciales se indican por separado.",
+  "Total sets": "Series totales",
+  "Total volume": "Volumen total",
+  "Weekly history": "Historial semanal",
+  "Partial week": "Semana parcial",
+  "Complete week": "Semana completa",
+  "Training consistency": "Constancia de entrenamiento",
+  "Longest active-day streak": "Mayor racha de días activos",
+  "Current active-day streak": "Racha actual de días activos",
+  "Streaks count consecutive days with recorded training. Pending days are not missed workouts.": "Las rachas cuentan días consecutivos con entrenamiento registrado. Los días pendientes no son entrenamientos perdidos.",
+  "Activity Progress": "Progreso de actividades",
+  "Records beat an earlier recorded best in the same comparison group. Equal sets do not create duplicate records.": "Los récords superan una marca anterior del mismo grupo comparable. Las series iguales no generan récords duplicados.",
+  "No records in this period.": "No hay récords en este período.",
+  "Change": "Cambio",
+  "straight": "Serie normal",
+  "dropset": "Serie descendente",
+  "restpause": "Pausa-descanso",
+  "work": "Trabajo",
+  "top": "Serie principal",
+  "backoff": "Serie de descarga",
+  "time": "tiempo",
+  "reps / side": "reps / lado",
+  "{0} days": "{0} días",
+  "percentage points": "puntos porcentuales",
+  "Timer frozen. Finish now or continue. After 10 minutes, this session saves at its completion time.": "Cronómetro detenido. Termina o continúa. Después de 10 minutos, se guardará con la hora en que completaste la rutina.",
+  "Session recovered": "Sesión recuperada",
+  "Saved using recorded training time. Review or correct the duration in History.": "Se guardó usando la actividad registrada. Revisa o corrige la duración en Historial.",
+  "Edit duration": "Editar duración",
+  "Auto-ended at {0}": "Finalizada automáticamente a las {0}",
+  "Duration (minutes)": "Duración (minutos)",
+  "Enter a valid duration ending before now.": "Introduce una duración válida que termine antes de ahora.",
+  "Save duration": "Guardar duración",
+  "Pause workout timer": "Pausar cronómetro",
+  "Workout timer paused. Continue when you are ready.": "Cronómetro pausado. Continúa cuando estés listo.",
+ "Routine progress": "Progreso por rutina",
+ "Sessions stay grouped by routine, including exercises recorded before later edits.": "Las sesiones se agrupan por rutina, incluidos los ejercicios registrados antes de cambios posteriores.",
+ "Adherence uses the available schedule; earlier plans are not reconstructed.": "El cumplimiento usa el calendario disponible; no reconstruye planes anteriores.",
+ "History without a routine ID stays separate from current routines.": "Historial sin ID de rutina; se mantiene separado de las rutinas actuales.",
+ "Section": "Sección",
+ "Before": "Antes",
+ "After": "Después",
+ "Entire report": "Todo el reporte",
+ "Select at least one section.": "Selecciona al menos una sección.",
+ "Generate and download": "Generar y descargar",
+ "Expand chart": "Ampliar gráfica",
+ "Collapse chart": "Contraer gráfica",
+ "Select a body zone to compare its recorded measurements.": "Selecciona una zona corporal para comparar sus medidas registradas.",
+ "First record": "Primer registro",
+ "Current record": "Registro actual",
+ "Records": "Registros",
+ "Elapsed days": "Días transcurridos",
+ "Largest increase": "Mayor incremento",
+ "Largest decrease": "Mayor disminución",
+ "No significant change": "Sin cambio significativo",
+ "Changes below 0.1 cm are treated as unchanged. Missing values are not zero.": "Los cambios inferiores a 0,1 cm se consideran sin cambio. Los valores ausentes no son cero.",
+ "Could not load body model.": "No se pudo cargar el modelo corporal.",
+ "Retry": "Reintentar",
+ "Loading…": "Cargando…",
+ "Comparison details": "Detalles de la comparación",
+ "Edit measurement history": "Editar historial de medidas",
+ "Offline. Server actions need a connection.": "Sin conexión. Las acciones del servidor requieren Internet.",
+ "Preparing offline access...": "Preparando el acceso sin conexión...",
+ "Offline access is not ready. Connect and retry before closing TGym.": "El acceso sin conexión no está listo. Conéctate y reintenta antes de cerrar TGym.",
+ "Could not save changes. Free device storage and try again.": "No se pudieron guardar los cambios. Libera espacio en el dispositivo e inténtalo de nuevo.",
+ "Local backup is unavailable. Export your data as a precaution.": "La copia local no está disponible. Exporta tus datos como precaución.",
+ "Resume workout timer": "Reanudar cronómetro",
+ "Tomorrow": "Mañana",
+ "Hold a routine for 2.5 seconds to reorder.": "Mantén pulsada una rutina durante 2,5 segundos para ordenarla.",
+ "Reorder routine": "Reordenar rutina",
+ "Move the routine, then release to save.": "Mueve la rutina y suelta para guardar.",
+ "Exercise notes": "Notas del ejercicio",
+ "Practice preview - nothing is saved": "Vista de práctica - no se guarda nada",
+ "This reading will be added to the daily average.": "Esta lectura se añadirá al promedio del día.",
+ "Editing an existing measurement": "Editando una medición existente",
+ "Saving updates this reading. Other records stay unchanged.": "Al guardar se actualiza esta lectura. Los demás registros se conservan.",
+ "Move around TGym": "Muévete por TGym",
+ "Home, routines, training, stats and exercises stay one tap away.": "Inicio, rutinas, entrenamiento, estadísticas y ejercicios están a un toque.",
+ "Create routines, assign training days and reorder with arrows or a short hold and drag.": "Crea rutinas, asigna días y ordena con flechas o manteniendo pulsado y arrastrando.",
+ "Log each set": "Registra cada set",
+ "Enter weight, reps and RIR, then check the set when completed. This preview saves nothing.": "Introduce peso, reps y RIR, y marca el set al completarlo. Esta vista no guarda nada.",
+ "Know your set types": "Conoce los tipos de set",
+ "Warm-up prepares you. Top sets are heavier; back-off sets reduce the load. Working sets count toward completion.": "El calentamiento te prepara. El top set usa más carga y el back-off la reduce. Los sets de trabajo cuentan para completar.",
+ "Pair and recover": "Combina y descansa",
+ "Pair with the previous or next exercise. Rest counts down between sets; adjust it or skip when ready.": "Combina con el ejercicio anterior o siguiente. Ajusta el descanso entre sets o sáltalo cuando estés listo.",
+ "Review your sessions": "Revisa tus sesiones",
+ "Open History to review completed sessions. Statistics summarize your recorded training.": "Abre Historial para revisar sesiones completadas. Las estadísticas resumen tus entrenamientos.",
+ "Explore your progress": "Explora tu progreso",
+ "Choose a period and section. Expand details or download selected sections as a PDF.": "Elige período y sección. Amplía detalles o descarga secciones seleccionadas en PDF.",
+ "Track body measurements": "Registra tus medidas",
+ "Log a dated reading and compare body zones. Existing dates open for editing.": "Guarda una lectura con fecha y compara zonas corporales. Las fechas existentes se abren para editar.",
+ "Keep InBody history": "Conserva tu historial InBody",
+ "Add dated InBody results to compare body composition over time.": "Añade resultados InBody con fecha para comparar tu composición corporal.",
+ "Choose your theme and preferences. Local tracking works offline once ready; reconnect to check for updates.": "Elige tema y preferencias. El registro local funciona sin conexión cuando está listo; reconecta para buscar actualizaciones."
+, "Automatic targets": "Objetivos autom\u00e1ticos"
+
+  ,"Back-off repetitions": "Repeticiones Back-off"
+  ,"Same reps": "Mismas reps"
+  ,"Increased reps": "Más reps"
+  ,"Same reps uses the Top Set range. Increased reps adds 2 to both limits.": "Mismas reps usa el rango del Top Set. Más reps suma 2 a ambos límites."
+,"Activity counts once per day, including planned and extra sessions.":"La actividad cuenta una vez por día, tanto en sesiones planificadas como adicionales."
+,"Streak Report":"Reporte de racha"
+,"Last Week":"Semana pasada"
+,"Last Month":"Mes pasado"
+,"Selected Week":"Semana seleccionada"
+,"Selected Month":"Mes seleccionado"
+,"Streak as of {0}":"Racha al {0}"
+,"Activity days advance the streak; missed scheduled days reset it.":"Los días con actividad aumentan la racha; faltar a un día programado la reinicia."
+,"No recorded activity in this period.":"No hay actividad registrada en este periodo."
+,"Recorded activity":"Actividad registrada"
+,"Use PDF for ranges longer than one year.":"Usa PDF para rangos de más de un año."
+,"Export Reports":"Exportar reportes"
+,"Each report downloads as a separate file.":"Cada reporte se descarga en un archivo independiente."
+,"Select All":"Seleccionar todos"
+,"Download Selected":"Descargar seleccionados"
+,"Download All":"Descargar todos"
+,"Select at least one report.":"Selecciona al menos un reporte."
+,"Current plan; date filters do not apply.":"Plan actual; los filtros de fecha no se aplican."
+,"Complete profile; date filters do not apply.":"Perfil completo; los filtros de fecha no se aplican."
+,"Downloaded":"Descargado"
+,"Canceled":"Cancelado"
+,"Full backup":"Copia de seguridad completa"
+,"Selected dashboards download as one PDF.":"Los dashboards seleccionados se descargan en un solo PDF."
+,"Uses the current Stats filters.":"Usa los filtros actuales de Stats."
+,"Import / Export routines":"Importar / Exportar rutinas"
+,"Routines and exercise prescriptions only. Workout results are kept separately.":"Solo rutinas y objetivos de ejercicios. Los resultados registrados se conservan aparte."
+,"Prepare {0} selected routines as {1}.":"Preparar {0} rutinas seleccionadas en {1}."
+,"Prepare export":"Preparar exportación"
+,"Export progress":"Progreso de exportación"
+,"Could not save. Download again.":"No se pudo guardar. Vuelve a descargar."
+,"Import routines":"Importar rutinas"
+,"Use Excel or JSON. Download the template, choose exercises from its catalog lists, and review before saving.":"Usa Excel o JSON. Descarga la plantilla, elige ejercicios de sus listas de catálogo y revisa antes de guardar."
+,"Download Excel template":"Descargar plantilla Excel"
+,"Choose Excel / JSON":"Elegir Excel / JSON"
+,"Review import":"Revisar importación"
+,"{0} routines · {1} exercises":"{0} rutinas · {1} ejercicios"
+,"Legacy plan v1 converted. No unknown exercise is removed automatically.":"Plan antiguo v1 convertido. Ningún ejercicio desconocido se elimina automáticamente."
+,"Fix these errors before importing:":"Corrige estos errores antes de importar:"
+,"Map unknown exercise: {0}":"Asociar ejercicio desconocido: {0}"
+,"Choose an exercise":"Elige un ejercicio"
+,"Conflict: {0}":"Conflicto: {0}"
+,"Choose how to import":"Elige cómo importar"
+,"Convert weights to my current unit":"Convertir pesos a mi unidad actual"
+,"Keep existing":"Conservar existente"
+,"Replace existing":"Reemplazar existente"
+,"Import a separate copy":"Importar una copia aparte"
+,"Apply imported schedule (preserves other routines)":"Aplicar programación importada (conserva otras rutinas)"
+,"Apply imported default rest, effort and Back-off preferences":"Aplicar preferencias importadas de descanso, esfuerzo y Back-off"
+,"Confirm saves the complete valid import at once. Existing history and active workouts are preserved.":"Confirmar guarda toda la importación válida de una vez. Se conservan el historial y la sesión activa."
+,"Confirm import":"Confirmar importación"
+,"Cancel import":"Cancelar importación"
+,"Automatic warm-up":"Calentamiento automático"
+,"per side":"por lado"
+,"Top reps +2":"Reps del Top +2"
+,"Same as Top reps":"Mismas reps del Top"
+,"Independent reps":"Reps independientes"
+,"Prescription":"Prescripción"
+,"I confirm replacing the selected existing data":"Confirmo reemplazar los datos existentes seleccionados"
+,"Source weight unit of the legacy file":"Unidad de peso original del archivo antiguo"
+,"Export failed: {0}":"Exportación fallida: {0}"
+,"Complete years":"Años completos"
+,"From year":"Desde el año"
+,"To year":"Hasta el año"
+,"One PDF page per year.":"Una página PDF por año."
+,"Choose a valid year range.":"Elige un intervalo de años válido."
+,"Choose up to 25 years per report.":"Elige hasta 25 años por reporte."
+,"Complete-year reports require PDF":"Los reportes de años completos requieren PDF"
+,"Not Trained":"No entrenado"
+,"Partial":"Parcial"
+,"Counts training dates, not calendar days.":"Cuenta fechas de entrenamiento, no días naturales."
+,"Four months per PDF page.":"Cuatro meses por página PDF."
+,"Tracking since {0}":"Registrando desde {0}"
+
+  // Local profile and interface flows, 2026-10-22.
+  ,"Show key": "Mostrar clave"
+  ,"Hide key": "Ocultar clave"
+  ,"Could not unlock. Try again.": "No se pudo desbloquear. Inténtalo de nuevo."
+  ,"Profile": "Perfil"
+  ,"Profile photo": "Foto de perfil"
+  ,"Name, photo and personal data": "Nombre, foto y datos personales"
+  ,"Your profile is saved with your training data. No cloud account is required.": "Tu perfil se guarda con tus datos de entrenamiento. No necesitas una cuenta en la nube."
+  ,"Change photo": "Cambiar foto"
+  ,"Add photo": "Añadir foto"
+  ,"Remove photo": "Eliminar foto"
+  ,"Profile saved": "Perfil guardado"
+  ,"Personal data": "Datos personales"
+  ,"These values use your existing measurements and goals.": "Estos valores utilizan tus medidas y objetivos actuales."
+  ,"Choose a JPG, PNG or WebP photo up to 8 MB.": "Elige una foto JPG, PNG o WebP de hasta 8 MB."
+  ,"Stats view settings": "Ajustes de vista de Stats"
+  ,"Edit order": "Editar orden"
+  ,"Move sections, then save your order.": "Mueve las secciones y guarda el orden."
+  ,"Move {0} up": "Subir {0}"
+  ,"Move {0} down": "Bajar {0}"
+  ,"Time zone": "Zona horaria"
+  ,"Turn on reminders for this measurement.": "Activa los recordatorios de esta medición."
+  ,"Planning": "Planificación"
+  ,"Tracking": "Seguimiento"
+  ,"Settings / Profile": "Ajustes / Perfil"
+  ,"You can skip at any time.": "Puedes omitirlo cuando quieras."
+  ,"Review your week and next routine; navigate with the bottom tabs.": "Revisa tu semana y próxima rutina; navega con las pestañas inferiores."
+  ,"Start planned or freestyle training. Active sessions remain available here.": "Inicia un entrenamiento planificado o libre. Las sesiones activas siguen disponibles aquí."
+  ,"Record load, reps, time, cardio and effort; distinguish warm-up, top and back-off sets.": "Registra carga, repeticiones, tiempo, cardio y esfuerzo; distingue calentamiento, series Top y Back-off."
+  ,"Pair exercises, rest, substitute, pause or finish. This preview saves nothing.": "Agrupa ejercicios, descansa, sustituye, pausa o finaliza. Esta vista de práctica no guarda nada."
+  ,"Build your routines": "Prepara tus rutinas"
+  ,"Create, edit or choose guided routines; configure progression and intensity techniques.": "Crea, edita o elige rutinas guiadas; configura la progresión y las técnicas de intensidad."
+  ,"Plan your week": "Planifica tu semana"
+  ,"Order daily routines, plan activities and date exceptions, or pause training.": "Ordena rutinas del día, planifica actividades y excepciones por fecha, o pausa el entrenamiento."
+  ,"Take your routines with you": "Lleva tus rutinas contigo"
+  ,"Transfer selected routines using JSON, Excel or PDF; review before importing.": "Transfiere rutinas seleccionadas en JSON, Excel o PDF; revísalas antes de importar."
+  ,"Explore your streak calendar": "Explora el calendario de racha"
+  ,"Week opens first. Switch to Month or Year, export, or expand recent workouts.": "Se abre Semana. Cambia a Mes o Año, exporta o amplía los entrenamientos recientes."
+  ,"Review consistency and session times": "Revisa constancia y duración"
+  ,"Times shows three recent sessions; Show more reveals the rest.": "Tiempos muestra tres sesiones recientes; Mostrar más revela el resto."
+  ,"Choose your Stats view": "Personaliza tus estadísticas"
+  ,"Select sections. Edit order unlocks movement; Save persists it, Cancel discards.": "Selecciona secciones. Editar orden permite moverlas; Guardar conserva el orden y Cancelar lo descarta."
+  ,"Review and export your records": "Revisa y exporta tus registros"
+  ,"Open History, InBody or reports; compare weight, measurements, muscles and routine duration.": "Abre Historial, InBody o informes; compara peso, medidas, músculos y duración por rutina."
+  ,"Compare periods, routines and exercises; export chosen sections as PDF.": "Compara períodos, rutinas y ejercicios; exporta las secciones elegidas en PDF."
+  ,"Find and personalize exercises": "Busca y personaliza ejercicios"
+  ,"Search names, muscles or equipment; inspect instructions and GIFs, edit aliases or create exercises.": "Busca nombres, músculos o equipo; consulta instrucciones y GIF, edita alias o crea ejercicios."
+  ,"Your local profile": "Tu perfil local"
+  ,"Edit name, photo and personal measurements; everything stays available locally.": "Edita nombre, foto y medidas personales; todo sigue disponible de forma local."
+  ,"Know what comes next": "Organiza tus recordatorios"
+  ,"Choose what, frequency and time; check switches, next dates and alert status.": "Elige qué recordar, frecuencia y hora; revisa los interruptores, las próximas fechas y el estado."
+  ,"Track activities and recovery": "Registra actividad y recuperación"
+  ,"Record activities; manage health connections, deload cycles and equipment profiles.": "Registra actividades; gestiona conexiones de salud, ciclos de descarga y perfiles de equipo."
+  ,"Set language, units, appearance, rest, sounds, vibration and screen behavior.": "Configura idioma, unidades, apariencia, descansos, sonidos, vibración y comportamiento de pantalla."
+  ,"Protect this device": "Protege este dispositivo"
+  ,"Configure PIN and available biometrics; keep your recovery key private.": "Configura el PIN y la biometría disponible; conserva tu clave de recuperación en privado."
+  ,"Keep your data available": "Conserva tus datos disponibles"
+  ,"Back up, restore and optionally synchronize; check updates and offline readiness. Replay from Help.": "Respalda, restaura y sincroniza opcionalmente; revisa actualizaciones y uso sin conexión. Repite el recorrido desde Ayuda."
+  ,"This control is not available here. You can continue the tour.": "Este control no está disponible aquí. Puedes continuar el recorrido."
+  ,"Calendar view": "Vista del calendario"
+  ,"Tracking start": "Inicio del seguimiento"
+  ,"Show profile": "Mostrar perfil"
+  ,"Hide profile": "Ocultar perfil"
+  ,"Update time": "Actualizar tiempo"
+  ,"Update workout duration?": "¿Actualizar duración del entrenamiento?"
+  ,"The recorded duration will change to {0} minutes. Your sets will stay the same.": "La duración registrada cambiará a {0} minutos. Tus series se conservarán."
+  ,"Body Measurements": "Medidas corporales"
+  ,"Since {0}": "Desde {0}"
+  ,"Sections appear in the order you select them.": "Las secciones aparecen en el orden en que las seleccionas."
+  ,"Total time": "Tiempo total"
+  ,"Hours": "Horas"
+  ,"Time unit": "Unidad de tiempo"
+  ,"Automatic": "Automático"
+  ,"Hold for 3 seconds or press Enter to choose time units.": "Mantén pulsado 3 segundos o pulsa Intro para elegir la unidad de tiempo."
+  ,"In-app reminders": "Avisos dentro de la app"
+  ,"Same day and day before": "El mismo día y el día anterior"
+  ,"Same day only": "Solo el mismo día"
+  ,"Day before only": "Solo el día anterior"
+  ,"Shown in TGym even when device notifications are off. Applies to workout, measurement and deload reminders.": "Se muestran en TGym aunque las notificaciones del dispositivo estén desactivadas. Se aplica a entrenamientos, mediciones y descargas."
+  ,"Dismiss reminder": "Cerrar aviso"
+  ,"Notification sound": "Sonido de notificaciones"
+  ,"Reminders and update alerts. Turning sound off keeps notifications enabled.": "Recordatorios y avisos de actualización. Desactivar el sonido mantiene las notificaciones activas."
+  ,"Notifications are scheduled without sound. The selected sound could not be applied.": "Las notificaciones están programadas sin sonido. No se pudo aplicar el sonido elegido."
+  ,"Profile visibility": "Visibilidad del perfil"
+  ,"Drag or use arrow keys to move this control.": "Arrastra o usa las flechas del teclado para mover este control."
 }

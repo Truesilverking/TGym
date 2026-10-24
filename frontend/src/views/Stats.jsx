@@ -1,12 +1,23 @@
+import StatsSections from '../components/StatsSections.jsx'
+import ProgressBody from '../components/ProgressBody.jsx'
+import { bodyRecords,measurementInUnit } from '../lib/body-report.js'
+import { removeBodyRecord } from '../lib/body-records.js'
+import { HybridSummary } from '../components/Activities.jsx'
+import ExerciseSessions from '../components/ExerciseSessions.jsx'
+import TrainingHistory from '../components/TrainingHistory.jsx'
+import ReportsExport from '../components/ReportsExport.jsx'
+import { statisticsState } from '../lib/training-history.js'
+import { createStatsSnapshotSelector } from '../lib/stats-snapshot.js'
 import ConsistencyCard from '../components/ConsistencyCard.jsx'
-import { useEffect, useMemo, useState } from 'react'
+import { Children, cloneElement, memo, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
+import { useUI } from '../store/useUI.js'
 import { EXIDX } from '../lib/exercises.js'
-import { lastBW, setLabel, modeOf, effortOf, metricModeForEntry, metricRowsForEntry, bestWeightForEntry } from '../lib/history.js'
-import { fmtNum, fmtDate, fmtVol, todayISO, weekKey } from '../lib/format.js'
-import { t, exerciseNameFor, getLang } from '../lib/i18n.js'
-import { bwSheet, goalSheet, workoutDetailSheet, WorkoutRow, bwDeltaColor, measurementsSheet, heightSheet, sessionTimingSheet, confirmSheet, inBodySheet } from '../sheets.jsx'
+import { lastBW, modeOf, effortOf, metricModeForEntry, metricRowsForEntry, bestWeightForEntry, displayReps } from '../lib/history.js'
+import { fmtNum, fmtDate, todayISO, weekKey } from '../lib/format.js'
+import { t, exerciseNameFor, getLang, useLang } from '../lib/i18n.js'
+import { bwSheet, goalSheet, bwDeltaColor, measurementsSheet, heightSheet, sessionTimingSheet, confirmSheet, inBodySheet } from '../sheets.jsx'
 import LineChart from '../components/LineChart.jsx'
 import Icon from '../components/Icon.jsx'
 import BodyMap, { BodyMapLegend } from '../components/BodyMap.jsx'
@@ -21,27 +32,20 @@ import {
   effortHistogram, isHardSet, HARD_RIR
 } from '../lib/effort.js'
 import { Button, Segmented, SelectRow } from '../components/ui.jsx'
+import { normalizeStatsSectionOrder, statsSelectionOrder } from '../lib/stats-sections.js'
+import './Stats.css'
 import { isWarmupRow } from '../lib/workout-model.js'
-import { MOBILE, shareExport } from '../lib/mobile.js'
-import { bmiBand, bmiFor, MEASURE_FIELDS, measurementValue, routineConsistency } from '../lib/stats-insights.js'
-import { trainingStreak } from '../lib/training-plan.js'
-import { workoutElapsedMs } from '../lib/workout-time.js'
+import { MOBILE } from '../lib/mobile.js'
 
-async function exportStatsReport(S) {
-  const esc = x => String(x).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c])
-  const td = x => `<td>${esc(x ?? '—')}</td>`
-  const last = lastBW(S), consistency = routineConsistency(S), streak = trainingStreak(S)
-  const bmi = bmiFor(last?.w, S.unit, S.heightCm, S.measurementUnit)
-  const measureHead = MEASURE_FIELDS.map(([, label]) => `<th>${esc(t(label))}</th>`).join('')
-  const measureRows = [...(S.measurements || [])].reverse().map(m => `<tr>${td(fmtDate(m.d, true))}${MEASURE_FIELDS.map(([key]) => td(measurementValue(m, key) || '—')).join('')}</tr>`).join('')
-  const weightRows = [...(S.bodyweight || [])].reverse().map(b => `<tr>${td(fmtDate(b.d, true))}${td(`${fmtNum(b.w)} ${S.unit}`)}${td(bmiFor(b.w, S.unit, S.heightCm, S.measurementUnit) || '—')}</tr>`).join('')
-  const workoutRows = [...(S.workouts || [])].reverse().map(w => `<tr>${td(fmtDate(w.d, true))}${td(w.name)}${td(Math.max(0, Math.round(workoutElapsedMs(w) / 60000)) + ' min')}${td(fmtVol(w.vol || 0, S.unit))}${td((w.entries || []).map(e => `${EXIDX[e.id] ? exerciseNameFor(EXIDX[e.id]) : (e.n || e.id)}: ${(e.sets || []).filter(s => s.done).map(s => setLabel(e.id, s, e.target)).join(', ')}`).join(' | '))}</tr>`).join('')
-  const inbodyFields = [['weight','Weight'],['skeletalMuscle','Skeletal muscle mass'],['bodyFatMass','Body fat mass'],['bodyFatPct','Body fat percentage'],['bmi','BMI'],['visceralFat','Visceral fat level'],['bodyWater','Total body water'],['protein','Protein'],['minerals','Minerals'],['bmr','Basal metabolic rate'],['score','InBody score']]
-  const inbodyRows = [...(S.inbody || [])].reverse().map(r => `<tr>${td(fmtDate(r.d, true))}${inbodyFields.map(([key]) => td(r[key] ?? '—')).join('')}</tr>`).join('')
-  const html = `<!doctype html><html lang="${esc(getLang())}"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>TGym Stats ${todayISO()}</title><style>body{font:15px system-ui;margin:32px;color:#171717}h1{color:#d82727}h2{margin-top:32px}section{break-inside:avoid}.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.box{padding:14px;border:1px solid #ddd;border-radius:10px}.box b{display:block;font-size:24px;margin-top:5px}table{border-collapse:collapse;width:100%;font-size:13px}th,td{border:1px solid #ddd;padding:7px;text-align:left;vertical-align:top}th{background:#f3f3f3}small{color:#666}.scroll{overflow-x:auto}@media print{body{margin:12mm}.scroll{overflow:visible}}</style><body><h1>TGym · ${esc(t('Stats'))}</h1><small>${esc(fmtDate(todayISO(), true))}</small><section class="summary"><div class="box">${esc(t('Workouts'))}<b>${S.workouts.length}</b></div><div class="box">${esc(t('Training streak'))}<b>${streak.current}</b></div><div class="box">${esc(t('Completion'))}<b>${consistency.rate == null ? '—' : Math.round(consistency.rate * 100) + '%'}</b><small>${consistency.completed} / ${consistency.planned}</small></div><div class="box">${esc(t('Body weight'))}<b>${last ? esc(fmtNum(last.w) + ' ' + S.unit) : '—'}</b></div><div class="box">${esc(t('BMI'))}<b>${bmi || '—'}</b></div></section><h2>${esc(t('Body weight'))}</h2><div class="scroll"><table><thead><tr><th>${esc(t('Date'))}</th><th>${esc(t('Weight'))}</th><th>${esc(t('BMI'))}</th></tr></thead><tbody>${weightRows || `<tr>${td(t('No data yet'))}</tr>`}</tbody></table></div><h2>${esc(t('Body measurements'))}</h2><small>${esc(S.measurementUnit || 'cm')}</small><div class="scroll"><table><thead><tr><th>${esc(t('Date'))}</th>${measureHead}</tr></thead><tbody>${measureRows || `<tr>${td(t('No data yet'))}</tr>`}</tbody></table></div><h2>${esc(t('InBody history'))}</h2><div class="scroll"><table><thead><tr><th>${esc(t('Date'))}</th>${inbodyFields.map(([,label]) => `<th>${esc(t(label))}</th>`).join('')}</tr></thead><tbody>${inbodyRows || `<tr>${td(t('No data yet'))}</tr>`}</tbody></table></div><h2>${esc(t('Workout history'))}</h2><div class="scroll"><table><thead><tr><th>${esc(t('Date'))}</th><th>${esc(t('Routine'))}</th><th>${esc(t('Duration'))}</th><th>${esc(t('Volume'))}</th><th>${esc(t('Exercises'))}</th></tr></thead><tbody>${workoutRows || `<tr>${td(t('No workouts yet'))}</tr>`}</tbody></table></div></body></html>`
-  const filename = `tgym-stats-${todayISO()}.html`
-  if (MOBILE) { await shareExport(html, filename); return }
-  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([html], { type: 'text/html;charset=utf-8' })); a.download = filename; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000)
+import { bmiBand, bmiFor, MEASURE_FIELDS, measurementValue } from '../lib/stats-insights.js'
+import { trainingStreak } from '../lib/training-plan.js'
+import { useLocalNow } from '../lib/use-local-now.js'
+import StreakFlame from '../components/StreakFlame.jsx'
+import { effortLabel } from '../lib/history.js'
+
+function StatsExerciseLabel({ id, entry, routineId, suffix }) {
+  const state = useStore(s => s.S)
+  return <>{exerciseNameFor(EXIDX[id] || entry || { id }, { state, entry, routineId })}{suffix}</>
 }
 
 // Which muscles the training in a window actually hit — and, the point of the card,
@@ -118,11 +122,12 @@ function fatigueLabel(value) {
   return t(state === 'ready' ? 'Ready' : state === 'recovering' ? 'Recovering' : 'Fatigued')
 }
 
-function MuscleBalance({ S }) {
+function MuscleBalance({ S, exportFilters, onExercise }) {
   const [view, setView] = useState('balance')
   const [win, setWin] = useState(7)
   const [hard, setHard] = useState(false)
   const [sel, setSel] = useState(null)
+  useEffect(()=>{if(exportFilters)Object.assign(exportFilters.current,{musclesView:view,musclesRange:win,musclesHard:hard,musclesSelected:sel})},[exportFilters,view,win,hard,sel])
   const now = useNow()
   const lang = getLang()
   const workouts = S.workouts
@@ -134,10 +139,10 @@ function MuscleBalance({ S }) {
     if (!last || !(last.w > 0)) return null
     return S.unit === 'lb' ? last.w * LB_TO_KG : last.w
   }, [S.bodyweight, S.unit])
-  const fatigue = useMemo(() => fatigueOf(workouts, now, { bodyweightKg, unit: S.unit }), [workouts, now, bodyweightKg, S.unit])
-  const strength = useMemo(() => strengthOf(workouts, now, { bodyweightKg, unit: S.unit }), [workouts, now, bodyweightKg, S.unit])
+  const fatigue = useMemo(() => view === 'fatigue' ? fatigueOf(workouts, now, { bodyweightKg, unit: S.unit }) : {}, [view, workouts, now, bodyweightKg, S.unit])
+  const strength = useMemo(() => view === 'strength' ? strengthOf(workouts, now, { bodyweightKg, unit: S.unit }) : {}, [view, workouts, now, bodyweightKg, S.unit])
   const muscleExercises = useMemo(() => (sel ? strengthExerciseRowsForMuscle(S, now, sel) : []), [S, now, sel, lang])
-  const lastTrained = useMemo(() => latestMuscleTraining(workouts), [workouts])
+  const lastTrained = useMemo(() => view === 'strength' ? latestMuscleTraining(workouts) : {}, [view, workouts])
   const strengthHint = slug => {
     if (lastTrained[slug] == null) return t('not trained')
     const weeks = weeksSinceTraining(now, lastTrained[slug])
@@ -154,9 +159,9 @@ function MuscleBalance({ S }) {
   // would just be empty and read as "you trained nothing".
   const rated = inWin.some(w => w.entries.some(e => e.sets.some(s => s.done && isHardSet(s))))
   const on = hard && rated
-  const load = loadOfWorkouts(inWin, on ? isHardSet : null)
-  const volWin = S.workouts.filter(w => (w.start || new Date(w.d).getTime()) > now - 90 * 86400000)
-  const vol90 = loadOfWorkouts(volWin, null)
+  const load = view === 'balance' ? loadOfWorkouts(inWin, on ? isHardSet : null) : {}
+  const volWin = view === 'strength' ? S.workouts.filter(w => (w.start || new Date(w.d).getTime()) > now - 90 * 86400000) : []
+  const vol90 = view === 'strength' ? loadOfWorkouts(volWin, null) : {}
   const { worked, missed } = rankOf(load)
   const { worked: strengthOrder } = rankOf(strength)
   const detrained = strengthOrder.filter(slug => strength[slug] < 1)
@@ -245,8 +250,9 @@ function MuscleBalance({ S }) {
 // Every number carries how much of the training it speaks for: rating is optional and off by
 // default, so a partly rated history is the normal case, and an average without its
 // denominator would quietly speak for sets that were never rated.
-function EffortCard({ S }) {
+function EffortCard({ S, exportFilters }) {
   const [win, setWin] = useState(90)
+  useEffect(()=>{if(exportFilters)exportFilters.current.effortRange=win},[exportFilters,win])
   const kind = displayScale(S)
   const hd = scaleName(kind)
   const sum = effortSummary(S, win)
@@ -260,13 +266,13 @@ function EffortCard({ S }) {
   const binLabel = b => kind === 'rpe' ? (b.tail ? '≤ 6' : String(10 - b.rir)) : (b.tail ? b.rir + '+' : String(b.rir))
 
   return <div className="card">
-    <h2>{t('Effort')} <span className="dim" style={{ textTransform: 'none', letterSpacing: 0 }}>· {t('how close to failure')}</span></h2>
+    <h2>{t('Effort')}</h2>
     <Segmented className="seg-range" value={win} onChange={setWin}
       options={[{ value: 30, label: '30d' }, { value: 90, label: '90d' }, { value: 365, label: '1Y' }, { value: 0, label: t('All') }]} />
     {sum.rated === 0 ? <div className="muted small">{t('No rated sets in this period.')}</div> : <>
       <div className="row between" style={{ alignItems: 'flex-end', gap: 12 }}>
         <div>
-          <div className="stat-v">{sum.avg == null ? '—' : fmtNum(toScale(kind, sum.avg)) + ' ' + hd}</div>
+          <div className="stat-v">{effortLabel(kind, toScale(kind, sum.avg))}</div>
           <div className="small dim">{t('average effort')}</div>
         </div>
         <div style={{ textAlign: 'right' }}>
@@ -280,31 +286,56 @@ function EffortCard({ S }) {
       </div>}
       {pts.length > 1 && <>
         <h4 className="sec" style={{ marginTop: 12 }}>{t('Week by week')}</h4>
-        <div className="chart"><LineChart points={pts} h={140} unit={hd} color="var(--yellow)" invert={kind === 'rir'} /></div>
+        <div className="chart"><LineChart points={pts} h={140} unit={hd} color="var(--yellow)" invert={kind === 'rir'} formatValue={v => effortLabel(kind, v)} /></div>
       </>}
       <h4 className="sec" style={{ marginTop: 12 }}>{t('Where the sets land')}</h4>
       {hist.map(b => <div key={b.rir} className="mrow">
-        <span className="nm">{hd} {binLabel(b)}</span>
+        <span className="nm">{kind === 'rir' && b.rir === 0 ? effortLabel(kind, 0) : `${hd} ${binLabel(b)}`}</span>
         <span className="bar"><i style={{ width: Math.round(b.n / maxBin * 100) + '%', background: b.rir <= HARD_RIR ? 'var(--yellow)' : 'var(--label-3)' }} /></span>
         <span className="v">{b.n ? b.n + ' · ' + Math.round(b.pct * 100) + '%' : '—'}</span>
       </div>)}
-      <div className="small dim" style={{ marginTop: 8 }}>
-        {t('Most working sets belong close to failure without living there — half at the floor and half at the top average out to a healthy-looking middle.')}
-      </div>
     </>}
   </div>
 }
 
+// All cards keep stable React identities when their order/visibility changes. The
+// former body/exercise column group joins the same grid so every section can move.
+function StatsLayout({ order, children }) {
+  const mounted = useRef(new Set())
+  const sections = Children.toArray(children).flatMap(child => child.props?.className === 'cols' ? Children.toArray(child.props.children) : [child])
+  const byId = new Map(sections.filter(child => child.props?.['data-stats-section']).map(child => [child.props['data-stats-section'], child]))
+  return <div className="stats-section-layout">{order.map(id => {
+    const section = byId.get(id)
+    if (!section) return null
+    if (!section.props.hidden) mounted.current.add(id)
+    // Unselected sections should not mount charts/maps that cannot be seen.
+    // Once opened, retain them so hiding/reordering never resets card filters.
+    return mounted.current.has(id) ? cloneElement(section, { key:id }) : <div key={id} data-stats-section={id} hidden />
+  })}</div>
+}
+
 // Stats = the analytics hub: all charts, progress and history live here.
-export default function Stats() {
+function Stats() {
+  useLang()
   const nav = useNavigate()
-  const S = useStore(s => s.S)
+  const snapshot = useMemo(createStatsSnapshotSelector, [])
+  const rawState = useStore(s => snapshot(s.S))
+  const S = useMemo(() => statisticsState(rawState), [rawState])
   const update = useStore(s => s.update)
+  const selectedSections = statsSelectionOrder(rawState.statsSections, rawState.statsSectionOrder)
+  const sectionOrder = normalizeStatsSectionOrder(selectedSections)
+  const sectionProps = id => ({ 'data-stats-section': id, hidden: !selectedSections.includes(id) })
   const [range, setRange] = useState(90)
   const [exId, setExId] = useState(null)
   const [exMetric, setExMetric] = useState('top')
-  const [measureKey, setMeasureKey] = useState('waist')
-  const now = Date.now()
+  const [bodySelection,setBodySelection]=useState({})
+  const exportFilters=useRef({})
+  const measurementRows=useMemo(()=>bodyRecords(S,{start:'0001-01-01',end:todayISO()}),[S])
+  // Preference updates clone the profile; retain comparison dates while records stay the same.
+  const measurementDataKey=useMemo(()=>JSON.stringify(measurementRows),[measurementRows])
+  useEffect(()=>setBodySelection({}),[measurementDataKey])
+  const localNow = useLocalNow()
+  const now = localNow.getTime()
   const kind = displayScale(S)
   const hd = scaleName(kind)
 
@@ -314,16 +345,18 @@ export default function Stats() {
   const bwDelta30 = bw30.length > 1 ? bw30[bw30.length - 1].w - bw30[0].w : null
   const workouts = S.workouts
   const monthW = workouts.filter(w => String(w.d || '').slice(0, 7) === todayISO().slice(0, 7)).length
-  const streak = trainingStreak(S)
-  const measures = [...(S.measurements || [])].sort((a, b) => a.d.localeCompare(b.d))
-  const selectedMeasureKey = measures.some(m => measurementValue(m, measureKey) > 0) ? measureKey : (MEASURE_FIELDS.find(([key]) => measures.some(m => measurementValue(m, key) > 0))?.[0] || measureKey)
-  const measurePoints = measures.filter(m => measurementValue(m, selectedMeasureKey) > 0).map(m => ({ t: new Date(m.d + 'T12:00:00').getTime(), d: m.d, y: measurementValue(m, selectedMeasureKey) }))
-  const currentMeasure = measurePoints.at(-1), previousMeasure = measurePoints.at(-2), firstMeasure = measurePoints[0]
+  const streak = trainingStreak(rawState, localNow)
+  const measures = [...(S.measurements || [])].sort((a, b) => String(a.d||'').localeCompare(String(b.d||'')))
   const latestWeight = lastBW(S)
   const bmi = bmiFor(latestWeight?.w, S.unit, S.heightCm, S.measurementUnit)
   const bmiPoints = S.heightCm ? S.bodyweight.map(b => ({ t: b.t || new Date(b.d + 'T12:00:00').getTime(), d: b.d, y: bmiFor(b.w, S.unit, S.heightCm, S.measurementUnit) })).filter(p => p.y) : []
 
-  const nameOf = id => EXIDX[id] ? exerciseNameFor(EXIDX[id]) : (workouts.flatMap(w => w.entries).find(e => e.id === id)?.n || id)
+  const originalNameState = { ...rawState, exerciseNameMode: 'original' }
+  const nameOf = (id, original = false) => {
+    const workout = workouts.find(w => w.entries.some(e => e.id === id))
+    const entry = workout?.entries.find(e => e.id === id)
+    return exerciseNameFor(EXIDX[id] || entry || { id }, { state: original ? originalNameState : rawState, entry, routineId: workout?.routineId })
+  }
   const currentOf = id => {
     for (let i = workouts.length - 1; i >= 0; i--) {
       const en = workouts[i].entries.find(e => e.id === id)
@@ -335,15 +368,15 @@ export default function Stats() {
       // Unloaded reps work still has a current figure — its rep count. Without this the whole
       // picker label went blank and the exercise sorted to the bottom as if it had no history.
       if (mode === 'reps') {
-        const reps = Math.max(0, ...rows.map(s => Number(s.r) || 0))
+        const reps = Math.max(0, ...rows.map(s => displayReps(Number(s.r) || 0, en.target)))
         if (reps > 0) return { mx: reps, unit: t('reps') }
       }
     }
     return { mx: 0, unit: S.unit }
   }
-  const exHist = [...new Set(workouts.flatMap(w => w.entries.map(e => e.id)))].filter(id => EXIDX[id] || nameOf(id) !== id)
+  const exHist = [...new Set(workouts.flatMap(w => w.entries.map(e => e.id)))].filter(id => EXIDX[id] || nameOf(id, true) !== id)
   const exCurrent = Object.fromEntries(exHist.map(id => [id, currentOf(id)]))
-  exHist.sort((a, b) => exCurrent[b].mx - exCurrent[a].mx || nameOf(a).localeCompare(nameOf(b)))
+  exHist.sort((a, b) => exCurrent[b].mx - exCurrent[a].mx || nameOf(a, true).localeCompare(nameOf(b, true)))
   const curEx = exId && exHist.includes(exId) ? exId : exHist[0] || null
   // A completed reps work row is authoritative for strength metrics, even when the parent
   // target also contains timed/cardio work. Entries without reps rows use their selected mode.
@@ -368,7 +401,7 @@ export default function Stats() {
     const en = w.entries.find(e => e.id === curEx)
     return en && bestWeightForEntry(en) > 0
   })
-  const bestRepsOf = en => Math.max(0, ...metricRowsForEntry(en, 'reps').map(s => Number(s.r) || 0))
+  const bestRepsOf = en => Math.max(0, ...metricRowsForEntry(en, 'reps').map(s => displayReps(Number(s.r) || 0, en.target)))
   const metric = s => curCardio ? (s.speed || 0) : curTimed ? (s.sec || 0) : (s.w || 0)
   const exUnit = curCardio ? 'km/h' : curTimed ? 's' : repsOnly ? t('reps') : S.unit
   let exPts = [], exList = [], exBest = 0
@@ -415,32 +448,47 @@ export default function Stats() {
     t: p.t, y: p.y, d: p.d,
     // 0 RIR (nothing left) is a full dot, 4+ a faint one; unrated sessions keep the plain line.
     m: exRir[i] == null ? null : 1 - Math.min(4, Math.max(0, exRir[i])) / 4,
-    note: exRir[i] == null ? undefined : hd + ' ' + fmtNum(toScale(kind, exRir[i]))
+    note: exRir[i] == null ? undefined : effortLabel(kind, toScale(kind, exRir[i]))
   }))
   const exOpts = [{ value: 'top', label: t('Top set') }]
   if (showE1) exOpts.push({ value: 'e1rm', label: t('Est. 1RM') })
   if (showEff) exOpts.push({ value: 'effort', label: t('Effort') })
+  const showExercise = id => {
+    setExId(id)
+    if (!selectedSections.includes('exercise')) update(s => {
+      const current = statsSelectionOrder(s.statsSections,s.statsSectionOrder)
+      s.statsSections = [...current,'exercise']
+      s.statsSectionOrder = [...s.statsSections]
+    })
+    requestAnimationFrame(() => document.querySelector('[data-stats-section="exercise"]')?.scrollIntoView({behavior:S.reduceMotion?'auto':'smooth',block:'start'}))
+  }
 
   return <>
-    <div className="hdr"><div><h1>{t('Stats')}</h1><div className="sub">{t('Progress & history')}</div></div>
-      <div className="row" style={{ gap: 3 }}><button className="iconbtn" onClick={() => exportStatsReport(S)} aria-label={t('Export Stats report')} title={t('Export Stats report')}><Icon name="download" /></button>{!MOBILE && <button className="iconbtn" onClick={() => window.print()} aria-label={t('Print / Save as PDF')} title={t('Print / Save as PDF')}><Icon name="clipboard" /></button>}<button className="iconbtn" onClick={() => nav('/history')} aria-label={t('History')}><Icon name="history" /></button><button className="iconbtn" onClick={inBodySheet} aria-label={t('InBody history')} title={t('InBody history')}><Icon name="person" /></button></div></div>
+    <div className="hdr stats-header"><div><h1>{t('Stats')}</h1><div className="sub">{t('Progress & history')}</div></div>
+      <div className="row stats-header-actions" data-tour="stats-actions" style={{ gap: 3 }}><button className="iconbtn" onClick={() => useUI.getState().openSheet(close => <ReportsExport S={rawState} pdf statsFilters={{...exportFilters.current,bodyweightRange:range,exId:curEx,exMetric,measurementSelection:bodySelection}} close={close} />)} aria-label={t('Export Reports')} title={t('Export Reports')}><Icon name="download" /></button>{!MOBILE && <button className="iconbtn" onClick={() => window.print()} aria-label={t('Print / Save as PDF')} title={t('Print / Save as PDF')}><Icon name="clipboard" /></button>}<button className="iconbtn" onClick={() => nav('/progress')} aria-label={t('Progress Report')} title={t('Progress Report')}><Icon name="chart" /></button><button className="iconbtn" data-tour="history" onClick={() => nav('/history')} aria-label={t('History')}><Icon name="history" /></button><button className="iconbtn" data-tour="inbody" onClick={inBodySheet} aria-label={t('InBody history')} title={t('InBody history')}><Icon name="person" /></button></div></div>
+    <StatsSections />
 
-    <div className="tiles">
-      <div className="tile"><div className="l"><Icon name="dumbbell" />{t('Workouts')}</div><div className="v">{workouts.length}</div></div>
-      <div className="tile"><div className="l"><Icon name="calendar" />{t('This month')}</div><div className="v">{monthW}</div></div>
-      <div className="tile"><div className="l"><Icon name="flame" />{t('Training streak')}</div><div className="v">{streak.current}</div></div>
-      <div className="tile"><div className="l"><Icon name="scale" />{t('Weight 30d')}</div><div className="v" style={{ fontSize: 22, color: bwDelta30 === null ? 'inherit' : bwDeltaColor(bwDelta30, (lastBW(S) || {}).w || 0) }}>{bwDelta30 === null ? '—' : (bwDelta30 > 0 ? '+' : '') + fmtNum(bwDelta30) + ' ' + S.unit}</div></div>
+    <StatsLayout order={sectionOrder}>
 
+    <div {...sectionProps('history')}>
+      <TrainingHistory />
+      <div className="tiles">
+        <div className="tile"><div className="l"><Icon name="dumbbell" />{t('Recorded workouts')}</div><div className="v">{workouts.length}</div></div>
+        <div className="tile"><div className="l"><Icon name="calendar" />{t('This month')}</div><div className="v">{monthW}</div></div>
+        <div className="tile stats-streak" data-streak-state={streak.state}><div className="l"><StreakFlame value={streak.current} />{t('Training days in this streak')}</div><div className="v">{streak.current}</div></div>
+        <div className="tile"><div className="l"><Icon name="scale" />{t('Weight 30d')}</div><div className="v" style={{ fontSize: 22, color: bwDelta30 === null ? 'inherit' : bwDeltaColor(bwDelta30, (lastBW(S) || {}).w || 0) }}>{bwDelta30 === null ? '—' : (bwDelta30 > 0 ? '+' : '') + fmtNum(bwDelta30) + ' ' + S.unit}</div></div>
+      </div>
     </div>
 
-    <ConsistencyCard S={S} onTimes={sessionTimingSheet} />
+    <div {...sectionProps('consistency')} data-tour="progress"><ConsistencyCard S={S} onTimes={sessionTimingSheet} /></div>
 
-    <RoutineDuration S={S} />
-    {workouts.length > 0 && <MuscleBalance S={S} />}
-    {hasEffort(S) && <EffortCard S={S} />}
+    <div {...sectionProps('overview')}><HybridSummary S={S} exportFilters={exportFilters} /></div>
+    <div {...sectionProps('duration')}><RoutineDuration S={S} exportFilters={exportFilters} /></div>
+    {workouts.length > 0 && <div {...sectionProps('muscles')}><MuscleBalance S={S} exportFilters={exportFilters} onExercise={showExercise} /></div>}
+    {hasEffort(S) && <div {...sectionProps('effort')}><EffortCard S={S} exportFilters={exportFilters} /></div>}
 
     <div className="cols">
-      <div className="card">
+      <div className="card" {...sectionProps('bodyweight')}>
         <div className="row between" style={{ marginBottom: 8 }}>
           <h2 className="body-weight-title">{t('Body Weight')}</h2>
           <div className="row" style={{ gap: 8 }}>
@@ -453,43 +501,44 @@ export default function Stats() {
         <div className="chart"><LineChart points={bwPts} h={160} unit={S.unit} goal={S.targetW} /></div>
       </div>
 
-      <div className="card">
-        <div className="row between" style={{ marginBottom: 10 }}><h2 style={{ margin: 0 }}>{t('Body measurements')}</h2><Button size="sm" icon="plus" onClick={measurementsSheet}>{t('Log')}</Button></div>
+      <div className="card" {...sectionProps('measurements')}>
+        <div className="row between" style={{ marginBottom: 10 }}><h2 data-tour="measurements" style={{ margin: 0 }}>{t('Body Measurements')}</h2><Button size="sm" icon="plus" onClick={() => measurementsSheet()}>{t('Log')}</Button></div>
         {measures.length ? <>
-          <SelectRow title={t('Measurement')} sheetTitle={t('Body measurements')} value={selectedMeasureKey} onChange={setMeasureKey}
-            options={MEASURE_FIELDS.map(([value, label]) => ({ value, label: t(label) }))} />
-          <div className="row" style={{ alignItems: 'baseline', gap: 8, marginTop: 10 }}><div className="big" style={{ fontSize: 28 }}>{currentMeasure ? fmtNum(currentMeasure.y) + ' ' + (S.measurementUnit || 'cm') : '—'}</div></div>
-          {currentMeasure && measurePoints.length > 1 && <div className="small dim">{previousMeasure ? t('Since previous: {0}', (currentMeasure.y > previousMeasure.y ? '+' : '') + fmtNum(currentMeasure.y - previousMeasure.y) + ' ' + (S.measurementUnit || 'cm')) : ''}{measurePoints.length > 2 ? ' · ' + t('Since first: {0}', (currentMeasure.y > firstMeasure.y ? '+' : '') + fmtNum(currentMeasure.y - firstMeasure.y) + ' ' + (S.measurementUnit || 'cm')) : ''}</div>}
-          <div className="chart"><LineChart points={measurePoints} h={150} unit={S.measurementUnit || 'cm'} color="var(--teal)" /></div>
+          <ProgressBody records={measurementRows} selection={bodySelection} onSelection={setBodySelection} body={S.body}/>
+          <details><summary>{t('Edit measurement history')}</summary>
           <h4 className="sec">{t('Measurement history')}</h4>
-          {[...measures].reverse().slice(0, 6).map(m => <div className="row between" key={m.d} style={{ padding: '7px 0', borderBottom: 'var(--hair) solid var(--sep)' }}><div><div className="small">{fmtDate(m.d, true)}</div><div className="dim small">{MEASURE_FIELDS.filter(([k]) => measurementValue(m, k) > 0).map(([k, label]) => t(label) + ' ' + fmtNum(measurementValue(m, k))).join(' · ')}</div></div><div className="row" style={{ gap: 4 }}><button className="iconbtn" style={{ width: 30, height: 30, fontSize: 14 }} onClick={() => measurementsSheet(m)} aria-label={t('Edit')}><Icon name="pencil" /></button><button className="iconbtn" style={{ width: 30, height: 30, fontSize: 14, color: 'var(--red)' }} onClick={() => confirmSheet({ title: t('Delete measurement?'), message: t('This measurement will be removed from its graphs.'), confirmText: t('Delete'), danger: true, onConfirm: () => update(s => { s.measurements = (s.measurements || []).filter(x => x.d !== m.d) }) })} aria-label={t('Delete')}><Icon name="trash" /></button></div></div>)}
+          {[...measures].reverse().map(m => <div className="row between" key={m.id || m.d} style={{ padding: '7px 0', borderBottom: 'var(--hair) solid var(--sep)' }}><details className="measurement-history"><summary>{fmtDate(m.d, true)}</summary><div className="dim small">{MEASURE_FIELDS.filter(([k]) => measurementValue(m, k) > 0).map(([k, label]) => t(label) + ' ' + fmtNum(measurementInUnit(m,k,S.measurementUnit||'cm')) + ' ' + (S.measurementUnit || 'cm')).join(' · ')}</div></details><div className="row" style={{ gap: 4 }}><button className="iconbtn" style={{ width: 30, height: 30, fontSize: 14 }} onClick={() => measurementsSheet(m)} aria-label={t('Edit')}><Icon name="pencil" /></button><button className="iconbtn" style={{ width: 30, height: 30, fontSize: 14, color: 'var(--red)' }} onClick={() => confirmSheet({ title: t('Delete measurement?'), message: t('This measurement will be removed from its graphs.'), confirmText: t('Delete'), danger: true, onConfirm: () => update(s => { s.measurements=removeBodyRecord(s.measurements,m) }) })} aria-label={t('Delete')}><Icon name="trash" /></button></div></div>)}
+          </details>
         </> : <div className="muted small">{t('No measurements logged yet.')}</div>}
       </div>
 
-      <div className="card">
+      <div className="card" {...sectionProps('bmi')}>
         <div className="row between" style={{ marginBottom: 10 }}><h2 style={{ margin: 0 }}>{t('BMI — Body Mass Index')}</h2><Button size="sm" icon="scale" onClick={heightSheet}>{S.heightCm ? fmtNum(S.heightCm) + ' ' + (S.measurementUnit || 'cm') : t('Add height')}</Button></div>
         {bmi ? <><div className="row" style={{ alignItems: 'baseline', gap: 10 }}><div className="big">{fmtNum(bmi)}</div><span className="tag acc">{t(bmiBand(bmi))}</span></div>
           <div className="small muted" style={{ marginTop: 6 }}>{t('Calculated from {0} and {1} {2}.', fmtNum(latestWeight.w) + ' ' + S.unit, fmtNum(S.heightCm), S.measurementUnit || 'cm')}</div>
-          <div className="chart" style={{ marginTop: 8 }}><LineChart points={bmiPoints} h={140} unit="IMC" color="var(--orange)" /></div>
-          <div className="small dim" style={{ marginTop: 8 }}>{t('BMI is an orientation only. It can read high in muscular people and does not measure body-fat percentage.')}</div></>
+          <div className="chart" style={{ marginTop: 8 }}><LineChart points={bmiPoints} h={140} unit="IMC" color="var(--orange)" /></div></>
           : <div className="muted small">{!S.heightCm ? t('Add your height to calculate BMI from your latest body weight.') : t('Log your body weight to calculate BMI.')}</div>}
       </div>
 
-      <div className="card">
+      <div className="card exercise-progress insight-panel" {...sectionProps('exercise')}>
         <h2>{t('Exercise progress')}</h2>
         {exHist.length ? <>
           <div className="sect-b" style={{ marginBottom: 10 }}>
             <SelectRow title={t('Exercise')} sheetTitle={t('Exercise progress')} value={curEx} onChange={setExId} stackedValue
-              options={exHist.map(id => ({ value: id, label: nameOf(id) + (exCurrent[id].mx ? ' ' + '—' + ' ' + fmtNum(exCurrent[id].mx) + ' ' + exCurrent[id].unit : '') }))} />
+              options={exHist.map(id => {
+                const workout = workouts.find(w => w.entries.some(e => e.id === id))
+                const entry = workout?.entries.find(e => e.id === id)
+                return { value: id, label: <StatsExerciseLabel id={id} entry={entry} routineId={workout?.routineId}
+                  suffix={exCurrent[id].mx ? ' — ' + fmtNum(exCurrent[id].mx) + ' ' + exCurrent[id].unit : ''} /> }
+              })} />
           </div>
           {exOpts.length > 1 && <Segmented className="seg-range" value={onEff ? 'effort' : onE1 ? 'e1rm' : 'top'} onChange={setExMetric} options={exOpts} />}
           <div className="chart">
             {onEff
-              ? <LineChart points={effPts} h={150} unit={hd} color="var(--yellow)" invert={kind === 'rir'} />
+              ? <LineChart points={effPts} h={150} unit={hd} color="var(--yellow)" invert={kind === 'rir'} formatValue={v => effortLabel(kind, v)} />
               : <LineChart points={onE1 ? e1ChartPts : topPts} h={150} unit={exUnit} color="var(--blue)" />}
           </div>
-          <div style={{ marginTop: 8 }}>{exList.map((p, i) => <div key={i} className="row between small" style={{ padding: '6px 0', borderBottom: 'var(--hair) solid var(--sep)' }}>
-            <span className="muted">{fmtDate(p.d, true)}</span><span>{p.sets.map(s => setLabel(curEx, s, p.target)).join('  ')}</span></div>)}</div>
+          <ExerciseSessions name={nameOf(curEx)} exerciseId={curEx} sessions={exList} />
           <div className="small dim" style={{ marginTop: 8 }}>
             {onEff ? t('Average effort per workout') : onE1 ? t('Estimated 1RM per workout') : curCardio ? t('Top speed per workout') : curTimed ? t('Longest hold per workout') : repsOnly ? t('Most reps in a set per workout') : t('Best set weight per workout')}
             {onEff ? '' : <> · {t('Best:')}{' '}<b className="accent">{fmtNum(onE1 ? e1Best.est : exBest)} {onE1 ? S.unit : exUnit}</b></>}
@@ -504,12 +553,10 @@ export default function Stats() {
       </div>
     </div>
 
-    {workouts.length > 0 && <>
-      <div className="row between" style={{ marginBottom: 10 }}>
-        <h4 className="sec" style={{ margin: 0 }}>{t('Recent workouts')}</h4>
-        <Button size="sm" variant="ghost" trailingIcon="chevronRight" onClick={() => nav('/history')}>{t('All')} {workouts.length}</Button>
-      </div>
-      <div className="list">{[...workouts].reverse().slice(0, 6).map(w => <WorkoutRow key={w.id} w={w} onClick={() => workoutDetailSheet(w)} />)}</div>
-    </>}
+    </StatsLayout>
   </>
 }
+
+// Shell still observes the live timer and persistence warnings. Its clock-only
+// renders must not bypass the semantic Stats subscription and rebuild charts.
+export default memo(Stats)

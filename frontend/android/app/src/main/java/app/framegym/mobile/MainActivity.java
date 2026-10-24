@@ -6,10 +6,14 @@ import com.getcapacitor.BridgeActivity;
 public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        registerPlugin(HealthActivitiesPlugin.class);
         registerPlugin(GoogleDriveAuthPlugin.class);
         registerPlugin(UpdatePushPlugin.class);
         registerPlugin(AppInstallerPlugin.class);
         registerPlugin(WorkoutNotificationPlugin.class);
+        registerPlugin(SoundPreferencesPlugin.class);
+        registerPlugin(SystemAppearancePlugin.class);
+        registerPlugin(ProfileSnapshotPlugin.class);
         super.onCreate(savedInstanceState);
     }
 }

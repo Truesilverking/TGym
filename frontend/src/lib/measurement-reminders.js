@@ -15,7 +15,25 @@ export function reminderConfig(S, metric, today = todayISO()) {
   }
   return { enabled: false, intervalValue: metric === 'bodyMeasurements' ? 2 : 1, intervalUnit: metric === 'bodySize' ? 'months' : 'weeks' }
 }
-const validDate = value => /^\d{4}-\d{2}-\d{2}$/.test(value || '') && !Number.isNaN(new Date(value + 'T12:00:00').getTime())
+export const validReminderTime = value => /^([01]\d|2[0-3]):[0-5]\d$/.test(value || '')
+export const validReminderDate = value => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value || '')) return false
+  const date = new Date(value + 'T12:00:00')
+  return Number.isFinite(+date) && isoOf(date) === value
+}
+const validDate = validReminderDate
+export function measurementReminderValidation(S) {
+  const settings = S.measurementReminders || {}
+  if (settings.time != null && !validReminderTime(settings.time)) return {valid:false, reason:'Enter a valid time'}
+  const enabled = REMINDER_METRICS.map(([metric]) => reminderConfig(S, metric)).filter(config => config?.enabled)
+  if (!enabled.length) return {valid:false, reason:'Choose at least one measurement'}
+  for (const config of enabled) {
+    const unit = config.intervalUnit ?? 'weeks', value = Number(config.intervalValue ?? 1)
+    if (!['days','weeks','months'].includes(unit) || !Number.isInteger(value) || value < 1 || value > ({days:365,weeks:52,months:12}[unit])) return {valid:false, reason:'Enter a valid frequency'}
+    if ((config.anchorDate != null && !validDate(config.anchorDate)) || (config.overrideUntil != null && !validDate(config.overrideUntil))) return {valid:false, reason:'Enter a valid date'}
+  }
+  return {valid:true, reason:null}
+}
 export function reminderInterval(config = {}) {
   const unit = ['days', 'weeks', 'months'].includes(config.intervalUnit) ? config.intervalUnit : 'weeks'
   const limit = { days: 365, weeks: 52, months: 12 }[unit]
@@ -66,8 +84,8 @@ export function postponeMeasurement(S, metric, skip = false, today = todayISO())
 // Include former per-metric IDs so upgrades cancel every old notification.
 export const MEASUREMENT_NOTIFICATION_IDS = Array.from({length: MEASURE_FIELDS.length + 1}, (_, i) => 2000 + i)
 export function measurementNotificationPlan(S, now = new Date()) {
-  if (!S.measurementReminders?.notifications) return []
-  const time = /^([01]\d|2[0-3]):[0-5]\d$/.test(S.measurementReminders.time || '') ? S.measurementReminders.time : '08:00'
+  if (!S.measurementReminders?.notifications || !measurementReminderValidation(S).valid || !Number.isFinite(+now)) return []
+  const time = S.measurementReminders.time ?? '08:00'
   const grouped = new Map()
   for (const reminder of measurementReminders(S, isoOf(now))) {
     const at = new Date(`${reminder.due}T${time}:00`)

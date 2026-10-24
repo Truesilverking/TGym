@@ -1,0 +1,42 @@
+/* Shared Stats cards retain their state while following the saved view order. */
+.stats-section-layout{display:grid;grid-template-columns:minmax(0,1fr);align-items:start}
+.stats-section-layout>[data-stats-section]{min-width:0}
+.stats-header-actions{flex-wrap:wrap;justify-content:flex-end}
+.stats-view-control{position:fixed;right:var(--sar);top:calc(var(--visual-top,0px) + var(--sat) + (var(--visual-height,100dvh) - var(--sat) - var(--bottom-clearance)) / 2);transform:translateY(-50%);z-index:60;width:44px;height:44px}
+.stats-view-control>.stats-sections-trigger{min-height:44px;width:44px;height:44px;gap:0;border:1px solid var(--panel-edge);border-right:0;border-radius:14px 0 0 14px;background:var(--surface);box-shadow:var(--panel-shadow)}
+.stats-customization-popover{position:absolute;top:50%;right:calc(100% + 8px);transform:translateY(-50%);width:min(400px,calc(100vw - var(--sal) - var(--sar) - 68px));z-index:65;border:1px solid var(--panel-edge);border-radius:var(--r-card);background:var(--surface);box-shadow:var(--panel-shadow)}
+.stats-customization-panel{display:flex;flex-direction:column;max-height:var(--stats-popover-max-height,min(620px,calc(var(--visual-height,100dvh) - var(--sat) - var(--bottom-clearance) - 24px)));padding:16px;min-width:0;min-height:0;box-sizing:border-box}
+.stats-customization-heading{display:flex;flex:none;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px}
+.stats-customization-panel .stats-customization-heading h3{margin:0;font-size:20px;font-weight:650;letter-spacing:-.02em}
+.stats-customization-heading p{margin:5px 0 0}
+.stats-customization-heading>.iconbtn{flex:none;margin:-8px -8px 0 0}
+.stats-customization-panel>#stats-sections-hint{flex:none;margin:0 0 10px;line-height:1.4}
+.stats-customization-options{display:grid;flex:1;gap:5px;overflow-y:auto;overscroll-behavior:contain;min-height:0;padding:2px}
+.stats-customization-option{display:flex;align-items:center;gap:8px;min-width:0;padding:3px 5px;border:1px solid transparent;border-radius:12px}
+.stats-customization-option.selected{background:var(--acc-soft);border-color:color-mix(in srgb,var(--acc) 24%,transparent)}
+.stats-customization-option>.chk{flex:none}
+.stats-customization-option>label{flex:1;min-width:0;min-height:44px;display:flex;align-items:center;line-height:1.3;overflow-wrap:anywhere;cursor:pointer}
+.stats-customization-footer{flex:none;display:flex;justify-content:flex-end;gap:8px;border-top:var(--hair) solid var(--sep);padding-top:12px;margin-top:12px}
+.stats-customization-footer>.btn{min-height:44px}
+.stats-customization-panel button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+@media(min-width:740px){
+  .stats-section-layout{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:14px}
+  .stats-section-layout>[data-stats-section]{grid-column:1 / -1}
+  .stats-section-layout>[data-stats-section="bodyweight"],.stats-section-layout>[data-stats-section="measurements"],.stats-section-layout>[data-stats-section="bmi"]{grid-column:auto}
+}
+@media(min-width:1000px) and (hover:hover){.stats-view-control{right:max(var(--sar),calc((100vw - 1080px) / 2))}}
+/* Let the shared sheet own the entire available height. Only the options list
+   scrolls, keeping its toolbar and footer visible after focus moves. */
+.sheet:has(>.stats-customization-sheet){display:flex;flex-direction:column;height:min(90dvh,calc(var(--visual-height,100dvh) - var(--sat) - 12px));overflow:hidden}
+.sheet:has(>.stats-customization-sheet)>.sheet-tools{flex:none}
+.sheet>.stats-customization-sheet{flex:1;max-height:none;padding:0;overflow:hidden}
+.stats-customization-sheet .stats-customization-options{padding-bottom:4px}
+.stats-customization-sheet .stats-customization-footer{padding-bottom:4px}
+@media print{.stats-view-control{display:none}.stats-section-layout{display:block}}
+
+.stats-selection-position{display:grid;place-items:center;flex:none;width:26px;height:26px;border-radius:50%;background:var(--surface);color:var(--acc);font-size:12px;font-weight:650;font-variant-numeric:tabular-nums}
+.stats-view-control.draggable{transform:none}
+.stats-view-control.draggable>.stats-sections-trigger{touch-action:none;cursor:grab;user-select:none}
+.stats-view-control.draggable[data-dragging=true]>.stats-sections-trigger{cursor:grabbing}
+.stats-view-control.draggable[data-side=left]>.stats-sections-trigger{border:1px solid var(--panel-edge);border-left:0;border-radius:0 14px 14px 0}
+.stats-control-hint{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}

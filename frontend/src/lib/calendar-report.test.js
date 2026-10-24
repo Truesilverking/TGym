@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest'
 import { calendarReportPages, reportFilename, REPORT_COLORS } from './calendar-report.js'
-const S = { routines: [{ id: 'r', name: 'PRIVATE ROUTINE' }], week: { 1: 'r', 3: 'r', 5: 'r' }, dayPlan: {}, workouts: [{ id: 'w', d: '2026-09-02', routineId: 'r', name: 'PRIVATE ROUTINE' }] }
+const S = { routines: [{ id: 'r', name: 'PRIVATE ROUTINE' }], week: { 1: 'r', 3: 'r', 5: 'r' }, dayPlan: {}, workouts: [{ id: 'w', d: '2026-09-02', routineId: 'r', name: 'PRIVATE ROUTINE' , entries:[{id:'exercise',sets:[{done:true,r:8}]}]}] }
 const anchor = new Date(2026, 8, 16, 12)
 const parse = svg => new DOMParser().parseFromString(svg, 'image/svg+xml')
 describe('dedicated consistency reports', () => {
@@ -17,8 +17,18 @@ describe('dedicated consistency reports', () => {
         expect(+cell.getAttribute('x') + +cell.getAttribute('width')).toBeLessThanOrEqual(page.width - 40)
         expect(+cell.getAttribute('y') + +cell.getAttribute('height')).toBeLessThan(page.height - 90)
       }
-      for (const label of ['Completed', 'Not completed', 'Pending']) expect(doc.documentElement.textContent).toContain(label)
+      for (const label of ['Completed', 'Not Trained', 'Pending']) expect(doc.documentElement.textContent).toContain(label)
     }
+  })
+  it('keeps Full Report exclusively calendar pages for the anchored year',()=>{
+    const pages=calendarReportPages(S,anchor,'full','pdf',{now:anchor})
+    expect(pages).toHaveLength(3)
+    for (const page of pages) expect(parse(page.svg).querySelectorAll('[data-period="month"]')).toHaveLength(4)
+    const detail=pages.flatMap(p=>[...parse(p.svg).querySelectorAll('[data-date]')].map(d=>d.getAttribute('data-date')))
+    expect(detail).toHaveLength(365)
+    expect(new Set(detail).size).toBe(365)
+    expect(detail[0]).toBe('2026-01-01');expect(detail.at(-1)).toBe('2026-12-31')
+    for(const p of pages)expect(p.svg).not.toContain('Progress Report')
   })
   it('renders all twelve months once across year PDF pages and in the PNG overview', () => {
     const pdf = calendarReportPages(S, anchor, 'year', 'pdf'), png = calendarReportPages(S, anchor, 'year', 'png')

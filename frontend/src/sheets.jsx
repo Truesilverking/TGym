@@ -1,30 +1,51 @@
+import { clearWorkoutNotification } from './lib/workout-notification.js'
+import DailyPlan, { ScheduleEditor } from './components/DailyPlan.jsx'
+import { dailyPlan, nextDailyRoutine, routineIds, loggedWorkouts } from './lib/daily-plan.js'
+import { ActivityMetrics, openActivityEditor } from './components/Activities.jsx'
+import { statisticsState } from './lib/training-history.js'
+import { fmtScheduledDate } from './lib/format.js'
+import TrainingPauseCard from './components/TrainingPauseCard.jsx'
+import { isTrainingPaused } from './lib/training-pause.js'
+import MetricFields from './components/MetricFields.jsx'
+import { upsertBodyRecord, parseMetrics, validMeasurementDate, recordHeight } from './lib/body-records.js'
 import MeasurementReminders from './components/MeasurementReminders.jsx'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useStore } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
 import { EXDB, EXIDX, BODYPARTS, isCardio, isBodyweightEq, allExercises, equipmentOf, smOf, exerciseSearchScore, exOr } from './lib/exercises.js'
 import { activeProfile, exAvailable, ALL_EQUIPMENT, newProfile } from './lib/equipment.js'
-import { fmtDate, fmtNum, fmtVol, fmtDur, durPart, todayISO, isoOf, uid, exCount, DAYN, MONTHS_LONG, ACCENTS } from './lib/format.js'
-import { lastEntryFor, bestWeightFor, buildSets, effectiveRoutineId, workoutVolume, setsDone, setsDoneActive, lastBW, supersetUnits, unitOf, setLabel, defaultConfig, cleanupSg, modeOf, effortOf, isBw, isPerSide, sideReps, workSetsDone, applyIntensifierPlan, MAX_PLANNED_WARMUPS, NOTE_MAX } from './lib/history.js'
-import { beep, vibrate } from './lib/sound.js'
-import { t, instrFor, exerciseNameFor, getLang, INSTR_LANGS, dateLocale } from './lib/i18n.js'
+import { fmtDate, fmtNum, fmtVol, fmtDur, durPart, todayISO, isoOf, localTZ, uid, exCount, DAYN, MONTHS_LONG, ACCENTS } from './lib/format.js'
+import { lastEntryFor, bestWeightFor, buildSets, effectiveRoutineId, workoutVolume, setsDone, setsDoneActive, lastBW, supersetUnits, unitOf, setLabel, defaultConfig, cleanupSg, modeOf, effortOf, isBw, isPerSide, displayReps, storedReps, displayRepConfig, workSetsDone, applyIntensifierPlan, MAX_PLANNED_WARMUPS, NOTE_MAX } from './lib/history.js'
+import { playAppSound, vibrate } from './lib/sound.js'
+import { t, instrFor, exerciseNameFor, originalExerciseNameFor, getLang, INSTR_LANGS, dateLocale } from './lib/i18n.js'
 import { nav } from './lib/nav.js'
 import { starterRoutines } from './lib/starter.js'
 import Media, { Thumb } from './components/Media.jsx'
 import Stepper from './components/Stepper.jsx'
+import BodyWeightPicker from './components/BodyWeightPicker.jsx'
 import Icon from './components/Icon.jsx'
 import StreakFlame from './components/StreakFlame.jsx'
+import StreakStatus from './components/StreakStatus.jsx'
+import WorkoutSummaryStreak from './components/WorkoutSummaryStreak.jsx'
+import StreakMilestoneCelebration from './components/StreakMilestoneCelebration.jsx'
+import { evaluateStreakMilestones, isCurrentStreakMilestone } from './lib/streak-milestones.js'
+import { useLocalNow } from './lib/use-local-now.js'
 import CalendarExport from './components/CalendarExport.jsx'
 import { calendarDay } from './lib/calendar-data.js'
-import { consistencyStats, nextScheduledWorkout } from './lib/consistency.js'
+import { calendarActivity, calendarActivityCount, calendarMonth } from './lib/calendar-view.js'
+import { calendarState, calendarLegend, calendarVisualStyle, TRACKING_START_MARKER } from './lib/calendar-visual.js'
+import './components/CalendarVisual.css'
+import { startSessionOrigin, hasWorkoutActivity } from './lib/session-activity.js'
 import { Button, Slider, Switch, Segmented, SelectRow, Row, TextField, MultiSelectRow, NumberField } from './components/ui.jsx'
 import { glyphOf, GLYPH_GROUPS, DEFAULT_GLYPH } from './lib/glyphs.js'
+import { measurementInUnit } from './lib/body-report.js'
 import BodyMap from './components/BodyMap.jsx'
 import { exerciseMuscleSnapshot, loadOfWorkouts, MUSCLES, MUSCLE_NAME, normalizeMuscleGroups, hasExplicitMuscleMetadata } from './lib/muscles.js'
 import { parseImport, mergeImport } from './lib/import-csv.js'
 import { buildPlanBundle, parsePlan, mergePlan, printPlan } from './lib/plan-share.js'
+import RoutineExchange from './components/RoutineExchange.jsx'
 import { estimate1RM, best1RM, is1RMRecord, REP_CAP } from './lib/onerm.js'
-import { nextPrescription, applyPrescription, policyFor, defaultIncrement, POLICIES_FOR, POLICY_NAME, POLICY_DESC, MAX_BW_SETS } from './lib/progression.js'
+import { nextPrescription, applyPrescription, policyFor, defaultIncrement, loadingStepFor, POLICIES_FOR, POLICY_NAME, POLICY_DESC, MAX_BW_SETS } from './lib/progression.js'
 import { MOBILE, shareExport } from './lib/mobile.js'
 import { buildCompletedWorkout } from './lib/finish-workout.js'
 import { isWarmupRow } from './lib/workout-model.js'
@@ -32,19 +53,20 @@ import { GUIDED_PLANS, createGuidedPlan } from './lib/guided-plans.js'
 import { saveImportUndo } from './lib/import-undo.js'
 import { MEASURE_FIELDS, measurementValue } from './lib/stats-insights.js'
 import { sessionTimingSummary } from './lib/stats-insights.js'
-import { applyTrainingPlan, calendarDeload, deloadStatus, deloadTargetFor, repRangeEnabled, streakTier, trainingStreak, targetRirRangeFor } from './lib/training-plan.js'
-import { weightStepFor } from './lib/unit-conversion.js'
+import { withBackoffRepsMode, backoffRepOffsetFor, applyTrainingPlan, calendarDeload, deloadStatus, deloadTargetFor, repRangeEnabled, streakTier, trainingStreak, targetRirRangeFor } from './lib/training-plan.js'
+import { weightStepFor, LB_PER_KG } from './lib/unit-conversion.js'
 import Heatmap from './components/Heatmap.jsx'
 import LineChart from './components/LineChart.jsx'
-import { pauseWorkoutClock, resumeWorkoutClock, workoutElapsedMs } from './lib/workout-time.js'
-import { effectiveWorkoutComplete, resumeAutoFinished } from './lib/workout-lifecycle.js'
+import { pauseWorkoutClock, resumeWorkoutClock, workoutElapsedMs, correctWorkoutDuration } from './lib/workout-time.js'
+import { effectiveWorkoutComplete, resumeAutoFinished, ensureWorkoutCompletionPaused } from './lib/workout-lifecycle.js'
 import { routineMuscleSheet } from './components/RoutineMusclePreview.jsx'
+import './components/WorkoutInactivity.css'
+import { effortValue } from './lib/history.js'
 
 const S = () => useStore.getState().S
 const update = (...a) => useStore.getState().update(...a)
 const ui = () => useUI.getState()
 const toast = m => ui().toast(m)
-const snd = () => S().sound
 const pauseActiveWorkoutClock = () => update(s => { if (s.active) s.active = pauseWorkoutClock(s.active) }, true)
 const resumeActiveWorkoutClock = () => update(s => { if (s.active) s.active = resumeWorkoutClock(s.active) }, true)
 
@@ -62,8 +84,10 @@ function ConfirmDialog({ title, message, confirmText, cancelText, danger, onConf
 export function confirmSheet(opts) {
   let decided = false
   ui().openSheet(close => <ConfirmDialog {...opts} close={close} onConfirm={() => {
+    if (decided) return
     decided = true
-    opts.onConfirm?.()
+    try { opts.onConfirm?.() }
+    catch (error) { decided = false; throw error }
   }} />, { kind: 'center', onClose: () => { if (!decided) { decided = true; opts.onCancel?.() } } })
 }
 
@@ -73,6 +97,7 @@ export function loadStarterPlan() {
   update(st => {
     st.routines.push(push, pull, legs)
     st.week[1] = push.id; st.week[3] = pull.id; st.week[5] = legs.id
+    st.scheduleStarted = todayISO()
   })
   toast(t('Starter plan loaded — Mon Push · Wed Pull · Fri Legs'))
 }
@@ -131,43 +156,70 @@ function WeightInput({ value, setValue, unit }) {
       <button className="chip" onClick={() => onSlide(value + 0.5)}>+0.5</button>
       <button className="chip" onClick={() => onSlide(value + 1)}>+1</button>
     </div>
-    <Slider value={sv} min={W_LO} max={W_HI} step={0.5} onChange={onSlide} />
+    <Slider value={sv} min={W_LO} max={W_HI} step={0.5} onChange={onSlide} aria-label={t('Weight')} aria-valuetext={`${fmtNum(sv)} ${unit}`} />
   </>
 }
 
 /* ============================ body weight ============================ */
-function BwSheet({ required, onDone, close }) {
+function BwSheet({ required, onDone, close, initialDate }) {
   const st = useStore(s => s.S)
   const unit = st.unit
+  const entryUnit = useRef(unit)
   const bw = lastBW(st)
-  const [v, setV] = useState(bw ? bw.w : 70)
-  const save = () => {
-    const n = Math.round((v || 0) * 10) / 10
-    if (!n || n <= 0) { toast(t('Enter a valid weight')); return }
+  const [date, setDate] = useState(initialDate || todayISO())
+  const [v, setV] = useState(bw ? Number(bw.w) : 70)
+  const [weightValid, setWeightValid] = useState(true)
+  const pickerDraft = useRef(null)
+  const reading = useRef({id:uid(),t:Date.now()})
+  const [saving, setSaving] = useState(false)
+  // Keep the guard after a successful close: stale double taps must not run the
+  // synchronous pre-workout callback twice. A failed save still permits retry.
+  const savingWeight = useRef(false)
+  const save = async () => {
+    if(savingWeight.current)return
+    if(!validMeasurementDate(date,todayISO())){toast(t('Check the date and highlighted values.'));return}
+    // Retain the editor's configured unit if a remote/profile update changes
+    // the global unit while it is open. Save in the current profile unit.
+    const currentUnit = S().unit
+    const entered = Number(pickerDraft.current?.getValue())
+    const canonical = entryUnit.current === currentUnit ? entered : currentUnit === 'lb' ? entered * LB_PER_KG : entered / LB_PER_KG
+    const n = Math.round(canonical * 10) / 10
+    if (!weightValid || !Number.isFinite(n) || n <= 0) { toast(t('Enter a valid weight')); return }
+    setV(entered)
+    savingWeight.current = true
+    setSaving(true)
+    try {
     update(s => {
-      const iso = todayISO()
+      const iso = date
       const ex = s.bodyweight.find(b => b.d === iso)
       if (ex) {
         const samples = Array.isArray(ex.samples) ? ex.samples : [{ w: ex.w, t: ex.t || Date.now() }]
-        samples.push({ w: n, t: Date.now() }); ex.samples = samples
+        const sample={...reading.current,w:n},index=samples.findIndex(x=>x.id===sample.id)
+        if(index>=0)samples[index]=sample;else samples.push(sample)
+        ex.samples = samples
         ex.w = Math.round((samples.reduce((sum, x) => sum + x.w, 0) / samples.length) * 10) / 10; ex.t = Date.now()
-      } else s.bodyweight.push({ d: iso, w: n, t: Date.now(), samples: [{ w: n, t: Date.now() }] })
+      } else s.bodyweight.push({ d: iso, w: n, t: Date.now(), samples: [{...reading.current,w:n}] })
       s.bodyweight.sort((a, b) => (a.d < b.d ? -1 : 1))
     })
+    if(!required)await useStore.getState().flushPersistence()
     close()
     if (onDone) onDone(n); else toast(t('Weight saved'))
+    } catch { savingWeight.current = false; toast(t('Could not save. Check available storage and try again.')) } finally {setSaving(false)}
   }
-  const recent = [...st.bodyweight].reverse().slice(0, 3)
+  const recent = useMemo(() => [...st.bodyweight].reverse().slice(0, 3), [st.bodyweight])
+  const recordedDate = useMemo(() => st.bodyweight.some(b => b.d === date), [st.bodyweight, date])
   const delEntry = d => update(s => { s.bodyweight = s.bodyweight.filter(b => b.d !== d) })
   return <>
     <h3>{required ? t('Quick check-in') : t('Log body weight')}</h3><Button size="sm" onClick={() => measurementRemindersSheet('weight')}>{t('Measurement reminder')}</Button>
-    <div className="muted small">{required ? t('Slide or tap to set your weight — tracked before every workout so your curve stays honest.') : t('Today') + ', ' + fmtDate(todayISO(), true)}</div>
-    <WeightInput value={v} setValue={setV} unit={unit} />
+    {required && <div className="muted small">{t('Slide or tap to set your weight — tracked before every workout so your curve stays honest.')}</div>}
+    {!required && <label className="field-label">{t('Date')}<input className="field" aria-label={t('Date')} type="date" max={todayISO()} value={date} onChange={e=>setDate(e.target.value)}/></label>}
+    {recordedDate && <p className="small muted">{t('This reading will be added to the daily average.')}</p>}
+    <BodyWeightPicker ref={pickerDraft} value={v} onChange={setV} unit={entryUnit.current} disabled={saving} onValidityChange={setWeightValid} />
     <div style={{ height: 14 }} />
-    <Button variant="primary" onClick={save}>{required ? t('Save & start workout') : t('Save')}</Button>
+    <Button variant="primary" disabled={saving || !weightValid} onClick={save}>{required ? t('Save & start workout') : t('Save')}</Button>
     {required && <>
-      <div style={{ height: 8 }} /><Button variant="ghost" className="dim" onClick={() => { close(); onDone && onDone(null) }}>{t('Start without weighing in')}</Button>
-      <div style={{ height: 2 }} /><Button variant="ghost" className="dim" icon="reset" onClick={() => { close(); nav('/workout') }}>{t('Choose a different workout')}</Button>
+      <div style={{ height: 8 }} /><Button variant="ghost" className="dim" disabled={saving} onClick={() => { if(savingWeight.current)return; savingWeight.current=true; close(); onDone && onDone(null) }}>{t('Start without weighing in')}</Button>
+      <div style={{ height: 2 }} /><Button variant="ghost" className="dim" icon="reset" disabled={saving} onClick={() => { if(savingWeight.current)return; savingWeight.current=true; close(); nav('/workout') }}>{t('Choose a different workout')}</Button>
     </>}
     {!required && recent.length > 0 && <>
       <h4 className="sec">{t('Recent weigh-ins')}</h4>
@@ -188,49 +240,72 @@ export function bwSheet(opts = {}) {
   return h
 }
 
-function MeasurementsSheet({ existing, close, focusMetric }) {
+function MeasurementsSheet({ existing, close, focusMetric, initialDate }) {
   const st = useStore(s => s.S)
-  const initial = existing || {}
+  const initial = existing || [...(st.measurements || [])].reverse().find(r=>r.d===(initialDate || todayISO())) || null
+  const [editing, setEditing] = useState(initial)
+  const recordId = useRef(initial?.id || uid())
+  const [saving, setSaving] = useState(false)
   useEffect(() => { if (focusMetric) document.getElementById('measure-' + focusMetric)?.querySelector('input')?.focus() }, [focusMetric])
-  const [date, setDate] = useState(existing?.d || todayISO())
-  const [values, setValues] = useState(() => Object.fromEntries(MEASURE_FIELDS.map(([k]) => [k, measurementValue(initial, k)])))
+  const [date, setDate] = useState(initial?.d || initialDate || todayISO())
   const unit = st.measurementUnit || 'cm'
-  const save = () => {
-    if (!MEASURE_FIELDS.some(([k]) => values[k] > 0)) { toast(t('Enter at least one measurement')); return }
-    update(s => {
-      s.measurements = s.measurements || []
-      const row = { d: date, ...Object.fromEntries(MEASURE_FIELDS.filter(([k]) => values[k] > 0).map(([k]) => [k, Math.round(values[k] * 10) / 10])) }
-      if (existing?.d && existing.d !== date) s.measurements = s.measurements.filter(x => x.d !== existing.d)
-      const i = s.measurements.findIndex(x => x.d === row.d)
-      if (i >= 0) s.measurements[i] = existing ? row : { ...s.measurements[i], ...row }; else s.measurements.push(row)
-    })
-    close(); toast(t('Measurements saved'))
+  const [values, setValues] = useState(() => Object.fromEntries(MEASURE_FIELDS.map(([k]) => [k, measurementInUnit(initial || {}, k, unit) ?? ''])))
+  const save = async () => {
+    if(saving)return
+    const parsed = parseMetrics(values, MEASURE_FIELDS)
+    if (!validMeasurementDate(date, todayISO()) || !parsed) { toast(t('Check the date and highlighted values.')); return }
+    if (!Object.values(parsed).some(v=>v>0)) { toast(t('Enter at least one measurement')); return }
+    setSaving(true)
+    try {
+      update(s => {
+        const index = editing ? (s.measurements || []).findIndex(r=>editing.id ? r.id===editing.id : JSON.stringify(r)===JSON.stringify(editing)) : -1
+        const row = {...editing, id:recordId.current, d:date, unit, t:editing?.t || Date.now(), ...parsed}
+        for (const [key] of MEASURE_FIELDS) if(row[key] == null) row[key]=0
+        s.measurements = upsertBodyRecord(s.measurements, row, index)
+      })
+      await useStore.getState().flushPersistence()
+      close(); toast(t('Measurements saved'))
+    } catch { toast(t('Could not save. Check available storage and try again.')) }
+    finally { setSaving(false) }
   }
   return <><h3>{t('Body measurements')}</h3><Button size="sm" onClick={() => measurementRemindersSheet(focusMetric || 'waist')}>{t('Measurement reminder')}</Button><div className="muted small" style={{ marginBottom: 14 }}>{t('Use the same measuring position each time for a useful trend.')}</div>
     <div className="exnote" style={{ marginBottom: 12 }}>{t('Measure relaxed, at the same time of day, without pulling the tape tight. Measure shoulders and chest around their widest point, waist at the navel, limbs at their widest point.')}</div>
-    <label className="field-label">{t('Date')}</label><input className="input" type="date" value={date} max={todayISO()} onChange={e => setDate(e.target.value)} />
-    <div className="measurement-grid">{MEASURE_FIELDS.map(([k, label]) => <div id={'measure-' + k} key={k}><Stepper label={t('{0} ({1})', t(label), unit)} value={values[k]} step={0.5} onChange={v => setValues(x => ({ ...x, [k]: v }))} /></div>)}</div>
-    <div style={{ height: 14 }} /><Button variant="primary" onClick={save}>{t('Save')}</Button></>
+    <label className="field-label">{t('Date')}<input className="input" aria-label={t('Date')} type="date" value={date} max={todayISO()} onChange={e => {const d=e.target.value;setDate(d);const row=[...(st.measurements||[])].reverse().find(r=>r.d===d);setEditing(row||null);recordId.current=row?.id||uid();setValues(Object.fromEntries(MEASURE_FIELDS.map(([k])=>[k,measurementInUnit(row||{},k,unit)??''])))}} /></label>
+    {editing && <div className="measurement-edit-notice"><b>{t('Editing an existing measurement')}</b><p className="small muted">{t('Saving updates this reading. Other records stay unchanged.')}</p></div>}
+    <MetricFields prefix="measure" values={values} onChange={setValues} groups={[
+      ['Torso',MEASURE_FIELDS.slice(0,5).map(([k,l])=>[k,l,unit])],
+      ['Arms',MEASURE_FIELDS.slice(5,9).map(([k,l])=>[k,l,unit])],
+      ['Legs',MEASURE_FIELDS.slice(9).map(([k,l])=>[k,l,unit])],
+    ]} />
+    <div style={{ height: 14 }} /><Button variant="primary" disabled={saving} onClick={save}>{t('Save')}</Button></>
 }
-export const measurementsSheet = (existing, focusMetric) => ui().openSheet(close => <MeasurementsSheet existing={existing} focusMetric={focusMetric} close={close} />)
-export const openMeasurementEntry = metric => metric === 'weight' ? bwSheet() : metric === 'bodySize' ? heightSheet() : measurementsSheet(undefined, metric === 'bodyMeasurements' ? undefined : metric)
+export const measurementsSheet = (existing, focusMetric, initialDate) => ui().openSheet(close => <MeasurementsSheet existing={existing} focusMetric={focusMetric} initialDate={initialDate} close={close} />)
+export const openMeasurementEntry = (metric, initialDate) => metric === 'weight' ? bwSheet({initialDate}) : metric === 'bodySize' ? heightSheet(initialDate) : measurementsSheet(undefined, metric === 'bodyMeasurements' ? undefined : metric, initialDate)
 export const measurementRemindersSheet = metric => ui().openSheet(() => <MeasurementReminders initialMetric={metric} onRecord={openMeasurementEntry} />)
 
-function HeightSheet({ close }) {
+function HeightSheet({ close, initialDate }) {
   const st = useStore(s => s.S)
   const unit = st.measurementUnit || 'cm'
-  const [height, setHeight] = useState(st.heightCm || (unit === 'in' ? 67 : 170))
-  const save = () => {
+  const [date, setDate] = useState(typeof initialDate==='string' ? initialDate : todayISO())
+  const current = (st.heightHistory || []).find(r=>r.d===date)
+  const [height, setHeight] = useState(current ? current.cm/(unit==='in'?2.54:1) : st.heightCm || (unit === 'in' ? 67 : 170))
+  const [saving,setSaving]=useState(false)
+  const save = async () => {
+    if(saving)return
     const min = unit === 'in' ? 39 : 100, max = unit === 'in' ? 99 : 250
+    if (!validMeasurementDate(date,todayISO())) {toast(t('Check the date and highlighted values.'));return}
     if (!(height >= min && height <= max)) { toast(t('Enter a height between {0} and {1} {2}', min, max, unit)); return }
-    update(s => { s.heightCm = Math.round(height * 10) / 10; s.heightRecordedAt = todayISO() })
-    close(); toast(t('Height saved'))
+    setSaving(true)
+    try {update(s => { recordHeight(s, Math.round(height * 10) / 10, date, Date.now(), current?.id || uid()) });await useStore.getState().flushPersistence();close();toast(t('Height saved'))}
+    catch {toast(t('Could not save. Check available storage and try again.'))} finally {setSaving(false)}
   }
   return <><h3>{t('Height')}</h3><div className="muted small" style={{ marginBottom: 14 }}>{t('Your height is used with your latest body weight to calculate BMI.')}</div>
+    <label className="field-label">{t('Date')}<input aria-label={t('Date')} className="field" type="date" max={todayISO()} value={date} onChange={e=>{setDate(e.target.value);const row=(st.heightHistory||[]).find(r=>r.d===e.target.value);if(row)setHeight(row.cm/(unit==='in'?2.54:1))}}/></label>
+    {current && <p className="small muted">{t('Editing an existing measurement')}</p>}
     <Stepper label={t('Height ({0})', unit)} unit={unit} value={height} step={0.5} onChange={setHeight} />
-    <div style={{ height: 14 }} /><Button variant="primary" onClick={save}>{t('Save')}</Button></>
+    <div style={{ height: 14 }} /><Button variant="primary" disabled={saving} onClick={save}>{t('Save')}</Button></>
 }
-export const heightSheet = () => ui().openSheet(close => <HeightSheet close={close} />)
+export const heightSheet = initialDate => ui().openSheet(close => <HeightSheet initialDate={initialDate} close={close} />)
 
 /* ============================ import from another app ============================ */
 // Shows what a parsed export would actually do before anything is written. An import is
@@ -383,7 +458,7 @@ function OneRM({ ex }) {
   </>
 }
 
-function ExerciseDetail({ ex, close }) {
+function ExerciseDetail({ ex, context = {}, close }) {
   const st = useStore(s => s.S)
   const updateStore = useStore(s => s.update)
   const [alias, setAlias] = useState(st.exerciseAliases?.[ex.id] || '')
@@ -392,7 +467,8 @@ function ExerciseDetail({ ex, close }) {
   const last = lastEntryFor(st, ex.id)
   const best = bestWeightFor(st, ex.id)
   return <>
-    <h3 className="capitalize">{exerciseNameFor(ex)}</h3>
+    <h3 className="capitalize">{exerciseNameFor(ex, context)}</h3>
+    <Row title={t('Original name')} subtitle={originalExerciseNameFor(ex, context)} />
     <div className="row" style={{ gap: 8, marginBottom: 10 }}>
       <input className="input" style={{ flex: 1 }} maxLength={60} placeholder={t('Personal alias (optional)')} value={alias} onChange={e => setAlias(e.target.value)} />
       <Button size="sm" icon="pencil" onClick={() => {
@@ -421,7 +497,7 @@ function ExerciseDetail({ ex, close }) {
     {instrFor(ex).length > 0 &&<><h4 className="sec">{t('How to')}{!INSTR_LANGS.includes(getLang()) && <span className="dim" style={{ textTransform: 'none', letterSpacing: 0 }}> · {t('instructions in English')}</span>}</h4><ol className="steps-list">{instrFor(ex).map((s, i) => <li key={i}>{s}</li>)}</ol></>}
   </>
 }
-export const exerciseDetailSheet = ex => ui().openSheet(close => <ExerciseDetail ex={ex} close={close} />)
+export const exerciseDetailSheet = (ex, context) => ui().openSheet(close => <ExerciseDetail ex={ex} context={context} close={close} />)
 
 /* ============================ add to routine ============================ */
 function AddToRoutine({ ex, close }) {
@@ -494,7 +570,7 @@ function CustomExForm({ existing, prefill, onDone, close }) {
     if (!bp) { toast(t('Pick a body part')); return }
     const dup = allExercises(S()).map(e => ({ e, score: similarName(e.n, name) })).filter(x => x.e.id !== (existing || {}).id && x.score >= .95).sort((a, b) => b.score - a.score)[0]?.e
     if (dup && !allowDuplicate) {
-      confirmSheet({ title: t('Possible duplicate'), message: t('“{0}” is very similar to an existing exercise: “{1}”. You can still add it if they are different.', name, dup.n), confirmText: t('Add anyway'), onConfirm: () => save(true) })
+      confirmSheet({ title: t('Possible duplicate'), message: t('“{0}” is very similar to an existing exercise: “{1}”. You can still add it if they are different.', name, originalExerciseNameFor(dup)), confirmText: t('Add anyway'), onConfirm: () => save(true) })
       return
     }
     const d = desc.trim().slice(0, 1000)
@@ -516,9 +592,9 @@ function CustomExForm({ existing, prefill, onDone, close }) {
   return <>
     <h3>{existing ? t('Edit custom exercise') : t('Create your own exercise')}</h3>
     <div className="muted small" style={{ marginBottom: 12 }}>{t('Name it, choose a body part, and optionally add an image or animated GIF.')}</div>
-    <input className="input" placeholder={t('Exercise name')} value={n} onChange={e => setN(e.target.value)} />
+    <input className="input" aria-label={t('Exercise name')} placeholder={t('Exercise name')} value={n} onChange={e => setN(e.target.value)} />
     <div className="sect-b" style={{ marginTop: 12 }}><SelectRow title={t('Equipment')} value={eq} onChange={setEq} options={[{ value: 'custom', label: t('Other') }, ...ALL_EQUIPMENT.map(x => ({ value: x, label: t(x) }))]} /></div>
-    <div className="chips" style={{ margin: '12px 0' }}>
+    <div className="chips choice-grid" style={{ margin: '12px 0' }}>
       {BODYPARTS.map(b => <button key={b} className={'chip' + (bp === b ? ' on' : '')} onClick={() => setBp(b)}>{t(b)}</button>)}
     </div>
     {bp && bp !== 'cardio' && <>
@@ -546,7 +622,7 @@ export const customExSheet = (existing, onDone, prefill) => ui().openSheet(close
 export function deleteCustomEx(ex, afterDelete) {
   if (S().active?.entries.some(e => e.id === ex.id)) { toast(t('Finish your current workout first')); return }
   confirmSheet({
-    title: t('Delete “{0}”?', ex.n),
+    title: t('Delete “{0}”?', exerciseNameFor(ex)),
     message: t('It will be removed from your routines. Already-logged workouts keep their sets.'),
     confirmText: t('Delete'), danger: true,
     onConfirm: () => {
@@ -628,7 +704,7 @@ function ExercisePicker({ onPick, close, options = {} }) {
         <div className="grow"><div className="tt">{t('Create your own exercise')}</div><div className="ss">{t('name + body part, no animation')}</div></div><Icon name="plus" className="chev" />
       </div>}
       {f.slice(0, shown).map(e => <div key={e.id} className="item" onClick={() => onPick(e)}>
-        <Thumb ex={e} /><div className="grow"><div className="tt capitalize">{exerciseNameFor(e)}</div>{st.exerciseAliases?.[e.id] && <div className="ss">{t('Alias')}: {st.exerciseAliases[e.id]}</div>}<div className="ss capitalize">{t(e.tg || e.bp)} · {t(e.eq)}</div></div>
+        <Thumb ex={e} /><div className="grow"><div className="tt capitalize">{exerciseNameFor(e)}</div><div className="ss capitalize">{t(e.tg || e.bp)} · {t(e.eq)}</div></div>
         {usage[e.id] && <span className="tag acc"><Icon name="starFill" /></span>}<Icon name="plus" className="chev" />
       </div>)}
       {f.length === 0 && bp === '★' && <div className="empty">{t('Nothing chosen yet — add exercises and they’ll show up here.')}</div>}
@@ -667,11 +743,11 @@ function EquipmentProfileSheet({ profile, close }) {
     <div className="muted small" style={{ marginBottom: 14 }}>
       {t('Name it after where you train — e.g. "Home" or "Gym" — then check what you have there.')}
     </div>
-    <TextField ref={nameRef} defaultValue={profile?.name || ''} placeholder={t('Profile name')} maxLength={40} />
+    <TextField aria-label={t('Profile name')} ref={nameRef} defaultValue={profile?.name || ''} placeholder={t('Profile name')} maxLength={40} />
     <div style={{ height: 12 }} />
-    <div className="chips">
+    <div className="chips choice-grid">
       {ALL_EQUIPMENT.map(k => (
-        <button key={k} className={'chip' + (checked.has(k) ? ' on' : '')} onClick={() => toggle(k)}>{t(k)}</button>
+        <button key={k} aria-pressed={checked.has(k)} className={'chip' + (checked.has(k) ? ' on' : '')} onClick={() => toggle(k)}>{t(k)}</button>
       ))}
     </div>
     <div className="dim small" style={{ marginTop: 10 }}>
@@ -712,15 +788,19 @@ function RirRangeFields({ c, setC, role = null, label }) {
   const prefix = role === 'top' ? 'top' : role === 'backoff' ? 'backoff' : 'target'
   const minKey = `${prefix}RirMin`, maxKey = `${prefix}RirMax`
   return <div className="row cfgrow rir-range-fields" style={{ marginBottom: 8 }}>
-    <Stepper label={t(label || 'Minimum RIR')} value={range.min} step={0.5} onChange={v => setC(x => {
+    <Stepper label={t(label || 'Minimum RIR')} value={range.min} displayValue={effortValue('rir', range.min)} step={0.5} onChange={v => setC(x => {
       const min = Math.max(0, Math.min(10, Math.round(v * 2) / 2)); const old = targetRirRangeFor(x, role) || range
       return { ...x, [minKey]: min, [maxKey]: Math.max(min, old.max) }
     })} />
-    <Stepper label={t('Maximum RIR')} value={range.max} step={0.5} onChange={v => setC(x => {
+    <Stepper label={t('Maximum RIR')} value={range.max} displayValue={effortValue('rir', range.max)} step={0.5} onChange={v => setC(x => {
       const max = Math.max(0, Math.min(10, Math.round(v * 2) / 2)); const old = targetRirRangeFor(x, role) || range
       return { ...x, [minKey]: Math.min(old.min, max), [maxKey]: max }
     })} />
   </div>
+}
+
+function RepStepper({ cfg, value, onChange, ...props }) {
+  return <Stepper {...props} step={1} decimal={false} value={displayReps(value, cfg)} onChange={value => onChange(storedReps(value, cfg))} />
 }
 
 function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial }) {
@@ -733,6 +813,8 @@ function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial }) {
   // Both default from the dataset and are then whatever the config says — see isBw.
   const bw = !cardio && isBw({ ...c, id: ex.id })
   const perSide = isPerSide(c)
+  const backoffTarget = withBackoffRepsMode(c, st)
+  const backoffChoice = c.backoffRepsOverride === true ? c.backoffRepsMode || 'legacy' : ''
   // Keep whatever the other mode already had (sets, weight) and fill only what is missing.
   const setMode = m => setC(x => ({ ...defaultConfig(ex.id, m), ...x, mode: m }))
   const save = () => {
@@ -746,7 +828,7 @@ function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial }) {
     // Written only when it differs from what the dataset already says, so a barbell config
     // stays exactly the shape it was before these flags existed.
     // Bodyweight and unilateral execution are mode-independent flags. For timed work `sec`
-    // means seconds per side, while reps keeps its legacy total-reps convention.
+    // means seconds per side; repsPerSide distinguishes new targets from legacy totals.
     const flags = {}
     if (bw !== isBodyweightEq(ex.id)) flags.bodyweight = bw
     // Free text, e.g. a pyramid's per-set loading ("bar only, +1 plate/side each set") — the
@@ -760,15 +842,17 @@ function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial }) {
     const withWarmups = warmupSets ? { warmupSets } : {}
     // Per exercise, one override is enough: rest between work sets. Legacy per-set,
     // warm-up and after-exercise overrides disappear when this exercise is saved.
-    const restCfg = c.restSec === undefined ? {} : { restSec: Math.max(0, Math.round(c.restSec) || 0) }
+    // Imported prescriptions carry the source loading/rest rules locally. Editing a target
+    // must not drop those rules and unexpectedly adopt this device's global preferences.
+    const transferredRules = c.loadingStep > 0 ? Object.fromEntries(['loadingStep', 'warmupRestSec', 'supersetMoveRestSec', 'supersetRoundRestSec'].filter(key => c[key] != null).map(key => [key, c[key]])) : {}
+    const restCfg = { ...transferredRules, ...(c.restSec === undefined ? {} : { restSec: Math.max(0, Math.round(c.restSec) || 0) }) }
     if (cardio) onSave({ sets, min: Math.max(1, Math.round(c.min) || 20), speed: Math.max(0, c.speed || 8), ...withNote, ...restCfg })
-    else if (mode === 'time') onSave({ sets, mode: 'time', sec: Math.max(1, Math.round(c.sec) || 45), weight: Math.max(0, c.weight || 0), ...flags, ...(perSide ? { side: true } : {}), ...prog, ...withNote, ...withWarmups, ...restCfg })
+    else if (mode === 'time') onSave({ sets, mode: 'time', sec: Math.max(1, Math.round(c.sec) || 45), weight: Math.max(0, c.weight || 0), ...flags, ...(perSide ? { side: true, ...(c.repsPerSide ? {repsPerSide:true} : {}) } : {}), ...prog, ...withNote, ...withWarmups, ...restCfg })
     else {
-      // A unilateral target is stored even: the split has to divide, and a typed 15 would
-      // otherwise plan seven reps on one side and eight on the other, every session.
+      // Preserve legacy total-rep targets; explicit per-side targets keep the entered count.
       const typed = Math.max(1, Math.round(c.reps) || 10)
-      const reps = perSide ? Math.ceil(typed / 2) * 2 : typed
-      const out = { sets, mode: 'reps', reps, weight: Math.max(0, c.weight || 0), ...flags, ...(perSide ? { side: true } : {}), ...prog, ...withNote, ...withWarmups, ...restCfg }
+      const reps = perSide && !c.repsPerSide ? Math.ceil(typed / 2) * 2 : typed
+      const out = { sets, mode: 'reps', reps, weight: Math.max(0, c.weight || 0), ...flags, ...(perSide ? { side: true, ...(c.repsPerSide ? {repsPerSide:true} : {}) } : {}), ...prog, ...withNote, ...withWarmups, ...restCfg }
       out.repRange = repRangeEnabled(c)
       out.repsMin = out.repRange ? Math.min(reps, Math.max(1, Math.round(c.repsMin) || reps)) : reps
       if (out.repRange && (c.strictReps === true || c.strictReps === false)) out.strictReps = c.strictReps
@@ -779,13 +863,17 @@ function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial }) {
         out.topSets = Math.max(1, Math.round(c.topSets) || 1)
         out.backoffSets = Math.max(1, Math.round(c.backoffSets) || 2)
         out.sets = out.topSets + out.backoffSets
-        out.topRepsMin = Math.min(reps, Math.max(1, Math.round(c.topRepsMin) || out.repsMin))
+        out.topRepsMin = out.repsMin
         out.topRepsMax = reps
         out.backoffRepsMin = Math.max(1, Math.round(c.backoffRepsMin) || out.repsMin)
         out.backoffRepsMax = Math.max(out.backoffRepsMin, Math.round(c.backoffRepsMax) || reps)
         out.backoffPct = Math.max(1, Math.min(50, Number(c.backoffPct) || 10))
         out.autoBackoffReps = c.autoBackoffReps !== false
-        out.backoffRepOffset = Math.max(0, Math.min(5, Math.round(c.backoffRepOffset ?? ((c.backoffRepsMax || reps) - (c.topRepsMax || reps)) ?? 2)))
+        out.backoffRepOffset = backoffRepOffsetFor(c)
+        if (c.backoffRepsOverride === true) {
+          out.backoffRepsOverride = true
+          if (c.backoffRepsMode) out.backoffRepsMode = c.backoffRepsMode
+        }
         const topRir = targetRirRangeFor(c, 'top'), backRir = targetRirRangeFor(c, 'backoff')
         if (topRir) { out.topRirMin = topRir.min; out.topRirMax = topRir.max }
         if (backRir) { out.backoffRirMin = backRir.min; out.backoffRirMax = backRir.max }
@@ -796,11 +884,11 @@ function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial }) {
       // Every set in this exercise becomes a drop-set/rest-pause (buildSets stamps the rows) —
       // decided here, in the plan, not re-decided live each time you train it.
       if (c.intensifier && c.intensifier.type) out.intensifier = c.intensifier
-      onSave(out)
+      onSave(withBackoffRepsMode(out, S()))
     }
   }
   return <>
-    <h3 className="capitalize">{exerciseNameFor(ex)}</h3>
+    <h3 className="capitalize">{exerciseNameFor(ex, { entry: existing, routineId: routine?.id })}</h3>
     <Media ex={ex} />
     {/* The same tags the exercise detail sheet shows, secondaries included: choosing what goes
         into a plan is exactly when "what else does this hit" matters, and until now that was
@@ -830,7 +918,7 @@ function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial }) {
             rest-pause work set — so "Sets" has nothing left to mean and only invites a mismatch. */}
         {c.intensifier?.type !== 'restpause' && c.setScheme !== 'topback' &&
           <Stepper label={t('Sets')} value={c.sets} step={1} decimal={false} onChange={v => setC(x => ({ ...x, sets: v }))} />}
-        <Stepper label={t('Reps')} value={c.reps} step={perSide ? 2 : 1} decimal={false} onChange={v => setC(x => ({ ...x, reps: v }))} />
+        <RepStepper cfg={c} label={t('Reps')} value={c.reps} onChange={v => setC(x => ({ ...x, reps: v }))} />
         {/* On bodyweight work the weight stepper is the click #32 is about, so it is not here
             until there is a belt to describe — see the added-weight row below. */}
         {!bw && <Stepper label={t('Weight ({0})', st.unit)} value={c.weight} step={defaultIncrement(ex.id, st.unit)} onChange={v => setC(x => ({ ...x, weight: v }))} />}
@@ -863,10 +951,9 @@ function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial }) {
         <Switch checked={bw} onChange={v => setC(x => ({ ...x, bodyweight: v, weight: v ? 0 : x.weight }))} />
       </Row>
       {(mode === 'reps' || mode === 'time') && <Row icon="shuffle" iconTint="var(--blue)" title={t(mode === 'time' ? 'Time per side' : 'Reps per side')}
-        subtitle={mode === 'time' ? t('{0} seconds on the left, then {0} seconds on the right.', c.sec || 0) : perSide ? t('You still log the total: {0} is {1} per side.', c.reps || 0, fmtNum(sideReps(c.reps))) : t('For lunges, single-arm rows and the like.')}>
-        {/* Turning it on rounds the target up to an even number, since half of an odd
-            total is a rep one side does not get. */}
-        <Switch checked={perSide} onChange={v => setC(x => ({ ...x, side: v || undefined, reps: mode === 'reps' && v ? Math.ceil((x.reps || 0) / 2) * 2 : x.reps }))} />
+        subtitle={mode === 'time' ? t('{0} seconds on the left, then {0} seconds on the right.', c.sec || 0) : perSide ? t('Reps stay the same for each side. Confirm both sides to complete the set.') : t('For lunges, single-arm rows and the like.')}>
+        {/* New per-side targets retain the entered prescription and mark its semantics. */}
+        <Switch checked={perSide} onChange={v => setC(x => ({ ...displayRepConfig(x), side: v || undefined, repsPerSide: v ? true : undefined }))} />
       </Row>}
     </div>}
     {/* A stepper is too wide to sit in a list row next to a label — it squeezes the text to
@@ -883,12 +970,12 @@ function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial }) {
     </>}
     {/* The rep ceiling only means something when there is no load to add instead. */}
     {mode === 'reps' && bw && !(c.weight > 0) && <div className="row cfgrow" style={{ marginBottom: 18 }}>
-      <Stepper label={t('Top of the range')} value={c.repsMax || 0} step={1} decimal={false}
+      <RepStepper cfg={c} label={t('Top of the range')} value={c.repsMax || 0} step={1} decimal={false}
         onChange={v => setC(x => ({ ...x, repsMax: v }))} />
     </div>}
     {mode === 'reps' && bw && !(c.weight > 0) && <div className="small dim" style={{ marginTop: -10, marginBottom: 18 }}>
       {c.repsMax > 0
-        ? t('Reps climb to {0}, then a set is added and the reps start over. At {1} sets it asks you to add weight instead.', c.repsMax, MAX_BW_SETS)
+        ? t('Reps climb to {0}, then a set is added and the reps start over. At {1} sets it asks you to add weight instead.', displayReps(c.repsMax, c), MAX_BW_SETS)
         : t('Reps climb by one whenever every set was clean. Set a ceiling to add sets instead of reps forever.')}
     </div>}
     {mode === 'reps' && c.setScheme !== 'topback' && <>
@@ -917,7 +1004,7 @@ function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial }) {
           onChange={v => setC(x => ({ ...x, intensifier: { ...x.intensifier, pct: Math.max(5, v) } }))} />
       </div>}
       {c.intensifier?.type === 'restpause' && <div className="row cfgrow" style={{ marginBottom: 8 }}>
-        <Stepper label={t('Rest-pause reps')} value={c.intensifier.totalReps} step={1} decimal={false}
+        <RepStepper cfg={c} label={t('Rest-pause reps')} value={c.intensifier.totalReps} step={1} decimal={false}
           onChange={v => setC(x => ({ ...x, intensifier: { ...x.intensifier, totalReps: Math.max(1, v) } }))} />
         <Stepper label={t('Rest (s)')} value={c.intensifier.restSec} step={5} decimal={false}
           onChange={v => setC(x => ({ ...x, intensifier: { ...x.intensifier, restSec: Math.max(5, v) } }))} />
@@ -947,15 +1034,15 @@ function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial }) {
       <div className="sect-b" style={{ marginBottom: repRangeEnabled(c) ? 8 : 18 }}>
         <Row icon="target" iconTint="var(--blue)" title={t('Use rep range')} subtitle={t('Show a minimum and maximum instead of one exact target.')}>
           <Switch checked={repRangeEnabled(c)} onChange={enabled => setC(x => enabled
-            ? { ...x, repRange: true, repsMin: Math.min(x.reps || 10, x.repsMin || Math.max(1, (x.reps || 10) - (perSide ? 4 : 2))) }
+            ? { ...x, repRange: true, repsMin: Math.min(x.reps || 10, x.repsMin || Math.max(1, (x.reps || 10) - (perSide && !c.repsPerSide ? 4 : 2))) }
             : { ...x, repRange: false, repsMin: x.reps, strictReps: undefined })} />
         </Row>
       </div>
       {repRangeEnabled(c) && <>
         <div className="row cfgrow" style={{ marginBottom: 8 }}>
-          <Stepper label={t('Minimum reps')} value={c.repsMin || c.reps || 1} step={perSide ? 2 : 1} decimal={false}
+          <RepStepper cfg={c} label={t('Minimum reps')} value={c.repsMin || c.reps || 1}
             onChange={v => setC(x => ({ ...x, repRange: true, repsMin: Math.min(x.reps || v, Math.max(1, v)) }))} />
-          <Stepper label={t('Maximum reps')} value={c.reps || 10} step={perSide ? 2 : 1} decimal={false}
+          <RepStepper cfg={c} label={t('Maximum reps')} value={c.reps || 10}
             onChange={v => setC(x => ({ ...x, repRange: true, reps: Math.max(x.repsMin || 1, v) }))} />
         </div>
         <div className="sect-b" style={{ marginBottom: 18 }}>
@@ -994,11 +1081,24 @@ function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial }) {
         <div className="sect-b" style={{ marginBottom: 8 }}><Row icon="repeat" iconTint="var(--blue)" title={t('Automatic back-off reps')} subtitle={t('Back-off reps follow the latest Top Set.')}>
           <Switch checked={c.autoBackoffReps !== false} onChange={v => setC(x => ({ ...x, autoBackoffReps: v }))} />
         </Row></div>
-        {c.autoBackoffReps !== false ? <div className="row cfgrow" style={{ marginBottom: 8 }}>
-          <Stepper label={t('Back-off rep offset')} value={c.backoffRepOffset ?? (Math.max(0, Math.min(5, (c.backoffRepsMax || c.reps || 10) - (c.topRepsMax || c.reps || 10))) || 2)} step={1} decimal={false} onChange={v => setC(x => ({ ...x, backoffRepOffset: Math.max(0, Math.min(5, Math.round(v))) }))} />
-        </div> : <div className="row cfgrow" style={{ marginBottom: 8 }}>
-          <Stepper label={t('Back-off min reps')} value={c.backoffRepsMin || c.repsMin || c.reps || 1} step={1} decimal={false} onChange={v => setC(x => ({ ...x, backoffRepsMin: Math.max(1, v) }))} />
-          <Stepper label={t('Back-off max reps')} value={c.backoffRepsMax || c.reps || 10} step={1} decimal={false} onChange={v => setC(x => ({ ...x, backoffRepsMax: Math.max(x.backoffRepsMin || 1, v) }))} />
+        {c.autoBackoffReps !== false ? <>
+          <div className="sect-b" style={{ marginBottom: 8 }}>
+            <SelectRow title={t('Back-off repetitions')} sheetTitle={t('Back-off repetitions')} value={backoffChoice}
+              onChange={value => setC(current => {
+                const next = { ...current }
+                if (!value) { delete next.backoffRepsOverride; delete next.backoffRepsMode; delete next.backoffRepOffset }
+                else { next.backoffRepsOverride = true; if (value !== 'legacy') next.backoffRepsMode = value }
+                return next
+              })}
+              options={[{ value: '', label: t('Follow app setting') }, { value: 'same', label: t('Same reps') }, { value: 'increased', label: t('Increased reps') },
+                ...(backoffChoice === 'legacy' ? [{ value: 'legacy', label: `+${displayReps(backoffRepOffsetFor(c), c)} ${t('Reps')}` }] : [])]} />
+          </div>
+          <div className="small muted" style={{ marginBottom: 8 }}>
+            {t('Back-off repetitions')}: {backoffTarget.backoffRepsMode ? t(backoffTarget.backoffRepsMode === 'same' ? 'Same reps' : 'Increased reps') : `+${displayReps(backoffRepOffsetFor(backoffTarget), backoffTarget)} ${t('Reps')}`}. {t('Same reps uses the Top Set range. Increased reps adds 2 to both limits.')}
+          </div>
+        </> : <div className="row cfgrow" style={{ marginBottom: 8 }}>
+          <RepStepper cfg={c} label={t('Back-off min reps')} value={c.backoffRepsMin || c.repsMin || c.reps || 1} step={1} decimal={false} onChange={v => setC(x => ({ ...x, backoffRepsMin: Math.max(1, v) }))} />
+          <RepStepper cfg={c} label={t('Back-off max reps')} value={c.backoffRepsMax || c.reps || 10} step={1} decimal={false} onChange={v => setC(x => ({ ...x, backoffRepsMax: Math.max(x.backoffRepsMin || 1, v) }))} />
         </div>}
       </>}
       <div className="sect-b" style={{ marginTop: 12, marginBottom: 18 }}>
@@ -1049,7 +1149,12 @@ export const glyphPicker = (current, onPick) => {
 }
 
 /* ============================ share / print / import a plan ============================ */
-export const planToolsSheet = () => ui().openSheet(close => <PlanTools close={close} />)
+export const planToolsSheet = ({ mode = 'import' } = {}) => {
+  let sheet
+  const onSaving = saving => sheet?.lock(saving)
+  sheet = ui().openSheet(close => <RoutineExchange close={close} mode={mode} onSaving={onSaving} />)
+  return sheet
+}
 
 function PlanTools({ close }) {
   const st = useStore(s => s.S)
@@ -1129,68 +1234,41 @@ function PlanImport({ bundle, close }) {
 }
 
 /* ============================ day override / assign ============================ */
-function DayOverride({ iso, close }) {
-  const st = useStore(s => s.S)
-  const wd = new Date(iso + 'T12:00:00').getDay()
-  const weeklyR = st.routines.find(r => r.id === st.week[wd])
-  const hasOvr = st.dayPlan[iso] !== undefined
-  const effId = effectiveRoutineId(st, iso)
-  const set = v => {
-    update(s => { if (!v) delete s.dayPlan[iso]; else s.dayPlan[iso] = v })
-    close()
-    toast(v === '' ? t('Back to weekly plan') : v === 'rest' ? t('{0} set to rest', fmtDate(iso)) : t('{0} planned for {1}', (st.routines.find(r => r.id === v) || {}).name, fmtDate(iso)))
-  }
-  return <>
-    <h3>{fmtDate(iso, true)}</h3>
-    <div className="muted small" style={{ marginBottom: 12 }}>{t('Weekly plan:')} {weeklyR ? weeklyR.name : t('Rest')}{hasOvr && <span style={{ color: 'var(--orange)' }}> · {t('changed for this day')}</span>}<br />{t('Sick, missed a day or want a different session? Pick what to train instead.')}</div>
-    <div className="list">
-      {st.routines.map(r => <div key={r.id} className="item" onClick={() => set(r.id)}>
-        <span className="lrow-i"><Icon name={glyphOf(r.emoji)} /></span>
-        <div className="grow"><div className="tt">{r.name}</div><div className="ss">{exCount(r.ex.length)}</div></div>
-        {effId === r.id && <Icon name="check" className="accent" />}</div>)}
-      <div className="item" onClick={() => set('rest')}><span className="lrow-i" style={{ background: 'var(--surface-3)' }}><Icon name="moon" /></span><div className="grow"><div className="tt">{t('Rest / skip this day')}</div></div>{effId === null && <Icon name="check" className="accent" />}</div>
-      {hasOvr && <div className="item" onClick={() => set('')}><span className="lrow-i" style={{ background: 'var(--surface-3)' }}><Icon name="reset" /></span><div className="grow"><div className="tt">{t('Back to weekly plan')}</div></div></div>}
-    </div>
-  </>
-}
+function DayOverride({ iso, close }) { return <ScheduleEditor iso={iso} close={close}/> }
 export const dayOverrideSheet = iso => ui().openSheet(close => <DayOverride iso={iso} close={close} />)
-
-function DayAssign({ day, close }) {
-  const st = useStore(s => s.S)
-  const set = v => { update(s => { if (v) { s.week[day] = v; s.scheduleStarted = s.scheduleStarted || todayISO() } else delete s.week[day] }); close() }
-  return <>
-    <h3>{t(DAYN[day])}</h3>
-    <div className="list">
-      <div className="item" onClick={() => set('')}><span className="lrow-i" style={{ background: 'var(--surface-3)' }}><Icon name="moon" /></span><div className="grow"><div className="tt">{t('Rest day')}</div></div>{!st.week[day] && <Icon name="check" className="accent" />}</div>
-      {st.routines.map(r => <div key={r.id} className="item" onClick={() => set(r.id)}>
-        <span className="lrow-i"><Icon name={glyphOf(r.emoji)} /></span>
-        <div className="grow"><div className="tt">{r.name}</div><div className="ss">{exCount(r.ex.length)}</div></div>
-        {st.week[day] === r.id && <Icon name="check" className="accent" />}</div>)}
-    </div>
-  </>
-}
+function DayAssign({ day, close }) { return <ScheduleEditor day={day} close={close}/> }
 export const dayAssignSheet = day => ui().openSheet(close => <DayAssign day={day} close={close} />)
 
 function StreakDetail() {
   const st = useStore(s => s.S)
-  const streak = trainingStreak(st)
-  const next = nextScheduledWorkout(st)
-  const recent = streak.rows.filter(r => r.planned).slice(-20).reverse()
+  const change = useStore(s => s.update)
+  const now = useLocalNow()
+  const streak = trainingStreak(st, now)
+  const [showAllRecent, setShowAllRecent] = useState(false)
+  const [profileControlsOpen, setProfileControlsOpen] = useState(false)
+  const profileControlsId = useId()
+  const recent = loggedWorkouts(st).filter(hasWorkoutActivity).sort((a,b) => (b.d || '').localeCompare(a.d || '') || Number(b.start || b.end || 0) - Number(a.start || a.end || 0))
+  const shownRecent = showAllRecent ? recent : recent.slice(0,5)
   return <>
-    <div className={'streak-hero compact streak-main streak-' + streakTier(streak.current)}>
+    <div className={'streak-hero compact streak-main streak-' + streakTier(streak.current)} data-streak-state={streak.state}>
       <StreakFlame value={streak.current} />
       <div className="streak-number">{streak.current}</div>
-      <div className="streak-main-label">{t('Training Days in a Row')}</div>
+      <div className="streak-main-label">{t('Training days in this streak')}</div>
     </div>
+    <StreakStatus streak={streak} className="small muted" />
+    <p className="small muted">{t('Completed training days, counted once per day. Scheduled rest days preserve the streak.')}</p>
     <div className="tiles" style={{ margin: '14px 0' }}>
       <div className="tile"><div className="l">{t('Best streak')}</div><div className="v">{streak.best}</div></div>
       <div className="tile"><div className="l">{t('Next milestone')}</div><div className="v">{streak.nextMilestone}</div></div>
     </div>
-    {next ? <div className="card"><div className="small dim">{t('Next scheduled workout')}</div><div style={{ fontWeight: 600, marginTop: 4 }}>{new Date(next + 'T12:00:00').toLocaleDateString(dateLocale(), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</div></div> : <div className="card"><div className="small dim">{t('Next scheduled workout')}</div><div className="muted" style={{ marginTop: 4 }}>{t('No upcoming workout')}</div></div>}
-    <h4 className="sec">{t('Consistency calendar')}</h4>
-    <ZoomCalendar S={st} onDay={iso => { const rows = st.workouts.filter(w => w.d === iso); if (rows.length) workoutDetailSheet(rows[rows.length - 1]) }} />
-    <h4 className="sec">{t('Recent scheduled days')}</h4>
-    <div className="list">{recent.map(r => { const workout = st.workouts.filter(w => w.d === r.iso).at(-1); const routine = st.routines.find(x => x.id === effectiveRoutineId(st, r.iso)); const routineName = workout?.name || routine?.name || ''; return <div className="item recent-streak-item" key={r.iso} aria-label={`${fmtDate(r.iso, true)}, ${t(r.status === 'completed' ? 'Completed' : r.status === 'missed' ? 'Not completed' : 'Pending')}, ${routineName}`}><span className="lrow-i" style={{ color: r.status === 'completed' ? 'var(--green)' : r.status === 'missed' ? 'var(--red)' : 'var(--label-2)' }}><Icon name={r.status === 'completed' ? 'checkCircle' : r.status === 'missed' ? 'xmark' : 'clock'} /></span><div className="grow recent-streak-row"><div className="tt">{fmtDate(r.iso, true)}<span className="recent-routine-name">{routineName}</span></div></div></div>})}</div>
+    {(!st.streakCalendarShowProfile || profileControlsOpen) && <div className="streak-profile-tools" id={profileControlsId}><button type="button" className="iconbtn" aria-pressed={!!st.streakCalendarShowProfile} aria-label={t(st.streakCalendarShowProfile ? 'Hide profile' : 'Show profile')} title={t(st.streakCalendarShowProfile ? 'Hide profile' : 'Show profile')} onClick={()=>{change(s=>{s.streakCalendarShowProfile=!s.streakCalendarShowProfile});setProfileControlsOpen(false)}}><Icon name="person"/></button></div>}
+    {st.streakCalendarShowProfile && <button type="button" className="streak-profile" aria-label={t('Profile visibility')} aria-expanded={profileControlsOpen} aria-controls={profileControlsOpen ? profileControlsId : undefined} onClick={()=>setProfileControlsOpen(open=>!open)}><span className="streak-profile-avatar">{st.profile?.photo ? <img src={st.profile.photo} alt={t('Profile photo')}/> : st.profile?.name?.trim() ? st.profile.name.trim().split(/\s+/).slice(0,2).map(part=>[...part][0]).join('').toLocaleUpperCase() : <Icon name="person"/>}</span>{st.profile?.name?.trim()&&<span className="streak-profile-name">{st.profile.name.trim()}</span>}</button>}
+    <ZoomCalendar S={st} streakView levels={['week','month','months']} onDay={iso => { const rows = recent.filter(w => w.d === iso); if (rows.length) workoutDetailSheet(rows[0]) }} />
+    <section className="streak-recent-workouts" aria-label={t('Recent workouts')}>
+      <h4 className="sec">{t('Recent workouts')}</h4>
+      {recent.length ? <div className="list">{shownRecent.map((workout,index) => <button type="button" className="item recent-streak-item" key={workout.id || `${workout.d}-${index}`} data-workout-id={workout.id} onClick={() => workoutDetailSheet(workout)}><span className="lrow-i" style={{color:'var(--green)'}}><Icon name="checkCircle" /></span><div className="grow recent-streak-row"><div className="tt">{fmtDate(workout.d,true)}<span className="recent-routine-name">{workout.name || st.routines.find(r=>r.id===workout.routineId)?.name || ''}</span></div></div><Icon name="chevronRight" /></button>)}</div> : <div className="muted small">{t('No workouts yet')}</div>}
+      {!showAllRecent && recent.length > 5 && <Button className="recent-show-more" onClick={() => setShowAllRecent(true)}>{t('Show more')}</Button>}
+    </section>
   </>
 }
 export const streakDetailSheet = () => ui().openSheet(() => <StreakDetail />)
@@ -1230,6 +1308,9 @@ function InBodyHistory() {
   const [values, setValues] = useState({})
   const [image, setImage] = useState('')
   const [scanning, setScanning] = useState(false)
+  const [editing, setEditing] = useState(null)
+  const [saving, setSaving] = useState(false)
+  const draftId = useRef(uid())
   const cutoff = range ? Date.now() - range * 86400000 : 0
   const shown = rows.filter(r => !cutoff || new Date(r.d + 'T12:00:00').getTime() >= cutoff)
   const first = shown[0], last = shown.at(-1)
@@ -1243,43 +1324,62 @@ function InBodyHistory() {
     if (!file) return
     if (file.size > 8_000_000) { toast(t('Image must be smaller than 8 MB')); return }
     setScanning(true)
+    let bitmap
     try {
-      const bitmap = await createImageBitmap(file)
+      bitmap = await createImageBitmap(file)
       const canvas = document.createElement('canvas'), max = 1500, scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height))
       canvas.width = Math.round(bitmap.width * scale); canvas.height = Math.round(bitmap.height * scale)
       canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height)
-      setImage(canvas.toDataURL('image/jpeg', .76))
+      let encoded = canvas.toDataURL('image/jpeg', .76)
+      for (const quality of [.65,.5,.35]) {
+        if(encoded.length <= 700000) break
+        encoded = canvas.toDataURL('image/jpeg',quality)
+      }
+      if(encoded.length > 700000) throw new Error('Image too large')
+      setImage(encoded)
       if ('TextDetector' in window) {
-        const blocks = await new window.TextDetector().detect(bitmap)
+        const blocks = await new window.TextDetector().detect(bitmap).catch(()=>[])
         const parsed = parseInBodyText(blocks.map(b => b.rawValue).join('\n'))
         setValues(v => ({ ...v, ...parsed })); toast(Object.keys(parsed).length ? t('{0} InBody values detected. Review them before saving.', Object.keys(parsed).length) : t('No values were detected. Enter them manually while viewing the attached image.'))
       } else toast(t('Automatic text recognition is not available on this phone. The image was attached for manual entry.'))
-      bitmap.close?.()
+
     } catch { toast(t('The image could not be read. Try another photo.')) }
-    finally { setScanning(false) }
+    finally { bitmap?.close?.(); setScanning(false) }
   }
-  const save = () => {
-    if (!date || !Object.values(values).some(v => Number(v) > 0)) { toast(t('Enter at least one InBody value')); return }
-    change(s => { s.inbody = [...(s.inbody || []).filter(r => r.d !== date), { id: uid(), d: date, ...values, ...(image ? { image } : {}) }].sort((a, b) => a.d.localeCompare(b.d)) })
-    setAdding(false); setValues({}); setImage(''); toast(t('InBody result saved'))
+  const save = async () => {
+    const parsed = parseMetrics(values, INBODY_FIELDS)
+    if (!validMeasurementDate(date, todayISO()) || !parsed) { toast(t('Check the date and highlighted values.')); return }
+    if (!image && !Object.values(parsed).some(v=>v>0)) { toast(t('Enter at least one InBody value')); return }
+    setSaving(true)
+    try {
+      change(s => { s.inbody = upsertBodyRecord(s.inbody, {...editing?.record,id:editing?.record.id || draftId.current,d:date,t:editing?.record.t || Date.now(),...parsed,image}, editing?.index ?? -1) })
+      await useStore.getState().flushPersistence()
+      setAdding(false); setValues({}); setImage(''); toast(t('InBody result saved'))
+    } catch { toast(t('Could not save. Check available storage and try again.')) }
+    finally { setSaving(false) }
   }
-  if (adding) return <><div className="row between inbody-header"><div><div className="eyebrow">TGym · {t('Progress')}</div><h3>{t('Add InBody result')}</h3></div><Button size="sm" onClick={() => setAdding(false)}>{t('Cancel')}</Button></div>
-    <div className="inbody-date card"><Icon name="calendar" /><label><span>{t('Measurement date')}</span><input className="input" type="date" value={date} onChange={e => setDate(e.target.value)} /></label></div>
-    <div className="inbody-import card"><div className="inbody-import-copy"><b>{t('InBody report')}</b><span>{t('Attach a photo to keep the original report with this measurement.')}</span></div><Button icon="photo" disabled={scanning} onClick={() => document.getElementById('inbody-image')?.click()}>{scanning ? t('Reading image…') : t('Attach report')}</Button></div><input id="inbody-image" type="file" accept="image/*" capture="environment" hidden onChange={e => scan(e.target.files?.[0])} />
+  if (adding) return <><div className="row between inbody-header"><div><div className="eyebrow">TGym · {t('Progress')}</div><h3>{t(editing ? 'Edit InBody result' : 'Add InBody result')}</h3></div><Button size="sm" disabled={scanning || saving} onClick={() => setAdding(false)}>{t('Cancel')}</Button></div>
+    <div className="inbody-date card"><Icon name="calendar" /><label><span>{t('Measurement date')}</span><input className="input" type="date" max={todayISO()} value={date} onChange={e => setDate(e.target.value)} /></label></div>
+    <div className="inbody-import card"><div className="inbody-import-copy"><b>{t('InBody report')}</b><span>{t('Attach a photo to keep the original report with this measurement.')}</span></div><Button icon="photo" disabled={scanning} onClick={() => document.getElementById('inbody-image')?.click()}>{scanning ? t('Reading image…') : t('Attach report')}</Button></div><input id="inbody-image" type="file" accept="image/*" capture="environment" hidden onChange={e => { void scan(e.target.files?.[0]); e.target.value='' }} />
     {image && <img className="inbody-preview" src={image} alt="InBody" />}
-    <div className="inbody-section-title"><span>{t('Measurements')}</span><small>{t('Enter the values shown on your report.')}</small></div><div className="inbody-form">{INBODY_FIELDS.map(([key, label, unit]) => <label key={key}><span>{t(label)}{unit ? ` (${unit})` : ''}</span><NumberField value={values[key] ?? ''} nullable onChange={v => setValues(x => ({ ...x, [key]: v }))} /></label>)}</div><div style={{ height: 12 }} /><Button variant="primary" onClick={save}>{t('Save InBody result')}</Button></>
-  return <><div className="row between inbody-header"><div><div className="eyebrow">TGym · {t('Stats')}</div><h3>{t('InBody history')}</h3></div><Button size="sm" icon="plus" onClick={() => setAdding(true)}>{t('Add')}</Button></div>
+    <div className="inbody-section-title"><span>{t('Measurements')}</span><small>{t('Enter the values shown on your report.')}</small></div><MetricFields values={values} onChange={setValues} groups={[
+      ['Body composition', INBODY_FIELDS.slice(0,4)], ['Metabolism', [INBODY_FIELDS[4],INBODY_FIELDS[5],INBODY_FIELDS[9],INBODY_FIELDS[10]]], ['Water and nutrients',INBODY_FIELDS.slice(6,9)],
+    ]} /><div style={{ height: 12 }} /><Button variant="primary" disabled={scanning || saving} onClick={save}>{t('Save InBody result')}</Button></>
+  return <><div className="row between inbody-header"><div><div className="eyebrow">TGym · {t('Stats')}</div><h3>{t('InBody history')}</h3></div><Button size="sm" icon="plus" onClick={() => { setEditing(null); draftId.current=uid(); setDate(todayISO()); setValues({}); setImage(''); setAdding(true) }}>{t('Add')}</Button></div>
     <Segmented value={range} onChange={setRange} options={[{ value: 30, label: '30d' }, { value: 90, label: '90d' }, { value: 180, label: '6m' }, { value: 0, label: t('All') }]} />
     {first && last && first !== last && <div className="card inbody-compare"><div className="small dim">{fmtDate(first.d, true)} → {fmtDate(last.d, true)}</div>{INBODY_FIELDS.filter(([key]) => first[key] != null && last[key] != null).map(([key, label, unit]) => { const delta = Math.round((last[key] - first[key]) * 10) / 10, trend = trendClass(key, first[key], last[key]); return <div className="row between" key={key}><span>{t(label)}</span><b className={trend}>{delta > 0 ? '+' : ''}{fmtNum(delta)} {unit}{trend && <small> · {t(trend === 'better' ? 'Improved' : 'Moved away from target')}</small>}</b></div> })}</div>}
-    {shown.length ? <div className="list inbody-list">{[...shown].reverse().map(r => <div className="item" key={r.id || r.d} onClick={() => { setDate(r.d); setValues(Object.fromEntries(INBODY_FIELDS.map(([k]) => [k, r[k]]))); setImage(r.image || ''); setAdding(true) }}><span className="lrow-i"><Icon name="person" /></span><div className="grow"><div className="tt">{fmtDate(r.d, true)}</div><div className="ss">{[r.weight && `${r.weight} kg`, r.skeletalMuscle && `${t('Muscle')} ${r.skeletalMuscle} kg`, r.bodyFatPct && `${t('Body fat')} ${r.bodyFatPct}%`].filter(Boolean).join(' · ')}</div></div><Icon name="chevronRight" /></div>)}</div> : <div className="empty">{t('No InBody results in this period')}</div>}
+    {shown.length ? <div className="list inbody-list">{[...shown].reverse().map(r => <button type="button" className="item" key={r.id || st.inbody.indexOf(r)} onClick={() => { setEditing({record:r,index:st.inbody.indexOf(r)}); draftId.current=uid(); setDate(r.d); setValues(Object.fromEntries(INBODY_FIELDS.map(([k]) => [k, r[k]]))); setImage(r.image || ''); setAdding(true) }}><span className="lrow-i"><Icon name="person" /></span><div className="grow"><div className="tt">{fmtDate(r.d, true)}</div><div className="ss">{[r.weight && `${fmtNum(r.weight)} kg`, r.skeletalMuscle && `${t('Muscle')} ${fmtNum(r.skeletalMuscle)} kg`, r.bodyFatPct && `${t('Body fat')} ${fmtNum(r.bodyFatPct)}%`].filter(Boolean).join(' · ')}</div></div><Icon name="chevronRight" /></button>)}</div> : <div className="empty">{t('No InBody results in this period')}</div>}
     <div className="small dim" style={{ marginTop: 10 }}>{t('Changes are descriptive. InBody conditions such as hydration and meal timing can affect each reading.')}</div></>
 }
 export const inBodySheet = () => ui().openSheet(() => <InBodyHistory />)
 
 /* ============================ workout detail ============================ */
-function WorkoutDetail({ w, close }) {
+function WorkoutDetail({ w: original, close }) {
   const st = useStore(s => s.S)
   const update = useStore(s => s.update)
+  const w=st.workouts.find(row=>row.id===original.id)||original
+  const [duration,setDuration]=useState(()=>String(Math.round(workoutElapsedMs(original)/6000)/10))
+  const [durationError,setDurationError]=useState('')
   // The session note is editable here rather than only at the finish sheet: what you want to
   // record about a session is often clearer once you have looked at what you actually did.
   const [note, setNote] = useState(w.note || '')
@@ -1301,14 +1401,16 @@ function WorkoutDetail({ w, close }) {
   } })
   return <>
     <h3>{w.name}</h3>
-    {w.finishReason==='inactivity' && w.resumeSnapshot && !st.active && <Button onClick={()=>{update(s=>resumeAutoFinished(s,w.id));close();nav('/workout')}}>{t('Resume workout')}</Button>}
-    <div className="muted small" style={{ marginBottom: 12 }}>{[fmtDate(w.d, true), ...(Number(w.end) > Number(w.start) ? [clockAt(w.start) + '–' + clockAt(w.end)] : []), ...durPart(workoutElapsedMs(w)), fmtVol(w.vol, st.unit), ...(w.bw ? [fmtNum(w.bw) + ' ' + st.unit] : [])].join(' · ')}</div>
-    {(editing ? draftEntries : w.entries).map((e, i) => {
+    {['inactivity','abandoned','auto_completed'].includes(w.finishReason)&&<div className="card"><p>{t('Auto-ended at {0}',clockAt(w.end))}</p><label>{t('Duration (minutes)')}<input className="input" type="number" min="0.1" step="0.1" value={duration} onChange={e=>setDuration(e.target.value)}/></label>{durationError&&<p role="alert">{durationError}</p>}<Button onClick={()=>{const corrected=correctWorkoutDuration(w,duration);if(!corrected){setDurationError(t('Enter a valid duration ending before now.'));return}update(s=>{const i=s.workouts.findIndex(row=>row.id===w.id);if(i>=0)s.workouts[i]=corrected});setDurationError('');toast(t('Workout updated'))}}>{t('Save duration')}</Button></div>}
+    <ActivityMetrics workout={st.workouts.find(row=>row.id===w.id) || w} />
+    {['inactivity','abandoned','auto_completed'].includes(w.finishReason) && w.resumeSnapshot && !st.active && <Button onClick={()=>{update(s=>resumeAutoFinished(s,w.id));close();nav('/workout')}}>{t('Continue in a new session')}</Button>}
+    <div className="muted small" style={{ marginBottom: 12 }}>{[fmtDate(w.d, true), ...(Number(w.end) > Number(w.start) ? [clockAt(w.start) + '–' + clockAt(w.end)] : []), ...durPart(workoutElapsedMs(w)), ...(!w.activity || w.activity.preservesWorkout ? [fmtVol(w.vol, st.unit)] : []), ...(w.bw ? [fmtNum(w.bw) + ' ' + st.unit] : [])].join(' · ')}</div>
+    {(w.activity && !w.activity.preservesWorkout ? [] : editing ? draftEntries : w.entries).map((e, i) => {
       const ex = EXIDX[e.id]
       return <div key={i} className="row" style={{ marginBottom: 12, alignItems: 'flex-start' }}>
         {ex && <Thumb ex={ex} />}
-        <div className="grow"><div className="tt capitalize" style={{ fontWeight: 600 }}>{ex ? exerciseNameFor(ex) : (e.n || e.id)} {w.prs && w.prs.includes(e.id) && <span className="pr"><Icon name="trophy" />PR</span>}</div>
-          {e.substitutedFor && <div className="small dim">{t('Substituted for {0}', exerciseNameFor(exOr(e.substitutedFor)))}</div>}
+        <div className="grow"><div className="tt capitalize" style={{ fontWeight: 600 }}>{exerciseNameFor(ex || e, { entry: e, routineId: w.routineId })} {w.prs && w.prs.includes(e.id) && <span className="pr"><Icon name="trophy" />PR</span>}</div>
+          {e.substitutedFor && <div className="small dim">{t('Substituted for {0}', exerciseNameFor(exOr(e.substitutedFor), { routineId: w.routineId }))}</div>}
           {editing ? <div className="workout-edit-sets">{e.sets.map((set, si) => <div className="workout-edit-set" key={si}>
             <div className="edit-set-number">{t('Set')} {si + 1}</div>
             {modeOf({ ...(e.target || {}), id: e.id }) === 'cardio' ? <><label><span>{t('Duration (min)')}</span><NumberField value={set.min} decimal={false} onChange={v => setDraftEntries(rows => rows.map((row, ri) => ri !== i ? row : { ...row, sets: row.sets.map((x, xi) => xi === si ? { ...x, min: v } : x) }))} /></label><label><span>{t('Speed (km/h)')}</span><NumberField value={set.speed} onChange={v => setDraftEntries(rows => rows.map((row, ri) => ri !== i ? row : { ...row, sets: row.sets.map((x, xi) => xi === si ? { ...x, speed: v } : x) }))} /></label></> : <><label><span>{t('Weight ({0})', st.unit)}</span><NumberField value={set.w || 0} onChange={v => setDraftEntries(rows => rows.map((row, ri) => ri !== i ? row : { ...row, sets: row.sets.map((x, xi) => xi === si ? { ...x, w: v } : x) }))} /></label><label><span>{set.sec != null ? t('Seconds') : t('Reps')}</span><NumberField value={set.r ?? set.sec ?? 0} decimal={false} onChange={v => setDraftEntries(rows => rows.map((row, ri) => ri !== i ? row : { ...row, sets: row.sets.map((x, xi) => xi === si ? { ...x, ...(x.sec != null ? { sec: v } : { r: v }) } : x) }))} /></label></>}
@@ -1323,7 +1425,7 @@ function WorkoutDetail({ w, close }) {
       placeholder={t('How the session went as a whole.')}
       onChange={e => setNote(e.target.value)} />
     <div style={{ height: 10 }} />
-    {editing ? <div className="row" style={{ gap: 8 }}><Button variant="primary" style={{ flex: 1 }} onClick={saveEdits}>{t('Save changes')}</Button><Button style={{ flex: 1 }} onClick={() => { setDraftEntries(JSON.parse(JSON.stringify(w.entries || []))); setNote(w.note || ''); setEditing(false) }}>{t('Cancel')}</Button></div> : <Button icon="pencil" onClick={() => setEditing(true)}>{t('Edit workout')}</Button>}
+    {editing ? <div className="row" style={{ gap: 8 }}><Button variant="primary" style={{ flex: 1 }} onClick={saveEdits}>{t('Save changes')}</Button><Button style={{ flex: 1 }} onClick={() => { setDraftEntries(JSON.parse(JSON.stringify(w.entries || []))); setNote(w.note || ''); setEditing(false) }}>{t('Cancel')}</Button></div> : <Button icon="pencil" onClick={() => w.activity?.source === 'manual' ? (close(), openActivityEditor({existing:w})) : setEditing(true)}>{t('Edit workout')}</Button>}
     <div style={{ height: 14 }} />
     <Button variant="danger" onClick={() => confirmSheet({ title: t('Delete workout?'), message: t('This removes it from your history for good.'), confirmText: t('Delete'), danger: true, onConfirm: () => { update(s => { s.workouts = s.workouts.filter(x => x.id !== w.id) }); close(); toast(t('Workout deleted')) } })}>{t('Delete workout')}</Button>
   </>
@@ -1331,52 +1433,113 @@ function WorkoutDetail({ w, close }) {
 export const workoutDetailSheet = w => ui().openSheet(close => <WorkoutDetail w={w} close={close} />)
 
 /* ============================ calendar ============================ */
-export function ZoomCalendar({ S: st, onDay, initialLevel = 'week', initialAnchor, exporting = false, includeMeasurements = true, levels = ['week', 'month', 'months', 'years'], editable = false }) {
+export function ZoomCalendar({ S: st, onDay, initialLevel = 'week', initialAnchor, exporting = false, includeMeasurements = true, levels = ['week', 'month', 'months', 'years'], editable = false, streakView = false }) {
   const [level, setLevel] = useState(initialLevel)
   const [anchor, setAnchor] = useState(() => initialAnchor ? new Date(initialAnchor) : new Date())
   const [selected, setSelected] = useState(todayISO())
-  const byDay = {}; st.workouts.forEach(w => (byDay[w.d] = byDay[w.d] || []).push(w))
-  const shift = dir => setAnchor(a => { const d = new Date(a); if (level === 'week') d.setDate(d.getDate() + dir * 7); else if (level === 'month') { d.setDate(1); d.setMonth(d.getMonth() + dir) } else if (level === 'months') d.setFullYear(d.getFullYear() + dir); else d.setFullYear(d.getFullYear() + dir * 12); return d })
-  const dayState = iso => calendarDay(st, iso)
+  const now = useLocalNow(), today = isoOf(now)
+  const clockKey = `${today}|${now.getTimezoneOffset()}|${localTZ()}`
+  // All scales reuse one authoritative activity snapshot and one date-state cache.
+  const activity = useMemo(() => calendarActivity(st, now), [st, clockKey])
+  const trackedSince = activity.trackedSince
+  const { byDay, dayState } = useMemo(() => {
+    const byDay = {}, context = { start: trackedSince, workouts: {} }, cache = new Map()
+    for (const workout of st.workouts) (byDay[workout.d] ||= []).push(workout)
+    for (const workout of loggedWorkouts(st).filter(hasWorkoutActivity)) (context.workouts[workout.d] ||= []).push(workout)
+    return { byDay, dayState: iso => {
+      if (!cache.has(iso)) cache.set(iso, calendarDay(st, iso, now, context))
+      return cache.get(iso)
+    } }
+  }, [st, clockKey, trackedSince])
+  const shift = dir => setAnchor(a => {
+    const d = new Date(a); d.setHours(12,0,0,0)
+    if (level === 'week') d.setDate(d.getDate() + dir * 7)
+    else if (level === 'month') { d.setDate(1); d.setMonth(d.getMonth() + dir) }
+    else { d.setDate(1); d.setMonth(0); d.setFullYear(d.getFullYear() + dir * (level === 'years' ? 12 : 1)) }
+    return d
+  })
   const selectDay = iso => { setSelected(iso); if ((byDay[iso] || []).length) onDay?.(iso) }
-  const dayButton = (d, showRoutine = false) => {
-    const state = dayState(isoOf(d)), workout = state.workouts.at(-1)
-    const routine = st.routines.find(r => r.id === effectiveRoutineId(st, state.iso))
-    const name = workout?.name || routine?.name || ''
-    return <div key={state.iso} className="zoomcal-day-wrap">
-      <button aria-label={`${fmtDate(state.iso, true)}, ${name}, ${t(state.status === 'completed' ? 'Completed' : state.status === 'missed' ? 'Not completed' : state.status === 'pending' ? 'Pending' : 'Rest day')}${state.measurements.length ? ', ' + t('Measurement reminder') : ''}`} title={calendarDeload(st,state.iso) ? t('Deload week') : undefined} className={`zoomcal-day ${state.status}${calendarDeload(st,state.iso) ? ' deload' : ''}${state.iso === todayISO() ? ' today' : ''}${state.iso === selected ? ' selected' : ''}`} onClick={() => selectDay(state.iso)}><b>{d.getDate()}</b>{(!exporting && includeMeasurements && state.measurements.length > 0) && <span className="measurement-calendar-dot" aria-label={t('Measurement reminder')}>•</span>}</button>
+  const dateCell = (iso, { mini = false, showRoutine = false } = {}) => {
+    const state = dayState(iso), workout = state.workouts.at(-1), visual = calendarState(state.status)
+    const routine = st.routines.find(r => r.id === effectiveRoutineId(st, iso))
+    const name = state.status === 'untracked' ? '' : workout?.name || routine?.name || ''
+    const deload = calendarDeload(st, iso), isToday = iso === today, future = iso > today
+    const attributes = {
+      'data-date': iso, 'data-status': state.status, 'data-active': activity.dates.has(iso), 'data-future': future,
+      'aria-label': `${fmtDate(iso, true, true)}, ${name}, ${t(visual.label)}${isToday ? ', ' + t('Today') : ''}${future ? ', ' + t('Future dates') : ''}${streakView && iso===trackedSince ? ', '+t('Tracking start') : ''}${!mini && state.measurements.length ? ', ' + t('Measurement reminder') : ''}`,
+      'aria-current': isToday ? 'date' : undefined,
+      style: calendarVisualStyle(state.status),
+      title: `${iso}, ${t(visual.label)}${deload ? ', ' + t('Deload week') : ''}`,
+      className: `calendar-date ${mini ? 'zoomcal-mini-cell' : 'zoomcal-day'} ${state.status}${deload ? ' deload' : ''}${isToday ? ' today' : ''}${iso === selected ? ' selected' : ''}`,
+    }
+    const trackingMarker=streakView&&!exporting&&iso===trackedSince ? <span className="calendar-tracking-marker" data-tracking-start={trackedSince} aria-hidden="true" style={{'--tracking-fill':TRACKING_START_MARKER.fill,'--tracking-border':TRACKING_START_MARKER.border}}/> : null
+    if (mini) return <i key={iso} {...attributes} role="img"><b className="zoomcal-mini-day" aria-hidden="true">{Number(iso.slice(-2))}</b>{trackingMarker}</i>
+    return <div key={iso} className="zoomcal-day-wrap">
+      <button {...attributes} onClick={() => selectDay(iso)}><b>{Number(iso.slice(-2))}</b>{trackingMarker}{(!exporting && includeMeasurements && state.measurements.length > 0) && <span className="measurement-calendar-dot" aria-label={t('Measurement reminder')}>•</span>}</button>
       {(!exporting && showRoutine) && <span className="zoomcal-routine" title={name}>{name}</span>}
     </div>
   }
-  const periodStats = (start, end) => consistencyStats(st, isoOf(start), isoOf(end))
-  const shade = rate => ({ '--completion': `${Math.round(rate * 100)}%` })
-  const monthMap = (year, month) => {
-    const days = new Date(year, month + 1, 0).getDate(), off = (new Date(year, month, 1).getDay() + 6) % 7
-    return <span className="zoomcal-mini-month" aria-hidden="true">{Array.from({ length: off }, (_, i) => <i key={'e' + i} className="placeholder" />)}{Array.from({ length: days }, (_, i) => { const state = dayState(isoOf(new Date(year, month, i + 1))); return <i key={i} className={`${state.status}${calendarDeload(st,state.iso) ? " deload" : ""}`} /> })}</span>
+  const weekdayHeaders = mini => ['Mo','Tu','We','Th','Fr','Sa','Su'].map(day => <small key={day} className={mini ? 'zoomcal-mini-weekday' : undefined} aria-hidden={mini || undefined}>{t(day)}</small>)
+  const monthMap = month => <span className="zoomcal-mini-month">{!streakView&&weekdayHeaders(true)}{Array.from({length:month.offset},(_,i)=><i key={'e'+i} className="placeholder" aria-hidden="true"/>)}{month.days.map(iso=>dateCell(iso,{mini:true}))}</span>
+  let body, title, periodStart, periodEnd
+  if (level === 'week') {
+    const start = new Date(anchor); start.setHours(12,0,0,0); start.setDate(start.getDate() - ((start.getDay()+6)%7))
+    periodStart = isoOf(start); periodEnd = isoOf(new Date(start.getFullYear(),start.getMonth(),start.getDate()+6))
+    title = `${fmtDate(periodStart,false,true)} – ${fmtDate(periodEnd,false,true)}`
+    body = <div className="zoomcal-week">{Array.from({length:7},(_,i)=>{
+      const date=new Date(start); date.setDate(start.getDate()+i)
+      return <div className="zoomcal-week-column" key={i}><small>{t(['Mo','Tu','We','Th','Fr','Sa','Su'][i])}</small>{dateCell(isoOf(date),{showRoutine:true})}</div>
+    })}</div>
+  } else if (level === 'month') {
+    const y=anchor.getFullYear(), m=anchor.getMonth(), month=calendarMonth(y,m)
+    periodStart=month.start; periodEnd=month.end; title=`${t(MONTHS_LONG[m])} ${y}`
+    body=<div className="zoomcal-month">{weekdayHeaders(false)}{Array.from({length:month.offset},(_,i)=><i className="zoomcal-month-placeholder" aria-hidden="true" key={'e'+i}/>)}{month.days.map(iso=>dateCell(iso))}</div>
+  } else if (level === 'months') {
+    const y=anchor.getFullYear(); title=String(y); periodStart=`${y}-01-01`; periodEnd=`${y}-12-31`
+    body=<div className="zoomcal-periods months">{MONTHS_LONG.map((name,m)=>{
+      const month=calendarMonth(y,m), count=calendarActivityCount(activity,month.start,month.end)
+      return <button key={name} className="zoomcal-month-card" data-month={month.start.slice(0,7)} data-active-days={count} aria-label={`${t(name)} ${y}, ${t('Active days')}: ${count}. ${t('Zoom in')}`} onClick={()=>{setAnchor(new Date(y,m,1,12));setLevel('month')}}><span className="zoomcal-period-head"><b>{t(name)}</b><em>{count}</em></span>{monthMap(month)}{!streakView&&<small>{t('Active days')}</small>}</button>
+    })}</div>
+  } else {
+    const y=Math.floor(anchor.getFullYear()/12)*12; title=`${y}–${y+11}`; periodStart=`${y}-01-01`; periodEnd=`${y+11}-12-31`
+    body=<div className="zoomcal-periods years">{Array.from({length:12},(_,i)=>y+i).map(year=>{
+      const count=calendarActivityCount(activity,`${year}-01-01`,`${year}-12-31`)
+      return <button key={year} data-active-days={count} aria-label={`${year}, ${t('Active days')}: ${count}. ${t('Zoom in')}`} onClick={()=>{setAnchor(new Date(year,0,1,12));setLevel('months')}}><span className="zoomcal-period-head"><b>{year}</b><em>{count}</em></span><span className="zoomcal-mini-year">{Array.from({length:12},(_,m)=>{
+        const month=calendarMonth(year,m), active=calendarActivityCount(activity,month.start,month.end)>0
+        return <i key={m} style={calendarVisualStyle(active?'completed':'rest')}/>
+      })}</span><small>{t('Active days')}</small></button>
+    })}</div>
   }
-  let body, title
-  if (level === 'week') { const start = new Date(anchor); start.setDate(start.getDate() - ((start.getDay() + 6) % 7)); title = `${fmtDate(isoOf(start), true)} – ${fmtDate(isoOf(new Date(start.getFullYear(), start.getMonth(), start.getDate() + 6)), true)}`; body = <div className="zoomcal-week">{Array.from({ length: 7 }, (_, i) => { const d = new Date(start); d.setDate(start.getDate() + i); return <div className="zoomcal-week-column" key={i}><small>{t(['Mo','Tu','We','Th','Fr','Sa','Su'][i])}</small>{dayButton(d, true)}</div> })}</div> }
-  else if (level === 'month') { const y = anchor.getFullYear(), m = anchor.getMonth(), off = (new Date(y,m,1).getDay()+6)%7, n = new Date(y,m+1,0).getDate(); title = `${t(MONTHS_LONG[m])} ${y}`; body = <div className="zoomcal-month">{['Mo','Tu','We','Th','Fr','Sa','Su'].map(x => <small key={x}>{t(x)}</small>)}{Array.from({length:off},(_,i)=><i className="zoomcal-month-placeholder" key={'e'+i}/>)}{Array.from({length:n},(_,i)=>dayButton(new Date(y,m,i+1)))}</div> }
-  else if (level === 'months') { const y = anchor.getFullYear(); title = String(y); body = <div className="zoomcal-periods months">{MONTHS_LONG.map((m,i) => { const stats = periodStats(new Date(y,i,1), new Date(y,i+1,0)); return <button key={m} style={shade(stats.rate)} onClick={() => { setAnchor(new Date(y,i,1)); setLevel('month') }}><span className="zoomcal-period-head"><b>{t(m)}</b><em>{stats.rate == null ? '\u2014' : Math.round(stats.rate * 100) + '%'}</em></span>{monthMap(y,i)}<small>{stats.completed}/{stats.planned} {t('completed')}</small></button> })}</div> }
-  else { const y = Math.floor(anchor.getFullYear()/12)*12; title = `${y}–${y+11}`; body = <div className="zoomcal-periods years">{Array.from({length:12},(_,i)=>y+i).map(yr => { const stats = periodStats(new Date(yr,0,1), new Date(yr,11,31)); return <button key={yr} style={shade(stats.rate)} onClick={() => { setAnchor(new Date(yr,0,1)); setLevel('months') }}><span className="zoomcal-period-head"><b>{yr}</b><em>{stats.rate == null ? '\u2014' : Math.round(stats.rate * 100) + '%'}</em></span><span className="zoomcal-mini-year">{Array.from({length:12},(_,m) => { const ms = periodStats(new Date(yr,m,1),new Date(yr,m+1,0)); return <i key={m} style={shade(ms.rate)} /> })}</span><small>{stats.completed}/{stats.planned} {t('completed')}</small></button> })}</div> }
-  const zi = levels.indexOf(level)
-  const selectedState = dayState(selected), selectedWorkout = selectedState.workouts.at(-1)
-  const visibleStart = new Date(anchor); visibleStart.setDate(visibleStart.getDate() - (visibleStart.getDay() + 6) % 7)
-  const isDeloadVisible = level === 'week' && Array.from({ length: 7 }, (_, i) => { const d = new Date(visibleStart); d.setDate(d.getDate() + i); return calendarDeload(st, isoOf(d)) }).some(Boolean)
-  return <div className="zoomcal">{levels.length === 2 && <Segmented value={level} onChange={setLevel} options={[{ value: 'week', label: t('Week') }, { value: 'month', label: t('Month') }]} />}<div className="zoomcal-nav"><button className="iconbtn" onClick={() => shift(-1)}><Icon name="chevronLeft" /></button><div className="zoomcal-title"><b>{title}</b><button aria-label={t('Zoom out')} title={t('Zoom out')} disabled={zi >= levels.length-1} onClick={() => setLevel(levels[zi+1])}><Icon name="minus" /></button><button aria-label={t('Zoom in')} title={t('Zoom in')} disabled={zi <= 0} onClick={() => setLevel(levels[zi-1])}><Icon name="plus" /></button></div><button className="iconbtn" onClick={() => shift(1)}><Icon name="chevronRight" /></button></div>{body}
+  const zi=levels.indexOf(level), activeCount=calendarActivityCount(activity,periodStart,periodEnd)
+  const selectedState=dayState(selected), selectedWorkout=selectedState.workouts.at(-1)
+  const visibleStart=new Date(anchor); visibleStart.setDate(visibleStart.getDate()-(visibleStart.getDay()+6)%7)
+  const isDeloadVisible=level==='week'&&Array.from({length:7},(_,i)=>{const date=new Date(visibleStart);date.setDate(date.getDate()+i);return calendarDeload(st,isoOf(date))}).some(Boolean)
+  const exportCalendar = () => ui().openSheet(close=><CalendarExport S={st} anchor={anchor} close={close}/>)
+  const viewOptions=[{value:'week',label:t('Week')},{value:'month',label:t('Month')},{value:'months',label:t('Year')}].filter(option=>levels.includes(option.value))
+  const visiblePeriod = level==='week' ? `${Number(periodStart.slice(-2))}-${Number(periodEnd.slice(-2))}` : level==='month' ? t(MONTHS_LONG[anchor.getMonth()]) : title
+  const openView=()=>ui().openSheet(close=><><h3>{t('Calendar view')}</h3><div className="sect-b" role="radiogroup" aria-label={t('Calendar view')}>{viewOptions.map(option=><button type="button" className="lrow tap" role="radio" aria-checked={level===option.value} key={option.value} onClick={()=>{setLevel(option.value);close()}}><span className="lrow-m"><span className="lrow-t">{option.label}</span></span>{level===option.value&&<Icon name="check" className="lrow-k"/>}</button>)}</div></>)
+  const periodCount=<div className="zoomcal-period-active" data-active-days={activeCount} data-period-start={periodStart} data-period-end={periodEnd}>{!streakView&&<div><b>{t('Active days')}</b><p>{t('One square per day. Total active days, not streak length.')}</p></div>}<strong aria-label={streakView ? `${t('Active days')}: ${activeCount}` : undefined}>{activeCount}</strong></div>
+  return <div className={'zoomcal' + (streakView ? ' streak-calendar' : '')} data-level={level} data-tour={streakView ? 'streak-calendar' : undefined}>
+    {!streakView&&<div className="zoomcal-toolbar">{!exporting&&<Segmented value={level==='years'?'months':level} onChange={setLevel} options={viewOptions}/>}<div className="zoomcal-scale"><button className="iconbtn" aria-label={t('Zoom out')} title={t('Zoom out')} disabled={zi>=levels.length-1} onClick={()=>setLevel(levels[zi+1])}><Icon name="minus"/></button><button className="iconbtn" aria-label={t('Zoom in')} title={t('Zoom in')} disabled={zi<=0} onClick={()=>setLevel(levels[zi-1])}><Icon name="plus"/></button></div></div>}
+    <div className="zoomcal-nav"><button className="iconbtn" aria-label={t('Prev')} onClick={()=>shift(-1)}><Icon name="chevronLeft"/></button>{streakView ? <div className="zoomcal-period-heading"><button type="button" className="zoomcal-period-picker" aria-label={`${t('Calendar view')}: ${viewOptions.find(option=>option.value===level)?.label || t('Year')}, ${title}`} aria-haspopup="dialog" onClick={openView}><b>{visiblePeriod}</b><Icon name="chevronDown"/></button>{periodCount}</div> : <div className="zoomcal-title"><b>{title}</b></div>}<button className="iconbtn" aria-label={t('Next')} onClick={()=>shift(1)}><Icon name="chevronRight"/></button></div>
+    {!streakView&&periodCount}
+    {!streakView&&<div className="zoomcal-tracking-start" data-tracking-start={trackedSince} style={{'--tracking-fill':TRACKING_START_MARKER.fill,'--tracking-border':TRACKING_START_MARKER.border}}><i aria-hidden="true"/><span>{t('Tracking since {0}',fmtDate(trackedSince,true,true))}</span></div>}
+    {body}
     <div className="zoomcal-legend">
-      {isDeloadVisible && <span><i className="deload" />{t('Deload Week')}</span>}
-      <span><i className="completed" />{t('Completed')}</span>
-      <span><i className="missed" />{t('Not completed')}</span>
-      <span><i className="pending" />{t('Pending')}</span>
+      {isDeloadVisible&&<span><i className="deload"/>{t('Deload Week')}</span>}
+      {calendarLegend().map(visual=><span key={visual.status} data-legend={visual.status}><i aria-hidden="true" className={visual.status} style={calendarVisualStyle(visual.status)}/>{t(visual.label)}</span>)}
+      {streakView&&trackedSince>=periodStart&&trackedSince<=periodEnd&&<span data-legend="tracking-start"><i className="calendar-tracking-key" aria-hidden="true" style={{background:TRACKING_START_MARKER.fill,borderColor:TRACKING_START_MARKER.border}}/>{t('Tracking start')}</span>}
+      {!streakView&&<><span className="zoomcal-time-key"><i className="zoomcal-today-key" aria-hidden="true"/>{t('Today')}</span><span className="zoomcal-time-key"><i className="zoomcal-future-key" aria-hidden="true"/>{t('Future dates')}</span></>}
     </div>
-    {!exporting && (level === 'week' || level === 'month') && <div className={`zoomcal-selection ${selectedState.status}`}><div><b>{fmtDate(selected, true)}</b><span>{selectedWorkout?.name || st.routines.find(r => r.id === effectiveRoutineId(st, selected))?.name || t(selectedState.status === 'completed' ? 'Completed' : selectedState.status === 'missed' ? 'Not completed' : selectedState.status === 'pending' ? 'Pending' : 'Rest day')}</span></div>{selectedWorkout && <Icon name="chevronRight" />}</div>}
-    {!exporting && editable && <div className="zoomcal-schedule-actions"><Button size="sm" onClick={() => dayOverrideSheet(selected)}>{t('Edit schedule')}</Button>{selectedState.planned && <Button size="sm" onClick={() => startFlow(effectiveRoutineId(st, selected))}>{t('Start workout')}</Button>}</div>}
-    {!exporting && <div className="zoomcal-actions-row">
-      {includeMeasurements && selectedState.measurements.map(reminder => <Button key={reminder.id} size="sm" onClick={() => openMeasurementEntry(reminder.metric)}>{t(reminder.label)}</Button>)}
-      {selectedState.planned && <Button size="sm" onClick={()=>routineMuscleSheet(effectiveRoutineId(st,selected))}>{t('Muscles trained')}</Button>}
+    {!exporting&&streakView&&selectedState.planned&&<div className="zoomcal-streak-muscles"><Button size="sm" onClick={()=>routineMuscleSheet(effectiveRoutineId(st,selected))}>{t('Muscles trained')}</Button></div>}
+    {!exporting&&!streakView&&(level==='week'||level==='month')&&<div className={`zoomcal-selection ${selectedState.status}`} style={calendarVisualStyle(selectedState.status)}><div><b>{fmtDate(selected,true)}</b>{selectedState.status!=='untracked'&&<span>{selectedWorkout?.name||st.routines.find(r=>r.id===effectiveRoutineId(st,selected))?.name||t(calendarState(selectedState.status).label)}</span>}</div>{selectedWorkout&&<Icon name="chevronRight"/>}</div>}
+    {!exporting&&!streakView&&<DailyPlan date={selected} compact onStart={selected===today?startFlow:undefined}/>}
+    {!exporting&&editable&&<div className="zoomcal-schedule-actions"><Button size="sm" onClick={()=>dayOverrideSheet(selected)}>{t('Edit schedule')}</Button>{nextDailyRoutine(st,selected)&&<Button size="sm" onClick={()=>startFlow(nextDailyRoutine(st,selected).id)}>{t('Start workout')}</Button>}</div>}
+    {!exporting&&!streakView&&<div className="zoomcal-actions-row">
+      {includeMeasurements&&selectedState.measurements.map(reminder=><Button key={reminder.id} size="sm" onClick={()=>openMeasurementEntry(reminder.metric)}>{t(reminder.label)}</Button>)}
+      {selectedState.planned&&<Button size="sm" onClick={()=>routineMuscleSheet(effectiveRoutineId(st,selected))}>{t('Muscles trained')}</Button>}
     </div>}
-    {!exporting && <div className="zoomcal-export-wrap"><Button className="calendar-export-button" icon="download" onClick={() => ui().openSheet(close => <CalendarExport S={st} anchor={anchor} close={close} />)}>{t('Export Calendar')}</Button></div>}
+    {!exporting&&<div className="zoomcal-export-wrap"><Button className="calendar-export-button" icon="download" onClick={exportCalendar}>{t('Export Calendar')}</Button></div>}
   </div>
 }
 
@@ -1455,7 +1618,10 @@ const clockMinutes = minutes => new Date(2000, 0, 1, 0, minutes).toLocaleTimeStr
 
 function SessionTiming() {
   const st = useStore(s => s.S)
-  const summary = sessionTimingSummary(st.workouts)
+  const [showAllRecent, setShowAllRecent] = useState(false)
+  const summary = sessionTimingSummary(statisticsState(st).workouts)
+  const recent = [...summary.sessions].reverse()
+  const shownRecent = showAllRecent ? recent : recent.slice(0,3)
   const points = summary.sessions.map(w => ({ t: w.start, d: w.d, y: Math.round(w.durationMs / 60000), note: w.name }))
   return <><h3 className="times-title">{t('Training times and duration')}</h3>
     {!summary.sessions.length ? <div className="muted small">{t('Finish a timed workout to see these statistics.')}</div> : <>
@@ -1467,9 +1633,10 @@ function SessionTiming() {
       </div>
       <h4 className="sec">{t('Duration trend')}</h4><div className="chart"><LineChart points={points} h={150} unit="min" color="var(--blue)" /></div>
       <h4 className="sec">{t('Recent session times')}</h4>
-      <div className="list">{[...summary.sessions].reverse().slice(0, 30).map(w => <div className="item" key={w.id || w.start} onClick={() => workoutDetailSheet(w)}>
+      <div className="list recent-session-times" data-tour="session-times">{shownRecent.map(w => <button type="button" className="item" key={w.id || w.start} data-workout-id={w.id} onClick={() => workoutDetailSheet(w)}>
         <span className="lrow-i"><Icon name="clock" /></span><div className="grow"><div className="tt">{w.name}</div><div className="ss">{fmtDate(w.d, true)} · {clockAt(w.start)}–{clockAt(w.end)}</div></div><span className="tag nocap">{fmtDur(w.durationMs)}</span>
-      </div>)}</div>
+      </button>)}</div>
+      {!showAllRecent && recent.length > 3 && <Button className="recent-show-more" onClick={() => setShowAllRecent(true)}>{t('Show more')}</Button>}
       <div className="small dim" style={{ marginTop: 10 }}>{t('Only completed, unique sessions with valid recorded durations are included. Long sessions are not excluded just for their length.')}</div>
     </>}
   </>
@@ -1483,7 +1650,7 @@ export function WorkoutRow({ w, onClick }) {
   return <div className="item" onClick={onClick}>
     <span className="lrow-i" style={{ width: 34, height: 34, borderRadius: 8, fontSize: 19 }}><Icon name={glyph} /></span>
     <div className="grow"><div className="tt">{w.name}</div>
-      <div className="ss">{[fmtDate(w.d, true), ...durPart(workoutElapsedMs(w)), t('{0} sets', setsDone(w)), fmtVol(w.vol, st.unit)].join(' · ')}</div></div>
+      <div className="ss">{[fmtDate(w.d, true), ...durPart(workoutElapsedMs(w)), ...(w.activity && !w.activity.preservesWorkout ? [w.activity.distanceKm!=null ? fmtNum(w.activity.distanceKm)+' km' : null, w.activity.source==='manual'?t('Manual'):'Health Connect'].filter(Boolean) : [t('{0} sets', setsDone(w)), fmtVol(w.vol, st.unit)])].join(' · ')}</div></div>
     {w.prs && w.prs.length > 0 && <span className="pr"><Icon name="trophy" />{w.prs.length} PR</span>}
     <Icon name="chevronRight" className="chev" />
   </div>
@@ -1491,10 +1658,17 @@ export function WorkoutRow({ w, onClick }) {
 
 /* ============================ workout lifecycle ============================ */
 export function startFlow(routineId) {
+  useStore.getState().reconcileActiveClock()
+  if (S().active) {nav('/workout');return}
+  if (routineId === undefined) routineId = nextDailyRoutine(S(),todayISO())?.id || null
+  if(isTrainingPaused(S(),todayISO())) return ui().openSheet(close=><TrainingPauseCard onSaved={close} />)
   bwSheet({ required: true, onDone: bw => beginWorkout(routineId, bw) })
 }
 export function beginWorkout(routineId, bw) {
+  useStore.getState().reconcileActiveClock()
   const st = S()
+  if (st.active) {nav('/workout');return}
+  if(isTrainingPaused(st,todayISO())) return ui().openSheet(close=><TrainingPauseCard onSaved={close} />)
   const r = routineId ? st.routines.find(x => x.id === routineId) : null
   // The prescription is applied as the session is built, so you walk up to the bar with the
   // right weight already on the screen instead of being told about it afterwards. `plan` is
@@ -1502,15 +1676,17 @@ export function beginWorkout(routineId, bw) {
   const deload = deloadStatus(st)
   const entries = (r ? r.ex : []).map(cfg => {
     const plan = nextPrescription(st, cfg, r)
-    const step = defaultIncrement(cfg.id, st.unit)
+    const step = loadingStepFor(cfg, st.unit)
     const prescribed = applyPrescription(buildSets(st, cfg, { step }), plan, step)
-    const target = deloadTargetFor(cfg, deload)
+    const target = deloadTargetFor(withBackoffRepsMode(cfg, st), deload)
     const sets = applyIntensifierPlan(applyTrainingPlan(prescribed, target, step, deload), target)
     const shownPlan = deload.active ? { kind: 'deload', why: ['Deload session — load, working sets and effort are reduced for recovery.'] } : plan
     return { id: cfg.id, sg: cfg.sg, target, plan: shownPlan, sets }
   })
+  const daily = dailyPlan(st,todayISO()), dailyIndex = daily.items.findIndex(item=>item.id===routineId)
   update(s => {
-    s.active = { id: uid(), d: todayISO(), start: Date.now(), routineId, name: r ? r.name : t('Freestyle'), bw: bw || null, unit: st.unit, bwUnit: st.unit, cur: 0, deload: deload.active, entries }
+    if (s.daySkipped?.[todayISO()]) s.daySkipped[todayISO()] = routineIds(s.daySkipped[todayISO()]).filter(id=>id!==routineId)
+    s.active = { sessionOrigin:startSessionOrigin(r?.id), dailyPlanIndex:dailyIndex, dailyPlanTotal:daily.total, id: uid(), d: todayISO(), start: Date.now(), routineId:r?.id || null, name: r ? r.name : t('Freestyle'), bw: bw || null, unit: st.unit, bwUnit: st.unit, cur: 0, deload: deload.active, entries }
   })
   useUI.getState().stopRest()
   nav('/workout')
@@ -1552,7 +1728,7 @@ function TopWeight({ entryIdx, close }) {
     } else toast(t('Tracked — next time starts at {0}', fmtNum(S().exWeights[entry.id].w) + ' ' + st.unit))
   }
   return <>
-    <h3 className="capitalize row" style={{ gap: 8 }}><Icon name="checkCircle" style={{ color: 'var(--acc)' }} />{t('{0} done', exerciseNameFor(ex))}</h3>
+    <h3 className="capitalize row" style={{ gap: 8 }}><Icon name="checkCircle" style={{ color: 'var(--acc)' }} />{t('{0} done', exerciseNameFor(ex, { entry, routineId: A.routineId }))}</h3>
     <div className="muted small">{t('Confirm the weight you worked with — your highest becomes the default next time.')}{!unitDone && unit.length > 1 ? ' ' + t('Then finish the superset partner.') : ''}</div>
     <WeightInput value={v} setValue={setV} unit={st.unit} />
     <div style={{ height: 10 }} />
@@ -1606,7 +1782,7 @@ function ExerciseNote({ entryIdx, close }) {
   }
 
   return <>
-    <h3 className="capitalize">{exerciseNameFor(ex)}</h3>
+    <h3 className="capitalize">{exerciseNameFor(ex, { entry, routineId: A.routineId })}</h3>
     <div className="small muted" style={{ marginBottom: 6 }}>{t('This session')}</div>
     <textarea className="input" rows={3} maxLength={NOTE_MAX} value={note}
       placeholder={t('How it went, what to change — kept with today’s workout.')}
@@ -1671,7 +1847,7 @@ function WorkoutComplete({ close }) {
   return <div style={{ textAlign: 'center', padding: '8px 0' }}>
     <div style={{ fontSize: 44, display: 'flex', justifyContent: 'center', color: 'var(--acc)' }}><Icon name="checkCircle" /></div>
     <h3 style={{ margin: '8px 0' }}>{t("That's the whole workout!")}</h3>
-    <div className="muted small" style={{ marginBottom: 16 }}>{t('Every exercise done — great work. Finish up, or keep going and add another exercise.')}</div>
+    <div className="muted small" style={{ marginBottom: 16 }}>{t('Timer paused. Reviewing this screen does not count as training. Finish or continue when ready.')}</div>
     <Button variant="primary" icon="flag" onClick={() => { close(); finishWorkout() }}>{t('Finish workout')}</Button>
     <div style={{ height: 8 }} />
     <Button onClick={() => { resumeActiveWorkoutClock(); close(); useUI.getState().toast(t('Keep going — tap “+ Add exercise” below')) }}>{t('Continue workout')}</Button>
@@ -1679,24 +1855,72 @@ function WorkoutComplete({ close }) {
 }
 let completionDecision = null
 export const workoutCompleteSheet = () => {
+  if(S().active?.pauseReason==='inactivity')return workoutInactivitySheet()
+  if(S().active?.pauseReason==='manual')return null
   if (completionDecision && ui().sheets.some(sheet=>sheet.id===completionDecision.id)) return completionDecision
   pauseActiveWorkoutClock()
   completionDecision = ui().openSheet(close => <WorkoutComplete close={close} />, { kind: 'center', onClose:()=>{completionDecision=null} })
   return completionDecision
 }
-export function inactivityWarningSheet() {
-  return ui().openSheet(close=><><h3>{t('Still training?')}</h3><p>{t('No activity has been recorded for a while.')}</p><Button onClick={()=>{update(s=>{if(s.active)s.active.lastMeaningfulWorkoutActivityAt=Date.now()});close()}}>{t('Continue workout')}</Button><Button onClick={()=>{close();finishWorkout()}}>{t('Finish workout')}</Button></>)
+
+function WorkoutInactivity({ close }) {
+  const active=useStore(s=>s.S.active)
+  const [duration,setDuration]=useState(()=>String(Math.round(workoutElapsedMs(S().active)/6000)/10))
+  const [error,setError]=useState('')
+  const [editing,setEditing]=useState(false)
+  useEffect(()=>{if(!active || active.pauseReason!=='inactivity')close()},[active?.id,active?.pauseReason])
+  if(!active)return null
+  const reviewDuration=()=>{
+    const draft=duration.trim().replace(',','.')
+    if(!/^\d+(?:\.\d+)?$/.test(draft) || !correctWorkoutDuration(S().active,draft)){setError(t('Enter a valid duration ending before now.'));return}
+    const id=active.id
+    confirmSheet({title:t('Update workout duration?'),message:t('The recorded duration will change to {0} minutes. Your sets will stay the same.',draft),confirmText:t('Save changes'),onConfirm:()=>{
+      const current=S().active
+      if(!current || current.id!==id || current.pauseReason!=='inactivity')return
+      const corrected=correctWorkoutDuration(current,draft)
+      if(!corrected){setError(t('Enter a valid duration ending before now.'));return}
+      try{update(s=>{if(s.active?.id===id&&s.active.pauseReason==='inactivity')s.active=corrected});setError('');setEditing(false);toast(t('Workout updated'))}
+      catch{setError(t('Could not save changes. Try again.'))}
+    }})
+  }
+  return <div className="workout-inactivity">
+    <span className="inactivity-symbol" aria-hidden="true"><Icon name="timer"/></span>
+    <h3>{t('Workout paused after inactivity')}</h3>
+    <p className="small muted">{t('The timer paused 30 minutes after your last interaction. Your sets are preserved. Review the duration, then continue or finish.')}</p>
+    <div className="inactivity-clock"><span>{t('Duration')}</span><strong>{fmtDur(workoutElapsedMs(active))}</strong><Button size="sm" icon="pencil" aria-expanded={editing} onClick={()=>{setDuration(String(Math.round(workoutElapsedMs(active)/6000)/10));setError('');setEditing(v=>!v)}}>{t('Update time')}</Button></div>
+    {editing&&<form className="inactivity-editor" onSubmit={event=>{event.preventDefault();reviewDuration()}}>
+      <label>{t('Duration (minutes)')}<input className="input" type="text" inputMode="decimal" value={duration} onChange={event=>{setDuration(event.target.value);setError('')}}/></label>
+      <div className="inactivity-edit-actions"><Button type="button" size="sm" onClick={()=>{setEditing(false);setError('')}}>{t('Cancel')}</Button><Button type="submit" size="sm">{t('Save duration')}</Button></div>
+    </form>}
+    {error&&<p role="alert" className="inactivity-error">{error}</p>}
+    <div className="inactivity-decisions"><Button variant="primary" icon="play" onClick={()=>{resumeActiveWorkoutClock();close();nav('/workout')}}>{t('Continue workout')}</Button><Button icon="check" onClick={()=>finishWorkout()}>{t('Finish workout')}</Button></div>
+  </div>
+}
+let inactivityDecision=null
+export const workoutInactivitySheet=()=>{
+  if(S().active?.pauseReason!=='inactivity')return null
+  if(inactivityDecision&&ui().sheets.some(sheet=>sheet.id===inactivityDecision.id))return inactivityDecision
+  // A rest deadline remains persisted. Only the duration clock pauses at inactivity.
+  inactivityDecision=ui().openSheet(close=><WorkoutInactivity close={close}/>,{kind:'center',locked:true,onClose:()=>{inactivityDecision=null}})
+  return inactivityDecision
 }
 
-function FinishSummary({ w, prs, e1prs = [], milestone = null, close }) {
+function FinishSummary({ w, prs, e1prs = [], presentation, close }) {
   const st = useStore(s => s.S)
-  return <div style={{ textAlign: 'center', padding: '8px 0' }}>
-    {milestone && <div className={'streak-celebration streak-' + streakTier(milestone)}>
-      <StreakFlame value={milestone} />
-      <div><b>{t('{0}-workout streak!', milestone)}</b><span>{t('Your consistency is paying off. Keep the flame alive!')}</span></div>
-    </div>}
-    <div style={{ fontSize: 44, display: 'flex', justifyContent: 'center', color: 'var(--acc)' }}><Icon name="trophy" /></div>
-    <h3 style={{ margin: '8px 0' }}>{t('Workout complete!')}</h3>
+  const now = useLocalNow()
+  const streak = trainingStreak(st, now)
+  const [claim] = useState(() => presentation?.shown ? null : presentation?.claim)
+  const [dismissed, setDismissed] = useState(false)
+  const validClaim = claim && isCurrentStreakMilestone(claim, streak, st, now)
+  useEffect(() => { if (claim && presentation) presentation.shown = true }, [claim, presentation])
+  useEffect(() => { if (claim && !validClaim) setDismissed(true) }, [claim, validClaim])
+  const next = w.d === todayISO() ? nextDailyRoutine(st,w.d) : null
+  return <div className="workout-complete-summary" style={{ textAlign: 'center', padding: '8px 0' }}>
+    <StreakMilestoneCelebration claim={!dismissed && validClaim ? claim : null} onDismiss={() => setDismissed(true)} />
+    <WorkoutSummaryStreak streak={streak} />
+    <div className="trophy-icon-wrap"><Icon name="trophy" /></div>
+    <h3 style={{ margin: '8px 0 14px', fontSize: 24, fontWeight: 700 }}>{t(['abandoned','auto_completed'].includes(w.finishReason) ? 'Session recovered' : 'Workout complete!')}</h3>
+    {['abandoned','auto_completed'].includes(w.finishReason) && <><p className="small muted">{t('Saved using recorded training time. Review or correct the duration in History.')}</p><Button onClick={()=>{close();workoutDetailSheet(w)}}>{t('Edit duration')}</Button></>}
     <div className="tiles" style={{ textAlign: 'left' }}>
       <div className="tile"><div className="l">{t('Duration')}</div><div className="v" style={{ fontSize: '1.1rem' }}>{fmtDur(workoutElapsedMs(w))}</div></div>
       <div className="tile"><div className="l">{t('Volume')}</div><div className="v" style={{ fontSize: '1.1rem' }}>{fmtVol(w.vol, st.unit)}</div></div>
@@ -1704,28 +1928,38 @@ function FinishSummary({ w, prs, e1prs = [], milestone = null, close }) {
       <div className="tile"><div className="l">{t('PRs')}</div><div className="v" style={{ fontSize: 20 }}>{prs.length || '—'}</div></div>
     </div>
     {(prs.length > 0 || e1prs.length > 0) && <div style={{ textAlign: 'left', marginBottom: 12 }}>
-      {prs.map(id => <div key={id} className="small accent capitalize row" style={{ gap: 5 }}><Icon name="trophy" style={{ fontSize: 13 }} />{t('New PR:')} {EXIDX[id] ? exerciseNameFor(EXIDX[id]) : id}</div>)}
-      {e1prs.map(p => <div key={p.id} className="small accent capitalize row" style={{ gap: 5 }}><Icon name="chartLine" style={{ fontSize: 13 }} />{t('Best estimated 1RM:')} {EXIDX[p.id] ? exerciseNameFor(EXIDX[p.id]) : p.id} · {fmtNum(p.est)} {st.unit}</div>)}
+      {prs.map(id => {
+        const entry = w.entries?.find(e => e.id === id)
+        return <div key={id} className="small accent capitalize row" style={{ gap: 5 }}><Icon name="trophy" style={{ fontSize: 13 }} />{t('New PR:')} {exerciseNameFor(EXIDX[id] || entry || { id }, { entry, routineId: w.routineId })}</div>
+      })}
+      {e1prs.map(p => {
+        const entry = w.entries?.find(e => e.id === p.id)
+        return <div key={p.id} className="small accent capitalize row" style={{ gap: 5 }}><Icon name="chartLine" style={{ fontSize: 13 }} />{t('Best estimated 1RM:')} {exerciseNameFor(EXIDX[p.id] || entry || { id: p.id }, { entry, routineId: w.routineId })} · {fmtNum(p.est)} {st.unit}</div>
+      })}
     </div>}
     <h4 className="sec" style={{ textAlign: 'left' }}>{t('What you just trained')}</h4>
     <BodyMap load={loadOfWorkouts([w])} body={st.body} />
     <div style={{ height: 14 }} />
-    <Button variant="primary" onClick={() => { close(); nav('/home') }}>{t('Nice!')}</Button>
+    {next && <div className="daily-next"><small>{t('Next workout')}</small><h3>{next.name}</h3><Button variant="primary" onClick={()=>{close();startFlow(next.id)}}>{t('Continue')}</Button></div>}
+    <Button variant={next?'ghost':'primary'} onClick={() => { close(); nav('/home') }}>{t(next?'Later':'Nice!')}</Button>
   </div>
 }
 export function finishWorkout() {
   const A = S().active
   if (!A) return
   const done = setsDoneActive(A)
-  const total = A.entries.reduce((n, e) => n + e.sets.length, 0)
-  if (!done) { pauseActiveWorkoutClock(); confirmSheet({ title: t('Nothing logged yet'), message: t('You haven’t checked off any sets. Finish the workout anyway?'), confirmText: t('Finish anyway'), onConfirm: doFinishWorkout, onCancel: resumeActiveWorkoutClock }); return }
-  if (done < total) { pauseActiveWorkoutClock(); confirmSheet({ title: t('Finish early?'), message: t(total - done === 1 ? '{0} set still unchecked. Finish the workout now?' : '{0} sets still unchecked. Finish the workout now?', total - done), confirmText: t('Finish workout'), onConfirm: doFinishWorkout, onCancel: resumeActiveWorkoutClock }); return }
+  const remaining = A.entries.reduce((n, e) => n + e.sets.filter(set => !isWarmupRow(set) && !set.done).length, 0)
+  const cancel = A.timerPausedAt != null ? () => {} : resumeActiveWorkoutClock
+  if (!done) { pauseActiveWorkoutClock(); confirmSheet({ title: t('Nothing logged yet'), message: t('You haven’t checked off any sets. Finish the workout anyway?'), confirmText: t('Finish anyway'), onConfirm: doFinishWorkout, onCancel: cancel }); return }
+  if (remaining) { pauseActiveWorkoutClock(); confirmSheet({ title: t('Finish early?'), message: t(remaining === 1 ? '{0} set still unchecked. Finish the workout now?' : '{0} sets still unchecked. Finish the workout now?', remaining), confirmText: t('Finish workout'), onConfirm: doFinishWorkout, onCancel: cancel }); return }
   doFinishWorkout()
 }
 export function doFinishWorkout(options = {}) {
   const st = S()
-  const A = st.active
+  const A = ensureWorkoutCompletionPaused(st.active)
   if (!A) return
+  const now = new Date()
+  const beforeStreak = trainingStreak(st, now)
   const prs = []
   const e1prs = []
   A.entries.forEach(e => {
@@ -1738,11 +1972,15 @@ export function doFinishWorkout(options = {}) {
   })
   const w = buildCompletedWorkout(A, {
     end: options.end ?? Date.now(),
+    reason: options.reason || (effectiveWorkoutComplete(A) ? 'completed' : 'manual'),
     prs,
     snapshotFor: e => EXIDX[e.id]?.custom ? exerciseMuscleSnapshot(EXIDX[e.id]) : null,
   })
+  delete w.restTimer
   w.vol = workoutVolume(w)
-  if (options.reason === 'inactivity') { w.finishReason='inactivity'; w.resumeSnapshot=structuredClone(A) }
+  if (['inactivity','abandoned','auto_completed'].includes(options.reason)) { w.resumeSnapshot=structuredClone(A) }
+  let saved = false
+  let claim = null
   update(s => {
     if (s.active?.id !== A.id || s.workouts.some(row=>row.id===w.id)) return
     w.entries.forEach(e => {
@@ -1751,17 +1989,28 @@ export function doFinishWorkout(options = {}) {
     })
     s.workouts.push(w)
     s.active = null
+    // Claim in the same persisted transaction as Finish: a failed save cannot
+    // consume a celebration, and the native/server mirrors receive the ledger.
+    const result = evaluateStreakMilestones(trainingStreak(s, now), s, {
+      now, beforeState: st, beforeStreak, completedWorkoutId: w.id,
+      explicitCompletion: !options.silent && ['completed','manual'].includes(w.finishReason),
+      silent: !!options.silent || !['completed','manual'].includes(w.finishReason),
+    })
+    s.streakMilestoneLedger = result.ledger
+    claim = result.claim
+    saved = true
   })
-  const after = S()
-  const streak = trainingStreak(after)
-  const celebrated = after.streakCelebrations || []
-  const milestone = streak.milestones.includes(streak.current) && !celebrated.includes(streak.current) ? streak.current : null
-  if (milestone) {
-    update(s => { s.streakCelebrations = [...new Set([...(s.streakCelebrations || []), milestone])] })
-    if (after.vibration !== false) vibrate([70, 45, 100, 45, 160])
-  }
+  if (!saved) return
   useStore.getState().autoBackupNow()
   useUI.getState().stopRest()
-  beep(snd(), 880, 0.15); beep(snd(), 1100, 0.15, 0.18); beep(snd(), 1320, 0.3, 0.36)
-  ui().openSheet(close => <><FinishSummary w={w} prs={prs} e1prs={e1prs} milestone={milestone} close={close} />{w.finishReason==='inactivity' && <Button onClick={()=>{update(s=>resumeAutoFinished(s,w.id));close();nav('/workout')}}>{t('Resume workout')}</Button>}</>, { kind: 'center', locked: true })
+  useUI.getState().stopWork()
+  void useStore.getState().flushPersistence().catch(()=>useUI.getState().toast(t('Could not save. Check available storage and try again.')))
+  void playAppSound(S(), 'completion')
+  void clearWorkoutNotification()
+  if(options.silent)return w
+  completionDecision?.close()
+  // A sheet renderer can be remounted while the app stays open. Persisted claims
+  // protect reloads; this presentation token also prevents replay on that remount.
+  const presentation = { claim, shown: false }
+  ui().openSheet(close => <><FinishSummary w={w} prs={prs} e1prs={e1prs} presentation={presentation} close={close} />{['inactivity','abandoned','auto_completed'].includes(w.finishReason) && <Button onClick={()=>{update(s=>resumeAutoFinished(s,w.id));close();nav('/workout')}}>{t('Continue in a new session')}</Button>}</>, { kind: 'center', locked: true })
 }

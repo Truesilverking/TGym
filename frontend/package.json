@@ -1,13 +1,13 @@
 {
   "name": "tgym",
   "private": true,
-  "version": "1.15.19",
+  "version": "1.15.99",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "build:pwa": "vite build --mode standalone",
-    "build:mobile": "vite build --mode mobile && cap sync",
+    "build:mobile": "vite build --mode mobile && node scripts/check-sounds.mjs --android-fixture && cap sync",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -23,6 +23,7 @@
     "@capacitor/local-notifications": "^7.0.7",
     "@capacitor/push-notifications": "7.0.0",
     "@capacitor/share": "^7.0.4",
+    "exceljs": "4.4.0",
     "html-to-image": "^1.11.13",
     "jspdf": "^4.2.1",
     "jsqr": "1.4.0",

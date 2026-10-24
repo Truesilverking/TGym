@@ -1,3 +1,4 @@
+import { nextRoutineId } from './workout-plan.js';
 /* opengym-api — passkey (WebAuthn) auth + per-user state storage for openGym
    No framework, JSON-file storage, signed session cookies.               */
 import http from 'node:http';
@@ -183,14 +184,6 @@ function cancelRestTimer(userId) {
 }
 
 // "Workout planned today" reminder — one per user per day, at their chosen time.
-// Duplicated (not imported) from frontend/src/lib/history.js effectiveRoutineId — tiny pure helper, not worth sharing across the two runtimes.
-function effectiveRoutineId(S, iso) {
-  const ov = S.dayPlan?.[iso];
-  if (ov === 'rest') return null;
-  if (ov && S.routines?.some(r => r.id === ov)) return ov;
-  const wd = new Date(iso + 'T12:00:00').getDay();
-  return S.week?.[wd] || null;
-}
 // Computes "now" in an arbitrary IANA zone (e.g. "Europe/Lisbon") instead of the server's own —
 // each user's reminder fires by their own clock, wherever they and their phone actually are.
 function userNow(tz) {
@@ -209,10 +202,9 @@ setInterval(() => {
     const S = readState(user.id);
     if (!S?.reminder?.on) continue;
     const now = userNow(S.reminder.tz || 'UTC');
-    if (!now || S.reminder.time !== now.hhmm) continue;
+    if (!now || (S.reminder.dayTimes?.[new Date(now.date+'T12:00:00').getDay()] || S.reminder.time) !== now.hhmm) continue;
     if (user.lastReminder === now.date) continue;
-    if ((S.workouts || []).some(w => w.d === now.date)) continue;
-    const rid = effectiveRoutineId(S, now.date);
+    const rid = nextRoutineId(S, now.date);
     if (!rid) continue; // rest day — nothing planned
     const routine = (S.routines || []).find(r => r.id === rid);
     console.log('reminder firing', user.id, rid);
@@ -735,7 +727,7 @@ const routes = {
     const user = readSession(req);
     if (!user) return json(res, 401, { error: 'not signed in' });
     const body = await readBody(req);
-    if (!body.state || typeof body.state !== 'object') return json(res, 400, { error: 'state required' });
+    if (!body.state || typeof body.state !== 'object' || Array.isArray(body.state)) return json(res, 400, { error: 'state required' });
     delete body.state.active;              // in-progress workouts stay device-local
     atomicWrite(stateFile(user.id), JSON.stringify(body.state));
     json(res, 200, { ok: true, ts: body.state._ts || null });
@@ -814,6 +806,7 @@ const routes = {
         startedAt: +body.startedAt || Date.now(),
         pausedDurationMs: Number.isFinite(body.pausedDurationMs) ? Math.max(0, body.pausedDurationMs) : 0,
         timerPausedAt: Number.isFinite(body.timerPausedAt) ? body.timerPausedAt : null,
+        lastUserInteractionAt: Number.isFinite(body.lastUserInteractionAt) && body.lastUserInteractionAt >= (+body.startedAt || 0) && body.lastUserInteractionAt <= Date.now() ? body.lastUserInteractionAt : null,
         updatedAt: Date.now()
       });
     } else presence.delete(user.id);

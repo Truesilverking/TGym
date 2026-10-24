@@ -1,0 +1,102 @@
+/* Shared date shapes and fixed status triples across every calendar scale. */
+.zoomcal { container-type:inline-size; min-width:0; padding:14px; border:1px solid var(--sep); border-radius:18px; background:var(--bg-el); }
+.zoomcal .zoomcal-toolbar { display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
+.zoomcal .zoomcal-toolbar .seg { flex:1 1 180px; min-width:0; margin:0; }
+.zoomcal .zoomcal-toolbar .seg button { min-width:0; min-height:44px; padding:8px 5px; font-size:12px; overflow-wrap:anywhere; }
+.zoomcal .zoomcal-streak-muscles { display:flex; justify-content:center; margin-top:12px; }
+.zoomcal .zoomcal-streak-muscles .btn { min-height:44px; }
+.zoomcal.streak-calendar .zoomcal-export-wrap { display:flex; justify-content:center; margin-top:10px; }
+.recent-show-more { width:100%; margin-top:10px; min-height:44px; }
+.streak-recent-workouts .item:focus-visible,.recent-session-times .item:focus-visible { outline:2px solid var(--acc); outline-offset:2px; }
+.zoomcal .zoomcal-scale { display:flex; gap:4px; margin-left:auto; }
+.streak-profile-tools { display:flex; justify-content:flex-end; margin:6px 0; }
+.streak-profile-tools>.iconbtn { min-width:44px; min-height:44px; color:var(--label-2); }
+.streak-profile-tools>.iconbtn[aria-pressed="true"] { color:var(--acc); background:var(--acc-soft); }
+.streak-profile { width:100%; display:flex; align-items:center; justify-content:center; gap:16px; padding:6px 0; margin:10px 0 18px; border:0; border-radius:0; background:transparent; text-align:left; }
+.streak-profile-avatar { display:grid; place-items:center; width:clamp(56px,18vw,80px); height:clamp(56px,18vw,80px); flex:none; border-radius:50%; overflow:hidden; background:var(--acc-soft); color:var(--acc); font-size:26px; font-weight:650; }
+.streak-profile-avatar>img { display:block; width:100%; height:100%; object-fit:cover; }
+.streak-profile-name { min-width:0; font-size:clamp(22px,6vw,32px); font-weight:650; line-height:1.2; overflow-wrap:anywhere; }
+.zoomcal .zoomcal-period-heading { position:relative; display:flex; align-items:center; gap:6px; min-width:0; }
+.zoomcal .zoomcal-period-picker { position:relative; flex:1; min-width:0; display:flex; align-items:center; justify-content:center; gap:4px; min-height:44px; padding:4px 2px; }
+.zoomcal .zoomcal-period-picker>b { font-size:24px; line-height:1.2; white-space:normal; }
+.zoomcal[data-level="months"] .zoomcal-period-picker>b { font-size:44px; letter-spacing:-.04em; white-space:nowrap; }
+.zoomcal .zoomcal-period-picker>.icn { flex:none; width:16px; height:16px; color:var(--label-2); }
+.zoomcal.streak-calendar .zoomcal-period-active { padding:6px; margin:0; background:transparent; flex:none; }
+.zoomcal.streak-calendar .zoomcal-period-active>strong { font-size:24px; color:var(--acc); }
+.zoomcal.streak-calendar[data-level="week"] .zoomcal-period-picker { flex:0 1 auto; margin-inline:auto; max-width:calc(100% - 44px); }
+.zoomcal.streak-calendar[data-level="week"] .zoomcal-period-picker>.icn { position:absolute; left:calc(100% + 4px); }
+.zoomcal.streak-calendar[data-level="week"] .zoomcal-period-active { position:absolute; right:0; padding:0; }
+.zoomcal.streak-calendar[data-level="months"] .zoomcal-period-active>strong { font-size:44px; }
+.zoomcal .calendar-tracking-marker { position:absolute; left:2px; bottom:2px; width:7px; height:7px; border-radius:50%; background:var(--tracking-fill); border:1px solid var(--tracking-border); box-shadow:0 0 0 1px #fff; pointer-events:none; }
+.zoomcal .zoomcal-mini-cell .calendar-tracking-marker { width:4px; height:4px; left:1px; bottom:1px; }
+.zoomcal.zoomcal .zoomcal-legend .calendar-tracking-key { border-radius:50%; }
+.zoomcal .zoomcal-scale .iconbtn,.zoomcal .zoomcal-nav>.iconbtn { width:44px; min-width:44px; height:44px; min-height:44px; border:1px solid var(--sep); border-radius:10px; background:var(--surface-2); color:var(--label); }
+.zoomcal.streak-calendar .zoomcal-nav>.iconbtn { border:0; border-radius:0; background:transparent; }
+.zoomcal.streak-calendar .zoomcal-nav>.iconbtn>.icn { width:28px; height:28px; }
+.zoomcal .zoomcal-scale .iconbtn:disabled { opacity:.35; }
+.zoomcal .zoomcal-nav { display:grid; grid-template-columns:44px minmax(0,1fr) 44px; align-items:center; gap:10px; margin:0 0 12px; }
+.zoomcal .zoomcal-title { min-width:0; }
+.zoomcal .zoomcal-title>b { font-size:18px; font-weight:700; white-space:normal; overflow:visible; text-overflow:clip; line-height:1.3; overflow-wrap:anywhere; }
+.zoomcal[data-level="months"] .zoomcal-title>b { font-size:28px; letter-spacing:-.04em; }
+.zoomcal .zoomcal-period-active { display:flex; align-items:center; justify-content:space-between; gap:14px; padding:12px 14px; margin-bottom:10px; border-radius:12px; background:var(--surface-2); }
+.zoomcal .zoomcal-period-active>div { min-width:0; }
+.zoomcal .zoomcal-period-active b { font-size:13px; color:var(--label); }
+.zoomcal .zoomcal-period-active p { margin:4px 0 0; max-width:40ch; font-size:11px; line-height:1.45; color:var(--label-2); }
+.zoomcal .zoomcal-period-active strong { flex:none; font-size:36px; font-weight:750; letter-spacing:-.05em; line-height:1; color:var(--label); font-variant-numeric:tabular-nums; }
+.zoomcal .zoomcal-tracking-start { display:flex; align-items:center; gap:7px; margin:0 0 16px; color:var(--label-2); font-size:11px; line-height:1.4; }
+.zoomcal .zoomcal-tracking-start i { box-sizing:border-box; flex:none; width:9px; height:9px; border-radius:50%; background-color:var(--tracking-fill); border:1px solid var(--tracking-border); opacity:1; }
+.zoomcal .zoomcal-week,.zoomcal .zoomcal-month { display:grid; grid-template-columns:repeat(7,minmax(0,48px)); justify-content:center; gap:5px; }
+.zoomcal .zoomcal-week-column>small,.zoomcal .zoomcal-month>small { color:var(--label-2); font-size:11px; margin-bottom:6px; text-align:center; }
+.zoomcal.zoomcal .calendar-date { box-sizing:border-box; position:relative; display:flex; align-items:center; justify-content:center; aspect-ratio:1/1; width:100%; height:auto; min-width:0; min-height:0; padding:0; border:1px solid var(--calendar-border); border-radius:5px; background-color:var(--calendar-fill); background-image:none; color:var(--calendar-ink); outline:none; box-shadow:none; opacity:1; font-style:normal; }
+.zoomcal.zoomcal .zoomcal-day { max-width:48px; }
+.zoomcal.zoomcal .calendar-date b { margin:0; font-size:15px; font-weight:650; line-height:1; color:var(--calendar-ink); font-variant-numeric:tabular-nums; }
+.zoomcal.zoomcal .calendar-date[data-future="true"] { border-style:dashed; }
+.zoomcal.zoomcal .calendar-date.today { box-shadow:inset 0 0 0 2px var(--calendar-ink); }
+.zoomcal.zoomcal .calendar-date.selected::after { content:""; position:absolute; right:3px; bottom:3px; width:3px; height:3px; border-radius:50%; background:var(--calendar-ink); }
+.zoomcal.zoomcal .calendar-date.deload { border-bottom:3px solid var(--deload); }
+.zoomcal.zoomcal .calendar-date:focus-visible,.zoomcal .zoomcal-periods>button:focus-visible { outline:2px solid var(--label); outline-offset:3px; box-shadow:0 0 0 2px var(--bg-el); }
+.zoomcal .measurement-calendar-dot { top:1px; left:2px; right:auto; bottom:auto; color:var(--calendar-ink); font-size:12px; }
+.zoomcal .zoomcal-routine { min-height:16px; margin-top:5px; font-size:9px; line-height:1.4; color:var(--label-2); }
+.zoomcal .zoomcal-month-placeholder { aspect-ratio:1/1; visibility:hidden; }
+.zoomcal .zoomcal-periods.months { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px 10px; }
+.zoomcal .zoomcal-periods.years { grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+.zoomcal .zoomcal-periods>button { display:flex; flex-direction:column; align-items:stretch; justify-content:flex-start; gap:7px; min-width:0; min-height:0; height:100%; padding:9px; border:1px solid var(--sep); border-radius:11px; background:var(--surface-2); }
+.zoomcal.streak-calendar .zoomcal-periods.months>button { padding:0; border:0; border-radius:0; background:transparent; }
+.zoomcal.streak-calendar .zoomcal-mini-month { gap:2px; }
+.zoomcal .zoomcal-period-head { display:flex!important; align-items:center; justify-content:space-between; gap:5px; color:var(--label)!important; }
+.zoomcal .zoomcal-period-head b { min-width:0; overflow-wrap:anywhere; font-size:12px; font-weight:650; line-height:1.3; }
+.zoomcal .zoomcal-period-head em { flex:none; font-style:normal; font-size:14px; font-weight:700; font-variant-numeric:tabular-nums; color:var(--label); }
+.zoomcal .zoomcal-periods>button>small { margin-top:auto; text-align:left; font-size:10px; line-height:1.3; color:var(--label-2); }
+.zoomcal .zoomcal-mini-month { display:grid!important; grid-template-columns:repeat(7,minmax(0,1fr)); gap:3px; width:100%; margin:0; }
+.zoomcal .zoomcal-mini-weekday { min-width:0; text-align:center; color:var(--label-2); font-size:9px; line-height:1.3; }
+.zoomcal .zoomcal-mini-month i.placeholder { aspect-ratio:1; visibility:hidden; border:0!important; background:none!important; box-shadow:none!important; }
+.zoomcal.zoomcal .zoomcal-mini-cell { border-radius:3px; }
+.zoomcal.zoomcal .zoomcal-mini-cell b { font-size:10px; }
+.zoomcal .zoomcal-mini-year { display:grid!important; grid-template-columns:repeat(4,minmax(0,1fr)); gap:5px; margin:5px 0; }
+.zoomcal .zoomcal-mini-year i { height:14px; border-radius:3px; background:var(--calendar-fill); border:1px solid var(--calendar-border); }
+.zoomcal .zoomcal-selection { border-left-color:var(--calendar-fill); }
+.zoomcal .zoomcal-legend { justify-content:flex-start; gap:9px 13px; margin-top:16px; padding-top:14px; border-top:1px solid var(--sep); font-size:11px; line-height:1.4; }
+.zoomcal.zoomcal .zoomcal-legend i { box-sizing:border-box; display:inline-flex; align-items:center; justify-content:center; flex:none; width:14px; height:14px; border-radius:3px; border:1px solid var(--calendar-border); background:var(--calendar-fill); color:var(--calendar-ink); opacity:1; outline:none; box-shadow:none; font-style:normal; }
+.zoomcal.zoomcal .zoomcal-legend i.deload { background:var(--deload); border:0; }
+.zoomcal.zoomcal .zoomcal-legend .zoomcal-time-key i { background:var(--bg-el); border:1px solid var(--label-2); }
+.zoomcal.zoomcal .zoomcal-legend .zoomcal-today-key { box-shadow:inset 0 0 0 1px var(--label); }
+.zoomcal.zoomcal .zoomcal-legend i.zoomcal-future-key { border-style:dashed; }
+.calendar-export .zoomcal-day { max-width:48px; }
+@container (max-width:430px) {
+  .zoomcal .zoomcal-periods.months { gap:10px 7px; }
+  .zoomcal .zoomcal-periods>button { padding:6px; gap:6px; }
+  .zoomcal .zoomcal-period-head b { font-size:11px; }
+  .zoomcal .zoomcal-period-head em { font-size:12px; }
+  .zoomcal .zoomcal-mini-month { gap:2px; }
+  .zoomcal.zoomcal .zoomcal-mini-cell b { display:none; }
+}
+@container (max-width:300px) {
+  .zoomcal .zoomcal-periods.months,.zoomcal .zoomcal-periods.years { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .zoomcal .zoomcal-week,.zoomcal .zoomcal-month { gap:4px; }
+  .zoomcal.streak-calendar[data-level="months"] .zoomcal-period-picker>b { font-size:30px; }
+  .zoomcal.streak-calendar[data-level="months"] .zoomcal-period-active>strong { font-size:30px; }
+  .zoomcal.streak-calendar[data-level="month"] .zoomcal-period-picker>b { font-size:16px; }
+}
+@container (max-width:210px) {
+  .zoomcal .zoomcal-periods.months,.zoomcal .zoomcal-periods.years { grid-template-columns:minmax(0,1fr); }
+}

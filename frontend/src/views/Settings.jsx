@@ -1,26 +1,36 @@
+import { openHealthActivities } from '../components/Activities.jsx'
+import { replayAppTour } from '../components/AppTour.jsx'
+import { openTrainingHistory } from '../components/TrainingHistory.jsx'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore, DEF, hasData } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
-import { ACCENTS, todayISO, localTZ, DAYN } from '../lib/format.js'
+import { ACCENTS, todayISO } from '../lib/format.js'
 import { effortOf } from '../lib/history.js'
 import { api, webauthnOK, passkeyLogin, passkeyRegister, IS_ANDROID } from '../lib/api.js'
 import { pushSupported, enablePush, disablePush, sendTestPush } from '../lib/push.js'
 import { wakeLockSupported } from '../lib/wakelock.js'
-import { t, LANGS, INSTR_LANGS } from '../lib/i18n.js'
+import { t, LANGS, INSTR_LANGS, exerciseNameModeOf } from '../lib/i18n.js'
 import { DEMO, REPO, STANDALONE } from '../lib/demo.js'
-import { MOBILE, shareExport, syncReminder } from '../lib/mobile.js'
-import { measurementRemindersSheet, loadStarterPlan, confirmSheet, importFromApp, equipmentProfileSheet, planImportSheet, planToolsSheet } from '../sheets.jsx'
+import { MOBILE, shareExport } from '../lib/mobile.js'
+import { loadStarterPlan, confirmSheet, importFromApp, equipmentProfileSheet, planImportSheet, planToolsSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
-import { Section, Row, SelectRow, Switch, Segmented, Button } from '../components/ui.jsx'
+import { Section, Row, SelectRow, Switch, Segmented, Button, TextField } from '../components/ui.jsx'
 import { biometricEnabled, checkDeviceBiometry, deviceLockEnabled, enrollDeviceBiometry, removeDevicePin, setBiometricEnabled, setDevicePin, verifyDevicePin } from '../lib/app-lock.js'
-import { canUndoImport, consumeImportUndo, saveImportUndo } from '../lib/import-undo.js'
+import { canUndoImport, restoreImportUndo, saveImportUndo } from '../lib/import-undo.js'
 import { parseTGymJson } from '../lib/json-import.js'
 import { createBackup } from '../lib/backup.js'
 import { convertMeasurementState, convertWeightState } from '../lib/unit-conversion.js'
 import { openRestoreSheet } from '../components/RestoreSheet.jsx'
-import { manualUpdateCheck } from '../components/AppUpdate.jsx'
+import { UpdateCheckButton } from '../components/AppUpdate.jsx'
+import { openSoundSettings } from '../components/SoundSettings.jsx'
 import { APP_REPOSITORY, ORIGINAL_OPENGYM_REPOSITORY } from '../lib/app-meta.js'
+import { ReminderStatus } from '../components/ReminderPanel.jsx'
+import MeasurementReminders from '../components/MeasurementReminders.jsx'
+import WorkoutReminderSettings from '../components/WorkoutReminderSettings.jsx'
+import {InAppReminderSettings} from '../components/InAppReminders.jsx'
+import DeloadSettings from '../components/DeloadSettings.jsx'
+import { openLocalProfile } from '../components/LocalProfile.jsx'
 
 function BackupSheet({ onExport, onImport }) {
   const autoBackup = useStore(s => !!s.S.autoBackup)
@@ -82,6 +92,9 @@ export default function Settings() {
   const nav = useNavigate()
   const S = useStore(s => s.S)
   const user = useStore(s => s.user)
+  const serverSyncError = useStore(s => s.serverSyncError)
+  const [serverSyncBusy, setServerSyncBusy] = useState(false)
+  const serverSyncPending = useRef(false)
   const { update, replaceState, setUser, pullState, pushState, signOut, signOutAll, resetDemo, disconnectServer } = useStore()
   const toast = useUI(s => s.toast)
   const fileRef = useRef(null)
@@ -133,12 +146,12 @@ export default function Settings() {
     <div className="muted small" style={{ marginBottom: 14 }}>{t('Create, import or export routines from one place.')}</div>
     <div className="list">
       <Row icon="sparkles" iconTint="var(--acc)" title={t('Load starter plan (PPL)')} accessory="chevron" onClick={() => { close(); loadStarterPlan() }} />
-      <Row icon="folder" iconTint="var(--blue)" title={t('Import or export routine')} subtitle={t('TGym routine files contain no workout history.')} accessory="chevron" onClick={() => { close(); planToolsSheet() }} />
+      <Row icon="folder" iconTint="var(--blue)" title={t('Import or export routine')} subtitle={t('TGym routine files contain no workout history.')} accessory="chevron" onClick={() => { close(); planToolsSheet({ mode: 'import' }) }} />
       <Row icon="shuffle" iconTint="var(--teal)" title={t('Import from another app')} subtitle={t('FitNotes, Strong, Hevy — or body weight from Apple Health')} accessory="chevron" onClick={() => { close(); requestAnimationFrame(() => importRef.current?.click()) }} />
     </div>
   </>)
   const signInHere = async () => {
-    try { const u = await passkeyLogin(); setUser(u); await pullState(); toast(t('Welcome back, {0}', u.name)) }
+    try { const u = await passkeyLogin(); setUser(u); const synced = await pullState(); toast(synced === false ? t('Server synchronization failed. Your local data was kept.') : t('Welcome back, {0}', u.name)) }
     catch (e) { if (e.name !== 'NotAllowedError' && e.name !== 'AbortError') toast(e.message || t('Sign-in failed')) }
   }
   const registerHere = () => useUI.getState().openSheet(close => <RegisterInline close={close} setUser={setUser} pushState={pushState} pullState={pullState} toast={toast} />)
@@ -150,17 +163,18 @@ export default function Settings() {
     message: t('Signs this profile out on every device, including this one. Your passkeys keep working — sign in with them again anytime.'),
     confirmText: t('Sign out everywhere'), danger: true,
     onConfirm: async () => {
-      try { await signOutAll(); nav('/home'); toast(t('Signed out on all devices')) }
+      try { const cleared = await signOutAll(); nav('/home'); toast(t(cleared === false ? 'Sign-out completed. Your local data was kept on this device.' : 'Signed out on all devices')) }
       catch (e) { toast(t('Could not sign out everywhere — you are still signed in.')) }
     },
   })
 
-  return <div className="narrow">
+  return <div className="narrow settings-page">
     <div className="hdr">
       <button className="iconbtn" onClick={() => nav('/home')} aria-label={t('Home')}><Icon name="chevronLeft" /></button>
       <div style={{ flex: 1, marginLeft: 10 }}><h1>{t('Settings')}</h1></div>
     </div>
 
+    <div data-tour="profile"><Section title={t('Profile')}><Row icon="personCircle" iconTint="var(--acc)" title={S.profile?.name || user?.name || t('Profile')} subtitle={t('Name, photo and personal data')} accessory="chevron" onClick={openLocalProfile} /></Section></div>
     {/* ---------- account (demo and mobile builds have nothing to sign in to) ---------- */}
     {!(MOBILE || STANDALONE) && <Section title={DEMO ? t('Demo') : t('Account')}>
       {DEMO ? <>
@@ -174,7 +188,7 @@ export default function Settings() {
         {user.admin && <Row icon="wrench" iconTint="var(--indigo)" title={t('Admin dashboard')} accessory="chevron" onClick={() => nav('/admin')} />}
         <Row icon="link" iconTint="var(--blue)" title={t('Pair the mobile app')} subtitle={t('Connect the openGym app on your phone to this account.')} accessory="chevron"
           onClick={() => useUI.getState().openSheet(close => <PairSheet close={close} />)} />
-        <Row icon="signOut" iconTint="var(--red)" title={t('Sign out')} danger onClick={() => confirmSheet({ title: t('Sign out?'), message: t('Your data is synced to your profile first, then cleared from this device.'), confirmText: t('Sign out'), danger: true, onConfirm: () => { signOut(); nav('/home') } })} />
+        <Row icon="signOut" iconTint="var(--red)" title={t('Sign out')} danger onClick={() => confirmSheet({ title: t('Sign out?'), message: t('Your saved data is synced first. Active workouts and unsent changes stay on this device.'), confirmText: t('Sign out'), danger: true, onConfirm: async () => { try { const cleared = await signOut(); nav('/home'); if (cleared === false) toast(t('Sign-out completed. Your local data was kept on this device.')) } catch { toast(t('Could not sign out. Your local data was kept. Check your connection and try again.')) } } })} />
         <Row icon="shield" iconTint="var(--red)" title={t('Sign out everywhere')} subtitle={t('Ends this profile’s sessions on all your devices.')} danger onClick={signOutEverywhere} />
       </> : webauthnOK() ? <>
         <Row icon="sparkles" iconTint="var(--acc)" title={t('Create passkey profile')} subtitle={t('Keeps your data safe and separate per person.')} accessory="chevron" onClick={registerHere} />
@@ -186,7 +200,7 @@ export default function Settings() {
     {!user && !DEMO && !MOBILE && !STANDALONE && <p className="sect-f" style={{ marginTop: -18, marginBottom: 22 }}>{t('Guest mode — data lives only in this browser.')}</p>}
 
     {/* ---------- general ---------- */}
-    <Section title={t('General')} footer={t('Changing a unit automatically converts all saved values, including history and active workouts.')}>
+    <Section className="profile-preferences" title={t('General')} footer={t('Changing a unit automatically converts all saved values, including history and active workouts.')}>
       <SelectRow
         icon="globe" iconTint="var(--blue)" title={t('Language')}
         value={S.lang || 'en'} onChange={v => update(s => { s.lang = v })}
@@ -195,6 +209,10 @@ export default function Settings() {
           subtitle: INSTR_LANGS.includes(k) ? null : t("Exercise instructions aren't available in this language yet — they stay in English."),
         }))}
       />
+      <SelectRow icon="dumbbell" iconTint="var(--purple)" title={t('Exercise names')}
+        value={exerciseNameModeOf(S)} onChange={v => update(s => { s.exerciseNameMode = v })}
+        options={[{ value: 'aliases', label: t('My aliases') }, { value: 'original', label: t('Original names') }]} />
+      <p className="sect-f" style={{ margin: '8px 16px 12px' }}>{t('Choose which names appear throughout TGym. Missing aliases use the original name; your aliases are kept.')}</p>
       <Row icon="scale" iconTint="var(--teal)" title={t('Weight unit')}>
         <Segmented className="seg-inline"
           options={[{ value: 'kg', label: 'kg' }, { value: 'lb', label: 'lb' }]}
@@ -203,7 +221,7 @@ export default function Settings() {
       <Row icon="figureStrength" iconTint="var(--purple)" title={t('Measurement unit')}><Segmented className="seg-inline" options={[{ value: 'cm', label: 'cm' }, { value: 'in', label: 'in' }]} value={S.measurementUnit || 'cm'} onChange={v => update(s => { convertMeasurementState(s, v) })} /></Row>
     </Section>
 
-    <Section title={t('Privacy')} footer={t('When enabled, TGym locks after being in the background for 5 minutes.')}>
+    <Section data-tour="privacy" title={t('Privacy')} footer={t('When enabled, TGym locks after being in the background for 5 minutes.')}>
       <Row icon="lock" iconTint="var(--red)" title={t('App lock')} subtitle={lockOn ? t('4-digit PIN · locks after 5 minutes') : t('Protect TGym on this device')} accessory="chevron" onClick={editDeviceLock} />
       {(MOBILE || STANDALONE) && <Row icon="personCircle" iconTint="var(--blue)" title={t('Fingerprint or Face ID')}
         subtitle={!lockOn ? t('Create the TGym PIN first.') : bioAvailable ? t('Unlock with the biometrics enrolled on this phone.') : t('No compatible biometric authentication is enrolled.')}>
@@ -212,7 +230,7 @@ export default function Settings() {
     </Section>
 
     {/* ---------- during a workout ---------- */}
-    <Section title={t('During a workout')} footer={wakeOK ? t('The screen stays on while a workout is running, so you don’t have to unlock your phone between sets.') : null}>
+    <Section data-tour="during-workout" title={t('During a workout')} footer={wakeOK ? t('The screen stays on while a workout is running, so you don’t have to unlock your phone between sets.') : null}>
       <SelectRow icon="timer" iconTint="var(--orange)" title={t('Rest timer')}
         value={S.restSec} onChange={v => update(s => { s.restSec = v })}
         options={[{ value: 0, label: t('Off') }, ...[60, 90, 120, 150, 180].map(v => ({ value: v, label: v + 's' }))]} />
@@ -241,10 +259,15 @@ export default function Settings() {
       <Row icon="bell" iconTint="var(--pink)" title={t('Sounds')}>
         <Switch checked={!!S.sound} onChange={v => update(s => { s.sound = v })} />
       </Row>
+      <Row icon="bell" iconTint="var(--acc)" title={t('Sound preferences')} subtitle={t('Alert tones and your own short sounds')} accessory="chevron" onClick={openSoundSettings} />
       <Row icon="bolt" iconTint="var(--orange)" title={t('Vibration')}><Switch checked={S.vibration !== false} onChange={v => update(s => { s.vibration = v })} /></Row>
       <Row icon="sparkles" iconTint="var(--yellow)" title={t('Reduce animations')} subtitle={t('Use simpler movement effects throughout the app.')}><Switch checked={!!S.reduceMotion} onChange={v => update(s => { s.reduceMotion = v })} /></Row>
       <Row icon="target" iconTint="var(--teal)" title={t('Strict reps')} subtitle={t('Keep repetition controls inside each exercise range.')}>
         <Switch checked={!!S.strictReps} onChange={v => update(s => { s.strictReps = v })} />
+      </Row>
+      <Row icon="target" iconTint="var(--teal)" title={t('Back-off repetitions')} subtitle={t('Same reps uses the Top Set range. Increased reps adds 2 to both limits.')}>
+        <Segmented className="seg-inline" options={[{ value: 'same', label: t('Same reps') }, { value: 'increased', label: t('Increased reps') }]}
+          value={S.backoffRepsMode === 'same' ? 'same' : 'increased'} onChange={v => update(s => { s.backoffRepsMode = v })} />
       </Row>
       {/* Two names for the same judgement, so the column asks in the scale you already think in.
           The (i) sits before the control — you read it on the way to the choice, not after it. */}
@@ -256,43 +279,25 @@ export default function Settings() {
       </Row>
     </Section>
 
-    <Section title={t('Deload week')} footer={t('Deload follows your cycle from Monday. Saved workouts stay unchanged. Alerts use your reminder time and respect quiet hours.')}>
-      <Row icon="arrowDown" iconTint="var(--orange)" title={t('Scheduled deload')} subtitle={S.deload?.on ? t('{0} normal weeks + {1} deload week', S.deload?.normalWeeks || 6, S.deload?.deloadWeeks || 1) : t('Off')}>
-        <Switch checked={!!S.deload?.on} onChange={v => update(s => { s.deload = { ...DEF.deload, ...(s.deload || {}), on: v, startDate: s.deload?.startDate || todayISO() } })} />
-      </Row>
-      {!!S.deload?.on && <>
-        {MOBILE && <Row icon="bell" title={t('Deload alerts')} subtitle={t('One day before and on the first day.')}><Switch checked={S.deload?.notifications !== false} onChange={async v => {
-          const next = {...S,deload:{...S.deload,notifications:v}}
-          const ok = await syncReminder(next,v)
-          if (v && !ok) { toast(t('Enable notifications in your device settings.')); return }
-          update(s => {s.deload = {...s.deload,notifications:v}})
-        }} /></Row>}
-        <SelectRow title={t('Normal weeks')} value={S.deload?.normalWeeks || 6} onChange={v => update(s => { s.deload = { ...s.deload, normalWeeks: v } })}
-          options={[4, 5, 6, 7, 8, 10, 12].map(v => ({ value: v, label: String(v) }))} />
-        <SelectRow title={t('Deload weeks')} value={S.deload?.deloadWeeks || 1} onChange={v => update(s => { s.deload = { ...s.deload, deloadWeeks: v } })}
-          options={[1, 2].map(v => ({ value: v, label: String(v) }))} />
-        <SelectRow title={t('Training load')} value={S.deload?.loadPct || 80} onChange={v => update(s => { s.deload = { ...s.deload, loadPct: v } })}
-          options={[80, 85, 90, 95].map(v => ({ value: v, label: v + '%' }))} />
-        <SelectRow title={t('Working sets')} value={S.deload?.setPct || 60} onChange={v => update(s => { s.deload = { ...s.deload, setPct: v } })}
-          options={[40, 50, 60, 70, 80].map(v => ({ value: v, label: v + '%' }))} />
-        <SelectRow title={t('Target RIR')} value={S.deload?.targetRir ?? 3.5} onChange={v => update(s => { s.deload = { ...s.deload, targetRir: v } })}
-          options={[3, 3.5, 4, 4.5, 5].map(v => ({ value: v, label: String(v) }))} />
-        <div className="lrow"><span className="lrow-t">{t('Cycle start')}</span><input className="input" style={{ width: 150 }} type="date" value={S.deload?.startDate || todayISO()} onChange={e => update(s => { s.deload = { ...s.deload, startDate: e.target.value } })} /></div>
-      </>}
-    </Section>
+    <DeloadSettings S={S} update={update} toast={toast} reminderStatus={MOBILE && S.deload?.on && S.deload?.notifications !== false ? <ReminderStatus kind="deload" enabled /> : null} />
 
-    {(user || MOBILE) && <NotificationsCard S={S} update={update} toast={toast} />}
-
-    <Section title={t('Health')}>
-      <Row icon="history" title={t('Measurement reminders')} accessory="chevron" onClick={() => measurementRemindersSheet()} />
-      <Row icon="figureRun" iconTint="var(--red)" title={t('Health & wearables')} subtitle={t('Coming soon · Not connected')} accessory="chevron" onClick={healthWearablesSheet} />
+    <Section data-tour="reminders" title={t('Reminders')} className="settings-reminders">
+      <InAppReminderSettings/>
+      <MeasurementReminders settingsOnly />
+      {(MOBILE || !user) && <WorkoutReminderSettings />}
     </Section>
+    {user && !MOBILE && <PushCard S={S} update={update} toast={toast} />}
+
+    <Section title={t('Help')}><Row className="tour-replay" icon="sparkles" title={t('Replay App Tour')} accessory="chevron" onClick={replayAppTour} /></Section>
+    <div data-tour="health"><Section title={t('Health')}>
+      <Row icon="figureRun" iconTint="var(--red)" title={t('Health & wearables')} subtitle={t('Activities and health data')} accessory="chevron" onClick={openHealthActivities} />
+    </Section></div>
 
     {/* ---------- equipment ---------- */}
     <EquipmentCard S={S} update={update} />
 
     {/* ---------- appearance ---------- */}
-    <Section title={t('Appearance')} footer={DEMO || MOBILE ? undefined : t('synced with your profile')}>
+    <Section data-tour="preferences" title={t('Appearance')} footer={DEMO || MOBILE ? undefined : t('synced with your profile')}>
       <Row icon="moon" iconTint="var(--indigo)" title={t('Theme')}>
         <Segmented
           className="seg-inline"
@@ -326,12 +331,33 @@ export default function Settings() {
     </Section>
 
     {/* ---------- data: fill it, bring things over, back it up, wipe it ---------- */}
-    <Section title={t('Data')}>
-      {(MOBILE || STANDALONE) && <Row icon="lock" iconTint="var(--acc)" title={t('All Data stays on this device')} subtitle={t('Data is stored locally by default. Cloud copies are sent only when you enable cloud backup.')} />}
+    <Section data-tour="data" title={t('Data')}>
+      <Row icon="lock" iconTint="var(--acc)" title={t('All Data stays on this device')} subtitle={user
+        ? t('This profile also syncs with your connected server. Cloud backups and exported copies leave this device when you choose them.')
+        : t('Stored locally by default. Connecting a server, enabling cloud backup or sharing an export sends a copy outside this device.')} />
+      {user && serverSyncError && <div className="reminder-feedback warning" role="alert">
+        <span>{t('Server synchronization failed. Your local data was kept.')}</span>
+        <Button size="sm" disabled={serverSyncBusy} onClick={async () => {
+          if (serverSyncPending.current) return
+          serverSyncPending.current = true; setServerSyncBusy(true)
+          try { await pullState() } finally { serverSyncPending.current = false; setServerSyncBusy(false) }
+        }}>{t('Sync now')}</Button>
+      </div>}
+      <Row icon="history" title={t('Training history settings')} accessory="chevron" onClick={openTrainingHistory} />
       <Row icon="folder" iconTint="var(--blue)" title={t('Backup')} accessory="chevron" onClick={() => useUI.getState().openSheet(() => <BackupSheet onExport={doExport} onImport={() => authorize(() => fileRef.current?.click())} />)} />
       <Row icon="cloud" iconTint="var(--blue)" title={t('Restore')} subtitle={t('Back up, synchronize or restore your TGym data.')} accessory="chevron" onClick={() => openRestoreSheet(authorize)} />
       <Row icon="folder" iconTint="var(--acc)" title={t('Load Routine')} subtitle={t('Create, import or export routines from one place.')} accessory="chevron" onClick={openLoadRoutine} />
-      {canUndoImport() && <Row icon="reset" iconTint="var(--orange)" title={t('Undo last import')} subtitle={t('Available until this app session ends.')} accessory="chevron" onClick={() => confirmSheet({ title: t('Undo last import?'), message: t('Restores the data that was present immediately before the import.'), confirmText: t('Restore'), onConfirm: () => { const previous = consumeImportUndo(); if (previous) { replaceState(previous, true); toast(t('Import undone')) } } })} />}
+      <Row icon="sparkles" iconTint="var(--yellow)" title={t('Reset demo data')} subtitle={t('Puts the example plan, workouts and weigh-ins back the way they started.')} accessory="chevron"
+        onClick={() => confirmSheet({
+          title: t('Reset demo data?'),
+          message: t('Puts the example plan, workouts and weigh-ins back the way they started.'),
+          confirmText: t('Reset'),
+          onConfirm: async () => { await resetDemo(); nav('/home'); toast(t('Demo data reset')) }
+        })} />
+      {canUndoImport() && <Row icon="reset" iconTint="var(--orange)" title={t('Undo last import')} subtitle={t('Available until this app session ends.')} accessory="chevron" onClick={() => confirmSheet({ title: t('Undo last import?'), message: t('Restores the data that was present immediately before the import.'), confirmText: t('Restore'), onConfirm: () => {
+        try { if (restoreImportUndo(replaceState)) toast(t('Import undone')) }
+        catch { toast(t('Could not save. Check available storage and try again.')) }
+      } })} />}
       <Row icon="trash" iconTint="var(--red)" title={t('Reset everything')} danger onClick={() => authorize(() => confirmSheet({ title: t('Reset everything?'), message: t('Deletes your plan, workouts and body weight on this device. This cannot be undone.'), confirmText: t('Delete everything'), danger: true, onConfirm: () => { replaceState(JSON.parse(JSON.stringify(DEF)), true); nav('/home'); toast(t('All data reset')) } }))} />
     </Section>
 
@@ -351,9 +377,10 @@ export default function Settings() {
         telling people to look for it, and where it was not. On the phone build there is no
         address bar and no about box, so without this there is no way to tell which build you
         are running, or whether an update actually installed. */}
-    <div className="dim small" style={{ textAlign: 'center', marginTop: 4, lineHeight: 1.6 }}>
+    <div className="settings-credits dim small" style={{ textAlign: 'center', marginTop: 4, lineHeight: 1.6 }}>
       TGym v{__APP_VERSION__} · {t('free & open source (AGPL v3)')}<br />
-      <button className="linkbtn" onClick={() => manualUpdateCheck().catch(() => toast(t('Update check unavailable.')))}>{t('Check for updates')}</button>{APP_REPOSITORY && <> · <a href={APP_REPOSITORY} target="_blank" rel="noopener">GitHub</a></>}<br />
+      <UpdateCheckButton />
+      {APP_REPOSITORY && <><a href={APP_REPOSITORY} target="_blank" rel="noopener">GitHub</a><br /></>}
       {t('Based on openGym')} · <a href={ORIGINAL_OPENGYM_REPOSITORY} target="_blank" rel="noopener">{t('original source')}</a> · exercise data: hasaneyldrm/exercises-dataset (MIT)<br />
       exercise images and animations © <a href="https://gymvisual.com/" target="_blank" rel="noopener">Gym visual</a>
     </div>
@@ -384,7 +411,7 @@ function effortHelpSheet() {
       <div className="r hd"><span className="n">{t('RIR')}</span><span className="n">{t('RPE')}</span><span className="f">{t('How it felt')}</span></div>
       {EFFORT_ROWS.map(([rir, rpe, feel], i) => (
         <div key={rir} className={'r' + (i === EFFORT_TYPICAL ? ' on' : '')}>
-          <span className="n">{rir}</span><span className="n">{rpe}</span><span className="f">{t(feel)}</span>
+          <span className="n">{rir === '0' ? t('Failure') : rir}</span><span className="n">{rpe}</span><span className="f">{t(feel)}</span>
         </div>
       ))}
     </div>
@@ -396,66 +423,10 @@ function effortHelpSheet() {
   </>)
 }
 
-function healthWearablesSheet() {
-  useUI.getState().openSheet(() => <>
-    <h3>{t('Health & wearables')}</h3>
-    <div className="muted" style={{ lineHeight: 1.5, marginBottom: 14 }}>{t('Not connected. TGym does not currently read or display health data.')}</div>
-    <div className="card" style={{ display: 'grid', gap: 8 }}>
-      <b>{t('Planned system connections')}</b>
-      <div className="small dim">Android · Health Connect</div>
-      <div className="small dim">iPhone · Apple Health / HealthKit</div>
-    </div>
-    <div className="small dim" style={{ lineHeight: 1.5, marginTop: 14 }}>{t('When available, every connection will require your explicit permission and missing measurements will remain unavailable instead of being shown as zero.')}</div>
-  </>)
-}
-
-function NotificationsCard({ S, update, toast }) {
-  if (MOBILE) return <MobileReminderCard S={S} update={update} toast={toast} />
-  return <PushCard S={S} update={update} toast={toast} />
-}
-
-// Mobile build: the reminder is a native local notification scheduled on planned weekdays —
-// no push server involved. The schedule itself is (re)synced by the store on every persist;
-// this card only owns the OS permission prompt when the switch turns on.
-function MobileReminderCard({ S, update, toast }) {
-  const setReminder = patch => update(s => { s.reminder = { ...(s.reminder || DEF.reminder), ...patch, tz: localTZ() } })
-  const toggle = async () => {
-    const on = !S.reminder?.on
-    if (on) {
-      const ok = await syncReminder({ ...S, reminder: { ...(S.reminder || DEF.reminder), on: true } }, true)
-      if (!ok) { toast(t('Could not change notification settings')); return }
-    }
-    setReminder({ on })
-  }
-  return (
-    <Section title={t('Notifications')}
-      footer={S.reminder?.on ? t('Reminds you at this time on days that have a routine planned.') : null}>
-      <Row icon="calendar" iconTint="var(--orange)" title={t('Workout day reminder')}>
-        <Switch checked={!!S.reminder?.on} onChange={toggle} />
-      </Row>
-      {S.reminder?.on && (
-        <Row icon="clock" iconTint="var(--purple)" title={t('Reminder time')}>
-          <input type="time" className="timef" value={S.reminder?.time || DEF.reminder.time}
-            onChange={e => setReminder({ time: e.target.value })} />
-        </Row>
-      )}
-      {S.reminder?.on && Object.keys(S.week || {}).filter(day => S.week[day]).map(day => <Row key={day} icon="clock" iconTint="var(--blue)" title={t(DAYN[Number(day)])}><input type="time" className="timef" value={S.reminder?.dayTimes?.[day] || S.reminder?.time || DEF.reminder.time} onChange={e => setReminder({ dayTimes: { ...(S.reminder?.dayTimes || {}), [day]: e.target.value } })} /></Row>)}
-      {S.reminder?.on && <Row icon="clock" title={t('Next workout reminder')}><input aria-label={t('Next workout reminder')} type="time" className="timef" value={S.reminder.nextTime || '19:00'} onChange={e=>setReminder({nextTime:e.target.value})} /></Row>}
-      <Row icon="moon" iconTint="var(--indigo)" title={t('Quiet hours')}><Switch checked={!!S.reminder?.quietOn} onChange={v => setReminder({ quietOn: v })} /></Row>
-      {S.reminder?.quietOn && <Row icon="clock" title={t('Quiet period')} className="quiet-period-row">
-        <span className="quiet-time-range">
-          <input aria-label={t('Quiet period') + ' — ' + t('Start')} type="time" className="timef" value={S.reminder.quietStart || '22:00'} onChange={e => setReminder({ quietStart: e.target.value })} />
-          <span className="quiet-time-separator" aria-hidden="true">–</span>
-          <input aria-label={t('Quiet period') + ' — ' + t('End')} type="time" className="timef" value={S.reminder.quietEnd || '07:00'} onChange={e => setReminder({ quietEnd: e.target.value })} />
-        </span>
-      </Row>}
-    </Section>
-  )
-}
-
 function PushCard({ S, update, toast }) {
   const [on, setOn] = useState(false)
   const [busy, setBusy] = useState(false)
+  const pending = useRef(false)
   const supported = pushSupported()
 
   useEffect(() => {
@@ -464,12 +435,14 @@ function PushCard({ S, update, toast }) {
   }, [supported])
 
   const toggle = async v => {
+    if (pending.current) return
+    pending.current = true
     setBusy(true)
     try {
       if (!v) { await disablePush(); setOn(false); toast(t('Notifications off')) }
       else { await enablePush(); setOn(true); toast(t('Notifications on')) }
     } catch (e) { toast(e.message || t('Could not change notification settings')) }
-    setBusy(false)
+    pending.current = false; setBusy(false)
   }
   const test = async () => {
     try { await sendTestPush(); toast(t('Test sent — should arrive any second')) }
@@ -493,18 +466,8 @@ function PushCard({ S, update, toast }) {
       <Row icon="bell" iconTint="var(--red)" title={t('Push notifications')} subtitle={t('Rest-timer alerts, even if openGym is closed.')}>
         <Switch checked={on} disabled={busy} onChange={toggle} />
       </Row>
-      {on && (
-        <Row icon="calendar" iconTint="var(--orange)" title={t('Workout day reminder')}>
-          <Switch checked={!!S.reminder?.on} onChange={() => update(s => { s.reminder = { ...(s.reminder || DEF.reminder), on: !s.reminder?.on, tz: localTZ() } })} />
-        </Row>
-      )}
-      {on && S.reminder?.on && (
-        <Row icon="clock" iconTint="var(--purple)" title={t('Reminder time')}>
-          <input type="time" className="timef" value={S.reminder?.time || DEF.reminder.time}
-            onChange={e => update(s => { s.reminder = { ...(s.reminder || DEF.reminder), time: e.target.value, tz: localTZ() } })} />
-        </Row>
-      )}
     </Section>
+    {on && <WorkoutReminderSettings serverReady /> }
     {on && <div style={{ marginTop: -12, marginBottom: 22 }}><Button size="sm" icon="bell" onClick={test}>{t('Send test notification')}</Button></div>}
   </>
 }
@@ -576,8 +539,8 @@ function RegisterInline({ close, setUser, pushState, pullState, toast }) {
     if (inviteOnly && !code.trim()) { toast(t('An invite code is required')); return }
     try {
       const u = await passkeyRegister(n, code.trim()); setUser(u); close()
-      if (hasData(useStore.getState().S)) { await pushState(); toast(t('Profile created — data moved into it')) }
-      else { await pullState(); toast(t('Welcome, {0}', u.name)) }
+      if (hasData(useStore.getState().S)) { await pushState({strict:true}); toast(t('Profile created — data moved into it')) }
+      else { const synced = await pullState(); toast(synced === false ? t('Server synchronization failed. Your local data was kept.') : t('Welcome, {0}', u.name)) }
     } catch (e) { if (e.name !== 'NotAllowedError' && e.name !== 'AbortError') toast(e.message || t('Registration failed')) }
   }
   return <>

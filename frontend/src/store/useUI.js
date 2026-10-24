@@ -1,10 +1,11 @@
 import { create } from 'zustand'
 import { uid } from '../lib/format.js'
-import { beep, vibrate } from '../lib/sound.js'
+import { playAppSound, vibrate } from '../lib/sound.js'
 import { api } from '../lib/api.js'
 import { t } from '../lib/i18n.js'
 import { useStore } from './useStore.js'
-import { resumeWorkoutClock } from '../lib/workout-time.js'
+import { resumeWorkoutClock, recordWorkoutActivity } from '../lib/workout-time.js'
+import {syncWorkoutNotification} from '../lib/workout-notification.js'
 
 // Fire-and-forget: lets the server push a "rest over" alert if this tab gets suspended
 // before the local timer completes. No-ops for guests / offline.
@@ -47,13 +48,20 @@ const maybeRestNotification = async () => {
     // service-worker registration path is the one that actually pops there.
     const reg = await navigator.serviceWorker?.getRegistration?.()
     if (reg?.showNotification) {
-      reg.showNotification(t('Rest over — next set!'), { body: t('Rest over — next set!') })
+      await reg.showNotification(t('Rest over — next set!'), { body: useStore.getState().S.active?.name || t('Return to your workout'), tag:'rest-timer', silent: true })
       return
     }
-    new Notification(t('Rest over — next set!'), { body: t('Rest over — next set!') })
+    new Notification(t('Rest over — next set!'), { body: useStore.getState().S.active?.name || t('Return to your workout'), tag:'rest-timer', silent: true })
   } catch {
     // Intentionally ignore: notification APIs vary by browser and policy in edge cases.
   }
+}
+
+// Persist deadlines, not ticking seconds. This optional field is backward compatible.
+const saveRest = timer => {
+  const store=useStore.getState()
+  if (!store.S.active || (!timer && !store.S.active.restTimer)) return
+  store.update(s => { if(s.active) { if(timer) s.active.restTimer={endsAt:timer.endsAt,total:timer.total}; else { s.active.lastRestEndedAt=Math.min(Date.now(),s.active.restTimer.endsAt); delete s.active.restTimer } } }, true, false)
 }
 
 let toastTm = null
@@ -92,26 +100,29 @@ export const useUI = create((set, get) => ({
     toastTm = setTimeout(() => set({ toastMsg: '' }), 2200)
   },
 
-  startRest(sec) {
+  startRest(sec, restored = null) {
     get().stopRest()
     // Rest timer set to Off. Stopping and returning rather than starting a zero-length timer
     // keeps every caller honest: the four places that start a rest do not each need to know.
     if (!(sec > 0)) return
-    const endsAt = Date.now() + sec * 1000
-    set({ timer: { left: sec, total: sec, endsAt } })
+    const endsAt = restored?.endsAt ?? Date.now() + sec * 1000
+    const timer = { left: sec, total: restored?.total ?? sec, endsAt }
+    saveRest(timer)
+    set({ timer })
+    void syncWorkoutNotification(useStore.getState().S.active,timer)
     requestRestNotificationPermission()
     pushRestTimer(sec)
     timerTick = () => {
       const tm = get().timer
       if (!tm) return
-      const left = Math.max(0, Math.round((tm.endsAt - Date.now()) / 1000))
+      const left = Math.max(0, Math.ceil((tm.endsAt - Date.now()) / 1000))
       if (left === tm.left) return
-      const prefs = useStore.getState().S, snd = prefs.sound && !quietNow()
+      const prefs = useStore.getState().S
       if (left <= 0) {
-        beep(snd, 880, 0.15); beep(snd, 880, 0.15, 0.25); beep(snd, 1320, 0.4, 0.5)
-        if (prefs.vibration !== false && !quietNow()) vibrate([200, 100, 200]); maybeRestNotification(); get().toast(t('Rest over — next set!')); get().stopRest(); return
+        void playAppSound(prefs, 'rest', { occurrence: tm.endsAt })
+        maybeRestNotification(); get().toast(t('Rest over — next set!')); get().stopRest(); return
       }
-      if (left <= 3) beep(snd, 660, 0.1)
+      if (left <= 3) void playAppSound(prefs, 'countdown')
       set({ timer: { ...tm, left } })
     }
     timerInt = setInterval(timerTick, 1000)
@@ -120,18 +131,29 @@ export const useUI = create((set, get) => ({
   addRest(sec) {
     const tm = get().timer
     if (!tm) return
-    const left = tm.left + sec
+    const left = Math.ceil((tm.endsAt - Date.now()) / 1000) + sec
     // taking off more than is left means "I'm ready now" — same as skipping, and it keeps a
     // negative duration out of both the progress bar and the server-side push schedule
     if (left <= 0) { get().stopRest(); return }
     set({ timer: { ...tm, left, total: tm.total + sec, endsAt: tm.endsAt + sec * 1000 } })
+    saveRest(get().timer)
+    void syncWorkoutNotification(useStore.getState().S.active,get().timer)
     pushRestTimer(left)
   },
   stopRest() {
     if (timerInt) clearInterval(timerInt); timerInt = null
     if (timerTick) document.removeEventListener('visibilitychange', timerTick); timerTick = null
     if (get().timer) cancelPushRestTimer()
+    saveRest(null)
     set({ timer: null })
+    void syncWorkoutNotification(useStore.getState().S.active,null)
+  },
+  restoreRest() {
+    if (get().timer) return
+    const saved=useStore.getState().S.active?.restTimer
+    if (!saved) return
+    if (!Number.isFinite(saved.endsAt) || saved.endsAt <= Date.now()) { saveRest(null); return }
+    get().startRest(Math.ceil((saved.endsAt-Date.now())/1000), saved)
   },
 
   /* ---- work timer (issue #16) ----
@@ -139,32 +161,36 @@ export const useUI = create((set, get) => ({
      purpose: the two mean opposite things, they must never run together, and a work set is
      something you are watching — so it gets no server push (that endpoint says "rest over",
      and a plank does not need a notification you are staring at anyway).
-     `onDone(elapsedSec)` is called both when the countdown reaches zero and on an early
+     `onDone(elapsedSec, { timedOut })` is called both at zero and on an early
      finish; the elapsed time is what actually gets logged, so stopping at 0:38 of a 0:45
-     hold records 0:38 rather than crediting the full target. */
-  startWork(sec, label, onDone) {
+     hold records 0:38 rather than crediting the full target. A natural finish already
+     plays its work alert; callers must not replace it with the set-completed cue. */
+  startWork(sec, label, onDone, userInitiated = true, getLabel = null) {
     get().stopWork()
     get().stopRest()
     const total = Math.max(1, Math.round(sec) || 1)
     const endsAt = Date.now() + total * 1000
-    useStore.getState().update(s=>{ if(s.active) { s.active=resumeWorkoutClock(s.active); s.active.workEndsAt=endsAt; s.active.lastMeaningfulWorkoutActivityAt=Date.now() } })
+    useStore.getState().update(s=>{ if(s.active) { if(userInitiated) { s.active=resumeWorkoutClock(s.active); s.active=recordWorkoutActivity(s.active) }; s.active.workEndsAt=endsAt } })
     workDone = onDone
-    set({ work: { left: total, total, endsAt, label } })
+    // The optional reader keeps exercise presentation live when names/preferences change.
+    // It is ephemeral UI state; the timer deadline and completion callback stay untouched.
+    set({ work: { left: total, total, endsAt, label, getLabel } })
+    void syncWorkoutNotification(useStore.getState().S.active,null)
     workTick = () => {
       const wk = get().work
       if (!wk) return
-      const left = Math.max(0, Math.round((wk.endsAt - Date.now()) / 1000))
+      if (!useStore.getState().S.active) { get().stopWork(); return }
+      const left = Math.max(0, Math.ceil((wk.endsAt - Date.now()) / 1000))
       if (left === wk.left) return
-      const prefs = useStore.getState().S, snd = prefs.sound && !quietNow()
+      const prefs = useStore.getState().S
       if (left <= 0) {
-        beep(snd, 880, 0.15); beep(snd, 880, 0.15, 0.25); beep(snd, 1320, 0.4, 0.5)
-        if (prefs.vibration !== false && !quietNow()) vibrate([200, 100, 200])
+        void playAppSound(prefs, 'work', {occurrence:wk.endsAt})
         const done = workDone
         get().stopWork()
-        if (done) done(wk.total)
+        if (done) done(wk.total, { timedOut: true, completedAt: wk.endsAt })
         return
       }
-      if (left <= 3) beep(snd, 660, 0.1)
+      if (left <= 3) void playAppSound(prefs, 'countdown')
       set({ work: { ...wk, left } })
     }
     workInt = setInterval(workTick, 1000)
@@ -174,18 +200,21 @@ export const useUI = create((set, get) => ({
   finishWorkEarly() {
     const wk = get().work
     if (!wk) return
-    const elapsed = Math.max(1, wk.total - wk.left)
+    // The WebView may suspend ticks. The deadline remains authoritative even if
+    // the user finishes before the first resumed render updates `left`.
+    const elapsed = Math.min(wk.total, Math.max(1, Math.round(wk.total - (wk.endsAt - Date.now()) / 1000)))
     const done = workDone
     vibrate(30)
     get().stopWork()
-    if (done) done(elapsed)
+    if (done) done(elapsed, { timedOut: false })
   },
   // Abandon without logging anything.
   stopWork() {
-    if (get().work) useStore.getState().update(s=>{ if(s.active) { delete s.active.workEndsAt; s.active.lastMeaningfulWorkoutActivityAt=Date.now() } })
+    if (get().work) useStore.getState().update(s=>{ if(s.active) { s.active.lastWorkEndedAt=Math.min(Date.now(),get().work.endsAt); delete s.active.workEndsAt } })
     if (workInt) clearInterval(workInt); workInt = null
     if (workTick) document.removeEventListener('visibilitychange', workTick); workTick = null
     workDone = null
     set({ work: null })
+    void syncWorkoutNotification(useStore.getState().S.active,get().timer)
   }
 }))

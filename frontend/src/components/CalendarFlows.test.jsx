@@ -4,7 +4,9 @@ import { createRoot } from 'react-dom/client'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import Home from '../views/Home.jsx'
-import { ZoomCalendar, streakDetailSheet } from '../sheets.jsx'
+import MobileOnboarding from '../views/MobileOnboarding.jsx'
+import { ZoomCalendar, streakDetailSheet, loadStarterPlan } from '../sheets.jsx'
+import { routineConsistency } from '../lib/stats-insights.js'
 import { useStore, DEF } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { setLang } from '../lib/i18n.js'
@@ -19,6 +21,51 @@ beforeEach(async () => {
   host = document.createElement('div'); document.body.appendChild(host); root = createRoot(host)
 })
 afterEach(() => { act(() => { root.unmount(); useUI.getState().closeAll() }); host.remove(); vi.clearAllTimers(); vi.useRealTimers() })
+
+it('opens the same muscles information from the left colored square without nesting controls or starting a workout',()=>{
+  const before=JSON.stringify(useStore.getState().S)
+  act(()=>root.render(<MemoryRouter><Home/></MemoryRouter>))
+  const row=host.querySelector('.home-next-workout'),info=row.querySelector('button.today-row-icon')
+  expect(info.getAttribute('aria-label')).toBe('Muscles trained')
+  expect(row.querySelectorAll('[aria-label="Muscles trained"]')).toHaveLength(1)
+  expect(row.querySelector('button button')).toBeNull()
+  expect(info.querySelector('svg')).not.toBeNull()
+  expect(row.querySelector('.today-row-main').textContent).toContain('Start')
+  act(()=>info.click())
+  expect(JSON.stringify(useStore.getState().S)).toBe(before)
+  expect(useUI.getState().sheets).toHaveLength(1)
+  act(()=>root.render(useUI.getState().sheets.at(-1).render(()=>{})))
+  expect(host.querySelector('.routine-muscle-preview h3').textContent).toBe('Upper long routine name')
+})
+
+it('keeps the scheduled workout action separate from the muscles square',()=>{
+  useStore.setState({S:{...useStore.getState().S,week:{5:'r'}}})
+  act(()=>root.render(<MemoryRouter><Home/></MemoryRouter>))
+  const main=host.querySelector('.today-row-main')
+  expect(main.textContent).toContain('Scheduled')
+  act(()=>main.click())
+  expect(useUI.getState().sheets).toHaveLength(1)
+  act(()=>root.render(<MemoryRouter>{useUI.getState().sheets.at(-1).render(()=>{})}</MemoryRouter>))
+  expect(host.querySelector('.schedule-editor')).not.toBeNull()
+  expect(host.querySelector('.routine-muscle-preview')).toBeNull()
+})
+
+it('starts a new onboarding schedule today without counting earlier workouts as missed',()=>{
+  useStore.setState({S:{...structuredClone(DEF),lang:'en'}})
+  act(()=>root.render(<MobileOnboarding/>))
+  for(let step=0;step<3;step++) act(()=>button('Skip for now').click())
+  act(()=>host.querySelector('.item').click())
+  const state=useStore.getState().S
+  expect(state.scheduleStarted).toBe('2026-09-16')
+  expect(routineConsistency(state).missed).toBe(0)
+})
+
+it('starts the Settings starter plan today as well',()=>{
+  useStore.setState({S:{...structuredClone(DEF),lang:'en'}})
+  act(()=>loadStarterPlan())
+  expect(useStore.getState().S.scheduleStarted).toBe('2026-09-16')
+  expect(routineConsistency(useStore.getState().S).missed).toBe(0)
+})
 
 it('opens the shared calendar from Home with only Week/Month and allows schedule edits', () => {
   act(() => root.render(<MemoryRouter><Home /></MemoryRouter>))
@@ -36,15 +83,15 @@ it('opens the shared calendar from Home with only Week/Month and allows schedule
   expect(useUI.getState().sheets).toHaveLength(2)
 })
 
-it('moves the next workout immediately after matching completion and omits recent status subtitles', () => {
+it('shows recent sessions independently without a next-workout or calendar heading block', () => {
   act(() => streakDetailSheet())
   act(() => root.render(useUI.getState().sheets.at(-1).render(() => {})))
-  const card = () => [...host.querySelectorAll('.card')].find(el => el.textContent.includes('Next scheduled workout'))
-  expect(card().textContent).toContain('Wednesday')
-  act(() => useStore.getState().update(S => S.workouts.push({ id: 'w', d: '2026-09-16', routineId: 'r', name: 'Older name', entries: [] })))
-  expect(card().textContent).toContain('Friday')
+  expect(host.textContent).not.toContain('Next scheduled workout')
+  expect(host.textContent).not.toContain('Consistency calendar')
+  act(() => useStore.getState().update(S => S.workouts.push({ id: 'w', d: '2026-09-16', routineId: 'r', name: 'Older name', entries:[{id:'exercise',sets:[{done:true,r:8}]}] })))
   expect(host.querySelector('.recent-streak-item .ss')).toBeNull()
-  expect(host.querySelector('.recent-streak-item').getAttribute('aria-label')).toContain('Completed')
+  expect(host.querySelector('.recent-streak-item').textContent).toContain('Older name')
+  expect(host.querySelector('.recent-streak-item').tagName).toBe('BUTTON')
 })
 
 it('places the deload square first only for the visible deload week and keeps measurements out of labels', () => {

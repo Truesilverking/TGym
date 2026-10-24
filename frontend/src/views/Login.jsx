@@ -6,7 +6,7 @@ import { t } from '../lib/i18n.js'
 import { DEMO, REPO } from '../lib/demo.js'
 import { guestAllowed } from '../lib/guest.js'
 import { useState, useRef, useEffect } from 'react'
-import Icon from '../components/Icon.jsx'
+import AuthIdentity from '../components/AuthIdentity.jsx'
 import { Button } from '../components/ui.jsx'
 
 function RegisterSheet({ close }) {
@@ -54,15 +54,11 @@ export default function Login() {
     try { const u = await passkeyLogin(); setUser(u); await pullState(); useUI.getState().toast(t('Welcome back, {0}', u.name)) }
     catch (e) { if (e.name !== 'NotAllowedError' && e.name !== 'AbortError') useUI.getState().toast(e.message || t('Sign-in failed')) }
   }
-  const head = <>
-    <div style={{ fontSize: 54, display: 'flex', justifyContent: 'center', color: 'var(--acc)' }}><Icon name="dumbbell" /></div>
-    <h1 style={{ fontSize: 34, fontWeight: 700, letterSpacing: '-.028em', margin: '10px 0 4px' }}>TGym</h1>
-  </>
-  const wrap = { display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: '78vh', textAlign: 'center' }
+  const head = <AuthIdentity />
 
   // Demo build: no backend to sign in against — the only way in is the local guest profile.
   if (DEMO) return (
-    <div className="narrow" style={wrap}>
+    <div className="narrow auth-panel">
       {head}
       <div className="muted" style={{ marginBottom: 30 }}>{t('Live demo — everything stays in this browser.')}</div>
       <Button variant="primary" icon="sparkles" onClick={() => setGuest(true)}>{t('Start the demo')}</Button>
@@ -76,7 +72,7 @@ export default function Login() {
   )
 
   return (
-    <div className="narrow" style={wrap}>
+    <div className="narrow auth-panel">
       {head}
       <div className="muted" style={{ marginBottom: 34 }}>{t('Your workouts. Your weights. Your profile.')}</div>
       {webauthnOK() ? <>

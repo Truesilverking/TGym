@@ -1,5 +1,99 @@
 # Changelog
 
+## 1.15.93
+
+- Refresh Training, Streak Calendar and Home Body Weight while preserving history, routine/exercise identity, calendar rules and exports.
+- Add movable Stats section selection with locally saved selection/order, clearer duration summaries and responsive Before/After measurement comparisons.
+- Simplify reminder settings, provide readable time controls and configurable in-app reminders, and label recurring workouts Today/Tomorrow while retaining explicit dates for dated plans.
+- Improve the replay tour, unlock layout and local name/photo profile without requiring a cloud account. Keep tour workout previews separate from recorded data.
+- Display time-mode cardio edits in minutes using compatible stored seconds; protect inactivity time editing behind its explicit action. Preserve shared workout/rest timing and native notification validation.
+- Reduce repeated rendering and metadata persistence work without changing training calculations or personal data. Independent catalogue updating remains a documented proposal.
+
+## 1.15.70
+
+- Add Complete years to Streak and Consistency reports: choose the first and last year and export one landscape PDF page for each complete year, with all twelve months, clear day numbers, fixed status colors and the matching legend.
+- Reuse existing annual status and summary calculations, including leap days, dates before tracking and future dates. Keep Full reports, Year reports, custom dates, PNG output and all personal data unchanged.
+- Support mixed portrait and landscape pages in combined PDFs, validate year ranges before export, and translate the controls in all locale packs. Limit each export to 25 years to bound mobile PDF resource use; longer histories can be exported in separate ranges.
+
+## 1.15.66
+
+- Replace the routine import form with File → Review → Import inside one sheet. Select compatible TGym JSON/XLSX, inspect compact routine cards and prescriptions, choose a subset, then confirm the actual import count. Back preserves choices; changing files resets them. The Excel template remains available.
+- Show unit conversion, duplicate identity/content choices, unknown exercise mapping and effective prescription adaptations only when relevant. Preserve the existing calendar by default and preview optional imported schedule changes without removing unrelated routines.
+- Share one deterministic scoped preparation between preview and atomic save. Skipped routines do not import their catalogue resources or require exercise mappings; reject multiple replacements of the same destination. Keep the existing verified quota recovery, lock double confirmation and display success only after durable persistence.
+- Add accessible step/focus states, safe-area actions, translated Spanish recovery and validation guidance, and separate expandable technical diagnostics. Preserve history, preferences, active sessions and all supported prescription fields.
+
+## 1.15.65
+
+- Fix large routine imports that exceed WebKit localStorage's string quota despite valid JSON and an otherwise empty profile. Preserve embedded images/GIFs in verified IndexedDB resources and commit a compact browser profile only after those resources can be read back; runtime, native mirrors and portable exports retain the original content.
+- Keep failed imports atomic, retain the previous profile and review choices, block duplicate confirmation, and distinguish quota, access, file validation and adaptation failures. Technical storage operations and original exceptions appear in a separate expandable section.
+- Translate import adaptation warnings in Spanish and show actual source/destination units without assuming a source unit for versioned JSON.
+- Add anonymous resource-size, partial-transaction, quota, retry, cancellation, identity, schedule, prescription and round-trip regressions. Original-file WebKit and Edge imports, retained profile data, export/reimport and complete browser reopen with the origin stopped pass. Physical iPhone Safari/PWA hardware is unavailable and remains unverified.
+
+## 1.15.64
+
+- Routine exchange format 2 transfers effective exercise prescriptions, source loading grids and embedded custom GIF/image resources between desktop and phones without replacing destination preferences or importing workout results. Version 1 Excel/JSON and old plan readers remain available with explicit migration/adaptation review.
+- Imports remap collided custom identities, reserve IDs referenced by deleted routines/history/resume snapshots, detect equivalent repeated routines across different local IDs, and require explicit mapping/conflict choices before one complete persisted update. Failed local mirrors can be retried without repeating a committed import.
+- Excel keeps the existing five editable sheets/header prefixes, uses an expandable catalogue dropdown, validates matching metadata versions and rejects ambiguous decimal strings, missing custom resources, oversized archives and ZIP CRC corruption. Rest-pause rows and Back-off loading now match execution and PDF.
+- Source prescription rules survive target editing, kg/lb conversion, workout start and Top/warm-up weight edits. Existing unmarked routines retain their inherited preference behavior; personal historical progression and deload calendars remain local.
+- PDF reuses the shared series representation, with readable units, notes, aliases/original names and pagination; Progress Report remains separate.
+- Excel instructions wrap without clipped guidance. Real Microsoft Excel blank-template authoring and edited-file imports, bidirectional desktop/Pixel JSON/Excel transfers, offline animated GIFs and native file opening pass; release artifacts, update manifest and PWA are independently verified. Physical iPhone/native iOS and editing inside Excel Android remain untested.
+
+## 1.15.63
+
+- Fix desktop/PWA updates blocked by the pre-update safety copy when a valid profile with uploaded GIFs nearly fills localStorage. Commit the portable backup to a separate IndexedDB snapshot before activating the worker, with the existing localStorage key as a fallback.
+- Keep the current profile mirror, exercise IDs, embedded media and native Android backup path intact. If neither backup store can commit, retain the profile and prior copies, stop the update and show a recoverable storage error.
+- Add regressions for the actual Update dialog, full storage, durable commit, fallback, bounded waits, recovery and selection of the newest valid backup.
+
+## 1.15.62
+
+- Correct the Back-off rule mismatch reproduced on a physical Pixel: explicit per-exercise choices now survive workout start, editor saves and global preference changes. Existing unmarked routine snapshots keep following the app setting.
+- Keep format v1 compatible. Add optional `backoffRepsOverride` intent and the Excel `inherit` choice so JSON, editable series, preview, PDF and runtime agree without reinterpreting older routines.
+- Verify native Microsoft Excel opening, catalogue dropdowns, Unicode edits, decimal commas, table expansion, save/reopen and content equivalence. Add regressions for explicit/inherited Back-off targets and pending workout persistence.
+- Patch the pinned ExcelJS Node ZIP writer to encode UTF-8 before chunking, preserving long Unicode notes/custom metadata. Keep the browser encoder and dependency version unchanged; use `General` numeric formatting to avoid trailing decimal marks on whole numbers.
+- Complete actual Windows/Android Excel and physical Pixel offline acceptance, restore the original QA profile/settings, and verify the signed public packages plus the retained-profile PWA update. Record remaining iPhone/native iOS boundaries in the release audit.
+
+## 1.15.61
+
+- Harden routine JSON/XLSX validation, identity mapping, conflict review and atomic import. Import only catalogue metadata used by accepted routines; preserve history and active workouts. Legacy plans without a source unit now require an explicit kg/lb choice.
+- Extend the compatible v1 Excel template with expandable tables, validated routine/instance/catalogue selectors, local decimal support, editable inherited settings and advanced prescription options. Unrelated edits retain inherited Back-off/rest rules and legacy exceptions.
+- Preview every series and require explicit replacement confirmation. Reset schedule/default decisions for each file.
+- Organize routine PDFs with measured, paginated exercise/series tables and readable Top/Back-off and intensity prescriptions; retain names, units, notes and side semantics.
+- Add serialized Excel/JSON round-trip, malformed-file, cancellation, prescription and PDF pagination regressions. Progress Report and storage identifiers are unchanged.
+
+## 1.15.51
+
+- Refresh Home's local date and training streak at midnight, clock/timezone changes and foreground return without writing the profile or altering history.
+- Calculate Home's date-dependent cards from one time snapshot. Preserve valid planned/extra activity, one count per local date, neutral rest/pauses and existing missed-day breaks.
+- Add a synthetic two-planned/three-extra/four-date regression plus completion, history edit/deletion, fresh boot and timezone coverage. The screenshot alone does not identify the user's actual training dates.
+
+## 1.15.50
+
+- Put the local-data message first in Data and explain optional server, cloud and export transfers.
+- Unify measurement/workout reminder controls, saved schedules, permission/error feedback and independent native reconciliation without replacing unchanged notifications.
+- Collapse Deload week into an accessible accordion without changing its configuration or formulas.
+- Preserve the complete remote profile while applying local edits made during initial synchronization; defer partial uploads until that baseline is available, convert units consistently and show failures without claiming success. Add persistence, idempotency and reminder regression coverage.
+
+## 1.15.48
+
+- Capture planned/extra session origin at start and preserve it across exercise edits, finish, reload, backup and synchronization. Adding or substituting exercises never creates extra sessions.
+- Count valid strength, timed and cardio activity once per day for consistency and streaks, including extra sessions. Preserve scheduled missed-day breaks, rest days and pending-today streak behavior.
+- Include today's activity in Home/Stats consistency. Keep planned/missed/extra session counters separate from daily completion; share the same rules with calendars, Progress exports and API reminders.
+- Add session-origin, persistence, browser and screen acceptance coverage; preserve historical routine identities without comparing exercise lists.
+
+## 1.15.47
+
+- Correct a real PWA upgrade defect found after publishing1.15.46: the new worker could cache HTTP-cached HTML from1.15.45 and keep showing the old UI. Installation/repair now fetches fresh build-specific URLs and stores canonical keys.
+- Preserve profile/history/preferences and the previous worker cache. Add stale-HTTP-cache and failed-asset installation regressions. Includes all1.15.46 Back-off settings and dependency/documentation fixes.
+
+## 1.15.46
+
+- Persistent Settings choice for automatic Back-off reps: Same reps copies the Top range; Increased reps adds +2 to both limits (default).
+- New sessions and live preference changes use one shared resolver. Pending automatic rows update immediately; manual/performed values, load reduction and history remain intact.
+- Replace the conflicting per-exercise automatic offset editor with the selected Settings mode; explicit independent Back-off ranges remain available.
+- Add calculation, cascade, backup and offline-profile recovery regression coverage; update development, architecture, mobile and release documentation.
+
+
+
 ## v1.2.11 — 2026-08-25
 
 A correction release. v1.2.10 landed planned warm-ups and notes, and reviewing that release

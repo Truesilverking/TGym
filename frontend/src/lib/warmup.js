@@ -25,5 +25,10 @@ export function recalculatePendingWarmups(rows, { step = 2.5, mode = 'reps', sid
   if (firstWork <= 0) return rows
   const work = rows[firstWork]
   const generated = warmupPrescription({ workWeight: work.w || 0, workReps: work.r || 1, workSec: work.sec || 0, count: firstWork, step, mode, side })
-  return rows.map((row, i) => i >= firstWork || row.done ? row : { ...row, ...generated[i], done: false })
+  return rows.map((row, i) => {
+    if (i >= firstWork || row.done || row.leftDone || row.rightDone) return row
+    const next = { ...row, ...generated[i], done: false }
+    for (const field of ['w','r','sec']) if (row.manualFields?.[field]) next[field] = row[field]
+    return next
+  })
 }

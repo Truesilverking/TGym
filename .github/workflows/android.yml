@@ -1,7 +1,7 @@
 name: Validate Android
 on:
   push:
-    branches: [main, feature/workout-duration]
+    branches: [main, Dev]
     paths: ['frontend/**', '.github/workflows/android.yml']
   workflow_dispatch:
 permissions:
@@ -26,14 +26,16 @@ jobs:
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
-        run: node frontend/scripts/notify-release.mjs --validate
+        run: |
+          export UPDATE_VERSION="$(node -p "require('./frontend/package.json').version")"
+          node frontend/scripts/notify-release.mjs --validate
       - name: Configure Firebase
         env:
           CONFIG: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
         run: printf '%s' "$CONFIG" | base64 --decode > frontend/android/app/google-services.json
       - run: pnpm run build:mobile
         working-directory: frontend
-      - run: ./gradlew assembleDebug
+      - run: ./gradlew assembleDebug :app:lintDebug
         working-directory: frontend/android
       - name: Test background workout notification on Android emulator
         shell: bash

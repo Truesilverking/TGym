@@ -1,60 +1,75 @@
+import { dailyPlan } from './daily-plan.js'
+import { isTrainingPaused, pausedDaysBetween, calendarDateForTrainingDay, dayNumber } from './training-pause.js'
+import { trackingStart, statisticsState, isUntracked } from './training-history.js'
 import { isoOf, todayISO } from './format.js'
 import { isWarmupRow, modeForSet } from './workout-model.js'
+import { STREAK_CONFIG, streakMilestonesThrough } from './streak-milestones.js'
 
-const DAY = 86400000
 const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n))
 const atNoon = iso => new Date(iso + 'T12:00:00')
-const effectiveRoutineId = (S, iso) => {
-  const ov = (S.dayPlan || {})[iso]
-  if (ov === 'rest') return null
-  if (ov && (S.routines || []).some(r => r.id === ov)) return ov
-  return (S.week || {})[atNoon(iso).getDay()] || null
-}
-const matchWorkout = (S, iso, routineId) => {
-  const routine = (S.routines || []).find(r => r.id === routineId)
-  return (S.workouts || []).some(w => w.d === iso && (w.routineId === routineId || (!w.routineId && routine && w.name === routine.name)))
-}
-
-/** A gym-safe streak: only scheduled training days advance it; rest days neither add nor break. */
+/** Activity days advance the streak; only missed scheduled days break it. */
 export function trainingStreak(S, now = new Date()) {
+  S = statisticsState(S, isoOf(now))
   const safe = { ...S, routines: S.routines || [], workouts: S.workouts || [], week: S.week || {}, dayPlan: S.dayPlan || {} }
   const endIso = isoOf(now)
-  const firstWorkout = safe.workouts.map(w => w.d).filter(Boolean).sort()[0]
-  const startIso = safe.scheduleStarted || firstWorkout || endIso
+  const startIso = trackingStart(safe, endIso)
+  const todayPlan = dailyPlan(safe, endIso)
   const rows = []
-  for (let i = 730; i >= 0; i--) {
+  for (let i = Math.max(0, dayNumber(endIso) - dayNumber(startIso)); i >= 0; i--) {
     const d = new Date(now); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() - i)
     const iso = isoOf(d)
     if (iso < startIso) continue
-    const routineId = effectiveRoutineId(safe, iso)
-    const workouts = safe.workouts.filter(w => w.d === iso)
+    const plan = iso === endIso ? todayPlan : dailyPlan(safe,iso)
+    const routineId = plan.items[0]?.id
     if (!routineId) {
-      if (workouts.length) rows.push({ iso, status: 'extra', planned: false })
+      if (plan.active) rows.push({ iso, status: 'completed', planned: false })
       continue
     }
-    const completed = matchWorkout(safe, iso, routineId)
+    const completed = plan.active
     // Today is still available to complete. It must not erase yesterday's streak at noon.
     const status = completed ? 'completed' : iso === endIso ? 'pending' : 'missed'
     rows.push({ iso, routineId, status, planned: true })
   }
+  const { current, best } = streakOfRows(rows)
+  const completed = rows.filter(r => r.status === 'completed')
+  const lastCompleted = completed.at(-1)?.iso || null
+  const lastMissed = rows.filter(r => r.status === 'missed').at(-1)?.iso || null
+  const active = current > 0
+  const todayStatus = endIso < startIso ? 'untracked' : todayPlan.active ? 'completed'
+    : isTrainingPaused(safe, endIso) ? 'paused' : todayPlan.total ? 'pending' : 'rest'
+  // Today's plan and the surviving run are separate: rest or pause cannot relight
+  // an interrupted run, while an unfinished today cannot break an existing one.
+  const state = active ? todayStatus === 'completed' ? 'active' : todayStatus
+    : lastCompleted && lastMissed > lastCompleted ? 'interrupted' : 'inactive'
+  const deadline = new Date(now)
+  deadline.setHours(24, 0, 0, 0)
+  const reachedMilestones = streakMilestonesThrough(current)
+  const nextMilestoneWeeks = reachedMilestones.length
+    ? reachedMilestones.at(-1).weeks * STREAK_CONFIG.milestoneMultiplier : STREAK_CONFIG.firstMilestoneWeeks
+  const nextMilestone = nextMilestoneWeeks * STREAK_CONFIG.daysPerWeek
+  return {
+    current, best, rows, date: endIso, state, active, todayStatus,
+    pendingUntil: todayStatus === 'pending' ? +deadline : null,
+    lastCompleted, lastMissed,
+    milestones: [...reachedMilestones.map(m => m.days), nextMilestone],
+    nextMilestone, nextMilestoneWeeks,
+  }
+}
+
+// Shared by Home and historical exports; pending days never break a streak.
+export function streakOfRows(rows) {
   let current = 0, best = 0, run = 0
-  rows.filter(r => r.planned).forEach(r => {
+  rows.forEach(r => {
     if (r.status === 'completed') { run++; best = Math.max(best, run) }
     else if (r.status === 'missed') run = 0
   })
   for (let i = rows.length - 1; i >= 0; i--) {
     const r = rows[i]
-    if (!r.planned || r.status === 'pending') continue
+    if (r.status === 'pending') continue
     if (r.status !== 'completed') break
     current++
   }
-  const completed = rows.filter(r => r.status === 'completed')
-  const milestones = [7, 14, 30, 50, 100, 180, 365]
-  return {
-    current, best, rows, milestones,
-    lastCompleted: completed.at(-1)?.iso || null,
-    nextMilestone: milestones.find(n => n > current) || Math.ceil((current + 1) / 100) * 100,
-  }
+  return { current, best }
 }
 
 export function streakTier(value) {
@@ -82,24 +97,32 @@ export function deloadStatus(S, iso = todayISO()) {
   if (!c.on || !c.startDate) return { active: false, daysUntil: null, config: c }
   const start = mondayOf(c.startDate), day = atNoon(iso)
   if (!Number.isFinite(start.getTime()) || !Number.isFinite(day.getTime())) return { active: false, daysUntil: null, config: c }
-  // Calendar weeks, not elapsed hours: DST can make a week one hour shorter.
-  const calendarDay = d => Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / DAY
-  const weeks = Math.floor((calendarDay(mondayOf(iso)) - calendarDay(start)) / 7)
+  const anchor = dayNumber(isoOf(start)), today = dayNumber(iso)
+  const elapsed = today - anchor - pausedDaysBetween(S, isoOf(start), iso)
   const normal = clamp(Math.round(c.normalWeeks) || 6, 1, 24)
   const deload = clamp(Math.round(c.deloadWeeks) || 1, 1, 4)
-  const cycle = normal + deload, phase = weeks < 0 ? weeks : weeks % cycle
-  const active = phase >= normal
-  const nextWeek = active ? cycle - phase + normal : normal - phase
-  const nextStart = new Date(mondayOf(iso)); nextStart.setDate(nextStart.getDate() + nextWeek * 7)
-  const currentStart = new Date(mondayOf(iso)); currentStart.setDate(currentStart.getDate() - (phase - normal) * 7)
-  const end = new Date(active ? currentStart : nextStart); end.setDate(end.getDate() + deload * 7 - 1)
-  return { active, week: phase + 1, cycle, daysUntil: active ? 0 : Math.max(0, calendarDay(nextStart) - calendarDay(day)), nextStart: isoOf(nextStart), start: isoOf(active ? currentStart : nextStart), end: isoOf(end), config: c }
+  const cycle = normal + deload
+  const weeks = Math.floor(elapsed / 7), phase = weeks < 0 ? weeks : weeks % cycle
+  const paused = isTrainingPaused(S, iso)
+  const active = !paused && phase >= normal
+  const cycleStart = anchor + (weeks < 0 ? 0 : Math.floor(weeks / cycle) * cycle * 7)
+  const currentStartDay = cycleStart + normal * 7
+  const nextStartDay = phase >= normal ? currentStartDay + cycle * 7 : currentStartDay
+  const convert = n => calendarDateForTrainingDay(S, n, anchor)
+  const nextStart = paused ? null : convert(nextStartDay)
+  const periodStart = active ? convert(currentStartDay) : nextStart
+  const periodEnd = paused ? null : convert((active ? currentStartDay : nextStartDay) + deload * 7 - 1)
+  return { active, paused, week:phase+1, cycle,
+    daysUntil:paused || !nextStart ? null : active ? 0 : Math.max(0,dayNumber(nextStart)-today),
+    nextStart, start:periodStart, end:periodEnd, config:c }
+
 }
 
 // Past sessions retain their recorded status even if the user changes the cycle.
 export function calendarDeload(S, iso) {
+  if (isUntracked(S,iso)) return false
   const workouts = (S.workouts || []).filter(w => w.d === iso)
-  return workouts.some(w => w.deload) || deloadStatus(S, iso).active
+  return workouts.length ? workouts.some(w => w.deload) : deloadStatus(S, iso).active
 }
 
 const snap = (value, step) => Math.max(step || 0, Math.round(value / (step || 1)) * (step || 1))
@@ -116,12 +139,10 @@ export function applyTrainingPlan(rows, cfg, step = 2.5, deload = null) {
     const topN = clamp(Math.round(cfg.topSets) || 1, 1, 99)
     const backN = clamp(Math.round(cfg.backoffSets) || 2, 1, 99)
     const topSeed = work[0]
-    const topWeight = Number(topSeed.w) || Number(cfg.weight) || 0
-    const pct = clamp(Number(cfg.backoffPct) || 10, 1, 50)
-    const backWeight = topWeight > 0 ? snap(topWeight * (1 - pct / 100), step) : 0
+    const topWeight = Number(topSeed.w ?? cfg.weight) || 0
+    const backWeight = backoffWeightFor(topWeight, cfg, step)
     const topReps = Math.max(1, Math.round(cfg.topRepsMax || cfg.reps || topSeed.r || 1))
-    const offset = backoffRepOffsetFor(cfg)
-    const backReps = cfg.autoBackoffReps === false ? Math.max(1, Math.round(cfg.backoffRepsMax || cfg.reps || topReps)) : topReps + offset
+    const backReps = backoffRepsFor(topReps, cfg)
     work = [
       ...Array.from({ length: topN }, () => ({ ...copyRow(topSeed), w: topWeight, r: topReps, role: 'top' })),
       ...Array.from({ length: backN }, () => ({ ...copyRow(topSeed), w: backWeight, r: backReps, role: 'backoff' })),
@@ -158,6 +179,7 @@ export function applyTrainingPlan(rows, cfg, step = 2.5, deload = null) {
 
 /** A session-only target for a scheduled deload. The saved routine remains untouched. */
 export function deloadTargetFor(cfg, deload) {
+  cfg = withBackoffRepTargets(cfg)
   if (!deload?.active) return { ...cfg }
   const rir = clamp(Number(deload.config?.targetRir) || 4, 0, 10)
   const target = { ...cfg, deload: true, targetRir: rir, targetRirMin: rir, targetRirMax: rir }
@@ -173,22 +195,58 @@ export function deloadTargetFor(cfg, deload) {
 }
 
 export function repBounds(cfg, role = null) {
-  if (role === 'top') return { min: Math.max(1, Number(cfg.topRepsMin) || Number(cfg.repsMin) || Number(cfg.reps) || 1), max: Math.max(1, Number(cfg.topRepsMax) || Number(cfg.reps) || 1) }
+  const range = (low, high) => {
+    const max = Math.max(1, Math.round(Number(high) || 1))
+    const min = Math.min(max, Math.max(1, Math.round(Number(low) || max)))
+    return { min, max }
+  }
+  if (role === 'top') {
+    const max = cfg.topRepsMax || cfg.reps
+    return range(cfg.repRange === false ? max : cfg.topRepsMin || cfg.repsMin, max)
+  }
   if (role === 'backoff') {
-    if (cfg.autoBackoffReps !== false && cfg.setScheme === 'topback') { const top = repBounds(cfg, 'top'), offset = backoffRepOffsetFor(cfg); return { min: top.min + offset, max: top.max + offset } }
-    return { min: Math.max(1, Number(cfg.backoffRepsMin) || Number(cfg.repsMin) || Number(cfg.reps) || 1), max: Math.max(1, Number(cfg.backoffRepsMax) || Number(cfg.reps) || 1) }
+    if (cfg.autoBackoffReps !== false && cfg.setScheme === 'topback') {
+      const top = repBounds(cfg, 'top'), offset = backoffRepOffsetFor(cfg)
+      return { min: top.min + offset, max: top.max + offset }
+    }
+    return range(cfg.backoffRepsMin || cfg.repsMin, cfg.backoffRepsMax || cfg.reps)
   }
-  if (cfg.repRange === false) {
-    const exact = Math.max(1, Number(cfg.reps) || 1)
-    return { min: exact, max: exact }
-  }
-  return { min: Math.max(1, Number(cfg.repsMin) || Number(cfg.reps) || 1), max: Math.max(1, Number(cfg.reps) || 1) }
+  return range(cfg.repRange === false ? cfg.reps : cfg.repsMin, cfg.reps)
 }
 
+// Legacy unilateral configurations store totals across both sides.
 export function backoffRepOffsetFor(cfg = {}) {
-  if (cfg.backoffRepOffset != null && Number.isFinite(Number(cfg.backoffRepOffset))) return clamp(Math.round(Number(cfg.backoffRepOffset)), 0, 5)
-  const derived = Number(cfg.backoffRepsMax) - Number(cfg.topRepsMax)
-  return Number.isFinite(derived) && derived >= 0 && derived <= 5 ? Math.round(derived) : 2
+  const factor = cfg.side && !cfg.repsPerSide ? 2 : 1
+  if (cfg.backoffRepsMode === 'same') return 0
+  if (cfg.backoffRepsMode === 'increased') return 2 * factor
+  // Old editors persisted zero or inferred an offset from stale range fields.
+  // Without a mode snapshot retain the legacy default/explicit offsets. Independent ranges use autoBackoffReps:false.
+  if (Number.isFinite(Number(cfg.backoffRepOffset)) && Number(cfg.backoffRepOffset) > 0) return clamp(Math.round(Number(cfg.backoffRepOffset) / factor), 1, 5) * factor
+  return 2 * factor
+}
+
+// Materialize the same range used by the UI in new routine/session snapshots.
+// Completed history and manually logged row values are never rewritten here.
+export function withBackoffRepTargets(cfg = {}) {
+  if (cfg.setScheme !== 'topback' || cfg.autoBackoffReps === false) return { ...cfg }
+  const { min, max } = repBounds(cfg, 'backoff')
+  return { ...cfg, backoffRepOffset: backoffRepOffsetFor(cfg), backoffRepsMin: min, backoffRepsMax: max }
+}
+
+export function backoffWeightFor(value, cfg = {}, step = 2.5) {
+  if (value == null || !Number.isFinite(Number(value))) return null
+  const increment = Number(step) > 0 && Number.isFinite(Number(step)) ? Number(step) : 2.5
+  const raw = Math.max(0, Number(value)) * (1 - clamp(Number(cfg.backoffPct) || 10, 1, 50) / 100)
+  const rounded = Math.min(Math.round(raw / increment), Math.floor(Math.max(0, Number(value)) / increment))
+  return Math.round(rounded * increment * 1000) / 1000
+}
+
+export function backoffRepsFor(value, cfg = {}) {
+  const bounds = repBounds(cfg, 'backoff')
+  if (cfg.autoBackoffReps === false) return Math.max(bounds.min, bounds.max)
+  const derived = Math.max(0, Math.round(Number(value) || 0)) + backoffRepOffsetFor(cfg)
+  const hasTarget = [cfg.topRepsMax, cfg.reps].some(v => Number(v) > 0)
+  return hasTarget ? clamp(derived, Math.min(bounds.min, bounds.max), Math.max(bounds.min, bounds.max)) : derived
 }
 
 export const repRangeEnabled = cfg => cfg?.repRange === true || (cfg?.repRange !== false && Number(cfg?.repsMin) > 0 && Number(cfg?.repsMin) < Number(cfg?.reps))
@@ -197,7 +255,7 @@ export const strictRepsFor = (S, cfg) => cfg.strictReps == null ? !!S.strictReps
 export function clampReps(S, cfg, set, value) {
   const n = Math.max(0, Math.round(Number(value) || 0))
   if (isWarmupRow(set)) return n
-  if (!strictRepsFor(S, cfg)) return n
+  if (!strictRepsFor(S, cfg) || cfg.amrap || set?.amrap || ![cfg.reps, cfg.topRepsMax, cfg.backoffRepsMax].some(v => Number(v) > 0)) return n
   const b = repBounds(cfg, set?.role)
   return clamp(n, b.min, b.max)
 }
@@ -226,7 +284,7 @@ export const targetRirFor = (cfg, role) => targetRirRangeFor(cfg, role)?.max ?? 
 // prescription remains in entry.target. Never reseed an existing active/history record.
 export function seedPlannedRir(row, cfg) {
   if (isWarmupRow(row) || modeForSet(row, cfg) !== 'reps') return row
-  const initial = targetRirFor(cfg, row.role)
+  const initial = targetRirRangeFor(cfg, row.role)?.min
   return initial == null ? row : { ...row, rir: initial }
 }
 
@@ -244,4 +302,31 @@ export function rirAdvice(sets, cfg) {
   if (actual > range.max) return { kind: 'increase', delta, count: rated.length }
   if (actual < range.min) return { kind: 'reduce', delta, count: rated.length }
   return { kind: 'maintain', delta, count: rated.length }
+}
+
+// Unmarked legacy mode/offset fields are profile snapshots, not per-exercise choices.
+// An additive override marker distinguishes deliberate exceptions without reinterpreting
+// existing routines or stopping inherited active targets from following Settings changes.
+export function withBackoffRepsMode(cfg = {}, S = {}) {
+  if (cfg.setScheme !== 'topback' || cfg.autoBackoffReps === false) return { ...cfg }
+  if (cfg.backoffRepsOverride === true) return withBackoffRepTargets(cfg)
+  return withBackoffRepTargets({ ...cfg, backoffRepsMode: S.backoffRepsMode === 'same' ? 'same' : 'increased' })
+}
+
+export function refreshActiveBackoffReps(active, S) {
+  if (!active) return active
+  for (const entry of active.entries || []) {
+    const cfg = entry.target || {}
+    if (cfg.setScheme !== 'topback' || cfg.autoBackoffReps === false) continue
+    entry.target = withBackoffRepsMode(cfg, S)
+    let top = null
+    for (const row of entry.sets || []) {
+      if (isWarmupRow(row)) { top = null; continue }
+      if (row.role === 'top') top = row
+      else if (row.role === 'backoff' && !row.done && !row.leftDone && !row.rightDone && !row.manualFields?.r && top) {
+        row.r = backoffRepsFor(top.r, entry.target)
+      } else if (row.role !== 'backoff') top = null
+    }
+  }
+  return active
 }

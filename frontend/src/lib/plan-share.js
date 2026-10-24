@@ -1,3 +1,4 @@
+import { routineIds } from './daily-plan.js'
 // Share a weekly plan.
 //
 // Two jobs:
@@ -9,7 +10,7 @@
 //     a page break — each exercise, and each routine that fits, stays in one place.
 
 import { EXIDX, isBodyweightEq } from './exercises.js'
-import { modeOf, fmtSec, isBw, isPerSide, sideReps, MAX_PLANNED_WARMUPS } from './history.js'
+import { modeOf, fmtSec, isBw, isPerSide, displayReps, MAX_PLANNED_WARMUPS } from './history.js'
 import { uid, todayISO, DAYN, fmtNum, exCount } from './format.js'
 import { t, exerciseNameFor } from './i18n-core.js'
 
@@ -19,8 +20,10 @@ const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0]   // Mon-first, matching the Plan scree
 // Keep only the meaningful config fields, so the file stays small and readable.
 function cleanEx(e) {
   const o = { id: e.id, sets: e.sets }
+  if (e.activityType) o.activityType = e.activityType
   const mode = modeOf(e)
   if (mode === 'cardio') {
+    o.mode = 'cardio'
     if (e.min != null) o.min = e.min
     if (e.speed != null) o.speed = e.speed
   } else if (mode === 'time') {
@@ -36,8 +39,9 @@ function cleanEx(e) {
   // How the exercise is logged travels too (issues #31/#32) — the bodyweight flag only when
   // it disagrees with the catalogue, since agreeing is what the other end already assumes.
   if (e.bodyweight != null && e.bodyweight !== isBodyweightEq(e.id)) o.bodyweight = e.bodyweight
-  // In reps this means total reps are split; in time it means the duration applies per side.
+  // Carry explicit per-side rep semantics; older totals and timed per-side durations remain compatible.
   if (e.side && mode !== 'cardio') o.side = true
+  if (e.side && e.repsPerSide && mode === 'reps') o.repsPerSide = true
   // Progression settings travel with the plan — a shared Greyskull routine that arrives
   // without its rule is just a list of weights.
   if (e.prog) o.prog = e.prog
@@ -176,11 +180,12 @@ export function mergePlan(s, bundle, { schedule } = {}) {
       ex: (r.ex || []).map(e => ({ ...e, id: exIdMap[e.id] || e.id }))
     })
   })
-  if (bundle.routines.some(r => (r.ex || []).some(e => e.targetRir != null || e.topRir != null || e.backoffRir != null)) && (!s.effort || s.effort === 'none')) s.effort = 'rir'
+  if (bundle.routines.some(r => (r.ex || []).some(e => ['targetRir','topRir','backoffRir','targetRirMin','targetRirMax','topRirMin','topRirMax','backoffRirMin','backoffRirMax'].some(key => e[key] != null))) && (!s.effort || s.effort === 'none')) s.effort = 'rir'
   if (schedule) {
     WEEK_ORDER.forEach(d => { delete s.week[d] })
     Object.entries(bundle.week || {}).forEach(([d, oldId]) => {
-      if (ridMap[oldId]) s.week[d] = ridMap[oldId]
+      const ids = routineIds(oldId).map(id=>ridMap[id]).filter(Boolean)
+      if (ids.length) s.week[d] = ids
     })
     s.scheduleStarted = todayISO()
   }
@@ -200,10 +205,9 @@ function scheme(e, unit) {
     const body = `${e.min || 20} min @ ${fmtNum(e.speed || 8)} km/h`
     return sets > 1 ? `${sets} × ${body}` : body
   }
-  let s = mode === 'time' ? `${sets} × ${fmtSec(e.sec || 45)}` : `${sets} × ${e.reps ?? 10}`
+  const reps = displayReps(e.reps ?? 10, e)
+  let s = mode === 'time' ? `${sets} × ${fmtSec(e.sec || 45)}` : `${sets} × ${typeof reps === 'number' ? fmtNum(reps) : reps}${isPerSide(e) ? ` ${t('/ side')}` : ''}`
   if (e.weight) s += ` · ${isBw(e) ? '+' : ''}${fmtNum(e.weight)} ${unit}`
-  // A printed plan is read at the rack, so the split earns its four characters.
-  if (mode !== 'time' && isPerSide(e)) s += ` · ${t('{0}/side', fmtNum(sideReps(e.reps ?? 10)))}`
   return s
 }
 
@@ -218,11 +222,11 @@ function units(ex) {
   return out
 }
 
-function routineHTML(r, unit) {
+function routineHTML(r, unit, S) {
   const rows = units(r.ex).map(u => {
     const items = u.map(e => {
-      const ex = EXIDX[e.id]
-      const name = ex ? exerciseNameFor(ex) : t('Unknown exercise')
+      const ex = (S.customEx || []).find(exercise => exercise.id === e.id) || EXIDX[e.id]
+      const name = ex ? exerciseNameFor(ex, S, { entry: e, routine: r, routineId: r.id }) : t('Unknown exercise')
       const part = ex && ex.bp && ex.bp !== 'cardio' ? `<span class="part">${esc(ex.bp)}</span>` : ''
       const note = e.note ? `<div class="ex-note">${esc(e.note)}</div>` : ''
       return `<div class="ex"><div class="ex-row"><div class="ex-n">${esc(name)}${part}</div><div class="ex-s">${esc(scheme(e, unit))}</div></div>${note}</div>`
@@ -240,7 +244,8 @@ function routineHTML(r, unit) {
 
 function weekHTML(S) {
   const rows = WEEK_ORDER.map(d => {
-    const r = S.routines.find(x => x.id === S.week?.[d])
+    const routines = routineIds(S.week?.[d]).map(id=>S.routines.find(x=>x.id===id)).filter(Boolean)
+    const r = routines.length ? {...routines[0],name:routines.map(r=>r.name).join(' → ')} : null
     const val = r ? esc(r.name) : `<span class="rest">${esc(t('Rest'))}</span>`
     return `<div class="w-row"><div class="w-day">${esc(t(DAYN[d]))}</div><div class="w-r">${val}</div></div>`
   }).join('')
@@ -252,7 +257,7 @@ export function planPrintHTML(S, owner) {
   const unit = S.unit || 'kg'
   const routines = (S.routines || []).filter(r => r.ex && r.ex.length)
   const body = routines.length
-    ? routines.map(r => routineHTML(r, unit)).join('')
+    ? routines.map(r => routineHTML(r, unit, S)).join('')
     : `<p class="none">${esc(t('No routines yet.'))}</p>`
   const sub = [owner, todayISO()].filter(Boolean).map(esc).join(' · ')
   return `<!doctype html><html><head><meta charset="utf-8">

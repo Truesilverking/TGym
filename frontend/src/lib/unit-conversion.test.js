@@ -2,6 +2,18 @@ import { describe, expect, it } from 'vitest'
 import { convertMeasurementState, convertWeightState, weightStepFor } from './unit-conversion.js'
 
 describe('stored unit conversion', () => {
+  it('converts portable loading grids without converting timed progression seconds', () => {
+    const cfg = { id: 'timed', mode: 'time', weight: 20, inc: 5, loadingStep: 2.5 }
+    const S = { unit: 'kg', routines: [{ ex: [cfg] }], active: { entries: [{ target: { ...cfg }, sets: [] }] } }
+    convertWeightState(S, 'lb')
+    expect(cfg.inc).toBe(5)
+    expect(cfg.loadingStep).toBeCloseTo(2.5 * 2.2046226218487757, 5)
+    expect(S.active.entries[0].target.inc).toBe(5)
+    expect(S.active.entries[0].target.loadingStep).toBeCloseTo(cfg.loadingStep, 6)
+    convertWeightState(S, 'kg')
+    expect(cfg.loadingStep).toBeCloseTo(2.5, 5)
+    expect(cfg.inc).toBe(5)
+  })
   it('converts the auto-finish resume snapshot together with its history entry', () => {
     const S={unit:'kg',workouts:[{resumeSnapshot:{unit:'kg',entries:[{sets:[{w:100}]}]}}]}
     convertWeightState(S,'lb')
@@ -59,4 +71,18 @@ describe('stored unit conversion', () => {
     expect(weightStepFor('kg')).toBe(2.5)
     expect(weightStepFor('lb')).toBe(5)
   })
+})
+
+it('converts explicit mixed measurement units once and retains dates and missing values', () => {
+  const S={measurementUnit:'cm',measurements:[{id:'a',d:'2026-09-01',unit:'cm',neck:25.4,waist:null},{id:'b',d:'2026-09-02',unit:'in',neck:10}]}
+  convertMeasurementState(S,'in')
+  expect(S.measurements).toEqual([{id:'a',d:'2026-09-01',unit:'in',neck:10,waist:null},{id:'b',d:'2026-09-02',unit:'in',neck:10}])
+  convertMeasurementState(S,'cm')
+  expect(S.measurements.map(r=>[r.unit,r.neck])).toEqual([['cm',25.4],['cm',25.4]])
+})
+it('updates stamped bodyweight and samples together without converting pounds twice',()=>{
+  const S={unit:'kg',bodyweight:[{unit:'lb',w:154,samples:[{w:153}]},{unit:'kg',w:70,samples:[{w:69}]}]}
+  convertWeightState(S,'lb')
+  expect(S.bodyweight[0]).toEqual({unit:'lb',w:154,samples:[{w:153}]})
+  expect(S.bodyweight[1]).toEqual({unit:'lb',w:154.32,samples:[{w:152.12}]})
 })

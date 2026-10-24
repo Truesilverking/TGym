@@ -16,7 +16,6 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 import java.io.*;
 import java.net.*;
 import java.security.MessageDigest;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /** Download only to private cache; never launch an APK before all checks pass. */
@@ -109,7 +108,8 @@ public class AppInstallerPlugin extends Plugin {
                     break;
                 }
                 if (connection == null) throw new IOException("Too many redirects");
-                long total = connection.getContentLengthLong(), received = 0;
+                // APKs are capped at 300 MiB; the API-23-compatible int is sufficient.
+                long total = connection.getContentLength(), received = 0;
                 try (InputStream input = connection.getInputStream(); OutputStream output = new FileOutputStream(apk)) {
                     byte[] buffer = new byte[65536]; int count, lastPercent = -1;
                     while ((count = input.read(buffer)) != -1) {

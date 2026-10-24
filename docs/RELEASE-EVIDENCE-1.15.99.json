@@ -1,0 +1,124 @@
+{
+  "version": "1.15.99",
+  "versionCode": 135,
+  "runtimeCommit": "85681b6f3a81458790ede41a7c1d2d71edafa80d",
+  "release": "https://github.com/Truesilverking/TGym/releases/tag/v1.15.99",
+  "workflowRuns": {
+    "tests": {
+      "id": 40112330253,
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/40112330253",
+      "conclusion": "success"
+    },
+    "prTests": {
+      "id": 40112333688,
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/40112333688",
+      "conclusion": "success"
+    },
+    "pwaValidation": {
+      "id": 40112330269,
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/40112330269",
+      "conclusion": "success"
+    },
+    "androidValidation": {
+      "id": 40112330302,
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/40112330302",
+      "conclusion": "success"
+    },
+    "signedCandidate": {
+      "id": 40112330198,
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/40112330198",
+      "conclusion": "success"
+    },
+    "release": {
+      "id": 40113021500,
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/40113021500",
+      "conclusion": "success"
+    }
+  },
+  "tests": {
+    "frontend": 2541,
+    "frontendFiles": 220,
+    "api": 16,
+    "mcp": 37,
+    "catalog": 6,
+    "androidCiPassed": 43,
+    "androidCiFailures": 0,
+    "androidCiSkipped": 0,
+    "pixelIsolatedNativePassed": 28,
+    "compiledBrowserCases": 5
+  },
+  "artifacts": {
+    "package": "app.framegym.mobile",
+    "apkSha256": "e9224865c4974e12b2bce80bed29c848cef3240be18b7cbf1e7247490d5faece",
+    "aabSha256": "2fab398688c7a49f6debec94fa0e4f96d84d73375d1fa68292578b92fbea9d01",
+    "certificateSha256": "8ee233c984615e2b3f6f083dc0c47d148bb8956ff7caca97be0b9a0d260e6082",
+    "officialSigningContinuity": true,
+    "releaseAndPagesApkIdentical": true,
+    "aabSignatureVerified": true,
+    "apkBuildMetadataExact": true,
+    "aabBuildMetadataExact": true,
+    "checksumsExact": true,
+    "candidateSharedRuntimeAssetsExact": 66,
+    "pwaFilesExact": 62
+  },
+  "localRuntimeQa": {
+    "sourceFiles": 620,
+    "sourceTreeSha256": "a12f4d063d473bd23653ce68a856ce215d80b6317ea4e7f4175affb8476e3cfb",
+    "qaPackageSeparateFromProduction": true,
+    "protectedDataAndColdReopenPreserved": true,
+    "noWeighInSaved": true,
+    "numberMismatches": 0,
+    "coastFreezes": 0,
+    "maximumFullMotionRafIntervalMsByStage": [
+      17.2,
+      16.8,
+      16.9,
+      16.9
+    ],
+    "measurementIsDeviceWideFpsGuarantee": false,
+    "earlierFailedTrialsRetainedLocally": true
+  },
+  "notifications": {
+    "service": "FCM",
+    "releaseRunId": 40113021500,
+    "accepted": [
+      {
+        "topic": "tgym_updates",
+        "at": "2026-10-24T16:51:20.3529273Z"
+      },
+      {
+        "topic": "tgym_updates_v2",
+        "at": "2026-10-24T16:51:20.5781521Z"
+      }
+    ],
+    "acceptedOncePerTopic": true,
+    "manualResendDispatched": false,
+    "physicalReceiptVerified": false
+  },
+  "isolatedPwaUpgrade": {
+    "from": "1.15.93",
+    "to": "1.15.99",
+    "syntheticProfileOnly": true,
+    "personalInstalledPwaTouched": false,
+    "normalCheckUpdateFlow": true,
+    "preUpdateBackupCrcValid": true,
+    "protectedDataPreserved": true,
+    "comparison": "Portable data with observed trusted-input clock normalization; not byte-identical whole-profile JSON",
+    "pausedSessionIdAndSetsPreserved": true,
+    "duplicateRecords": false,
+    "upToDateAfterUpdate": true,
+    "offlineReload": true,
+    "offlineBrowserRestart": true,
+    "indexedDbMirrorPreserved": true,
+    "pageErrors": 0
+  },
+  "boundaries": {
+    "realInstalledDesktopPwaUpdated": false,
+    "productionPhoneInstallationVerified": false,
+    "physicalIPhoneVerified": false,
+    "physicalPushReceiptVerified": false,
+    "mainIntegrationPr": "https://github.com/Truesilverking/TGym/pull/12",
+    "mainIndependentReviewRequired": true,
+    "privateBackupsOrRealPhotosPublished": false
+  }
+}

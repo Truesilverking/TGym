@@ -2,6 +2,52 @@ import english from '../lib/english-fallback.js'
 // Turkish UI strings. Keys are the English source strings (see lib/i18n.js).
 export default {
   ...english,
+  "Future dates": "Gelecek tarihler",
+  "One square per day. Total active days, not streak length.": "Her gün için bir kare. Seri uzunluğu değil, toplam aktif gün sayısı.",
+  "Training days in this streak": "Bu serideki antrenman günleri",
+  "Complete today's workout to keep your streak.": "Serini korumak için bugünkü antrenmanı tamamla.",
+  "No workout scheduled today — streak preserved.": "Bugün planlı antrenman yok: serin korunur.",
+  "Training paused — streak preserved.": "Antrenman duraklatıldı: serin korunur.",
+  "Streak interrupted. Complete a workout to start a new one.": "Seri kesildi. Yeni bir seri başlatmak için bir antrenman tamamla.",
+  "Complete a workout to start a streak.": "Bir seri başlatmak için bir antrenman tamamla.",
+  "Completed training days, counted once per day. Scheduled rest days preserve the streak.": "Tamamlanan antrenman günleri, her tarihte bir kez sayılır. Planlı dinlenme günleri seriyi korur.",
+  "Week and month equivalents use completed training days: 7 per week and 30 per month.": "Hafta ve ay karşılıkları tamamlanan antrenman günlerine dayanır: hafta başına 7, ay başına 30.",
+  "{0} weeks of consistency!": "{0} haftalık istikrar!",
+  "You are building a lasting habit. Keep it going!": "Kalıcı bir alışkanlık oluşturuyorsun. Böyle devam et!",
+  "Next milestone: {0} weeks": "Sonraki hedef: {0} hafta",
+  "Close celebration": "Kutlamayı kapat",
+  "1 week": "1 hafta",
+  "{0} weeks": "{0} hafta",
+  "1 month": "1 ay",
+  "{0} months": "{0} ay",
+  "1 day": "1 gün",
+  "Server synchronization failed. Your local data was kept.": "Sunucuyla eşitleme başarısız oldu. Yerel verileriniz korundu.",
+  // Settings and verified reminder status.
+  "Add a workout to your schedule": "Programınıza bir antrenman ekleyin",
+  "Check your reminder settings.": "Hatırlatıcı ayarlarınızı kontrol edin.",
+  "Checking notification schedule…": "Bildirim programı kontrol ediliyor…",
+  "Choose a valid cycle start date.": "Geçerli bir döngü başlangıç tarihi seçin.",
+  "Could not save changes. Try again.": "Değişiklikler kaydedilemedi. Tekrar deneyin.",
+  "Could not schedule notifications. Try again.": "Bildirimler planlanamadı. Tekrar deneyin.",
+  "Device alerts are available in the mobile app. Calendar reminders stay visible here.": "Cihaz bildirimleri mobil uygulamada kullanılabilir. Takvim hatırlatıcıları burada görünmeye devam eder.",
+  "Frequency": "Sıklık",
+  "Next notification: {0}": "Sonraki bildirim: {0}",
+  "No notifications pending. Your reminder settings are saved.": "Bekleyen bildirim yok. Hatırlatıcı ayarlarınız kaydedildi.",
+  "One notification time for all enabled measurements.": "Etkinleştirilmiş tüm ölçümler için tek bir bildirim saati.",
+  "Overdue reminders remain in the calendar; no repeated alerts are sent.": "Gecikmiş hatırlatıcılar takvimde kalır; tekrarlanan bildirimler gönderilmez.",
+  "Reminders": "Hatırlatıcılar",
+  "Stored locally by default. Connecting a server, enabling cloud backup or sharing an export sends a copy outside this device.": "Varsayılan olarak yerel depolanır. Bir sunucuya bağlanmak, bulut yedeklemesini etkinleştirmek veya dışa aktarılan verileri paylaşmak bu cihazın dışına bir kopya gönderir.",
+  "The next-workout reminder is sent in advance at this time.": "Sonraki antrenman hatırlatıcısı bu saatte önceden gönderilir.",
+  "This profile also syncs with your connected server. Cloud backups and exported copies leave this device when you choose them.": "Bu profil bağlı sunucunuzla da eşitlenir. Bulut yedekleri ve dışa aktarılan kopyalar, bu seçenekleri seçtiğinizde cihazın dışına çıkar.",
+  "Times by training day": "Antrenman gününe göre saatler",
+  "Training days": "Antrenman günleri",
+  "Turn it on when you want reminders for your planned workouts.": "Planlanmış antrenmanlarınız için hatırlatıcı istiyorsanız etkinleştirin.",
+  "Uses your training calendar. Completed workouts and training breaks are respected.": "Antrenman takviminizi kullanır. Tamamlanan antrenmanlar ve antrenman araları dikkate alınır.",
+  "Choose at least one measurement": "En az bir ölçüm seçin",
+  "Enter a valid time": "Geçerli bir saat girin",
+  "Enter a valid frequency": "Geçerli bir sıklık girin",
+  "Enter a valid date": "Geçerli bir tarih girin",
+  "Reminder scheduling failed": "Hatırlatıcı planlaması başarısız oldu",
   'Confirm': 'Onayla',
   'Cancel': 'İptal',
   'Press back again to exit': 'Çıkmak için geri tuşuna tekrar basın',
@@ -675,5 +721,316 @@ export default {
   'Add session note': 'Antrenman notu ekle',
   'Edit session note': 'Antrenman notunu düzenle',
   'How the session went as a whole.': 'Antrenmanın genel olarak nasıl geçtiği.',
-  'Rest-pause always trains as one warm-up set at this rep count, then one rest-pause work set — "Sets" is not used.': 'Rest-pause her zaman bu tekrar sayısında bir ısınma seti ve bir rest-pause çalışma seti olarak çalışılır — “Setler” kullanılmaz.'
+  'Rest-pause always trains as one warm-up set at this rep count, then one rest-pause work set — "Sets" is not used.': 'Rest-pause her zaman bu tekrar sayısında bir ısınma seti ve bir rest-pause çalışma seti olarak çalışılır — “Setler” kullanılmaz.',
+  "Undo Completed": "Undo Completed",
+  "Progress Report": "Progress Report",
+  "Baseline → Current → Change → Trend": "Baseline → Current → Change → Trend",
+  "Since Start": "Since Start",
+  "1 Month": "1 Month",
+  "3 Months": "3 Months",
+  "6 Months": "6 Months",
+  "1 Year": "1 Year",
+  "Custom Range": "Custom Range",
+  "Choose a valid date range.": "Choose a valid date range.",
+  "No data in this period.": "No data in this period.",
+  "Insufficient Data": "Insufficient Data",
+  "Changed": "Changed",
+  "Stable": "Stable",
+  "More data needed": "More data needed",
+  "InBody weight": "InBody weight",
+  "BMI from recorded height": "BMI from recorded height",
+  "Load": "Load",
+  "Work duration": "Work duration",
+  "Training volume": "Training volume",
+  "Total reps": "Total reps",
+  "Volume per workout": "Volume per workout",
+  "Workout duration": "Workout duration",
+  "Weekly volume": "Weekly volume",
+  "Weekly sets": "Weekly sets",
+  "Weekly reps": "Weekly reps",
+  "Workouts per week": "Workouts per week",
+  "Muscle volume: {0}": "Muscle volume: {0}",
+  "Average heart rate": "Average heart rate",
+  "Reps at the same load": "Reps at the same load",
+  "Baseline": "Baseline",
+  "Trend": "Trend",
+  "Increasing": "Increasing",
+  "Decreasing": "Decreasing",
+  "From": "From",
+  "To": "To",
+  "Export Progress Report": "Export Progress Report",
+  "Could not export. Try again.": "Could not export. Try again.",
+  "Your progress": "Your progress",
+  "Personal Records": "Personal Records",
+  "Average duration (min)": "Average duration (min)",
+  "Only recorded data. Changes are not automatically improvements.": "Only recorded data. Changes are not automatically improvements.",
+  "Highlights": "Highlights",
+  "Body Progress": "Body Progress",
+  "Exercise Progress": "Exercise Progress",
+  "No comparable history in this period.": "No comparable history in this period.",
+  "Comparisons separate mode, set type, role, bodyweight and per-side logging. RIR is interpreted with load and reps.": "Comparisons separate mode, set type, role, bodyweight and per-side logging. RIR is interpreted with load and reps.",
+  "Sessions": "Sessions",
+  "Weekly comparisons use complete Monday–Sunday weeks only. Partial weeks are listed separately.": "Weekly comparisons use complete Monday–Sunday weeks only. Partial weeks are listed separately.",
+  "Total sets": "Total sets",
+  "Total volume": "Total volume",
+  "Weekly history": "Weekly history",
+  "Partial week": "Partial week",
+  "Complete week": "Complete week",
+  "Training consistency": "Training consistency",
+  "Longest active-day streak": "Longest active-day streak",
+  "Current active-day streak": "Current active-day streak",
+  "Streaks count consecutive days with recorded training. Pending days are not missed workouts.": "Streaks count consecutive days with recorded training. Pending days are not missed workouts.",
+  "Activity Progress": "Activity Progress",
+  "Records beat an earlier recorded best in the same comparison group. Equal sets do not create duplicate records.": "Records beat an earlier recorded best in the same comparison group. Equal sets do not create duplicate records.",
+  "No records in this period.": "No records in this period.",
+  "Change": "Change",
+  "straight": "straight",
+  "dropset": "dropset",
+  "restpause": "restpause",
+  "work": "work",
+  "top": "top",
+  "backoff": "backoff",
+  "time": "time",
+  "reps / side": "reps / side",
+  "{0} days": "{0} days",
+  "percentage points": "percentage points",
+  "Timer frozen. Finish now or continue. After 10 minutes, this session saves at its completion time.": "Timer frozen. Finish now or continue. After 10 minutes, this session saves at its completion time.",
+  "Session recovered": "Session recovered",
+  "Saved using recorded training time. Review or correct the duration in History.": "Saved using recorded training time. Review or correct the duration in History.",
+  "Edit duration": "Edit duration",
+  "Auto-ended at {0}": "Auto-ended at {0}",
+  "Duration (minutes)": "Duration (minutes)",
+  "Enter a valid duration ending before now.": "Enter a valid duration ending before now.",
+  "Save duration": "Save duration",
+  "Pause workout timer": "Pause workout timer",
+  "Workout timer paused. Continue when you are ready.": "Workout timer paused. Continue when you are ready.",
+ "Routine progress": "Rutine göre ilerleme",
+ "Sessions stay grouped by routine, including exercises recorded before later edits.": "Seanslar, sonraki düzenlemelerden önce kaydedilen egzersizler dahil rutine göre gruplanır.",
+ "Adherence uses the available schedule; earlier plans are not reconstructed.": "Uyum, mevcut takvimi kullanır; eski planları yeniden oluşturmaz.",
+ "History without a routine ID stays separate from current routines.": "Rutin kimliği olmayan geçmiş, mevcut rutinlerden ayrı tutulur.",
+ "Section": "Section",
+ "Before": "Before",
+ "After": "After",
+ "Entire report": "Entire report",
+ "Select at least one section.": "Select at least one section.",
+ "Generate and download": "Generate and download",
+ "Expand chart": "Expand chart",
+ "Collapse chart": "Collapse chart",
+ "Select a body zone to compare its recorded measurements.": "Select a body zone to compare its recorded measurements.",
+ "First record": "First record",
+ "Current record": "Current record",
+ "Records": "Records",
+ "Elapsed days": "Elapsed days",
+ "Largest increase": "Largest increase",
+ "Largest decrease": "Largest decrease",
+ "No significant change": "No significant change",
+ "Changes below 0.1 cm are treated as unchanged. Missing values are not zero.": "Changes below 0.1 cm are treated as unchanged. Missing values are not zero.",
+ "Could not load body model.": "Could not load body model.",
+ "Retry": "Retry",
+ "Loading…": "Loading…",
+ "Comparison details": "Comparison details",
+ "Edit measurement history": "Edit measurement history",
+ "Offline. Server actions need a connection.": "Offline. Server actions need a connection.",
+ "Preparing offline access...": "Preparing offline access...",
+ "Offline access is not ready. Connect and retry before closing TGym.": "Offline access is not ready. Connect and retry before closing TGym.",
+ "Could not save changes. Free device storage and try again.": "Could not save changes. Free device storage and try again.",
+ "Local backup is unavailable. Export your data as a precaution.": "Local backup is unavailable. Export your data as a precaution.",
+ "Resume workout timer": "Resume workout timer",
+ "Tomorrow": "Tomorrow",
+ "Next workout": "Next workout",
+ "Scheduled": "Scheduled",
+ "Hold a routine for 2.5 seconds to reorder.": "Hold a routine for 2.5 seconds to reorder.",
+ "Reorder routine": "Reorder routine",
+ "Move the routine, then release to save.": "Move the routine, then release to save.",
+ "Exercise notes": "Exercise notes",
+ "Practice preview - nothing is saved": "Practice preview - nothing is saved",
+ "This reading will be added to the daily average.": "This reading will be added to the daily average.",
+ "Editing an existing measurement": "Editing an existing measurement",
+ "Saving updates this reading. Other records stay unchanged.": "Saving updates this reading. Other records stay unchanged.",
+ "Your training at a glance": "Your training at a glance",
+ "Your streak rewards scheduled days. Open the calendar to plan and review.": "Your streak rewards scheduled days. Open the calendar to plan and review.",
+ "Move around TGym": "Move around TGym",
+ "Home, routines, training, stats and exercises stay one tap away.": "Home, routines, training, stats and exercises stay one tap away.",
+ "Build your week": "Build your week",
+ "Create routines, assign training days and reorder with arrows or a short hold and drag.": "Create routines, assign training days and reorder with arrows or a short hold and drag.",
+ "Start or resume": "Start or resume",
+ "Start today’s routine here. Your active workout stays available.": "Start today’s routine here. Your active workout stays available.",
+ "Log each set": "Log each set",
+ "Enter weight, reps and RIR, then check the set when completed. This preview saves nothing.": "Enter weight, reps and RIR, then check the set when completed. This preview saves nothing.",
+ "Know your set types": "Know your set types",
+ "Warm-up prepares you. Top sets are heavier; back-off sets reduce the load. Working sets count toward completion.": "Warm-up prepares you. Top sets are heavier; back-off sets reduce the load. Working sets count toward completion.",
+ "Pair and recover": "Pair and recover",
+ "Pair with the previous or next exercise. Rest counts down between sets; adjust it or skip when ready.": "Pair with the previous or next exercise. Rest counts down between sets; adjust it or skip when ready.",
+ "Review your sessions": "Review your sessions",
+ "Open History to review completed sessions. Statistics summarize your recorded training.": "Open History to review completed sessions. Statistics summarize your recorded training.",
+ "Explore your progress": "Explore your progress",
+ "Choose a period and section. Expand details or download selected sections as a PDF.": "Choose a period and section. Expand details or download selected sections as a PDF.",
+ "Track body measurements": "Track body measurements",
+ "Log a dated reading and compare body zones. Existing dates open for editing.": "Log a dated reading and compare body zones. Existing dates open for editing.",
+ "Keep InBody history": "Keep InBody history",
+ "Add dated InBody results to compare body composition over time.": "Add dated InBody results to compare body composition over time.",
+ "Make TGym yours": "Make TGym yours",
+ "Choose your theme and preferences. Local tracking works offline once ready; reconnect to check for updates.": "Choose your theme and preferences. Local tracking works offline once ready; reconnect to check for updates."
+, "Automatic targets": "Automatic targets"
+
+  ,"Back-off repetitions": "Back-off repetitions"
+  ,"Same reps": "Same reps"
+  ,"Increased reps": "Increased reps"
+  ,"Same reps uses the Top Set range. Increased reps adds 2 to both limits.": "Same reps uses the Top Set range. Increased reps adds 2 to both limits."
+,"Activity counts once per day, including planned and extra sessions.":"Planlı ve ek seanslar dahil etkinlik günde bir kez sayılır."
+,"Streak Report":"Seri raporu"
+,"Last Week":"Geçen hafta"
+,"Last Month":"Geçen ay"
+,"Selected Week":"Seçilen hafta"
+,"Selected Month":"Seçilen ay"
+,"Streak as of {0}":"{0} tarihindeki seri"
+,"Activity days advance the streak; missed scheduled days reset it.":"Aktif günler seriyi artırır; kaçırılan planlı günler sıfırlar."
+,"No recorded activity in this period.":"Bu dönemde kayıtlı aktivite yok."
+,"Recorded activity":"Kayıtlı aktivite"
+,"Use PDF for ranges longer than one year.":"Bir yıldan uzun aralıklar için PDF kullanın."
+,"Export Reports":"Raporları dışa aktar"
+,"Each report downloads as a separate file.":"Her rapor ayrı bir dosya olarak indirilir."
+,"Select All":"Tümünü seç"
+,"Download Selected":"Seçilenleri indir"
+,"Download All":"Tümünü indir"
+,"Select at least one report.":"En az bir rapor seçin."
+,"Current plan; date filters do not apply.":"Mevcut plan; tarih filtreleri uygulanmaz."
+,"Complete profile; date filters do not apply.":"Tam profil; tarih filtreleri uygulanmaz."
+,"Downloaded":"İndirildi"
+,"Canceled":"İptal edildi"
+,"Full backup":"Tam yedek"
+,"Import / Export routines":"Import / Export routines"
+,"Routines and exercise prescriptions only. Workout results are kept separately.":"Routines and exercise prescriptions only. Workout results are kept separately."
+,"Prepare {0} selected routines as {1}.":"Prepare {0} selected routines as {1}."
+,"Prepare export":"Prepare export"
+,"Export progress":"Export progress"
+,"Could not save. Download again.":"Could not save. Download again."
+,"Import routines":"Import routines"
+,"Use Excel or JSON. Download the template, choose exercises from its catalog lists, and review before saving.":"Use Excel or JSON. Download the template, choose exercises from its catalog lists, and review before saving."
+,"Download Excel template":"Download Excel template"
+,"Choose Excel / JSON":"Choose Excel / JSON"
+,"Review import":"Review import"
+,"{0} routines · {1} exercises":"{0} routines · {1} exercises"
+,"Legacy plan v1 converted. No unknown exercise is removed automatically.":"Legacy plan v1 converted. No unknown exercise is removed automatically."
+,"Fix these errors before importing:":"Fix these errors before importing:"
+,"Map unknown exercise: {0}":"Map unknown exercise: {0}"
+,"Choose an exercise":"Choose an exercise"
+,"Conflict: {0}":"Conflict: {0}"
+,"Choose how to import":"Choose how to import"
+,"Convert weights to my current unit":"Convert weights to my current unit"
+,"Keep existing":"Keep existing"
+,"Replace existing":"Replace existing"
+,"Import a separate copy":"Import a separate copy"
+,"Apply imported schedule (preserves other routines)":"Apply imported schedule (preserves other routines)"
+,"Apply imported default rest, effort and Back-off preferences":"Apply imported default rest, effort and Back-off preferences"
+,"Confirm saves the complete valid import at once. Existing history and active workouts are preserved.":"Confirm saves the complete valid import at once. Existing history and active workouts are preserved."
+,"Confirm import":"Confirm import"
+,"Cancel import":"Cancel import"
+,"Automatic warm-up":"Automatic warm-up"
+,"per side":"per side"
+,"Top reps +2":"Top reps +2"
+,"Same as Top reps":"Same as Top reps"
+,"Independent reps":"Independent reps"
+,"Prescription":"Prescription"
+,"I confirm replacing the selected existing data":"I confirm replacing the selected existing data"
+,"Source weight unit of the legacy file":"Source weight unit of the legacy file"
+,"Export failed: {0}":"Export failed: {0}"
+,"Complete years":"Tam yıllar"
+,"From year":"Başlangıç yılı"
+,"To year":"Bitiş yılı"
+,"One PDF page per year.":"Her yıl için bir PDF sayfası."
+,"Choose a valid year range.":"Geçerli bir yıl aralığı seç."
+,"Choose up to 25 years per report.":"Rapor başına en fazla 25 yıl seç."
+,"Complete-year reports require PDF":"Tam yıl raporları PDF biçimi gerektirir"
+,"Not Trained":"Antrenman yapılmadı"
+,"Partial":"Kısmi"
+,"Counts training dates, not calendar days.":"Takvim günlerini değil, antrenman tarihlerini sayar."
+,"Four months per PDF page.":"PDF sayfası başına dört ay."
+,"Tracking since {0}":"{0} tarihinden beri kaydediliyor"
+
+  // Local profile and interface flows, 2026-10-22.
+  ,"Show key": "Show key"
+  ,"Hide key": "Hide key"
+  ,"Could not unlock. Try again.": "Could not unlock. Try again."
+  ,"Profile": "Profile"
+  ,"Profile photo": "Profile photo"
+  ,"Name, photo and personal data": "Name, photo and personal data"
+  ,"Your profile is saved with your training data. No cloud account is required.": "Your profile is saved with your training data. No cloud account is required."
+  ,"Change photo": "Change photo"
+  ,"Add photo": "Add photo"
+  ,"Remove photo": "Remove photo"
+  ,"Profile saved": "Profile saved"
+  ,"Personal data": "Personal data"
+  ,"These values use your existing measurements and goals.": "These values use your existing measurements and goals."
+  ,"Choose a JPG, PNG or WebP photo up to 8 MB.": "Choose a JPG, PNG or WebP photo up to 8 MB."
+  ,"Stats view settings": "Stats view settings"
+  ,"Edit order": "Edit order"
+  ,"Move sections, then save your order.": "Move sections, then save your order."
+  ,"Move {0} up": "Move {0} up"
+  ,"Move {0} down": "Move {0} down"
+  ,"Time zone": "Time zone"
+  ,"Turn on reminders for this measurement.": "Turn on reminders for this measurement."
+  ,"Planning": "Planning"
+  ,"Tracking": "Tracking"
+  ,"Settings / Profile": "Settings / Profile"
+  ,"You can skip at any time.": "You can skip at any time."
+  ,"Review your week and next routine; navigate with the bottom tabs.": "Review your week and next routine; navigate with the bottom tabs."
+  ,"Start planned or freestyle training. Active sessions remain available here.": "Start planned or freestyle training. Active sessions remain available here."
+  ,"Record load, reps, time, cardio and effort; distinguish warm-up, top and back-off sets.": "Record load, reps, time, cardio and effort; distinguish warm-up, top and back-off sets."
+  ,"Pair exercises, rest, substitute, pause or finish. This preview saves nothing.": "Pair exercises, rest, substitute, pause or finish. This preview saves nothing."
+  ,"Build your routines": "Build your routines"
+  ,"Create, edit or choose guided routines; configure progression and intensity techniques.": "Create, edit or choose guided routines; configure progression and intensity techniques."
+  ,"Plan your week": "Plan your week"
+  ,"Order daily routines, plan activities and date exceptions, or pause training.": "Order daily routines, plan activities and date exceptions, or pause training."
+  ,"Take your routines with you": "Take your routines with you"
+  ,"Transfer selected routines using JSON, Excel or PDF; review before importing.": "Transfer selected routines using JSON, Excel or PDF; review before importing."
+  ,"Explore your streak calendar": "Explore your streak calendar"
+  ,"Week opens first. Switch to Month or Year, export, or expand recent workouts.": "Week opens first. Switch to Month or Year, export, or expand recent workouts."
+  ,"Review consistency and session times": "Review consistency and session times"
+  ,"Times shows three recent sessions; Show more reveals the rest.": "Times shows three recent sessions; Show more reveals the rest."
+  ,"Choose your Stats view": "Choose your Stats view"
+  ,"Select sections. Edit order unlocks movement; Save persists it, Cancel discards.": "Select sections. Edit order unlocks movement; Save persists it, Cancel discards."
+  ,"Review and export your records": "Review and export your records"
+  ,"Open History, InBody or reports; compare weight, measurements, muscles and routine duration.": "Open History, InBody or reports; compare weight, measurements, muscles and routine duration."
+  ,"Compare periods, routines and exercises; export chosen sections as PDF.": "Compare periods, routines and exercises; export chosen sections as PDF."
+  ,"Find and personalize exercises": "Find and personalize exercises"
+  ,"Search names, muscles or equipment; inspect instructions and GIFs, edit aliases or create exercises.": "Search names, muscles or equipment; inspect instructions and GIFs, edit aliases or create exercises."
+  ,"Your local profile": "Your local profile"
+  ,"Edit name, photo and personal measurements; everything stays available locally.": "Edit name, photo and personal measurements; everything stays available locally."
+  ,"Know what comes next": "Know what comes next"
+  ,"Choose what, frequency and time; check switches, next dates and alert status.": "Choose what, frequency and time; check switches, next dates and alert status."
+  ,"Track activities and recovery": "Track activities and recovery"
+  ,"Record activities; manage health connections, deload cycles and equipment profiles.": "Record activities; manage health connections, deload cycles and equipment profiles."
+  ,"Set language, units, appearance, rest, sounds, vibration and screen behavior.": "Set language, units, appearance, rest, sounds, vibration and screen behavior."
+  ,"Protect this device": "Protect this device"
+  ,"Configure PIN and available biometrics; keep your recovery key private.": "Configure PIN and available biometrics; keep your recovery key private."
+  ,"Keep your data available": "Keep your data available"
+  ,"Back up, restore and optionally synchronize; check updates and offline readiness. Replay from Help.": "Back up, restore and optionally synchronize; check updates and offline readiness. Replay from Help."
+  ,"This control is not available here. You can continue the tour.": "This control is not available here. You can continue the tour."
+  ,"Calendar view": "Calendar view"
+  ,"Tracking start": "Tracking start"
+  ,"Show profile": "Show profile"
+  ,"Hide profile": "Hide profile"
+  ,"Update time": "Update time"
+  ,"Update workout duration?": "Update workout duration?"
+  ,"The recorded duration will change to {0} minutes. Your sets will stay the same.": "The recorded duration will change to {0} minutes. Your sets will stay the same."
+  ,"Body Measurements": "Body Measurements"
+  ,"Since {0}": "Since {0}"
+  ,"Sections appear in the order you select them.": "Sections appear in the order you select them."
+  ,"Total time": "Total time"
+  ,"Hours": "Hours"
+  ,"Time unit": "Time unit"
+  ,"Automatic": "Automatic"
+  ,"Hold for 3 seconds or press Enter to choose time units.": "Hold for 3 seconds or press Enter to choose time units."
+  ,"In-app reminders": "In-app reminders"
+  ,"Same day and day before": "Same day and day before"
+  ,"Same day only": "Same day only"
+  ,"Day before only": "Day before only"
+  ,"Shown in TGym even when device notifications are off. Applies to workout, measurement and deload reminders.": "Shown in TGym even when device notifications are off. Applies to workout, measurement and deload reminders."
+  ,"Dismiss reminder": "Dismiss reminder"
+  ,"Notification sound": "Notification sound"
+  ,"Reminders and update alerts. Turning sound off keeps notifications enabled.": "Reminders and update alerts. Turning sound off keeps notifications enabled."
+  ,"Notifications are scheduled without sound. The selected sound could not be applied.": "Notifications are scheduled without sound. The selected sound could not be applied."
+  ,"Profile visibility": "Profile visibility"
+  ,"Drag or use arrow keys to move this control.": "Bu kontrolü sürükleyin veya taşımak için ok tuşlarını kullanın."
 }
