@@ -1,12 +1,13 @@
 // @vitest-environment happy-dom
-import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useStore, DEF } from './useStore.js'
 import { workoutElapsedMs, resumeWorkoutClock } from '../lib/workout-time.js'
 import { encodeSound, soundChoice } from '../lib/sound-preferences.js'
 
-const native = vi.hoisted(() => ({ load: vi.fn(), save: vi.fn(), reminder: vi.fn() }))
+const native = vi.hoisted(() => ({ load: vi.fn(), save: vi.fn(), reminder: vi.fn(), clock:vi.fn(), journalAvailable:true }))
 vi.mock('../lib/mobile.js', () => ({
   MOBILE: true, nativeLoad: native.load, nativeSave: native.save,
+  nativeClockJournalAvailable:()=>native.journalAvailable, nativeSaveClockJournal:native.clock,
   syncReminder: native.reminder, writeAutoBackup: vi.fn(),
 }))
 vi.mock('../lib/remote.js', () => ({ loadRemote: async () => null, chooseLocal: vi.fn(), forgetRemote: vi.fn(), connect: vi.fn() }))
@@ -17,6 +18,7 @@ beforeEach(() => {
   vi.useFakeTimers()
   vi.setSystemTime(540 * minute)
   vi.clearAllMocks()
+  native.journalAvailable=true;native.clock.mockResolvedValue(true)
   localStorage.clear()
   useStore.setState({ S: structuredClone(DEF), user: null, ready: false })
 })
@@ -146,7 +148,8 @@ it('reuses the exact confirmed primary serialization and refuses it for another 
  useStore.setState({S:{...current,active:{...current.active,note:'other identity'}}})
  await useStore.getState().flushPersistence()
  expect(native.save.mock.calls.at(-1)[0]).toBe(useStore.getState().S)
- expect(native.save.mock.calls.at(-1)[1]).toBeUndefined()
+ expect(native.save.mock.calls.at(-1)[1]).toBe(JSON.stringify(useStore.getState().S))
+ expect(native.save.mock.calls.at(-1)[1]).not.toBe(confirmed)
 })
 
 it('keeps an ordinary reminder edit pending across metadata saves and skips later clock-only reconciliation',async()=>{
@@ -207,4 +210,181 @@ it('persists background clock-only input without requesting another reminder rec
  expect(JSON.parse(native.save.mock.calls[0][1]).active.lastUserInteractionAt).toBe(captured)
  await vi.advanceTimersByTimeAsync(2500)
  expect(native.save).toHaveBeenCalledOnce();expect(native.reminder).not.toHaveBeenCalled()
+})
+
+it('flushes extended gesture metadata to the native mirror immediately on pagehide',async()=>{
+ native.save.mockResolvedValue(true)
+ useStore.setState({S:{...structuredClone(DEF),active:{id:'gesture-quiet',start:Date.now(),lastUserInteractionAt:Date.now(),entries:[]}}})
+ await useStore.getState().flushPersistence();vi.clearAllMocks()
+ await vi.advanceTimersByTimeAsync(50)
+ const captured=Date.now()
+ useStore.getState().recordInteraction(captured,{defer:true,quietMs:1800})
+ await vi.advanceTimersByTimeAsync(800)
+ expect(native.save).not.toHaveBeenCalled()
+ expect(useStore.getState().reconcileActiveClock(Date.now()).lastUserInteractionAt).toBe(captured)
+ window.dispatchEvent(new Event('pagehide'))
+ expect(native.save).toHaveBeenCalledOnce();expect(native.reminder).not.toHaveBeenCalled()
+ const saved=JSON.parse(localStorage.getItem('gym_state_v1'))
+ expect(saved.active.lastUserInteractionAt).toBe(captured)
+ expect(JSON.parse(native.save.mock.calls[0][1])).toEqual(saved)
+ await vi.advanceTimersByTimeAsync(2500)
+ expect(native.save).toHaveBeenCalledOnce();expect(native.reminder).not.toHaveBeenCalled()
+})
+
+describe('bounded clock-only native mirror during a gesture',()=>{
+ beforeEach(async()=>{
+  native.save.mockResolvedValue(true)
+  const now=Date.now()
+  useStore.setState({S:{...structuredClone(DEF),
+   bodyweight:[{d:'2026-10-01',w:80}],workouts:[{id:'keep-history',entries:[]}],
+   active:{id:'mirror-gesture',start:now-minute,lastUserInteractionAt:now,sessionOrigin:{type:'extra',routineId:null},entries:[{id:'exercise',sets:[{done:false,r:8,w:20}]}]}},user:null})
+  await useStore.getState().flushPersistence();vi.clearAllMocks()
+ })
+ const clock=()=>useStore.getState().recordInteraction(Date.now())
+ const gesture=()=>useStore.getState().recordInteraction(Date.now(),{defer:true,quietMs:1800})
+ const disk=()=>JSON.parse(localStorage.getItem('gym_state_v1'))
+ const lastNative=()=>native.save.mock.calls.at(-1)
+ const finish=async()=>{window.dispatchEvent(new Event('pagehide'));await vi.advanceTimersByTimeAsync(5000)}
+
+ it('moves an earlier clock-only mirror out of the gesture but submits it by the first two-second bound',async()=>{
+  const start=Date.now(),rows=structuredClone(useStore.getState().S.active.entries)
+  clock();const firstPrimary=localStorage.getItem('gym_state_v1')
+  await vi.advanceTimersByTimeAsync(650);gesture()
+  expect(useStore.getState().reconcileActiveClock().lastUserInteractionAt).toBe(start+650)
+  await vi.advanceTimersByTimeAsync(150);expect(native.save).not.toHaveBeenCalled()
+  await vi.advanceTimersByTimeAsync(1199);expect(native.save).not.toHaveBeenCalled()
+  await vi.advanceTimersByTimeAsync(1)
+  expect(native.save).toHaveBeenCalledOnce();expect(lastNative()[1]).toBe(firstPrimary)
+  expect(lastNative()[0].active.lastUserInteractionAt).toBe(start)
+  await vi.advanceTimersByTimeAsync(500)
+  expect(disk().active.lastUserInteractionAt).toBe(start+650)
+  expect(native.save).toHaveBeenCalledOnce()
+  await vi.advanceTimersByTimeAsync(800)
+  expect(native.save).toHaveBeenCalledTimes(2)
+  expect(lastNative()[0].active.lastUserInteractionAt).toBe(start+650)
+  expect(lastNative()[1]).toBe(localStorage.getItem('gym_state_v1'))
+  expect(lastNative()[0].active.entries).toEqual(rows)
+  expect(lastNative()[0].bodyweight).toEqual([{d:'2026-10-01',w:80}])
+  expect(lastNative()[0].workouts).toEqual([{id:'keep-history',entries:[]}])
+  expect(native.reminder).not.toHaveBeenCalled()
+ })
+
+ it('retains the first native deadline while repeated ruler input journals its independent hard limit without RAF',async()=>{
+  const start=Date.now();clock()
+  const frame=vi.spyOn(window,'requestAnimationFrame').mockReturnValue(999)
+  try{
+   await vi.advanceTimersByTimeAsync(650);gesture()
+   await vi.advanceTimersByTimeAsync(550);gesture()
+   await vi.advanceTimersByTimeAsync(600);gesture()
+   await vi.advanceTimersByTimeAsync(199);expect(native.save).not.toHaveBeenCalled()
+   await vi.advanceTimersByTimeAsync(1);expect(native.save).toHaveBeenCalledOnce()
+   await vi.advanceTimersByTimeAsync(650)
+   expect(disk().active.lastUserInteractionAt).toBe(start)
+   expect(JSON.parse(localStorage.getItem('gym_workout_clock_v1')).at).toBe(start+1800)
+   expect(useStore.getState().S.active.lastUserInteractionAt).toBe(start+1800)
+   expect(native.clock).toHaveBeenCalledOnce()
+   expect(frame).not.toHaveBeenCalled()
+   await vi.advanceTimersByTimeAsync(800)
+   expect(native.save).toHaveBeenCalledOnce()
+   await vi.advanceTimersByTimeAsync(2500);expect(native.save).toHaveBeenCalledOnce()
+   await useStore.getState().flushPersistence()
+   expect(lastNative()[0].active.lastUserInteractionAt).toBe(start+1800)
+  }finally{frame.mockRestore()}
+ })
+
+ it('retains that first native bound when another clock-only primary commit arrives before it',async()=>{
+  const start=Date.now();clock()
+  await vi.advanceTimersByTimeAsync(650);gesture()
+  await vi.advanceTimersByTimeAsync(650);clock()
+  await vi.advanceTimersByTimeAsync(500);gesture()
+  await vi.advanceTimersByTimeAsync(199);expect(native.save).not.toHaveBeenCalled()
+  await vi.advanceTimersByTimeAsync(1)
+  expect(native.save).toHaveBeenCalledOnce()
+  expect(lastNative()[0].active.lastUserInteractionAt).toBe(start+1300)
+  expect(lastNative()[1]).toBe(localStorage.getItem('gym_state_v1'))
+  await finish()
+ })
+
+ it('does not extend the native two-second bound when the wall clock moves backwards',async()=>{
+  clock()
+  await vi.advanceTimersByTimeAsync(650)
+  vi.setSystemTime(Date.now()-60*minute);gesture()
+  await vi.advanceTimersByTimeAsync(1349);expect(native.save).not.toHaveBeenCalled()
+  await vi.advanceTimersByTimeAsync(1);expect(native.save).toHaveBeenCalledOnce()
+  await finish()
+ })
+
+ it('keeps the original 800ms native timer for a normal interaction without an extended quiet request',async()=>{
+  clock();await vi.advanceTimersByTimeAsync(650)
+  useStore.getState().recordInteraction(Date.now(),{defer:true})
+  await vi.advanceTimersByTimeAsync(149);expect(native.save).not.toHaveBeenCalled()
+  await vi.advanceTimersByTimeAsync(1);expect(native.save).toHaveBeenCalledOnce()
+  await finish()
+ })
+
+ it.each(['bodyweight','reminder'])('never postpones an ordinary pending %s snapshot for a ruler gesture',async kind=>{
+  useStore.getState().update(s=>{if(kind==='bodyweight')s.bodyweight.push({d:'2026-10-02',w:81});else s.reminder.time='11:45'})
+  const ordinary=structuredClone(useStore.getState().S)
+  await vi.advanceTimersByTimeAsync(650);gesture()
+  await vi.advanceTimersByTimeAsync(149);expect(native.save).not.toHaveBeenCalled()
+  await vi.advanceTimersByTimeAsync(1);expect(native.save).toHaveBeenCalledOnce()
+  expect(lastNative()[0].bodyweight).toEqual(ordinary.bodyweight)
+  expect(lastNative()[0].reminder).toEqual(ordinary.reminder)
+  expect(native.reminder).toHaveBeenCalledOnce()
+  await finish()
+ })
+
+ it('returns an extended clock-only timer to ordinary 800ms priority when a data edit arrives',async()=>{
+  clock();await vi.advanceTimersByTimeAsync(650);gesture()
+  await vi.advanceTimersByTimeAsync(250)
+  useStore.getState().update(s=>{s.reminder.time='12:15'})
+  await vi.advanceTimersByTimeAsync(300);gesture()
+  await vi.advanceTimersByTimeAsync(499);expect(native.save).not.toHaveBeenCalled()
+  await vi.advanceTimersByTimeAsync(1)
+  expect(native.save).toHaveBeenCalledOnce();expect(lastNative()[0].reminder.time).toBe('12:15')
+  expect(native.reminder).toHaveBeenCalledOnce()
+  await finish()
+ })
+
+ it('does not move a pending mirror when the old published inactivity cutoff is near',async()=>{
+  const start=Date.now(),captured=start+2300-30*minute
+  useStore.setState({S:{...useStore.getState().S,active:{...useStore.getState().S.active,start:start-31*minute,lastUserInteractionAt:captured}}})
+  useStore.getState().recordInteraction(captured)
+  await vi.advanceTimersByTimeAsync(650);gesture()
+  await vi.advanceTimersByTimeAsync(149);expect(native.save).not.toHaveBeenCalled()
+  await vi.advanceTimersByTimeAsync(1);expect(native.save).toHaveBeenCalledOnce()
+  expect(lastNative()[0].active.lastUserInteractionAt).toBe(captured)
+  await vi.advanceTimersByTimeAsync(1251)
+  expect(disk().active.lastUserInteractionAt).toBe(captured)
+  expect(JSON.parse(localStorage.getItem('gym_workout_clock_v1')).at).toBe(start+650)
+  expect(useStore.getState().S.active.lastUserInteractionAt).toBe(start+650)
+  expect(disk().active.timerPausedAt).toBeUndefined()
+  await finish()
+ })
+
+ it.each(['pagehide','explicit flush'])('immediately submits the latest captured input on %s and clears both old scheduling paths',async action=>{
+  const start=Date.now();clock()
+  await vi.advanceTimersByTimeAsync(650);gesture()
+  await vi.advanceTimersByTimeAsync(350)
+  if(action==='pagehide')window.dispatchEvent(new Event('pagehide'))
+  else await useStore.getState().flushPersistence()
+  expect(native.save).toHaveBeenCalledOnce()
+  expect(lastNative()[0].active.lastUserInteractionAt).toBe(start+650)
+  expect(lastNative()[1]).toBe(localStorage.getItem('gym_state_v1'))
+  await vi.advanceTimersByTimeAsync(5000);expect(native.save).toHaveBeenCalledOnce()
+ })
+
+ it('submits Pause and Continue immediately without retaining a delayed older clock-only snapshot',async()=>{
+  clock();const rows=structuredClone(useStore.getState().S.active.entries)
+  await vi.advanceTimersByTimeAsync(650);gesture()
+  await vi.advanceTimersByTimeAsync(250)
+  useStore.getState().update(s=>{s.active={...s.active,timerPausedAt:Date.now(),pauseReason:'manual'}})
+  expect(native.save).toHaveBeenCalledOnce();expect(lastNative()[0].active.pauseReason).toBe('manual')
+  await vi.advanceTimersByTimeAsync(100)
+  useStore.getState().update(s=>{s.active=resumeWorkoutClock(s.active)})
+  expect(native.save).toHaveBeenCalledTimes(2);expect(lastNative()[0].active.timerPausedAt).toBeUndefined()
+  expect(lastNative()[0].active.entries).toEqual(rows)
+  expect(lastNative()[0].workouts).toEqual([{id:'keep-history',entries:[]}])
+  await vi.advanceTimersByTimeAsync(5000);expect(native.save).toHaveBeenCalledTimes(2)
+ })
 })

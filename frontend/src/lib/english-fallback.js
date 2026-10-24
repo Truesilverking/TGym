@@ -1,5 +1,9 @@
 // Explicit source-language fallback. Entries in language packs override these values.
 export default {
+  "Kilograms": "Kilograms",
+  "Pounds": "Pounds",
+  "Weight ruler": "Weight ruler",
+  "Slide the ruler or tap the number to enter your weight.": "Slide the ruler or tap the number to enter your weight.",
   "Future dates": "Future dates",
   "One square per day. Total active days, not streak length.": "One square per day. Total active days, not streak length.",
   "Tracking since {0}": "Tracking since {0}",

@@ -1,7 +1,7 @@
 import { todayISO } from './lib/format.js'
 import { dailyPlan } from './lib/daily-plan.js'
 import { syncWebAudioPreferences } from './lib/web-audio-preferences.js'
-import { useEffect, useLayoutEffect } from 'react'
+import { useEffect, useLayoutEffect, useRef } from 'react'
 import { HashRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import { useStore } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
@@ -82,6 +82,8 @@ export function ThemePreferences() {
 
 function Shell() {
   const navigate = useNavigate()
+  const nativeNavigate = useRef(navigate)
+  nativeNavigate.current = navigate
   const loc = useLocation()
   const { S, user, ready, storageError, storageWarning, storageDiagnostics } = useStore()
   const isGuest = useStore(s => s.isGuest())
@@ -115,14 +117,17 @@ function Shell() {
   useEffect(()=>{
     if(!MOBILE || !ready)return
     let disposed=false,listener
-    const open=event=>{if(!disposed && event?.url==='tgym://workout')navigate(useStore.getState().S.active?'/workout':'/home')}
+    const open=event=>{if(!disposed && event?.url==='tgym://workout')nativeNavigate.current(useStore.getState().S.active?'/workout':'/home')}
     import('@capacitor/app').then(async({App})=>{
       const handle=await App.addListener('appUrlOpen',open)
-      if(disposed)void handle.remove();else listener=handle
+      if(disposed){void handle.remove();return}
+      listener=handle
       open(await App.getLaunchUrl())
     }).catch(()=>{})
     return ()=>{disposed=true;void listener?.remove()}
-  },[ready,navigate])
+    // The initial intent remains available natively after it has been consumed.
+    // Route changes must not register again and replay it over ordinary tab taps.
+  },[ready])
   useEffect(()=>{
     if (!ready) return
     const check=()=>{
@@ -138,7 +143,8 @@ function Shell() {
       if(!active)return
       const reconciled=useStore.getState().reconcileActiveClock()
       if(active.timerPausedAt == null && reconciled?.pauseReason==='inactivity'){event.preventDefault();event.stopImmediatePropagation();workoutInactivitySheet();return}
-      useStore.getState().recordInteraction(Date.now(), {defer:true})
+      const quiet = event.target?.closest?.('[data-interaction-quiet-ms]')?.getAttribute('data-interaction-quiet-ms')
+      useStore.getState().recordInteraction(Date.now(), {defer:true,quietMs:quiet == null ? undefined : Number(quiet)})
     }
     const beforeInput=event=>{
       if(event.target?.closest?.('.app-tour, .tour-replay') || useUI.getState().appTourRequest || useUI.getState().appTourWorkoutPreview)return
@@ -148,6 +154,9 @@ function Shell() {
       const reconciled=useStore.getState().reconcileActiveClock()
       if(active.timerPausedAt == null && reconciled?.pauseReason==='inactivity'){event.preventDefault();event.stopImmediatePropagation();workoutInactivitySheet()}
     }
+    const rulerMove=event=>{
+      if((event.buttons&1) && event.isPrimary!==false && event.target?.closest?.('.bodyweight-picker-ruler'))interact(event)
+    }
     check()
     const events=['pointerdown','keydown','wheel']
     events.forEach(type=>document.addEventListener(type,interact,true))
@@ -155,9 +164,10 @@ function Shell() {
     // controlled onChange has read the DOM value; an earlier store write would reset it.
     document.addEventListener('input',beforeInput,true)
     document.addEventListener('input',interact)
+    document.addEventListener('pointermove',rulerMove,true)
     const timer=setInterval(check,1000)
     document.addEventListener('visibilitychange',foreground)
-    return ()=>{clearInterval(timer);events.forEach(type=>document.removeEventListener(type,interact,true));document.removeEventListener('input',beforeInput,true);document.removeEventListener('input',interact);document.removeEventListener('visibilitychange',foreground)}
+    return ()=>{clearInterval(timer);events.forEach(type=>document.removeEventListener(type,interact,true));document.removeEventListener('input',beforeInput,true);document.removeEventListener('input',interact);document.removeEventListener('pointermove',rulerMove,true);document.removeEventListener('visibilitychange',foreground)}
   },[ready])
   useEffect(() => {
     if (!MOBILE || !ready || storageError) return

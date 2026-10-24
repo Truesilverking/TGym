@@ -10,7 +10,8 @@ import { localTZ } from '../lib/format.js'
 import { registerCustom } from '../lib/exercises.js'
 import { DEMO, DEMO_SEEDED, STANDALONE } from '../lib/demo.js'
 import { guestAllowed } from '../lib/guest.js'
-import { MOBILE, nativeLoad, nativeSave, syncReminder, writeAutoBackup } from '../lib/mobile.js'
+import { MOBILE, nativeLoad, nativeSave, nativeClockJournalAvailable, nativeSaveClockJournal, syncReminder, writeAutoBackup } from '../lib/mobile.js'
+import { CLOCK_JOURNAL_KEY, readClockJournal, writeClockJournal, overlayClockJournal } from '../lib/workout-clock-journal.js'
 import { loadRemote, chooseLocal, forgetRemote, connect } from '../lib/remote.js'
 import { shouldRestoreNative } from '../lib/native-state.js'
 import { portableState, backupChecksum } from '../lib/backup.js'
@@ -51,7 +52,8 @@ function loadState() {
   try {
     const raw = localStorage.getItem(KEY)
     if (raw) {
-      const S = Object.assign(clone(DEF), migrateState(JSON.parse(raw), { onboarded: localStorage.getItem('framegym_onboarded_v1') === '1' }))
+      const base = Object.assign(clone(DEF), migrateState(JSON.parse(raw), { onboarded: localStorage.getItem('framegym_onboarded_v1') === '1' }))
+      const S = MOBILE ? overlayClockJournal(base,readClockJournal()) : base
       const active = sessionTiming(reconcileWorkoutClock(S.active))
       if (active !== S.active && !hasProfileResources(S)) {
         S.active = active
@@ -69,8 +71,9 @@ const hasData = st => !!(st.trainingStartDate || (st.workouts || []).length || (
 export const useStore = create((set, get) => {
   let pushTm = null
   let pushQueue = Promise.resolve()
-  let saveTm = null
+  let saveTm = null, clockMirrorDeadline = null
   let nativeSerializedState = null, nativeSerializedText, remindersPending = false
+  let journalDerivedState = null
   let bootstrap = null
   let atomicSaving = false
   let pendingInteraction = null, interactionFrame = null, interactionTask = null, interactionMaxTask = null
@@ -103,18 +106,55 @@ export const useStore = create((set, get) => {
     get().recordInteraction(pending.at)
   }
 
+  const journalInteraction = () => {
+    const pending=pendingInteraction, S=get().S
+    if (!pending || S.active?.id!==pending.id) { clearInteraction(); return }
+    if(storageError || get().storageError)throw new Error(storageError || get().storageError)
+    const journal={id:pending.id,at:Math.max(pending.at,Number(S.active.lastUserInteractionAt)||0),_ts:Date.now()}
+    try { writeClockJournal(journal) }
+    catch (cause) {
+      set({storageWarning:'primary'})
+      throw storageFailure(cause,{stage:'clock-journal-write',backend:'localStorage',key:CLOCK_JOURNAL_KEY,operation:'setItem'})
+    }
+    // Keep complete-profile freshness and its confirmed serialization separate.
+    // The quiet path still folds pending input through the normal full persist.
+    const next={...S,active:recordWorkoutInteraction(S.active,journal.at)}
+    journalDerivedState=next
+    set({S:next})
+    void nativeSaveClockJournal(journal).then(ok=>{
+      if(ok===false && get().S===next && get().storageWarning!=='primary')set({storageWarning:'mirror'})
+    })
+  }
+
   // Mobile build: mirror the state into a file in the app's data directory (survives WebView
   // storage eviction) and keep the native reminder schedule in step with the weekly plan.
-  const saveNativeSnapshot = S => nativeSave(S,S === nativeSerializedState ? nativeSerializedText : undefined)
+  const saveNativeSnapshot = S => {
+    clockMirrorDeadline = null
+    // A hard-bound journal is the durable clock overlay, not a new complete
+    // profile serialization. Pending base mirrors keep their exact cached bytes.
+    const base=S===journalDerivedState && nativeSerializedState?nativeSerializedState:S
+    // Boot/recovery can seed the mirror without persist(). Capture that exact
+    // immutable snapshot here, as nativeSave otherwise would at the same call.
+    if(base!==nativeSerializedState) {
+      nativeSerializedText=JSON.stringify(base);nativeSerializedState=base
+    }
+    return nativeSave(base,nativeSerializedText)
+  }
   const syncPendingReminders = S => {
     if (!remindersPending) return
     remindersPending = false
     void syncReminder(S)
   }
-  const nativePersist = checkReminders => {
+  const nativePersist = (checkReminders, delay = 800) => {
     remindersPending ||= checkReminders
+    // Ordinary edits retain their existing priority. Only an all-clock pending
+    // snapshot can wait for a gesture, bounded from its first confirmed commit.
+    const now = performance.now()
+    if (remindersPending) clockMirrorDeadline = null
+    else clockMirrorDeadline ??= now + 2000
+    const wait = remindersPending ? 800 : Math.min(delay, Math.max(0, clockMirrorDeadline - now))
     clearTimeout(saveTm)
-    saveTm = setTimeout(() => { saveTm = null; const S=get().S; saveNativeSnapshot(S); syncPendingReminders(S) }, 800)
+    saveTm = setTimeout(() => { saveTm = null; const S=get().S; saveNativeSnapshot(S); syncPendingReminders(S) }, wait)
   }
 
   const mirrorWeb = async S => {
@@ -162,6 +202,7 @@ export const useStore = create((set, get) => {
     // Mobile's primary representation is the full state. Reuse only its confirmed
     // serialization, never the compact PWA core or a failed/older draft.
     if (MOBILE && !STANDALONE) { nativeSerializedState=S; nativeSerializedText=serialized }
+    journalDerivedState=null
     registerProfileCustom(S)
     retainCurrentResources(S)
     set({ S, storageWarning:null })
@@ -320,13 +361,19 @@ export const useStore = create((set, get) => {
       if (active !== pending) get().update(s => { if (s.active?.id === before?.id) s.active = active }, true, false)
       return active === pending ? pending : get().S.active
     },
-    recordInteraction(now = Date.now(), { defer = false } = {}) {
+    recordInteraction(now = Date.now(), { defer = false, quietMs = 800 } = {}) {
       // Reconcile before extending the deadline: returning after suspension cannot
       // silently erase the interval in which this session should have been paused.
       get().reconcileActiveClock(now)
       if (!get().S.active) { clearInteraction(); return }
       if (defer) {
-        pendingInteraction = {id:get().S.active.id,at:Math.max(now,pendingInteraction?.id===get().S.active.id?pendingInteraction.at:0)}
+        // Marked gestures can finish painting before this quiet timer expires.
+        // The independent hard/deadline timer below still bounds persistence.
+        const quietDelay = Number.isFinite(quietMs) ? Math.min(1800,Math.max(800,quietMs)) : 800
+        const active = get().S.active
+        const remaining = active.timerPausedAt == null ? inactivityDeadline(active,now)-now : Infinity
+        if (MOBILE && saveTm != null && !remindersPending && quietDelay > 800 && remaining > quietDelay + 800) nativePersist(false, quietDelay)
+        pendingInteraction = {id:get().S.active.id,at:Math.max(now,pendingInteraction?.id===get().S.active.id?pendingInteraction.at:0),quietMs:quietDelay}
         if (interactionMaxTask == null) {
           const active = get().S.active
           // Continuous input must not starve persistence or leave Android's last
@@ -335,7 +382,10 @@ export const useStore = create((set, get) => {
           const remaining = active.timerPausedAt == null ? inactivityDeadline(active,now)-now : Infinity
           interactionMaxTask = setTimeout(() => {
             interactionMaxTask = null
-            try { flushInteraction() } catch { /* Retain pending input for retry. */ }
+            try {
+              if(MOBILE && pendingInteraction?.quietMs>800 && pendingInteraction.at<=Date.now() && nativeClockJournalAvailable())journalInteraction()
+              else flushInteraction()
+            } catch { /* Retain pending input for retry. */ }
           }, Math.min(2000,Math.max(0,remaining-250)))
         }
         // Pointerdown precedes click. Coalesce successive navigation taps before
@@ -351,7 +401,7 @@ export const useStore = create((set, get) => {
             interactionFrame=null
             interactionTask=setTimeout(()=>{interactionTask=null;try{flushInteraction()}catch{/* Keep pending input and the existing storage warning for retry. */}},0)
           })
-        },800)
+        },quietDelay)
         return
       }
       // An input timestamp edits only the active clock. Retain unrelated array
@@ -570,8 +620,11 @@ export const useStore = create((set, get) => {
         }
         const saved = await nativeLoad()
         const S = get().S
-        if (shouldRestoreNative(S, saved)) {
-          try { persist(Object.assign(clone(DEF), saved), false) } catch (error) { set({ready:false,storageError:error.message,storageDiagnostics:error});return }
+        const restore=shouldRestoreNative(S,saved)
+        const chosen=restore?Object.assign(clone(DEF),saved):S
+        const restored=overlayClockJournal(chosen,readClockJournal())
+        if (restore || restored!==S) {
+          try { persist(restored, false) } catch (error) { set({ready:false,storageError:error.message,storageDiagnostics:error});return }
         } else if (S._ts || hasData(S)) {
           saveNativeSnapshot(S)   // first run after an update from a file-less version: seed the mirror
         }

@@ -18,17 +18,23 @@ import { measurementNotificationPlan, measurementReminderValidation, MEASUREMENT
 import { workoutNotificationPlan, workoutReminderValidation, WORKOUT_NOTIFICATION_IDS, deloadNotificationPlan, DELOAD_NOTIFICATION_IDS } from './workout-reminders.js'
 import { workoutReminderDateLabel } from './workout-reminder-label.js'
 import { syncNativeSounds, finishNativeSoundSync, fallbackNativeSounds } from './native-sound.js'
+import { readProfileSnapshot, writeProfileSnapshot, readProfileClockJournal, writeProfileClockJournal, profileClockJournalAvailable } from './native-profile-snapshot.js'
+import { overlayClockJournal } from './workout-clock-journal.js'
 
 export const MOBILE = import.meta.env.VITE_MOBILE === '1'
 
-const FILE = 'framegym-state.json'
-
 export async function nativeLoad() {
   try {
-    const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem')
-    const r = await Filesystem.readFile({ path: FILE, directory: Directory.Data, encoding: Encoding.UTF8 })
-    return JSON.parse(r.data)
+    const state=JSON.parse(await readProfileSnapshot())
+    return overlayClockJournal(state, await readProfileClockJournal())
   } catch (e) { return null }   // first launch, or unreadable — localStorage copy takes over
+}
+
+export const nativeClockJournalAvailable = profileClockJournalAvailable
+// Independent tiny IO can run between full-profile chunks instead of waiting
+// behind the complete snapshot transaction in nativeSaveQueue.
+export async function nativeSaveClockJournal(journal) {
+  try { await writeProfileClockJournal(journal); return true } catch { return false }
 }
 
 let nativeSaveQueue = Promise.resolve()
@@ -39,8 +45,7 @@ export function nativeSave(state, confirmedSerialization) {
   // A pending debounced write must not finish after a newer immediate clock snapshot.
   nativeSaveQueue = nativeSaveQueue.then(async () => {
     try {
-      const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem')
-      await Filesystem.writeFile({ path: FILE, directory: Directory.Data, data, encoding: Encoding.UTF8 })
+      await writeProfileSnapshot(data)
       return true
     } catch (e) { return false /* keep the localStorage copy */ }
   })

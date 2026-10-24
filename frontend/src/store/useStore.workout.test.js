@@ -124,6 +124,83 @@ describe('persisted workout clock boundaries', () => {
     expect(saved.active.lastUserInteractionAt).toBe(432*min)
     expect(saved.workouts).toEqual([])
   })
+  it('allows an 1800ms gesture quiet period while using the actual input deadline immediately',async()=>{
+    const start=Date.now(),captured=start
+    useStore.setState({S:{...structuredClone(DEF),active:{...session(),lastUserInteractionAt:start-50}}})
+    const writes=[],original=localStorage.setItem
+    const save=vi.spyOn(localStorage,'setItem').mockImplementation(function(key,text){
+      if(key==='gym_state_v1')writes.push({at:Date.now(),state:JSON.parse(text)})
+      return original.call(this,key,text)
+    })
+    try{
+      useStore.getState().recordInteraction(captured,{defer:true,quietMs:1800})
+      const pending=useStore.getState().reconcileActiveClock(captured)
+      expect(pending.lastUserInteractionAt).toBe(captured)
+      expect(workoutNotificationState(pending,null,captured).autoPauseAt).toBe(captured+30*min)
+      await vi.advanceTimersByTimeAsync(800)
+      expect(writes).toHaveLength(0)
+      await vi.advanceTimersByTimeAsync(1040)
+      expect(writes).toHaveLength(1)
+      expect(writes[0].at).toBeGreaterThanOrEqual(start+1800)
+      expect(writes[0].at).toBeLessThan(start+2000)
+      expect(writes[0].state.active.lastUserInteractionAt).toBe(captured)
+      expect(writes[0].state.workouts).toEqual([])
+    }finally{save.mockRestore()}
+  })
+  it.each([[0,900],[5000,1840],[Infinity,900]])('sanitizes quietMs %s without escaping its bounded quiet period',async(quietMs,settleAfter)=>{
+    const start=Date.now()
+    useStore.setState({S:{...structuredClone(DEF),active:{...session(),lastUserInteractionAt:start}}})
+    const save=vi.spyOn(localStorage,'setItem')
+    try{
+      useStore.getState().recordInteraction(start,{defer:true,quietMs})
+      await vi.advanceTimersByTimeAsync(799)
+      expect(save.mock.calls.filter(([key])=>key==='gym_state_v1')).toHaveLength(0)
+      await vi.advanceTimersByTimeAsync(settleAfter-799)
+      expect(save.mock.calls.filter(([key])=>key==='gym_state_v1')).toHaveLength(1)
+    }finally{save.mockRestore()}
+  })
+  it('keeps the hard two-second limit for continuous input using the extended quiet period',async()=>{
+    const start=Date.now()
+    useStore.setState({S:{...structuredClone(DEF),active:{...session(),lastUserInteractionAt:start}}})
+    const save=vi.spyOn(localStorage,'setItem'),frame=vi.spyOn(window,'requestAnimationFrame').mockReturnValue(999)
+    try{
+      for(let input=0;input<20;input++){
+        useStore.getState().recordInteraction(Date.now(),{defer:true,quietMs:1800})
+        await vi.advanceTimersByTimeAsync(100)
+      }
+      const writes=save.mock.calls.filter(([key])=>key==='gym_state_v1')
+      expect(writes).toHaveLength(1)
+      expect(JSON.parse(writes[0][1]).active.lastUserInteractionAt).toBe(start+1900)
+      expect(frame).not.toHaveBeenCalled()
+      await vi.advanceTimersByTimeAsync(2000)
+      expect(save.mock.calls.filter(([key])=>key==='gym_state_v1')).toHaveLength(1)
+    }finally{save.mockRestore();frame.mockRestore()}
+  })
+  it('flushes an extended gesture quiet period before the old native deadline',async()=>{
+    const start=Date.now()
+    useStore.setState({S:{...structuredClone(DEF),active:{...session(),lastUserInteractionAt:start+100-30*min}}})
+    useStore.getState().recordInteraction(start,{defer:true,quietMs:1800})
+    await vi.advanceTimersByTimeAsync(1)
+    const saved=JSON.parse(localStorage.getItem('gym_state_v1'))
+    expect(saved.active.lastUserInteractionAt).toBe(start)
+    expect(saved.active.timerPausedAt).toBeUndefined()
+    expect(workoutNotificationState(saved.active,null).autoPauseAt).toBe(start+30*min)
+  })
+  it.each(['pagehide','edit'])('does not postpone %s for an extended gesture quiet period',async action=>{
+    const start=Date.now()
+    useStore.setState({S:{...structuredClone(DEF),active:{...session(),lastUserInteractionAt:start-50}}})
+    useStore.getState().recordInteraction(start,{defer:true,quietMs:1800})
+    if(action==='pagehide')window.dispatchEvent(new Event('pagehide'))
+    else useStore.getState().update(s=>{s.active.note='normal edit'},true,false)
+    const saved=JSON.parse(localStorage.getItem('gym_state_v1'))
+    expect(saved.active.lastUserInteractionAt).toBe(start)
+    if(action==='edit')expect(saved.active.note).toBe('normal edit')
+    const save=vi.spyOn(localStorage,'setItem')
+    try{
+      await vi.advanceTimersByTimeAsync(2500)
+      expect(save.mock.calls.filter(([key])=>key==='gym_state_v1')).toHaveLength(0)
+    }finally{save.mockRestore()}
+  })
   it('coalesces successive navigation taps while exposing their captured clock immediately',async()=>{
     const start=Date.now()
     useStore.setState({S:{...structuredClone(DEF),active:{...session(),lastUserInteractionAt:start}}})

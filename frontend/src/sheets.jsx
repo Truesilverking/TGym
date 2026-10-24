@@ -22,6 +22,7 @@ import { nav } from './lib/nav.js'
 import { starterRoutines } from './lib/starter.js'
 import Media, { Thumb } from './components/Media.jsx'
 import Stepper from './components/Stepper.jsx'
+import BodyWeightPicker from './components/BodyWeightPicker.jsx'
 import Icon from './components/Icon.jsx'
 import StreakFlame from './components/StreakFlame.jsx'
 import StreakStatus from './components/StreakStatus.jsx'
@@ -53,7 +54,7 @@ import { saveImportUndo } from './lib/import-undo.js'
 import { MEASURE_FIELDS, measurementValue } from './lib/stats-insights.js'
 import { sessionTimingSummary } from './lib/stats-insights.js'
 import { withBackoffRepsMode, backoffRepOffsetFor, applyTrainingPlan, calendarDeload, deloadStatus, deloadTargetFor, repRangeEnabled, streakTier, trainingStreak, targetRirRangeFor } from './lib/training-plan.js'
-import { weightStepFor } from './lib/unit-conversion.js'
+import { weightStepFor, LB_PER_KG } from './lib/unit-conversion.js'
 import Heatmap from './components/Heatmap.jsx'
 import LineChart from './components/LineChart.jsx'
 import { pauseWorkoutClock, resumeWorkoutClock, workoutElapsedMs, correctWorkoutDuration } from './lib/workout-time.js'
@@ -163,16 +164,29 @@ function WeightInput({ value, setValue, unit }) {
 function BwSheet({ required, onDone, close, initialDate }) {
   const st = useStore(s => s.S)
   const unit = st.unit
+  const entryUnit = useRef(unit)
   const bw = lastBW(st)
   const [date, setDate] = useState(initialDate || todayISO())
-  const [v, setV] = useState(bw ? bw.w : 70)
+  const [v, setV] = useState(bw ? Number(bw.w) : 70)
+  const [weightValid, setWeightValid] = useState(true)
+  const pickerDraft = useRef(null)
   const reading = useRef({id:uid(),t:Date.now()})
   const [saving, setSaving] = useState(false)
+  // Keep the guard after a successful close: stale double taps must not run the
+  // synchronous pre-workout callback twice. A failed save still permits retry.
+  const savingWeight = useRef(false)
   const save = async () => {
-    if(saving)return
+    if(savingWeight.current)return
     if(!validMeasurementDate(date,todayISO())){toast(t('Check the date and highlighted values.'));return}
-    const n = Math.round((v || 0) * 10) / 10
-    if (!n || n <= 0) { toast(t('Enter a valid weight')); return }
+    // Retain the editor's configured unit if a remote/profile update changes
+    // the global unit while it is open. Save in the current profile unit.
+    const currentUnit = S().unit
+    const entered = Number(pickerDraft.current?.getValue())
+    const canonical = entryUnit.current === currentUnit ? entered : currentUnit === 'lb' ? entered * LB_PER_KG : entered / LB_PER_KG
+    const n = Math.round(canonical * 10) / 10
+    if (!weightValid || !Number.isFinite(n) || n <= 0) { toast(t('Enter a valid weight')); return }
+    setV(entered)
+    savingWeight.current = true
     setSaving(true)
     try {
     update(s => {
@@ -190,21 +204,22 @@ function BwSheet({ required, onDone, close, initialDate }) {
     if(!required)await useStore.getState().flushPersistence()
     close()
     if (onDone) onDone(n); else toast(t('Weight saved'))
-    } catch { toast(t('Could not save. Check available storage and try again.')) } finally {setSaving(false)}
+    } catch { savingWeight.current = false; toast(t('Could not save. Check available storage and try again.')) } finally {setSaving(false)}
   }
-  const recent = [...st.bodyweight].reverse().slice(0, 3)
+  const recent = useMemo(() => [...st.bodyweight].reverse().slice(0, 3), [st.bodyweight])
+  const recordedDate = useMemo(() => st.bodyweight.some(b => b.d === date), [st.bodyweight, date])
   const delEntry = d => update(s => { s.bodyweight = s.bodyweight.filter(b => b.d !== d) })
   return <>
     <h3>{required ? t('Quick check-in') : t('Log body weight')}</h3><Button size="sm" onClick={() => measurementRemindersSheet('weight')}>{t('Measurement reminder')}</Button>
     {required && <div className="muted small">{t('Slide or tap to set your weight — tracked before every workout so your curve stays honest.')}</div>}
     {!required && <label className="field-label">{t('Date')}<input className="field" aria-label={t('Date')} type="date" max={todayISO()} value={date} onChange={e=>setDate(e.target.value)}/></label>}
-    {st.bodyweight.some(b=>b.d===date) && <p className="small muted">{t('This reading will be added to the daily average.')}</p>}
-    <WeightInput value={v} setValue={setV} unit={unit} />
+    {recordedDate && <p className="small muted">{t('This reading will be added to the daily average.')}</p>}
+    <BodyWeightPicker ref={pickerDraft} value={v} onChange={setV} unit={entryUnit.current} disabled={saving} onValidityChange={setWeightValid} />
     <div style={{ height: 14 }} />
-    <Button variant="primary" disabled={saving} onClick={save}>{required ? t('Save & start workout') : t('Save')}</Button>
+    <Button variant="primary" disabled={saving || !weightValid} onClick={save}>{required ? t('Save & start workout') : t('Save')}</Button>
     {required && <>
-      <div style={{ height: 8 }} /><Button variant="ghost" className="dim" onClick={() => { close(); onDone && onDone(null) }}>{t('Start without weighing in')}</Button>
-      <div style={{ height: 2 }} /><Button variant="ghost" className="dim" icon="reset" onClick={() => { close(); nav('/workout') }}>{t('Choose a different workout')}</Button>
+      <div style={{ height: 8 }} /><Button variant="ghost" className="dim" disabled={saving} onClick={() => { if(savingWeight.current)return; savingWeight.current=true; close(); onDone && onDone(null) }}>{t('Start without weighing in')}</Button>
+      <div style={{ height: 2 }} /><Button variant="ghost" className="dim" icon="reset" disabled={saving} onClick={() => { if(savingWeight.current)return; savingWeight.current=true; close(); nav('/workout') }}>{t('Choose a different workout')}</Button>
     </>}
     {!required && recent.length > 0 && <>
       <h4 className="sec">{t('Recent weigh-ins')}</h4>
