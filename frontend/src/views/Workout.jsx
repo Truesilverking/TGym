@@ -19,6 +19,7 @@ import Media from '../components/Media.jsx'
 import { startFlow, exercisePicker, exConfigSheet, exerciseDetailSheet, topWeightSheet, finishWorkout, workoutCompleteSheet, confirmSheet, exerciseNoteSheet, sessionNoteSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
 import { Button, Check, NumberField } from '../components/ui.jsx'
+import WeightField from '../components/WeightField.jsx'
 import { nextPrescription, applyPrescription, defaultIncrement, loadingStepFor } from '../lib/progression.js'
 import { glyphOf } from '../lib/glyphs.js'
 import { setSideState, toggleSetSide, isWarmupRow, isDropSet, isRestPauseSet, dropsOf, clustersOf, addDrop, addCluster, removeDropAt, removeClusterAt, setDropAt, setClusterAt, nextDropWeight, nextBurstReps } from '../lib/workout-model.js'
@@ -193,17 +194,20 @@ function ExerciseBlock({ preview, entryIdx, compact, onToggle, onField, onAddSet
   // as every other +/- field in the app.
   const displayValidation = (s, i) => Object.fromEntries(Object.entries(actualRepValidation(entry, s, i)).map(([key, value]) => [key, displayReps(value, cfg)]))
   const metricValue = (s, col) => col.f === 'r' ? displayReps(s.r, cfg) : col.scale === 60 && s[col.f] != null ? s[col.f] / 60 : s[col.f]
+  // Store updates clone unchanged rows too (for example when a rest timer ends).
+  // Keep an editor open across those copies, while invalidating real row/context changes.
+  const loadContext = (s, i, drop = null) => JSON.stringify([S.active.id, entry.id, entryIdx, i, entry.sets.length, entry.target, s, drop, dropsOf(s).length])
   const cell = (s, i, col, cls) => (
-    <div key={col.f} className={'set-metric ' + cls + (col.f === 'r' ? ' set-actual-reps' : '')}><label htmlFor={`workout-${entryIdx}-${i}-${col.f}`}>{col.hd}{col.eff === 'rir' && targetRirRangeFor(cfg,s.role) && <small>{rirRangeLabel(targetRirRangeFor(cfg,s.role))}</small>}</label><div className={'stp' + (col.eff === 'rir' && s[col.f] != null && s[col.f] !== '' && Number(s[col.f]) === 0 ? ' effort-failure' : '')}>
+    <div key={col.f} className={'set-metric ' + cls + (col.f === 'r' ? ' set-actual-reps' : '')}><label htmlFor={`workout-${entryIdx}-${i}-${col.f}`}>{col.hd}{col.eff === 'rir' && targetRirRangeFor(cfg,s.role) && <small>{rirRangeLabel(targetRirRangeFor(cfg,s.role))}</small>}</label>{col.f === 'w' ? <WeightField retainInvalid id={`workout-${entryIdx}-${i}-w`} data-nodrag value={s.w} unit={S.unit} min={0} step={col.step} label={col.hd} contextKey={loadContext(s,i)} onChange={v => onField(i,'w',v)}/> : <div className={'stp' + (col.eff === 'rir' && s[col.f] != null && s[col.f] !== '' && Number(s[col.f]) === 0 ? ' effort-failure' : '')}>
       <button type="button" aria-label={t('Decrease')} onClick={() => bump(s, i, col, -1)}><Icon name="minus" /></button>
       <span className="val"><NumberField retainInvalid key={`${entryIdx}-${i}-${col.f}`} id={`workout-${entryIdx}-${i}-${col.f}`} data-nodrag validation={col.f === 'r' ? displayValidation(s,i) : col.eff ? {max: col.max, step: col.step} : ['min','sec'].includes(col.f) ? {min: 1 / (col.scale || 1)} : {}} decimal={col.dec} nullable={col.opt} value={metricValue(s,col) ?? ''}
         displayValue={col.eff && s[col.f] != null && s[col.f] !== '' ? effortValue(col.eff, s[col.f]) : undefined} aria-label={col.hd}
         onChange={v => onField(i, col.f, col.f === 'r' ? storedReps(v, cfg) : col.scale === 60 ? Math.round(v * 60) : v)} /></span>
       <button type="button" aria-label={t('Increase')} onClick={() => bump(s, i, col, 1)}><Icon name="plus" /></button>
-    </div></div>
+    </div>}</div>
   )
 
-  // A smaller stepper for a drop's weight/reps or a burst's reps — editing what the plan (or a
+  // A smaller stepper for a drop's reps or a burst's reps — editing what the plan (or a
   // live "+ Drop"/"+ Burst" tap) already put on the row, not typing into a fresh field.
   const miniStepper = (value, step, dec, onChange, label) => (
     <div className="mini-metric"><label>{label}</label><div className="stp mini">
@@ -317,7 +321,7 @@ function ExerciseBlock({ preview, entryIdx, compact, onToggle, onField, onAddSet
             {dropsOf(s).map((d, di) => (
               <div className="subrow" key={'d' + di}>
                 <span className="subn">{t('Drop {0}', di + 1)}</span>
-                {miniStepper(d.w, loadStep, true, v => setDropField(i, di, 'w', v), loadCol.hd)}
+                <div className="mini-metric"><label htmlFor={`workout-${entryIdx}-${i}-drop-${di}-w`}>{loadCol.hd}</label><WeightField retainInvalid id={`workout-${entryIdx}-${i}-drop-${di}-w`} className="mini" data-nodrag value={d.w} unit={S.unit} min={0} step={loadStep} label={loadCol.hd} contextKey={loadContext(s,i,di)} onChange={v => setDropField(i,di,'w',v)}/></div>
                 {miniStepper(displayReps(d.r, cfg), 1, false, v => setDropField(i, di, 'r', storedReps(v, cfg)), repCol.hd)}
                 <button className="iconbtn" aria-label={t('Remove drop')} onClick={() => removeDrop(i, di)}><Icon name="xmark" /></button>
               </div>

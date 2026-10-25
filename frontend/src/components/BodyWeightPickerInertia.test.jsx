@@ -32,7 +32,13 @@ const mount=async props=>act(()=>root.render(<Controlled {...props}/>))
 const ruler=()=>host.querySelector('[role=slider]')
 const field=()=>host.querySelector(`input[aria-label="${t('Weight')}"]`)
 const visible=()=>Number(field().value.replace(',','.'))
-const position=()=>Number(ruler().getAttribute('aria-valuenow'))
+// Accessibility follows the painted tenth; the rail itself remains continuous.
+const position=()=>{
+ const rail=host.querySelector('.bodyweight-picker-ticks')
+ const first=Number(rail.querySelector('.bodyweight-picker-tick.major>span').textContent.replace(',','.'))
+ const shift=Number(rail.style.transform.match(/translate3d\(([-\d.e+]+)px/)[1])
+ return first+6-shift/100
+}
 const pointer=async(type,x,y,time)=>{
  now=time;const event=new MouseEvent(type,{clientX:x,clientY:y,button:0,bubbles:true,cancelable:true})
  Object.defineProperties(event,{pointerId:{value:1},isPrimary:{value:true},timeStamp:{value:1000+time}})

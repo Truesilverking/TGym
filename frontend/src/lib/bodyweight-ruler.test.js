@@ -1,7 +1,18 @@
 import {expect,it} from 'vitest'
-import {RULER_PIXELS_PER_UNIT,rulerReleaseVelocity,rulerCoast,rulerCoastDuration} from './bodyweight-ruler.js'
+import {RULER_PIXELS_PER_UNIT,rulerReleaseVelocity,rulerCoast,rulerCoastDuration,rulerPixelsPerUnit,snapRulerValue} from './bodyweight-ruler.js'
 
 const release = speed => rulerReleaseVelocity([{x:0,t:0},{x:-speed*100,t:100}],100)
+
+it.each([.000001,.25,2.5,5])('keeps a ten-pixel tick and monotonic coast on the caller grid %s',step=>{
+ expect(rulerPixelsPerUnit(step)*step).toBeCloseTo(10,10)
+ const duration=rulerCoastDuration(1.2),start=40,finish=rulerCoast(start,1.2,duration,0,Number.MAX_SAFE_INTEGER,step)
+ expect(finish.done).toBe(true);expect(finish.shown).toBeGreaterThanOrEqual(start)
+ expect(snapRulerValue(finish.shown,step)).toBe(finish.shown)
+ const almost=rulerCoast(start,1.2,duration-1,0,Number.MAX_SAFE_INTEGER,step)
+ expect(almost.shown).toBeLessThanOrEqual(finish.shown)
+ expect(finish.shown-almost.shown).toBeLessThan(step*.001)
+ expect(rulerCoast(0,-1,20,0,Number.MAX_SAFE_INTEGER,step)).toEqual({shown:0,done:true})
+})
 
 it('uses recent samples in timestamp order without changing the recorded gesture',()=>{
  const samples=[{x:0,t:200},{x:200,t:0},{x:100,t:110},{x:NaN,t:115},{x:150,t:60}]

@@ -1,0 +1,30 @@
+.weight-field-wrap{min-width:0;max-width:100%;width:100%;container-type:inline-size}
+.weight-field.stp{display:flex;min-width:0;max-width:100%}
+.weight-field.stp>.val{flex:1;min-width:0}
+.weight-field.stp>.val>.num{min-width:0;width:100%}
+.weight-field.stp>.weight-field-open{flex:none;border-left:1px solid var(--sep);border-radius:0 var(--r-sm) var(--r-sm) 0;color:var(--acc)}
+.weight-field.stp>button{min-width:36px;min-height:44px}
+.weight-field-editor{min-width:0}
+.weight-field-editor>h2{margin-bottom:8px}
+.weight-field-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin-top:24px;padding-bottom:env(safe-area-inset-bottom,0px)}
+.weight-field-actions>.btn{min-width:92px;flex:1}
+@container(max-width:220px){
+ .weight-field.stp{position:relative;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+ .weight-field.stp>.val{grid-column:1/-1;grid-row:1;padding:0 46px 0 4px;min-height:44px}
+ .weight-field.stp>button{grid-row:2;width:100%;min-width:0;border-top:1px solid var(--sep)}
+ .weight-field.stp>button:nth-of-type(1){grid-column:1}
+ .weight-field.stp>button:nth-of-type(2){grid-column:2;border-left:1px solid var(--sep)}
+ .weight-field.stp>.weight-field-open{grid-column:2;grid-row:1;justify-self:end;width:44px;min-width:44px;border-top:0;border-radius:0}
+}
+.set-console .set-metric .weight-field.stp{position:relative;grid-template-columns:repeat(2,minmax(0,1fr))}
+.set-console .set-metric .weight-field.stp>.val{padding-right:46px;padding-left:4px}
+.set-console .set-metric .weight-field.stp>button:nth-of-type(1){grid-column:1}
+.set-console .set-metric .weight-field.stp>button:nth-of-type(2){grid-column:2;border-left:1px solid var(--sep)}
+.set-console .set-metric .weight-field.stp>.weight-field-open{grid-column:2;grid-row:1;justify-self:end;width:44px;min-width:44px;border-top:0;border-radius:0}
+@container(max-width:150px){
+ .weight-field.stp>.val,.set-console .set-metric .weight-field.stp>.val{padding-inline:4px}
+ .weight-field.stp>.val>i{display:none}
+ .weight-field.stp>.weight-field-open,.set-console .set-metric .weight-field.stp>.weight-field-open{grid-row:3;grid-column:1/-1;width:100%;border-top:1px solid var(--sep);border-left:0;gap:5px}
+ .weight-field.stp>.weight-field-open:after{content:attr(data-unit);font-size:11px;font-weight:500}
+}
+@media(max-width:380px){.weight-field-actions{gap:8px}.weight-field-actions>.btn{min-width:76px}}

@@ -6,6 +6,7 @@ export default {
   "Pounds": "Libras",
   "Weight ruler": "Regla de peso",
   "Slide the ruler or tap the number to enter your weight.": "Desliza la regla o toca el número para introducir tu peso.",
+  "Slide the ruler or tap the number to enter the weight.": "Desliza la regla o toca el número para introducir el peso.",
   "Future dates": "Fechas futuras",
   "One square per day. Total active days, not streak length.": "Un cuadrado por día. Total de días activos, no longitud de racha.",
   "Select file": "Seleccionar archivo",

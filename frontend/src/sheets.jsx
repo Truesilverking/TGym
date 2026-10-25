@@ -36,7 +36,8 @@ import { calendarActivity, calendarActivityCount, calendarMonth } from './lib/ca
 import { calendarState, calendarLegend, calendarVisualStyle, TRACKING_START_MARKER } from './lib/calendar-visual.js'
 import './components/CalendarVisual.css'
 import { startSessionOrigin, hasWorkoutActivity } from './lib/session-activity.js'
-import { Button, Slider, Switch, Segmented, SelectRow, Row, TextField, MultiSelectRow, NumberField } from './components/ui.jsx'
+import { Button, Switch, Segmented, SelectRow, Row, TextField, MultiSelectRow, NumberField } from './components/ui.jsx'
+import WeightField from './components/WeightField.jsx'
 import { glyphOf, GLYPH_GROUPS, DEFAULT_GLYPH } from './lib/glyphs.js'
 import { measurementInUnit } from './lib/body-report.js'
 import BodyMap from './components/BodyMap.jsx'
@@ -130,36 +131,6 @@ function GuidedPlans({ close }) {
 export const guidedPlansSheet = () => ui().openSheet(close => <GuidedPlans close={close} />)
 
 /* ============================ weight picker (shared: body weight + goal) ============================ */
-// Fixed range, not a moving window — a window that resizes itself mid-drag (the previous
-// attempt) makes the thumb's position unpredictable: every time it grows, everything already
-// placed on it shifts toward one side. A static range never has that problem, at the cost of
-// coarser precision per pixel — the +/- buttons cover exact values.
-// The ceiling follows the profile's unit: 300 covers a body weight or a working weight in
-// kg, but as pounds it cut off at 136 kg — below plenty of people's body weight, and well
-// below an everyday squat.
-const W_LO = 1
-const wHi = unit => (unit === 'lb' ? 660 : 300)
-function WeightInput({ value, setValue, unit }) {
-  const W_HI = wHi(unit)
-  const clamp = x => Math.max(W_LO, Math.min(W_HI, Math.round((x || 0) * 10) / 10))
-  const sv = Math.max(W_LO, Math.min(W_HI, value))
-  const onSlide = v => setValue(clamp(v))
-  return <>
-    <div className="bwstep">
-      <button className="bw-pm" onClick={() => onSlide(value - 0.1)} aria-label="minus 0.1"><Icon name="minus" /></button>
-      <div className="bw-read">{fmtNum(value)}<span className="u"> {unit}</span></div>
-      <button className="bw-pm" onClick={() => onSlide(value + 0.1)} aria-label="plus 0.1"><Icon name="plus" /></button>
-    </div>
-    <div className="chips" style={{ justifyContent: 'center', margin: '8px 0' }}>
-      <button className="chip" onClick={() => onSlide(value - 1)}>−1</button>
-      <button className="chip" onClick={() => onSlide(value - 0.5)}>−0.5</button>
-      <button className="chip" onClick={() => onSlide(value + 0.5)}>+0.5</button>
-      <button className="chip" onClick={() => onSlide(value + 1)}>+1</button>
-    </div>
-    <Slider value={sv} min={W_LO} max={W_HI} step={0.5} onChange={onSlide} aria-label={t('Weight')} aria-valuetext={`${fmtNum(sv)} ${unit}`} />
-  </>
-}
-
 /* ============================ body weight ============================ */
 function BwSheet({ required, onDone, close, initialDate }) {
   const st = useStore(s => s.S)
@@ -410,17 +381,22 @@ export function bwDeltaColor(delta, currentW) {
   return (delta > 0) === up ? 'var(--acc)' : 'var(--red)'
 }
 function GoalSheet({ close }) {
-  const st = S()
+  const st = useStore(s => s.S)
   const bw = lastBW(st)
   const [v, setV] = useState(st.targetW || (bw ? bw.w : 70))
+  const entryUnit = useRef(st.unit)
+  const pickerDraft = useRef(null)
+  const [weightValid, setWeightValid] = useState(true)
   return <>
     <h3>{t('Target weight')}</h3>
     <div className="muted small">{t('Your goal is drawn as a line through the weight charts, and gains/losses are colored by whether they move toward it.')}</div>
-    <WeightInput value={v} setValue={setV} unit={st.unit} />
+    <BodyWeightPicker ref={pickerDraft} value={v} onChange={setV} unit={entryUnit.current} onValidityChange={setWeightValid} />
     <div style={{ height: 14 }} />
-    <Button variant="primary" onClick={() => {
-      const n = Math.round((v || 0) * 10) / 10
-      if (!n || n <= 0) { toast(t('Enter a valid weight')); return }
+    <Button variant="primary" disabled={!weightValid} onClick={() => {
+      const entered = pickerDraft.current?.getValue()
+      const canonical = entryUnit.current === S().unit ? entered : S().unit === 'lb' ? entered * LB_PER_KG : entered / LB_PER_KG
+      const n = Math.round(canonical * 10) / 10
+      if (!weightValid || !Number.isFinite(n) || n <= 0) { toast(t('Enter a valid weight')); return }
       update(s => { s.targetW = n }); close()
       const b = lastBW(S()); toast(t('Goal set: {0}', fmtNum(n) + ' ' + st.unit) + (b ? ' (' + t('{0} to go', fmtNum(Math.abs(n - b.w))) + ')' : ''))
     }}>{t('Save goal')}</Button>
@@ -445,7 +421,7 @@ function OneRM({ ex }) {
       <span className="dim"> · {t('{0} × {1} on {2}', fmtNum(best.w) + ' ' + st.unit, best.r, fmtDate(best.d, true))}</span>
     </div>}
     <div className="row cfgrow" style={{ marginBottom: 10 }}>
-      <Stepper label={t('Weight ({0})', st.unit)} value={w} step={weightStepFor(st.unit)} onChange={setW} />
+      <WeightField showLabel label={t('Weight ({0})', st.unit)} unit={st.unit} value={w} step={weightStepFor(st.unit)} onChange={setW} />
       <Stepper label={t('Reps')} value={r} step={1} decimal={false} onChange={setR} />
     </div>
     <div className="row between" style={{ marginBottom: 4 }}>
@@ -486,7 +462,7 @@ function ExerciseDetail({ ex, context = {}, close }) {
     </div>
     {ex.desc && <div className="exnote">{ex.desc}</div>}
     {best > 0 && <div className="small row" style={{ marginBottom: 6, gap: 5 }}><Icon name="trophy" style={{ fontSize: 14, color: 'var(--yellow)' }} />{t('Best:')} <b className="accent">{fmtNum(best)} {st.unit}</b>{last ? ` · ${t('last')} ${fmtDate(last.d)}: ${last.sets.map(s => setLabel(ex.id, s, last.target)).join(', ')}` : ''}</div>}
-    {!isCardio(ex) && <div className="card" style={{ margin: '10px 0' }}><h2>{t('Exercise goal')}</h2><div className="row cfgrow"><Stepper label={t('Weight ({0})', st.unit)} value={goalW} step={weightStepFor(st.unit)} onChange={setGoalW} /><Stepper label={t('Reps')} value={goalR} step={1} decimal={false} onChange={setGoalR} /></div><div style={{ height: 8 }} /><Button size="sm" onClick={() => { updateStore(s => { s.exerciseGoals = s.exerciseGoals || {}; if (goalW > 0 || goalR > 0) s.exerciseGoals[ex.id] = { weight: goalW, reps: goalR }; else delete s.exerciseGoals[ex.id] }); toast(goalW > 0 || goalR > 0 ? t('Goal saved') : t('Goal removed')) }}>{t('Save goal')}</Button></div>}
+    {!isCardio(ex) && <div className="card" style={{ margin: '10px 0' }}><h2>{t('Exercise goal')}</h2><div className="row cfgrow"><WeightField showLabel label={t('Weight ({0})', st.unit)} unit={st.unit} value={goalW} step={weightStepFor(st.unit)} onChange={setGoalW} /><Stepper label={t('Reps')} value={goalR} step={1} decimal={false} onChange={setGoalR} /></div><div style={{ height: 8 }} /><Button size="sm" onClick={() => { updateStore(s => { s.exerciseGoals = s.exerciseGoals || {}; if (goalW > 0 || goalR > 0) s.exerciseGoals[ex.id] = { weight: goalW, reps: goalR }; else delete s.exerciseGoals[ex.id] }); toast(goalW > 0 || goalR > 0 ? t('Goal saved') : t('Goal removed')) }}>{t('Save goal')}</Button></div>}
     <Button variant="primary" icon="plus" style={{ margin: '10px 0 4px' }} onClick={() => addToRoutineSheet(ex)}>{t('Add to my plan')}</Button>
     <Button variant="ghost" icon={st.avoidedExercises?.[ex.id] ? 'reset' : 'warning'} style={{ marginTop: 6 }} onClick={() => { updateStore(s => { s.avoidedExercises = s.avoidedExercises || {}; if (s.avoidedExercises[ex.id]) delete s.avoidedExercises[ex.id]; else s.avoidedExercises[ex.id] = true }); toast(st.avoidedExercises?.[ex.id] ? t('Exercise available again') : t('Exercise temporarily avoided')) }}>{st.avoidedExercises?.[ex.id] ? t('Make available again') : t('Temporarily avoid exercise')}</Button>
     {ex.custom && <div className="row" style={{ gap: 8, marginTop: 8 }}>
@@ -777,8 +753,8 @@ function ProgressionFields({ ex, mode, c, setC, routine, unit }) {
     </div>
     <div className="small dim" style={{ marginBottom: active === 'off' ? 18 : 10 }}>{t(POLICY_DESC[active])}</div>
     {active !== 'off' && <div className="row cfgrow" style={{ marginBottom: 18 }}>
-      <Stepper label={mode === 'time' ? t('Step (seconds)') : t('Step ({0})', unit)} value={inc}
-        step={mode === 'time' ? 5 : 1.25} decimal={mode !== 'time'} onChange={v => setC(x => ({ ...x, inc: v }))} />
+      {mode === 'time' ? <Stepper label={t('Step (seconds)')} value={inc} step={5} decimal={false} onChange={v => setC(x => ({ ...x, inc: v }))} />
+        : <WeightField showLabel label={t('Step ({0})', unit)} unit={unit} value={inc} step={1.25} onChange={v => setC(x => ({ ...x, inc: v }))} />}
     </div>}
   </>
 }
@@ -912,7 +888,7 @@ function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial }) {
       </> : mode === 'time' ? <>
         <Stepper label={t('Sets')} value={c.sets} step={1} decimal={false} onChange={v => setC(x => ({ ...x, sets: v }))} />
         <Stepper label={t('Seconds')} value={c.sec} step={5} decimal={false} onChange={v => setC(x => ({ ...x, sec: v }))} />
-        <Stepper label={t('Weight ({0})', st.unit)} value={c.weight} step={defaultIncrement(ex.id, st.unit)} onChange={v => setC(x => ({ ...x, weight: v }))} />
+        <WeightField showLabel label={t('Weight ({0})', st.unit)} unit={st.unit} value={c.weight} step={defaultIncrement(ex.id, st.unit)} onChange={v => setC(x => ({ ...x, weight: v }))} />
       </> : <>
         {/* Rest-pause always trains as exactly two rows — a warm-up at this rep count, then one
             rest-pause work set — so "Sets" has nothing left to mean and only invites a mismatch. */}
@@ -921,7 +897,7 @@ function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial }) {
         <RepStepper cfg={c} label={t('Reps')} value={c.reps} onChange={v => setC(x => ({ ...x, reps: v }))} />
         {/* On bodyweight work the weight stepper is the click #32 is about, so it is not here
             until there is a belt to describe — see the added-weight row below. */}
-        {!bw && <Stepper label={t('Weight ({0})', st.unit)} value={c.weight} step={defaultIncrement(ex.id, st.unit)} onChange={v => setC(x => ({ ...x, weight: v }))} />}
+        {!bw && <WeightField showLabel label={t('Weight ({0})', st.unit)} unit={st.unit} value={c.weight} step={defaultIncrement(ex.id, st.unit)} onChange={v => setC(x => ({ ...x, weight: v }))} />}
       </>}
     </div>
     {c.intensifier?.type === 'restpause' && <div className="small dim" style={{ marginTop: -10, marginBottom: 18 }}>
@@ -961,7 +937,7 @@ function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial }) {
         reps, with its explanation underneath. */}
     {bw && <>
       <div className="row cfgrow" style={{ marginBottom: 8 }}>
-        <Stepper label={t('Added ({0})', st.unit)} value={c.weight || 0} step={weightStepFor(st.unit)}
+        <WeightField showLabel label={t('Added ({0})', st.unit)} unit={st.unit} value={c.weight || 0} step={weightStepFor(st.unit)}
           onChange={v => setC(x => ({ ...x, weight: v }))} />
       </div>
       <div className="small dim" style={{ marginBottom: 18 }}>
@@ -1413,7 +1389,7 @@ function WorkoutDetail({ w: original, close }) {
           {e.substitutedFor && <div className="small dim">{t('Substituted for {0}', exerciseNameFor(exOr(e.substitutedFor), { routineId: w.routineId }))}</div>}
           {editing ? <div className="workout-edit-sets">{e.sets.map((set, si) => <div className="workout-edit-set" key={si}>
             <div className="edit-set-number">{t('Set')} {si + 1}</div>
-            {modeOf({ ...(e.target || {}), id: e.id }) === 'cardio' ? <><label><span>{t('Duration (min)')}</span><NumberField value={set.min} decimal={false} onChange={v => setDraftEntries(rows => rows.map((row, ri) => ri !== i ? row : { ...row, sets: row.sets.map((x, xi) => xi === si ? { ...x, min: v } : x) }))} /></label><label><span>{t('Speed (km/h)')}</span><NumberField value={set.speed} onChange={v => setDraftEntries(rows => rows.map((row, ri) => ri !== i ? row : { ...row, sets: row.sets.map((x, xi) => xi === si ? { ...x, speed: v } : x) }))} /></label></> : <><label><span>{t('Weight ({0})', st.unit)}</span><NumberField value={set.w || 0} onChange={v => setDraftEntries(rows => rows.map((row, ri) => ri !== i ? row : { ...row, sets: row.sets.map((x, xi) => xi === si ? { ...x, w: v } : x) }))} /></label><label><span>{set.sec != null ? t('Seconds') : t('Reps')}</span><NumberField value={set.r ?? set.sec ?? 0} decimal={false} onChange={v => setDraftEntries(rows => rows.map((row, ri) => ri !== i ? row : { ...row, sets: row.sets.map((x, xi) => xi === si ? { ...x, ...(x.sec != null ? { sec: v } : { r: v }) } : x) }))} /></label></>}
+            {modeOf({ ...(e.target || {}), id: e.id }) === 'cardio' ? <><label><span>{t('Duration (min)')}</span><NumberField value={set.min} decimal={false} onChange={v => setDraftEntries(rows => rows.map((row, ri) => ri !== i ? row : { ...row, sets: row.sets.map((x, xi) => xi === si ? { ...x, min: v } : x) }))} /></label><label><span>{t('Speed (km/h)')}</span><NumberField value={set.speed} onChange={v => setDraftEntries(rows => rows.map((row, ri) => ri !== i ? row : { ...row, sets: row.sets.map((x, xi) => xi === si ? { ...x, speed: v } : x) }))} /></label></> : <><div><WeightField showLabel label={t('Weight ({0})', st.unit)} unit={st.unit} value={set.w || 0} onChange={v => setDraftEntries(rows => rows.map((row, ri) => ri !== i ? row : { ...row, sets: row.sets.map((x, xi) => xi === si ? { ...x, w: v } : x) }))} /></div><label><span>{set.sec != null ? t('Seconds') : t('Reps')}</span><NumberField value={set.r ?? set.sec ?? 0} decimal={false} onChange={v => setDraftEntries(rows => rows.map((row, ri) => ri !== i ? row : { ...row, sets: row.sets.map((x, xi) => xi === si ? { ...x, ...(x.sec != null ? { sec: v } : { r: v }) } : x) }))} /></label></>}
           </div>)}</div> : <div className="ss">{e.sets.filter(s => s.done).map((s, si) => `${t('Set')} ${si + 1}: ${setLabel(e.id, s, e.target)}`).join('  ·  ') || t('no sets')}</div>}
           {e.note && <div className="small dim" style={{ marginTop: 3 }}>
             {e.notePin && <Icon name="flag" style={{ fontSize: 12, marginRight: 4, verticalAlign: '-1px', color: 'var(--yellow)' }} />}{e.note}
@@ -1704,6 +1680,9 @@ function TopWeight({ entryIdx, close }) {
   const maxSet = entry ? Math.max(0, ...entry.sets.filter(s => s.done && !isWarmupRow(s)).map(s => s.w || 0)) : 0
   const prevBest = entry ? Math.max((st.exWeights[entry.id] || {}).w || 0, bestWeightFor(st, entry.id)) : 0
   const [v, setV] = useState(entry ? (Math.max(maxSet, prevBest) || entry.target.weight || 0) : 0)
+  const pickerDraft = useRef(null)
+  const [weightValid, setWeightValid] = useState(true)
+  const identity = useRef({ workout:A?.id, exercise:entry?.id, unit:st.unit })
   useEffect(() => { if (!entry) close() }, [!entry])
 
   const units = supersetUnits(A ? A.entries : [])
@@ -1714,8 +1693,10 @@ function TopWeight({ entryIdx, close }) {
   if (!entry || !ex) return null
 
   const commit = advance => {
-    const n = Math.round((v || 0) * 10) / 10
-    if (!isFinite(n) || n < 0) { toast(t('Enter a valid weight')); return }
+    const current = S()
+    if (current.unit !== identity.current.unit || current.active?.id !== identity.current.workout || current.active?.entries[entryIdx]?.id !== identity.current.exercise) { close(); return }
+    const n = pickerDraft.current?.getValue()
+    if (!weightValid || !Number.isFinite(n) || n < 0) { toast(t('Enter a valid weight')); return }
     update(s => {
       s.active.entries[entryIdx].topW = n
       const cur = s.exWeights[entry.id]
@@ -1730,13 +1711,13 @@ function TopWeight({ entryIdx, close }) {
   return <>
     <h3 className="capitalize row" style={{ gap: 8 }}><Icon name="checkCircle" style={{ color: 'var(--acc)' }} />{t('{0} done', exerciseNameFor(ex, { entry, routineId: A.routineId }))}</h3>
     <div className="muted small">{t('Confirm the weight you worked with — your highest becomes the default next time.')}{!unitDone && unit.length > 1 ? ' ' + t('Then finish the superset partner.') : ''}</div>
-    <WeightInput value={v} setValue={setV} unit={st.unit} />
+    <BodyWeightPicker ref={pickerDraft} value={v} onChange={setV} unit={st.unit} label={t('Weight')} min={0} max={Number.MAX_SAFE_INTEGER} precision={6} onValidityChange={setWeightValid} />
     <div style={{ height: 10 }} />
     {prevBest > 0 ? <div className="small dim" style={{ textAlign: 'center', marginBottom: 12 }}>{t('Previous best:')} {fmtNum(prevBest)} {st.unit}{maxSet > prevBest && <span style={{ color: 'var(--yellow)' }}> — {t('new record!')}</span>}</div> : <div style={{ height: 4 }} />}
     {unitDone ? <>
-      <Button variant="primary" trailingIcon={isLastUnit ? null : 'chevronRight'} onClick={() => commit(true)}>{isLastUnit ? t('Save') : t('Save & next exercise')}</Button>
-      <div style={{ height: 8 }} /><Button variant="ghost" className="dim" onClick={() => commit(false)}>{t('Just close')}</Button>
-    </> : <Button variant="primary" onClick={() => commit(false)}>{t('Save weight')}</Button>}
+      <Button variant="primary" disabled={!weightValid} trailingIcon={isLastUnit ? null : 'chevronRight'} onClick={() => commit(true)}>{isLastUnit ? t('Save') : t('Save & next exercise')}</Button>
+      <div style={{ height: 8 }} /><Button variant="ghost" className="dim" disabled={!weightValid} onClick={() => commit(false)}>{t('Just close')}</Button>
+    </> : <Button variant="primary" disabled={!weightValid} onClick={() => commit(false)}>{t('Save weight')}</Button>}
   </>
 }
 export const topWeightSheet = entryIdx => ui().openSheet(close => <TopWeight entryIdx={entryIdx} close={close} />)
