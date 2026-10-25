@@ -25,3 +25,11 @@ No storage keys, package identifiers, exercise/routine IDs, history schemas, bac
 ## Verification boundaries
 
 Targeted tests cover precise kg/lb entry, zero and large loads, local drafts, cancellation, retry, stale fields, loading cascades, drop separation, harmless timer updates, history confirmation, optional InBody kilograms and invalid-report input. Full-suite, compiled-browser and publication evidence is recorded separately in the release audit. Browser checks use synthetic local profiles; they do not establish installation on a physical phone or iPhone PWA acceptance.
+
+## Synthetic screenshots
+
+These captures use fictitious local profiles and the final compiled UI.
+
+- [Exercise weight ruler, mobile](assets/weight-entry-1.15.100/exercise-weight-mobile.png)
+- [Added and drop loads, Spanish mobile](assets/weight-entry-1.15.100/drop-load-mobile-es.png)
+- [Routine weight increment, desktop](assets/weight-entry-1.15.100/routine-weight-desktop.png)
