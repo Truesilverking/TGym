@@ -111,6 +111,7 @@ export default function SoundSettings() {
     <div className="sect-b sound-controls">
       <Row icon="bell" title={t('Sounds')}><Switch checked={S.sound !== false} onChange={v => changePreference('sound', v)} /></Row>
       <Row icon="bellSlash" title={t('Mute')}><Switch checked={!!S.soundMuted} onChange={v => changePreference('soundMuted', v)} /></Row>
+      <Row icon="bell" title={t('Notification sound')} subtitle={t('Reminders and update alerts. Turning sound off keeps notifications enabled.')}><Switch checked={S.notificationSoundOn!==false} onChange={v=>changePreference('notificationSoundOn',v)}/></Row>
       <div className="sound-volume"><label htmlFor="sound-volume">{t('Volume')} <output>{Math.round(soundVolume(S)*100)}%</output></label>
         <input id="sound-volume" type="range" min="0" max="100" step="1" value={Math.round(soundVolume(S)*100)} onChange={e => changePreference('soundVolume', Number(e.target.value)/100)} />
       </div>

@@ -18,31 +18,91 @@ function useReducedMotion() {
 }
 const animatedCustomImage = ex => !ex.gif && /^data:image\/(gif|webp)[;,]/i.test(ex.img || '')
 // Custom uploads have no separate still frame. Decode offscreen and retain a
-// small, static poster; never insert the animation while reduced motion is on.
+// static poster; never insert the animation while reduced motion is on. Cache
+// exact source values, not exercise IDs: an edited upload cannot reuse old art.
+// Pending decodes share subscribers too. Bounds include both source strings and
+// encoded PNG strings (conservative UTF-16 bytes); no profile/storage writes.
+const POSTER_LIMIT = 24, POSTER_BYTES = 32 * 1024 * 1024
+const posters = new Map()
+let posterBytes = 0
+const touchPoster = (source, entry) => { posters.delete(source); posters.set(source, entry) }
+function removePoster(source, entry) {
+  if (posters.get(source) !== entry) return
+  posters.delete(source); posterBytes -= entry.bytes
+}
+function trimPosters() {
+  while (posters.size > POSTER_LIMIT || posterBytes > POSTER_BYTES) {
+    const [source, entry] = posters.entries().next().value
+    removePoster(source, entry)
+  }
+}
+function cachedPoster(source) {
+  const entry = posters.get(source)
+  if (!entry?.poster) return null
+  touchPoster(source, entry)
+  return entry.poster
+}
+function subscribePoster(source, listener) {
+  const existing = posters.get(source)
+  if (existing) {
+    touchPoster(source, existing)
+    if (existing.poster) listener(existing.poster)
+    else existing.listeners.add(listener)
+    return () => existing.listeners.delete(listener)
+  }
+  const entry = {bytes:source.length * 2,poster:null,listeners:new Set([listener])}
+  if (entry.bytes <= POSTER_BYTES) { posters.set(source, entry); posterBytes += entry.bytes; trimPosters() }
+  const image = new Image()
+  let settled = false
+  const finish = poster => {
+    if (settled) return
+    settled = true; image.onload = image.onerror = null
+    if (poster) {
+      if (posters.get(source) === entry) {
+        posterBytes += poster.length * 2; entry.bytes += poster.length * 2; entry.poster = poster
+        touchPoster(source, entry); trimPosters()
+      }
+      for (const notify of entry.listeners) notify(poster)
+    } else removePoster(source, entry) // A later mount may retry a failed decode.
+    entry.listeners.clear()
+  }
+  if (/^https?:\/\//i.test(source)) image.crossOrigin = 'anonymous'
+  image.onload = () => {
+    let canvas
+    try {
+      if (!(image.naturalWidth > 0 && image.naturalHeight > 0)) { finish(null); return }
+      canvas = document.createElement('canvas')
+      const scale = Math.min(1, 1024 / Math.max(image.naturalWidth, image.naturalHeight))
+      canvas.width = Math.max(1, Math.round(image.naturalWidth * scale))
+      canvas.height = Math.max(1, Math.round(image.naturalHeight * scale))
+      canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height)
+      const poster = canvas.toDataURL('image/png')
+      finish(/^data:image\/png[;,]/i.test(poster) ? poster : null)
+    } catch { finish(null) } // Retain the accessible placeholder; do not cache failure.
+    finally { if (canvas) canvas.width = canvas.height = 0 }
+  }
+  image.onerror = () => finish(null)
+  try { image.src = source } catch { finish(null) }
+  // Unmount removes only this subscriber. An already-running shared decode may
+  // finish for another consumer/remount, without setting unmounted React state.
+  return () => entry.listeners.delete(listener)
+}
 function usePoster(source, resetKey) {
   const [poster, setPoster] = useState(null)
-  useEffect(() => { setPoster(null) }, [resetKey])
+  const usableSource = typeof source === 'string' && source ? source : null
+  const cached = usableSource ? cachedPoster(usableSource) : null
   useEffect(() => {
-    if (!source) return
+    if (!usableSource) return
     let cancelled = false
-    const image = new Image()
-    if (/^https?:\/\//i.test(source)) image.crossOrigin = 'anonymous'
-    image.onload = () => {
-      if (cancelled) return
-      try {
-        const canvas = document.createElement('canvas')
-        const scale = Math.min(1, 1024 / Math.max(image.naturalWidth, image.naturalHeight))
-        canvas.width = Math.max(1, Math.round(image.naturalWidth * scale))
-        canvas.height = Math.max(1, Math.round(image.naturalHeight * scale))
-        canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height)
-        setPoster(canvas.toDataURL('image/png'))
-        canvas.width = canvas.height = 0
-      } catch { /* Keep the accessible placeholder if a poster cannot be decoded. */ }
-    }
-    image.src = source
-    return () => { cancelled = true; image.onload = null }
-  }, [source])
-  return poster
+    const unsubscribe = subscribePoster(usableSource, value => {
+      if (!cancelled) setPoster({source:usableSource,resetKey,value})
+    })
+    return () => { cancelled = true; unsubscribe() }
+  }, [usableSource, resetKey])
+  // A paused catalogue animation deliberately drops its decoding source and
+  // keeps its poster. Changing the exercise or a nonempty source clears it now,
+  // including the render before effects run; unknown resource refs stay blank.
+  return cached || (poster?.resetKey === resetKey && (source == null || poster.source === usableSource) ? poster.value : null)
 }
 
 function MediaImage({src,alt='',className='',...props}) {
@@ -98,7 +158,7 @@ export function Thumb({ ex }) {
 
 function CustomThumb({ ex }) {
   const reduced = useReducedMotion()
-  const poster = usePoster(ex.img)
+  const poster = usePoster(reduced ? ex.img : null, ex.id)
   const source = reduced ? poster : ex.img
   return source ? <MediaImage className="thumb" src={source} alt="" /> : <div className="thumb thumb-x" aria-hidden="true"><Icon name="dumbbell" /></div>
 }

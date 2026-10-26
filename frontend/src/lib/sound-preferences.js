@@ -114,6 +114,7 @@ export function scaledSoundData(data, volume) {
 }
 export function nativeSoundConfig(S) {
   return { sounds: Object.fromEntries(SOUND_EVENTS.map(({ id }) => { const choice = soundChoice(S, id); return [id, choice.data ? {...choice, data:scaledSoundData(choice.data, soundVolume(S))} : choice] })), enabled: soundEnabled(S),
+    notificationEnabled:S?.notificationSoundOn!==false,
     vibration: S?.vibration !== false, quietOn: !!S?.reminder?.quietOn, quietStart: S?.reminder?.quietStart || '22:00', quietEnd: S?.reminder?.quietEnd || '07:00' }
 }
 export async function importCustomSound(file) {

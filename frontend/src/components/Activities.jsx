@@ -8,6 +8,7 @@ import { workoutElapsedMs } from '../lib/workout-time.js'
 import { healthConnectAdapter } from '../lib/health/adapters/health-connect.js'
 import { Button, TextField, TextArea, NumberField, Segmented } from './ui.jsx'
 import './Activities.css'
+import TotalTimeMetric from './TotalTimeMetric.jsx'
 
 export const openHealthActivities = () => useUI.getState().openSheet(() => <HealthActivities />)
 export const openActivityEditor = (options={}) => useUI.getState().openSheet(close => <ActivityEditor {...options} close={close} />)
@@ -51,7 +52,7 @@ export function ActivityEditor({close, existing, routineId: initialRoutine, plan
 export function HybridSummary({S,exportFilters}) {
   const [period,setPeriod]=useState('30'), cutoff=period==='all'?'':isoOf(new Date(Date.now()-Number(period)*86400000)), data=hybridSummary(S.workouts.filter(w=>!cutoff || w.d>=cutoff))
   useEffect(()=>{if(exportFilters)exportFilters.current.overviewPeriod=period},[exportFilters,period])
-  return <section className="card hybrid-summary"><div className="row between"><h2>{t('Training overview')}</h2><Button size="sm" onClick={openHealthActivities}>{t('Activities')}</Button></div><Segmented value={period} onChange={setPeriod} options={[{value:'30',label:t('30 days')},{value:'90',label:t('90 days')},{value:'all',label:t('All')}]} /><div className="activity-metrics">{[['Strength sessions',data.strength],['Runs',data.running],['Other cardio',data.cardio],['Recovery sessions',data.recovery],['Active days',data.days],['Total time (min)',Math.round(data.minutes)],['Distance (km)',fmtNum(data.distanceKm)]].map(([label,value])=><span key={label}><small>{t(label)}</small><b>{value}</b></span>)}</div>{data.ratedActivities>0 && <p className="dim small">{t('Activity effort load (minutes × RPE)')}: {Math.round(data.load)} · {t('{0} rated activities',data.ratedActivities)}</p>}<p className="dim small">{t('Hybrid sessions may appear in several categories. Total time and active days are counted once. Activity effort is separate from strength volume.')}</p></section>
+  return <section className="card hybrid-summary"><div className="row between"><h2>{t('Training overview')}</h2><Button size="sm" onClick={openHealthActivities}>{t('Activities')}</Button></div><Segmented value={period} onChange={setPeriod} options={[{value:'30',label:t('30 days')},{value:'90',label:t('90 days')},{value:'all',label:t('All')}]} /><div className="activity-metrics">{[['Strength sessions',data.strength],['Runs',data.running],['Other cardio',data.cardio],['Recovery sessions',data.recovery],['Active days',data.days],['Distance (km)',fmtNum(data.distanceKm)]].map(([label,value])=><span key={label}><small>{t(label)}</small><b>{value}</b></span>)}<TotalTimeMetric minutes={data.minutes}/></div>{data.ratedActivities>0 && <p className="dim small">{t('Activity effort load (minutes × RPE)')}: {Math.round(data.load)} · {t('{0} rated activities',data.ratedActivities)}</p>}<p className="dim small">{t('Hybrid sessions may appear in several categories. Total time and active days are counted once. Activity effort is separate from strength volume.')}</p></section>
 }
 export function HealthActivities() {
   const S=useStore(s=>s.S), [status,setStatus]=useState(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState('')

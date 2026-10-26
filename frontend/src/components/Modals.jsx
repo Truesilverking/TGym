@@ -31,12 +31,13 @@ function Sheet({ sheet, active }) {
     return () => { el.removeEventListener('keydown', trap); queueMicrotask(() => { if (previous?.isConnected && !previous.closest?.('[inert]')) previous.focus?.() }) }
   }, [active, titleId])
   const drag = useRef({ startY: null, delta: 0 })
+  const ownsGesture = target => target?.closest?.('button,a,input,select,textarea,label,summary,[role="button"],[contenteditable="true"],[data-nodrag]')
 
   const onTouchStart = e => {
     const el = ref.current
     // a gesture that begins on a slider (or opted-out control) belongs to that control,
     // not to the sheet's swipe-to-dismiss — so it keeps working while you drag
-    if (e.target.closest && e.target.closest('input[type=range], [data-nodrag]')) {
+    if (ownsGesture(e.target)) {
       drag.current = { startY: null, delta: 0 }
       return
     }
@@ -46,11 +47,11 @@ function Sheet({ sheet, active }) {
     const el = ref.current, d = drag.current
     if (d.startY === null) return
     d.delta = e.touches[0].clientY - d.startY
-    if (d.delta > 0 && el.scrollTop <= 0) {
+    if (d.delta > 8 && el.scrollTop <= 0) {
       e.preventDefault()
       el.style.transition = 'none'
       el.style.transform = `translateY(${d.delta}px)`
-    } else d.delta = 0
+    } else { d.delta = 0; el.style.transform = '' }
   }
   const onTouchEnd = () => {
     const el = ref.current, d = drag.current
@@ -60,10 +61,14 @@ function Sheet({ sheet, active }) {
     else el.style.transform = ''
     d.startY = null
   }
+  const onTouchCancel = () => {
+    drag.current = {startY:null,delta:0}
+    if(ref.current){ref.current.style.transition='';ref.current.style.transform=''}
+  }
   // Mouse drag (desktop testing / trackpads): same swipe-to-dismiss behaviour.
   const onMouseDown = e => {
     if (e.button !== 0) return
-    if (e.target.closest && e.target.closest('input[type=range], [data-nodrag]')) {
+    if (ownsGesture(e.target)) {
       drag.current = { startY: null, delta: 0 }
       return
     }
@@ -74,11 +79,11 @@ function Sheet({ sheet, active }) {
     const el = ref.current, d = drag.current
     if (d.startY === null) return
     d.delta = e.clientY - d.startY
-    if (d.delta > 0 && el.scrollTop <= 0) {
+    if (d.delta > 8 && el.scrollTop <= 0) {
       e.preventDefault()
       el.style.transition = 'none'
       el.style.transform = `translateY(${d.delta}px)`
-    } else d.delta = 0
+    } else { d.delta = 0; el.style.transform = '' }
   }
   const onMouseUp = () => onTouchEnd()
 
@@ -95,7 +100,7 @@ function Sheet({ sheet, active }) {
   }, [])
 
   const close = () => closeSheet(sheet.id)
-  const toolbar = <div className="sheet-tools" data-nodrag>
+  const toolbar = <div className="sheet-tools">
     {sheet.kind !== 'center' && <div className="grab" aria-hidden="true" />}
     {!sheet.locked && <button type="button" className="iconbtn sheet-close" aria-label={t('Close')} onClick={close}><Icon name="xmark" /></button>}
   </div>
@@ -110,7 +115,7 @@ function Sheet({ sheet, active }) {
   return (
     <div inert={!active} aria-hidden={!active || undefined}>
       <div className="mback" onClick={() => { if (!sheet.locked) close() }} />
-      <div className="sheet" role="dialog" aria-label="TGym" aria-modal={active || undefined} tabIndex={-1} ref={el => { ref.current = el; panel.current = el }} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}
+      <div className="sheet" role="dialog" aria-label="TGym" aria-modal={active || undefined} tabIndex={-1} ref={el => { ref.current = el; panel.current = el }} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} onTouchCancel={onTouchCancel}
         onMouseDown={onMouseDown} onMouseMove={onMouseMove} onMouseUp={onMouseUp} onMouseLeave={onMouseUp}>
         {toolbar}
         {sheet.render(close)}
@@ -123,9 +128,48 @@ export default function Modals() {
   const sheets = useUI(s => s.sheets)
   const closeSheet = useUI(s => s.closeSheet)
   const prevLen = useRef(0)
-  const suppressPop = useRef(false)
+  const pendingRewind = useRef(null)
+  const historyObserver = useRef(null)
+  const entrySequence = useRef(0)
+  const historyOwner = useRef(null)
+  historyOwner.current ||= `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`
   const pushedEntries = useRef(0)
   const sheetEntries = useRef([])
+
+  const stopObservingHistory = () => {
+    const observer = historyObserver.current
+    if (!observer) return
+    for (const method of ['pushState','replaceState']) {
+      if (history[method] === observer[method]) history[method] = observer.original[method]
+    }
+    historyObserver.current = null
+  }
+  const rewindClosedEntries = entries => {
+    const current = pendingRewind.current
+    if (current) {
+      entries.forEach(entry => current.closed.set(entry.id,entry))
+      return // The first traversal will also skip these newly closed entries.
+    }
+    const pending = {closed:new Map(entries.map(entry => [entry.id,entry])),changes:[]}
+    pendingRewind.current = pending
+    const observer = {original:{pushState:history.pushState,replaceState:history.replaceState}}
+    for (const method of ['pushState','replaceState']) {
+      observer[method] = function(...args) {
+        const result = observer.original[method].apply(this,args)
+        // Observe only successful writes, using the browser's cloned state and
+        // resolved URL. Navigation and a newly opened sheet stay immediate.
+        pendingRewind.current?.changes.push({method,state:history.state,url:location.href})
+        return result
+      }
+      history[method] = observer[method]
+    }
+    historyObserver.current = observer
+    try { history.go(-entries.length) }
+    catch {
+      pendingRewind.current = null; stopObservingHistory()
+      pushedEntries.current += entries.length // Unspent entries remain counted.
+    }
+  }
 
   // Every opened sheet gets a history entry so Android back dismisses it instead of
   // leaving the page (issue #63). Keep the pushed-entry count and each active sheet's
@@ -136,18 +180,20 @@ export default function Modals() {
     prevLen.current = sheets.length
     if (sheets.length > prev) {
       for (let i = prev; i < sheets.length; i++) {
-        sheetEntries.current.push({ openedAt: location.href, live: true })
-        history.pushState({ openGymSheet: true }, '')
+        const order = ++entrySequence.current, id = `${historyOwner.current}:${order}`
+        sheetEntries.current.push({ id, order, openedAt: location.href, live: true })
+        // Preserve the router index/key; replacing them made subsequent page
+        // pushes carry idx:null and broke Back after a sheet was opened.
+        history.pushState({ ...history.state, openGymSheet: true, openGymSheetId:id }, '')
         pushedEntries.current++
       }
     } else if (sheets.length < prev) {
       const closedEntries = sheetEntries.current.splice(sheets.length, prev - sheets.length)
       const rewind = closedEntries.filter(entry =>
-        entry.live && !(typeof entry.openedAt === 'string' && location.href !== entry.openedAt)).length
-      if (rewind > 0) {
-        pushedEntries.current = Math.max(0, pushedEntries.current - rewind)
-        suppressPop.current = true
-        history.go(-rewind)
+        entry.live && !(typeof entry.openedAt === 'string' && location.href !== entry.openedAt))
+      if (rewind.length > 0) {
+        pushedEntries.current = Math.max(0, pushedEntries.current - rewind.length)
+        rewindClosedEntries(rewind)
       }
       // Entries skipped because the app moved on remain in pushedEntries as deliberate
       // leaks until a later popstate consumes them with no corresponding active sheet.
@@ -155,8 +201,31 @@ export default function Modals() {
   }, [sheets.length])
 
   useEffect(() => {
-    const onPop = () => {
-      if (suppressPop.current) { suppressPop.current = false; return }
+    const onPop = event => {
+      const pending = pendingRewind.current
+      if (pending) {
+        // history.go is asynchronous. Another close may have retired the entry
+        // we reached, or a new push may have shifted the browser's target.
+        if (pending.closed.has(history.state?.openGymSheetId)) {
+          event.stopImmediatePropagation()
+          try { history.go(-1) }
+          catch {
+            const reached = pending.closed.get(history.state.openGymSheetId)
+            pushedEntries.current += [...pending.closed.values()].filter(entry => entry.order <= reached.order).length
+            pendingRewind.current = null; stopObservingHistory()
+          }
+          return
+        }
+        pendingRewind.current = null
+        stopObservingHistory()
+        // Reapply intervening successful writes before React Router's bubble
+        // listener reads location/history.state. Replay push as push, retaining
+        // the real previous page; replacing that page would corrupt Back.
+        for (const change of pending.changes) {
+          if (!pending.closed.has(change.state?.openGymSheetId)) history[change.method](change.state,'',change.url)
+        }
+        return
+      }
       if (pushedEntries.current <= 0) return
       pushedEntries.current--
       // The browser has already spent one pushed entry. Mark the latest live active
@@ -168,12 +237,16 @@ export default function Modals() {
           break
         }
       }
-      const top = sheets[sheets.length - 1]
+      const currentSheets = useUI.getState().sheets
+      const top = currentSheets[currentSheets.length - 1]
       if (top && !top.locked) closeSheet(top.id)
     }
-    window.addEventListener('popstate', onPop)
-    return () => window.removeEventListener('popstate', onPop)
-  }, [sheets, closeSheet])
+    window.addEventListener('popstate', onPop, true)
+    return () => {
+      window.removeEventListener('popstate', onPop, true)
+      pendingRewind.current = null; stopObservingHistory()
+    }
+  }, [closeSheet])
 
   // lock the page behind any open sheet (iOS-safe)
   useEffect(() => {

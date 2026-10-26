@@ -16,6 +16,6 @@ it('updates locked-screen language after async profile language loading, without
   expect(host.textContent).toContain('Tu espacio privado de entrenamiento')
   expect(host.textContent).not.toContain('PRIVATE')
   expect(host.querySelector('input').type).toBe('password')
-  expect(host.querySelector('button[type=button]').textContent).toContain('recuperación')
+  expect(host.querySelector('button.btn.ghost').textContent).toContain('recuperación')
  }finally{await act(async()=>{root.unmount();await setLang('en')})}
 })

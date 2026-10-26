@@ -5,6 +5,7 @@ describe('native workout notification clock payload',()=>{
     const a={start:1000,lastMeaningfulWorkoutActivityAt:2000,name:'Upper'}
     expect(workoutNotificationState(a,{endsAt:100000},50000)).toMatchObject({active:true,elapsedMs:49000,restEndsAt:100000,paused:false})
     expect(workoutNotificationState(a,{endsAt:30000},50000).restEndsAt).toBe(0)
+    expect(workoutNotificationState({...a,workEndsAt:60000},{endsAt:30000},50000)).toMatchObject({restEndsAt:0,restSignalAt:30000,workSignalAt:60000})
   })
   it('freezes at completion until explicitly resumed and removes terminal sessions',()=>{
     const a={start:1000,timerPausedAt:6000}

@@ -97,6 +97,36 @@ public class SoundPreferencesTest {
         assertFalse(UpdateMessagingService.newerVersion("1.15.24", "1.15.24"));
         assertFalse(UpdateMessagingService.newerVersion("1.9.99", "1.15.24"));
     }
+    @Test public void notificationMuteKeepsChannelsAndFallbackIsSilentAndStable() throws Exception {
+        JSONObject channels=SoundPreferences.configure(context,settings((short)1).put("notificationEnabled",false)).getJSONObject("channels");
+        assertEquals(channels.getString("muted"),SoundPreferences.notificationChannel(context,System.currentTimeMillis()));
+        assertTrue("Other event audio stays enabled",SoundPreferences.config(context).getBoolean("enabled"));
+        JSONObject first=SoundPreferences.fallbackChannels(context,true).getJSONObject("channels");
+        assertEquals(first.toString(),SoundPreferences.fallbackChannels(context,true).getJSONObject("channels").toString());
+        if(Build.VERSION.SDK_INT>=26){
+            NotificationManager manager=context.getSystemService(NotificationManager.class);
+            assertNull(manager.getNotificationChannel(first.getString("audible")).getSound());
+            assertTrue(manager.getNotificationChannel(first.getString("muted")).shouldVibrate());
+            assertNull(manager.getNotificationChannel(first.getString("silent")).getSound());
+            assertFalse(manager.getNotificationChannel(first.getString("silent")).shouldVibrate());
+        }
+    }
+    @Test public void nativeWorkAndRestClaimsAreIndependentAndIgnoreDuplicateOrAbandonedDeadlines() throws Exception {
+        context.getSharedPreferences(SoundPreferences.PREFS,0).edit().remove("lastRest").remove("lastWork").commit();
+        assertTrue(SoundPreferences.claimTimer(context,"rest",12345));
+        assertTrue(SoundPreferences.claimTimer(context,"work",12345));
+        assertFalse(SoundPreferences.claimTimer(context,"work",12345));
+        assertFalse(SoundPreferences.claimTimer(context,"rest",12345));
+        long now=System.currentTimeMillis();
+        SoundPreferences.configure(context,new JSONObject().put("enabled",false).put("vibration",false));
+        JSONObject state=new JSONObject().put("restSignalAt",now-60001).put("workSignalAt",now+1);
+        WorkoutTimerAlarms.completeDue(context,state,now);
+        assertEquals(12345,context.getSharedPreferences(SoundPreferences.PREFS,0).getLong("lastRest",0));
+        assertEquals(12345,context.getSharedPreferences(SoundPreferences.PREFS,0).getLong("lastWork",0));
+        state.put("workSignalAt",now);WorkoutTimerAlarms.completeDue(context,state,now);
+        assertEquals(now,context.getSharedPreferences(SoundPreferences.PREFS,0).getLong("lastWork",0));
+        assertFalse(SoundPreferences.claimTimer(context,"work",now));
+    }
     @Test public void everyBundledPresetDecodesAndCompletesInAndroidMediaPlayer() throws Exception {
         String json;
         try (java.io.InputStream stream = InstrumentationRegistry.getInstrumentation().getContext().getAssets().open("audio-audit.json")) {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { createBackup } from './backup.js'
+import { createBackup, readBackup } from './backup.js'
 import { parseTGymJson } from './json-import.js'
 describe('portable full snapshots', () => {
   const state = {workouts:[], routines:[], unit:'lb',lang:'en',active:{entries:[]},customEx:[],cloudSync:{on:true,accessToken:'secret',lastFileId:'private'},pin:'1234'}
@@ -29,6 +29,31 @@ describe('portable full snapshots', () => {
     expect(() => parseTGymJson({workouts:[null],routines:[]})).toThrow()
     const data = parseTGymJson('{"workouts":[],"routines":[],"__proto__":{"polluted":true}}').data
     expect(Object.hasOwn(data,'__proto__')).toBe(false)
+  })
+  it.each(['null','absent'])('round trips a legacy training start with %s estimates without adding or changing history', kind => {
+    const source = {...state, trainingStartDate:'2020-01-01'}
+    if (kind === 'null') source.trainingHistory = null
+    const before = JSON.stringify(source)
+    const backup = createBackup(source)
+    const restored = readBackup(backup)
+    expect(restored.trainingStartDate).toBe(source.trainingStartDate)
+    expect(Object.hasOwn(restored,'trainingHistory')).toBe(kind === 'null')
+    if (kind === 'null') expect(restored.trainingHistory).toBeNull()
+    expect(parseTGymJson(JSON.stringify(backup)).data).toEqual(restored)
+    expect(JSON.stringify(source)).toBe(before)
+  })
+  it.each([
+    { trainingStartDate:'9999-01-01', trainingHistory:null },
+    { trainingStartDate:'9999-01-01' },
+    { trainingStartDate:'2020-02-30', trainingHistory:null },
+    { trainingStartDate:'2020-01-01', trainingHistory:{} },
+    { trainingStartDate:'2020-01-01', trainingHistory:{trackedFrom:'2020-01-01',historicalWorkouts:-1,workoutsPerWeek:3} },
+    { trainingStartDate:'2020-01-01', trainingHistory:{trackedFrom:'9999-01-01',historicalWorkouts:0,workoutsPerWeek:3} },
+  ])('continues rejecting future dates and malformed non-null training histories: %j', fields => {
+    const source = {...state,...fields},before = JSON.stringify(source)
+    expect(() => createBackup(source)).toThrow('Invalid training history')
+    expect(() => parseTGymJson(source)).toThrow('Invalid training history')
+    expect(JSON.stringify(source)).toBe(before)
   })
   it.each([
     { routines: [{ id: 'r', ex: 'broken' }] },

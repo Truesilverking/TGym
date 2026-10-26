@@ -20,6 +20,8 @@ export function workoutNotificationState(active, rest, now=Date.now()) {
     elapsedMs:workoutElapsedMs(active,now),workoutLabel:es?'ENTRENO':t('Workout').toUpperCase(),restLabel:es?'DESCANSO':t('Rest').toUpperCase(),
     setNumber,setLabel:setNumber ? `${es?'SERIE':t('Set').toUpperCase()} ${setNumber}` : '',
     restEndsAt:rest?.endsAt > now ? rest.endsAt : 0,
+    restSignalAt:Number.isFinite(rest?.endsAt)?rest.endsAt:0,
+    workSignalAt:Number.isFinite(active.workEndsAt)?active.workEndsAt:0,
     pauseReason:active.pauseReason ?? null,
     pauseLabel:t('Workout paused after inactivity'),
     autoPauseAt:paused?0:inactivityDeadline(active,now)}

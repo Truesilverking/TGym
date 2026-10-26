@@ -56,6 +56,50 @@ async function type(field, value) {
   })
 }
 
+async function openActiveWeightRuler() {
+  const now=Date.now()
+  mirror.value={...structuredClone(DEF),lang:'en',hasCompletedOnboarding:true,hasCompletedAppTour:true,sound:false,
+    active:{id:'ruler-input',d:todayISO(),start:now-60000,lastUserInteractionAt:now,entries:[{id:'0025',target:{mode:'reps'},sets:[{done:false,w:20,r:8}]}]}}
+  await mount();await click('Log')
+  return host.querySelector('.bodyweight-picker-ruler')
+}
+async function rulerPointer(target,type,{trusted=true,buttons=1,primary=true,x=200}={}) {
+  await act(()=>{
+    const event=new MouseEvent(type,{bubbles:true,cancelable:true,button:0,buttons,clientX:x,clientY:30})
+    Object.defineProperties(event,{isTrusted:{value:trusted},isPrimary:{value:primary},pointerId:{value:1}})
+    target.dispatchEvent(event)
+  })
+}
+
+it('records only trusted pressed primary ruler movement, excluding hover and other controls',async()=>{
+  const ruler=await openActiveWeightRuler(),record=vi.spyOn(useStore.getState(),'recordInteraction')
+  await rulerPointer(ruler,'pointermove',{buttons:0})
+  await rulerPointer(ruler,'pointermove',{trusted:false})
+  await rulerPointer(ruler,'pointermove',{primary:false})
+  await rulerPointer(host.querySelector('h1'),'pointermove')
+  expect(record).not.toHaveBeenCalled()
+  const captured=Date.now()
+  await rulerPointer(ruler,'pointermove')
+  expect(record).toHaveBeenCalledExactlyOnceWith(captured,{defer:true,quietMs:1800})
+})
+
+it('renews the ruler quiet period from actual drag movement before the old quiet deadline',async()=>{
+  const ruler=await openActiveWeightRuler(),record=vi.spyOn(useStore.getState(),'recordInteraction')
+  const now=Date.now(),stored=localStorage.getItem('gym_state_v1'),workouts=structuredClone(useStore.getState().S.workouts)
+  await rulerPointer(ruler,'pointerdown')
+  expect(record).toHaveBeenLastCalledWith(now,{defer:true,quietMs:1800})
+  await act(async()=>vi.advanceTimersByTimeAsync(1000))
+  await rulerPointer(ruler,'pointermove',{x:185})
+  expect(record).toHaveBeenLastCalledWith(now+1000,{defer:true,quietMs:1800})
+  await act(async()=>vi.advanceTimersByTimeAsync(801))
+  expect(localStorage.getItem('gym_state_v1')).toBe(stored)
+  expect(useStore.getState().reconcileActiveClock().lastUserInteractionAt).toBe(now+1000)
+  await rulerPointer(ruler,'pointermove',{x:170})
+  expect(record).toHaveBeenLastCalledWith(now+1801,{defer:true,quietMs:1800})
+  expect(useStore.getState().S.workouts).toEqual(workouts)
+  await rulerPointer(ruler,'pointercancel',{x:170})
+})
+
 it.each([['en', 'dark'], ['en', 'light'], ['es', 'dark'], ['es', 'light']])('boots a populated profile and navigates all routes in %s/%s', async (lang, theme) => {
   const populated = { ...structuredClone(DEF), ...buildDemoState(), hasCompletedOnboarding: true, hasCompletedAppTour: true, lang, theme, reduceMotion: true, cloudSync: { on: false } }
   mirror.value = structuredClone(populated)
@@ -180,7 +224,9 @@ it('records trusted recovery input after controlled onChange and persists the re
   mirror.value={...structuredClone(DEF),lang:'en',hasCompletedOnboarding:true,hasCompletedAppTour:true,sound:false,
     active:{id:'recovery-input',d:todayISO(),start:now-45*minute,name:'Recovery input',lastUserInteractionAt:now-40*minute,timerPausedAt:now-10*minute,pauseReason:'inactivity',entries:[{id:'0025',target:{mode:'reps'},sets:[{done:false,w:20,r:8}]}]}}
   await mount()
-  const field=host.querySelector('.center input[type="number"]')
+  expect(host.querySelector('.inactivity-editor input')).toBeNull()
+  await click('Update time')
+  const field=host.querySelector('.inactivity-editor input')
   expect(field.value).toBe('35')
   vi.setSystemTime(now+1000)
   await act(()=>{
@@ -190,8 +236,13 @@ it('records trusted recovery input after controlled onChange and persists the re
     field.dispatchEvent(input)
   })
   expect(field.value).toBe('40')
+  // Trusted input metadata is persisted after the input burst and first paint; its timestamp is
+  // still the input time rather than the later batched storage write.
+  await act(async()=>vi.advanceTimersByTimeAsync(900))
   expect(useStore.getState().S.active.lastUserInteractionAt).toBe(now+1000)
   await click('Save duration')
+  expect(useStore.getState().S.active.accumulatedActiveDuration).not.toBe(40*minute)
+  await click('Save changes')
   expect(useStore.getState().S.active.accumulatedActiveDuration).toBe(40*minute)
   expect(useStore.getState().S.active.pauseReason).toBe('inactivity')
   expect(useStore.getState().S.workouts).toEqual([])

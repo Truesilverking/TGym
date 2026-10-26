@@ -20,14 +20,17 @@ it('recovers from a failed asset request and preserves both heatmap views',async
  expect(host.querySelector('.bm-m.l4')).not.toBeNull()
  expect(loadBodyGeometry).toHaveBeenCalledTimes(2)
 })
-it.each(['male','female'])('reuses the %s geometry and allows keyboard selection without changing the data',async(body)=>{
+it.each(['male','female'])('reuses the %s geometry with a native keyboard-activatable callout without changing the data',async(body)=>{
  const onSelect=vi.fn(),metrics=[{key:'neck',label:'Neck',first:30,last:31,delta:1,unit:'cm'}]
  await act(async()=>root.render(<MeasurementBodyMap body={body} metrics={metrics} selected="neck" onSelect={onSelect}/>))
  expect(host.querySelectorAll('svg.bm-v')).toHaveLength(1)
  expect(host.querySelector('svg').getAttribute('viewBox')).toBe(geometry[body].front.vb)
  expect(Object.values(geometry[body].front.p).flat()).toContain(host.querySelector('path').getAttribute('d'))
- const marker=host.querySelector('[role="button"]')
+ const marker=host.querySelector('button[data-callout="neck"]')
+ expect(marker.type).toBe('button')
  expect(marker.getAttribute('aria-pressed')).toBe('true')
- act(()=>marker.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true})))
+ // Browsers supply Enter/Space activation for the native button. DOM-only
+ // runners do not synthesize that default action, so exercise its click here.
+ act(()=>marker.click())
  expect(onSelect).toHaveBeenCalledWith('neck');expect(metrics[0].last).toBe(31)
 })

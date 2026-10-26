@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { t } from '../lib/i18n.js'
-import { todayISO, fmtScheduledDate, fmtNum } from '../lib/format.js'
+import { todayISO, fmtNum } from '../lib/format.js'
 import { historySummary, trainingStart, trackingStart, validateTrainingHistory } from '../lib/training-history.js'
 import { Button } from './ui.jsx'
 
@@ -44,7 +44,7 @@ export default function TrainingHistory({ promptOnly=false }) {
   return <section className="card training-history-card">
     <div className="row between"><h2>{t('Training history')}</h2><Button size="sm" onClick={openTrainingHistory}>{t(S.trainingStartDate ? 'Edit' : 'Confirm')}</Button></div>
     {!S.trainingStartDate && <p>{t('Since when have you trained consistently?')}</p>}
-    <p className="small muted">{t('Training since {0}',fmtScheduledDate(h.start))}</p>
+    <p className="small muted">{t('Since {0}',h.start.split('-').reverse().join('/'))}</p>
     {!promptOnly && <><div className="tiles">
       <div className="tile"><div className="l">{t('Total workouts')}</div><div className="v">{h.total}</div></div>
       <div className="tile"><div className="l">{t('Average workouts per week')}</div><div className="v">{fmtNum(Math.round(h.averagePerWeek*10)/10)}</div></div>

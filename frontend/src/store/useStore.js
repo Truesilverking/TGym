@@ -10,11 +10,12 @@ import { localTZ } from '../lib/format.js'
 import { registerCustom } from '../lib/exercises.js'
 import { DEMO, DEMO_SEEDED, STANDALONE } from '../lib/demo.js'
 import { guestAllowed } from '../lib/guest.js'
-import { MOBILE, nativeLoad, nativeSave, syncReminder, writeAutoBackup } from '../lib/mobile.js'
+import { MOBILE, nativeLoad, nativeSave, nativeClockJournalAvailable, nativeSaveClockJournal, syncReminder, writeAutoBackup } from '../lib/mobile.js'
+import { CLOCK_JOURNAL_KEY, readClockJournal, writeClockJournal, overlayClockJournal } from '../lib/workout-clock-journal.js'
 import { loadRemote, chooseLocal, forgetRemote, connect } from '../lib/remote.js'
 import { shouldRestoreNative } from '../lib/native-state.js'
 import { portableState, backupChecksum } from '../lib/backup.js'
-import { sessionTiming, recordWorkoutInteraction } from '../lib/workout-time.js'
+import { sessionTiming, recordWorkoutInteraction, inactivityDeadline } from '../lib/workout-time.js'
 import { reconcileWorkoutEdit, reconcileWorkoutClock } from '../lib/workout-lifecycle.js'
 import { sessionOrigin } from '../lib/session-activity.js'
 import { rebaseEmptyApiProfile } from '../lib/api-bootstrap.js'
@@ -22,6 +23,7 @@ import { rebaseEmptyApiProfile } from '../lib/api-bootstrap.js'
 const KEY = 'gym_state_v1'
 export const DEF = {
   storageVersion: STATE_SCHEMA, hasCompletedOnboarding: false, hasCompletedAppTour: false, healthConnection: {},
+  inAppReminderMode:'both', inAppReminderDismissed:[], streakCalendarShowProfile:false, notificationSoundOn:true,
   unit: 'kg', restSec: 90, restPauseSec: 15, restAdvanced: { warmup: 45, supersetMove: 0, supersetRound: 120 }, sound: true, vibration: true, reduceMotion: false, keepAwake: true, lang: 'es',
   sounds: { ...DEFAULT_SOUNDS }, customSounds: [], soundVolume: 1, soundMuted: false,
   theme: 'dark', accent: 'red', body: 'male', targetW: null, heightCm: null,
@@ -55,7 +57,8 @@ function loadState() {
   try {
     const raw = localStorage.getItem(KEY)
     if (raw) {
-      const S = Object.assign(clone(DEF), migrateState(JSON.parse(raw), { onboarded: localStorage.getItem('framegym_onboarded_v1') === '1' }))
+      const base = Object.assign(clone(DEF), migrateState(JSON.parse(raw), { onboarded: localStorage.getItem('framegym_onboarded_v1') === '1' }))
+      const S = MOBILE ? overlayClockJournal(base,readClockJournal()) : base
       const active = sessionTiming(reconcileWorkoutClock(S.active))
       if (active !== S.active && !hasProfileResources(S)) {
         S.active = active
@@ -73,15 +76,90 @@ const hasData = st => !!(st.trainingStartDate || (st.workouts || []).length || (
 export const useStore = create((set, get) => {
   let pushTm = null
   let pushQueue = Promise.resolve()
-  let saveTm = null
+  let saveTm = null, clockMirrorDeadline = null
+  let nativeSerializedState = null, nativeSerializedText, remindersPending = false
+  let journalDerivedState = null
   let bootstrap = null
   let atomicSaving = false
+  let pendingInteraction = null, interactionFrame = null, interactionTask = null, interactionMaxTask = null
+  let registeredCustomEx, retainedResourceCollections
+  // Normal edits replace collections. Clock metadata keeps their identity, so
+  // registry/resource maintenance can wait for a real collection change.
+  const registerProfileCustom = S => {
+    if (registeredCustomEx === S.customEx) return
+    registerCustom(S.customEx)
+    registeredCustomEx = S.customEx
+  }
+  const retainCurrentResources = S => {
+    const collections = [S.customEx, S.inbody, S.customSounds]
+    if (retainedResourceCollections?.every((collection,index) => collection === collections[index])) return
+    retainProfileResources(S)
+    retainedResourceCollections = collections
+  }
+  const clearInteraction = () => {
+    if (interactionFrame != null) cancelAnimationFrame(interactionFrame)
+    if (interactionTask != null) clearTimeout(interactionTask)
+    if (interactionMaxTask != null) clearTimeout(interactionMaxTask)
+    interactionFrame = interactionTask = interactionMaxTask = null; pendingInteraction = null
+  }
+  const withPendingInteraction = active => pendingInteraction && active?.id === pendingInteraction.id
+    ? recordWorkoutInteraction(active, Math.max(pendingInteraction.at, Number(active.lastUserInteractionAt)||0)) : active
+  const flushInteraction = () => {
+    const pending = pendingInteraction
+    if (!pending) return
+    if (get().S.active?.id !== pending.id) { clearInteraction(); return }
+    get().recordInteraction(pending.at)
+  }
+
+  const journalInteraction = () => {
+    const pending=pendingInteraction, S=get().S
+    if (!pending || S.active?.id!==pending.id) { clearInteraction(); return }
+    if(storageError || get().storageError)throw new Error(storageError || get().storageError)
+    const journal={id:pending.id,at:Math.max(pending.at,Number(S.active.lastUserInteractionAt)||0),_ts:Date.now()}
+    try { writeClockJournal(journal) }
+    catch (cause) {
+      set({storageWarning:'primary'})
+      throw storageFailure(cause,{stage:'clock-journal-write',backend:'localStorage',key:CLOCK_JOURNAL_KEY,operation:'setItem'})
+    }
+    // Keep complete-profile freshness and its confirmed serialization separate.
+    // The quiet path still folds pending input through the normal full persist.
+    const next={...S,active:recordWorkoutInteraction(S.active,journal.at)}
+    journalDerivedState=next
+    set({S:next})
+    void nativeSaveClockJournal(journal).then(ok=>{
+      if(ok===false && get().S===next && get().storageWarning!=='primary')set({storageWarning:'mirror'})
+    })
+  }
 
   // Mobile build: mirror the state into a file in the app's data directory (survives WebView
   // storage eviction) and keep the native reminder schedule in step with the weekly plan.
-  const nativePersist = () => {
+  const saveNativeSnapshot = S => {
+    clockMirrorDeadline = null
+    // A hard-bound journal is the durable clock overlay, not a new complete
+    // profile serialization. Pending base mirrors keep their exact cached bytes.
+    const base=S===journalDerivedState && nativeSerializedState?nativeSerializedState:S
+    // Boot/recovery can seed the mirror without persist(). Capture that exact
+    // immutable snapshot here, as nativeSave otherwise would at the same call.
+    if(base!==nativeSerializedState) {
+      nativeSerializedText=JSON.stringify(base);nativeSerializedState=base
+    }
+    return nativeSave(base,nativeSerializedText)
+  }
+  const syncPendingReminders = S => {
+    if (!remindersPending) return
+    remindersPending = false
+    void syncReminder(S)
+  }
+  const nativePersist = (checkReminders, delay = 800) => {
+    remindersPending ||= checkReminders
+    // Ordinary edits retain their existing priority. Only an all-clock pending
+    // snapshot can wait for a gesture, bounded from its first confirmed commit.
+    const now = performance.now()
+    if (remindersPending) clockMirrorDeadline = null
+    else clockMirrorDeadline ??= now + 2000
+    const wait = remindersPending ? 800 : Math.min(delay, Math.max(0, clockMirrorDeadline - now))
     clearTimeout(saveTm)
-    saveTm = setTimeout(() => { saveTm = null; nativeSave(get().S); syncReminder(get().S) }, 800)
+    saveTm = setTimeout(() => { saveTm = null; const S=get().S; saveNativeSnapshot(S); syncPendingReminders(S) }, wait)
   }
 
   const mirrorWeb = async S => {
@@ -94,7 +172,7 @@ export const useStore = create((set, get) => {
   const preparePersistence = S => {
     if (storageError || get().storageError) throw new Error(storageError || get().storageError)
     if (hasProfileResources(S)) throw storageFailure(new Error('Saved profile resources have not been loaded'), {stage:'resource-hydration',backend:'localStorage',key:KEY})
-    S = migrateState(S, { onboarded: !!get().S.hasCompletedOnboarding, toured: !!get().S.hasCompletedAppTour })
+    S = migrateState(S, { onboarded: !!get().S.hasCompletedOnboarding, toured: !!get().S.hasCompletedAppTour, cloneInput:false })
     S.active = sessionTiming(reconcileWorkoutClock(S.active))
     if (S.cloudSync?.on && backupChecksum(portableState(S)) !== backupChecksum(portableState(get().S))) {
       S.cloudSync = { ...S.cloudSync, dirtyAt: Date.now() }
@@ -102,7 +180,7 @@ export const useStore = create((set, get) => {
     S._ts = Date.now()
     return S
   }
-  const persist = (draft, push = true, prepared = false) => {
+  const persist = (draft, push = true, prepared = false, clockOnly = false) => {
     const S = prepared ? draft : preparePersistence(draft)
     const clockChanged = S.active?.timerPausedAt !== get().S.active?.timerPausedAt || S.active?.timerContinuedAt !== get().S.active?.timerContinuedAt
     const serialized = JSON.stringify(STANDALONE ? compactProfile(S) : S)
@@ -126,17 +204,23 @@ export const useStore = create((set, get) => {
       set({storageWarning:'primary'})
       throw storageFailure(cause, {stage:'profile-write',backend:'localStorage',key:failedKey,operation,attemptedBytes:(attemptedValue?.length||0)*2,attemptedUtf8Bytes:attemptedValue==null?0:new TextEncoder().encode(attemptedValue).length,previousBytes:((failedKey===KEY?previous:dirty)?.length||0)*2,localStorageBytes,rollbackError})
     }
-    registerCustom(S.customEx)
-    retainProfileResources(S)
+    // Mobile's primary representation is the full state. Reuse only its confirmed
+    // serialization, never the compact PWA core or a failed/older draft.
+    if (MOBILE && !STANDALONE) { nativeSerializedState=S; nativeSerializedText=serialized }
+    journalDerivedState=null
+    registerProfileCustom(S)
+    retainCurrentResources(S)
     set({ S, storageWarning:null })
+    if (pendingInteraction && (S.active?.id !== pendingInteraction.id || Number(S.active?.lastUserInteractionAt) >= pendingInteraction.at)) clearInteraction()
     if (STANDALONE) void mirrorWeb(S)
     if (MOBILE) {
+      remindersPending ||= !clockOnly
       if (clockChanged) {
         clearTimeout(saveTm)
         saveTm = null
-        nativeSave(S)
-        syncReminder(S)
-      } else nativePersist()
+        saveNativeSnapshot(S)
+        syncPendingReminders(S)
+      } else nativePersist(!clockOnly)
     }
     if (push && get().user) {
       clearTimeout(pushTm)
@@ -146,6 +230,7 @@ export const useStore = create((set, get) => {
 
   const updateDraft = (mut, userActivity) => {
     const S = clone(get().S)
+    S.active = withPendingInteraction(S.active)
     mut(S)
     // Editing a session cannot change the origin captured before this edit.
     if (S.active && S.active.id === get().S.active?.id) S.active.sessionOrigin = {...sessionOrigin(get().S.active,get().S.routines)}
@@ -165,13 +250,15 @@ export const useStore = create((set, get) => {
   // same applies to the file mirror — backgrounding is often the last thing before the OS
   // kills the app.
   const flushOnBackground = () => {
+    flushInteraction()
     const S = get().S
     const active = sessionTiming(reconcileWorkoutClock(S.active))
-    if (active !== S.active) persist({ ...S, active })
+    if (active !== S.active) persist({ ...S, active },true,false,true)
     if (MOBILE && saveTm) {
       clearTimeout(saveTm)
       saveTm = null
-      nativeSave(get().S)
+      saveNativeSnapshot(get().S)
+      syncPendingReminders(get().S)
     }
     if (pushTm) {
       clearTimeout(pushTm)
@@ -207,7 +294,7 @@ export const useStore = create((set, get) => {
   }
 
   return {
-    S: (() => { const s = loadState(); if (!hasProfileResources(s)) registerCustom(s.customEx); return s })(),
+    S: (() => { const s = loadState(); if (!hasProfileResources(s)) registerProfileCustom(s); return s })(),
     user: (() => { try { return JSON.parse(localStorage.getItem('gym_user')) || null } catch { return null } })(),
     storageError,
     storageDiagnostics: initialStorageCause,
@@ -216,10 +303,12 @@ export const useStore = create((set, get) => {
     ready: false,
     needsMobileOnboarding: false,   // mobile build only — set true by boot() on a genuine first launch
     async flushPersistence() {
+      flushInteraction()
       if (!MOBILE) { if (STANDALONE) await mirrorWeb(get().S); return }
       clearTimeout(saveTm)
       saveTm = null
-      if (await nativeSave(get().S) === false) throw new Error('Native storage unavailable')
+      if (await saveNativeSnapshot(get().S) === false) throw new Error('Native storage unavailable')
+      remindersPending = false
       void syncReminder(get().S)
     },
     async completeOnboarding() {
@@ -265,24 +354,68 @@ export const useStore = create((set, get) => {
         // Parsing and every resource read must complete before the protected
         // source becomes editable again. Retrying never writes the raw source.
         storageError = null; initialStorageCause = null
-        registerCustom(saved.customEx)
+        registerProfileCustom(saved)
         set({S:saved})
         await get().boot()
       } catch (error) { set({ready:false,storageError:error.message,storageDiagnostics:error}) }
     },
     reconcileActiveClock(now = Date.now()) {
       const before = get().S.active
-      const active = reconcileWorkoutClock(before, now)
-      if (active !== before) get().update(s => { if (s.active?.id === before?.id) s.active = active }, true, false)
-      return get().S.active
+      const pending = withPendingInteraction(before)
+      const active = reconcileWorkoutClock(pending, now)
+      if (active !== pending) get().update(s => { if (s.active?.id === before?.id) s.active = active }, true, false)
+      return active === pending ? pending : get().S.active
     },
-    recordInteraction(now = Date.now()) {
+    recordInteraction(now = Date.now(), { defer = false, quietMs = 800 } = {}) {
       // Reconcile before extending the deadline: returning after suspension cannot
       // silently erase the interval in which this session should have been paused.
       get().reconcileActiveClock(now)
-      if (get().S.active) get().update(s => { s.active = recordWorkoutInteraction(s.active, now) }, true, false)
+      if (!get().S.active) { clearInteraction(); return }
+      if (defer) {
+        // Marked gestures can finish painting before this quiet timer expires.
+        // The independent hard/deadline timer below still bounds persistence.
+        const quietDelay = Number.isFinite(quietMs) ? Math.min(1800,Math.max(800,quietMs)) : 800
+        const active = get().S.active
+        const remaining = active.timerPausedAt == null ? inactivityDeadline(active,now)-now : Infinity
+        if (MOBILE && saveTm != null && !remindersPending && quietDelay > 800 && remaining > quietDelay + 800) nativePersist(false, quietDelay)
+        pendingInteraction = {id:get().S.active.id,at:Math.max(now,pendingInteraction?.id===get().S.active.id?pendingInteraction.at:0),quietMs:quietDelay}
+        if (interactionMaxTask == null) {
+          const active = get().S.active
+          // Continuous input must not starve persistence or leave Android's last
+          // published inactivity deadline stale. This bound never waits for RAF.
+          // Flush earlier when that old deadline is close, allowing bridge time.
+          const remaining = active.timerPausedAt == null ? inactivityDeadline(active,now)-now : Infinity
+          interactionMaxTask = setTimeout(() => {
+            interactionMaxTask = null
+            try {
+              if(MOBILE && pendingInteraction?.quietMs>800 && pendingInteraction.at<=Date.now() && nativeClockJournalAvailable())journalInteraction()
+              else flushInteraction()
+            } catch { /* Retain pending input for retry. */ }
+          }, Math.min(2000,Math.max(0,remaining-250)))
+        }
+        // Pointerdown precedes click. Coalesce successive navigation taps before
+        // painting/persisting metadata; a frame alone can run while a finger is
+        // still down. The captured time is used immediately by clock checks and
+        // ordinary edits, and pagehide flushes it before suspension.
+        if(interactionFrame!=null)cancelAnimationFrame(interactionFrame)
+        if(interactionTask!=null)clearTimeout(interactionTask)
+        interactionFrame=null
+        interactionTask=setTimeout(()=>{
+          interactionTask=null
+          interactionFrame=requestAnimationFrame(()=>{
+            interactionFrame=null
+            interactionTask=setTimeout(()=>{interactionTask=null;try{flushInteraction()}catch{/* Keep pending input and the existing storage warning for retry. */}},0)
+          })
+        },quietDelay)
+        return
+      }
+      // An input timestamp edits only the active clock. Retain unrelated array
+      // identities so charts, exercise indexes and native sound resources do not
+      // rebuild after every tap. Normal persisted edits still use updateDraft.
+      const S=get().S
+      persist({...S,active:recordWorkoutInteraction(S.active,Math.max(now,Number(S.active.lastUserInteractionAt)||0))},true,false,true)
     },
-    replaceState(S, push = false) { persist(clone(S), push) },
+    replaceState(S, push = false) { clearInteraction(); persist(clone(S), push) },
 
     // Fires after the moments where losing local data would actually hurt — a workout just
     // logged, a routine just edited — not on every keystroke. No-op off mobile or with the
@@ -492,10 +625,13 @@ export const useStore = create((set, get) => {
         }
         const saved = await nativeLoad()
         const S = get().S
-        if (shouldRestoreNative(S, saved)) {
-          try { persist(Object.assign(clone(DEF), saved), false) } catch (error) { set({ready:false,storageError:error.message,storageDiagnostics:error});return }
+        const restore=shouldRestoreNative(S,saved)
+        const chosen=restore?Object.assign(clone(DEF),saved):S
+        const restored=overlayClockJournal(chosen,readClockJournal())
+        if (restore || restored!==S) {
+          try { persist(restored, false) } catch (error) { set({ready:false,storageError:error.message,storageDiagnostics:error});return }
         } else if (S._ts || hasData(S)) {
-          nativeSave(S)   // first run after an update from a file-less version: seed the mirror
+          saveNativeSnapshot(S)   // first run after an update from a file-less version: seed the mirror
         }
         get().setGuest(true)
         syncReminder(get().S)
@@ -510,7 +646,7 @@ export const useStore = create((set, get) => {
       if (STANDALONE) {
         try {
           const local = await hydrateProfile(get().S)
-          if (local !== get().S) { registerCustom(local.customEx); set({S:local}) }
+          if (local !== get().S) { registerProfileCustom(local); set({S:local}) }
           const snapshot = await loadWebState()
           if (snapshot && (!get().S._ts || (snapshot._ts || 0) > get().S._ts)) {
             const saved = await hydrateProfile(snapshot)

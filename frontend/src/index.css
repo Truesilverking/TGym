@@ -107,7 +107,7 @@
 
   /* motion physics */
   --ease:cubic-bezier(.32,.72,0,1);
-  --fast:150ms; --med:240ms;
+  --fast:80ms; --med:240ms;
 
   /* safe area and anti-collision clearances */
   --sab:env(safe-area-inset-bottom,0px);
@@ -169,6 +169,8 @@
 
 /* ---------------------------------------------------------------- reset -- */
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+/* Keep native panning and pinch zoom while removing double-tap click delays. */
+button,a,input,select,textarea,[role="button"],summary{touch-action:manipulation}
 html{
   font-size:16px;background:var(--bg);overscroll-behavior:none;overflow-x:clip;
   -webkit-text-size-adjust:100%;
@@ -246,8 +248,8 @@ html{scroll-padding-top:calc(var(--sat) + 8px);scroll-padding-bottom:calc(var(--
 :root[data-keyboard="true"] #tabbar,:root[data-keyboard="true"] #timer{display:none}
 @media (max-height:400px){body:has(input:focus,textarea:focus,[contenteditable="true"]:focus) #tabbar,body:has(input:focus,textarea:focus,[contenteditable="true"]:focus) #timer{display:none}}
 @media (pointer:coarse){input,select,textarea{font-size:16px}}
-@keyframes viewfade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-.vfade{animation:viewfade var(--med) var(--ease)}
+@keyframes viewfade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.vfade{animation:viewfade var(--fast) var(--ease)}
 
 /* large title, the way a nav bar does it */
 .hdr{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:var(--space-md);margin:8px 0 var(--space-lg)}
@@ -564,12 +566,7 @@ h4.sec{
   content-visibility:auto;
   contain-intrinsic-size:auto none auto 220px;
 }
-@supports (content-visibility:hidden){
-  [data-stats-section][hidden]{
-    display:block;
-    content-visibility:hidden;
-  }
-}
+[data-stats-section][hidden]{display:none}
 .item .tt{font-size:16px;font-weight:600;overflow-wrap:anywhere;line-height:1.25;letter-spacing:-.01em}
 .item .ss{color:var(--label-2);font-size:13px;margin-top:3px}
 .item .grow{flex:1;min-width:0}
@@ -1490,6 +1487,7 @@ button:focus-visible,[role="button"]:focus-visible,summary:focus-visible,a:focus
 .week-schedule-open { grid-column:1 / span 2;display:grid;grid-template-columns:minmax(72px,.65fr) minmax(0,1fr);gap:8px;align-items:center;text-align:left;min-width:0;min-height:40px; }
 .week-schedule .tag { grid-column:2;white-space:normal;overflow-wrap:anywhere;line-height:1.4;justify-self:start; }
 .week-schedule .tag .icn { flex:none; }
+.week-schedule .schedule-routine-label { border-radius:7px; padding:7px 10px; min-height:34px; }
 .week-schedule .chev { grid-column:4; }
 .auth-panel { display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:min(78dvh,760px);padding:28px var(--pad);margin-block:24px;border:1px solid var(--panel-edge);border-radius:var(--r-xl);background:var(--panel-fill); }
 .auth-panel > .btn { max-width:360px; }

@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import React, {act} from 'react'
 import {createRoot} from 'react-dom/client'
-import {MemoryRouter} from 'react-router-dom'
+import {MemoryRouter,Routes,Route,useLocation} from 'react-router-dom'
 import {beforeEach,afterEach,it,expect,vi} from 'vitest'
 import Workout from './Workout.jsx'
 import {DEF,useStore} from '../store/useStore.js'
@@ -10,6 +10,7 @@ import {bindUI} from '../components/ui.jsx'
 import {doFinishWorkout} from '../sheets.jsx'
 import {buildSets,workoutVolume} from '../lib/history.js'
 import {convertWeightState} from '../lib/unit-conversion.js'
+import AppTour,{replayAppTour} from '../components/AppTour.jsx'
 vi.mock('../lib/sound.js',()=>({playAppSound:vi.fn(),vibrate:vi.fn()}))
 vi.mock('../lib/api.js',()=>({api:vi.fn(async()=>({}))}))
 vi.mock('../components/Media.jsx',()=>({default:()=>null}))
@@ -20,7 +21,7 @@ const rows=()=>state().active.entries[0].sets
 const input=(name,i=0)=>container.querySelectorAll(`input[aria-label="${name}"]`)[i]
 const type=(field,value)=>act(()=>{field.focus();Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(field,value);field.dispatchEvent(new Event('input',{bubbles:true}))})
 const click=label=>act(()=>container.querySelector(`[aria-label="${label}"]`).click())
-beforeEach(()=>{vi.useFakeTimers();localStorage.clear();useUI.setState({sheets:[],timer:null,work:null});bindUI(useUI);container=document.createElement('div');document.body.appendChild(container);root=createRoot(container)})
+beforeEach(()=>{vi.useFakeTimers();localStorage.clear();useUI.setState({sheets:[],timer:null,work:null,appTourRequest:null,appTourWorkoutPreview:false});bindUI(useUI);container=document.createElement('div');document.body.appendChild(container);root=createRoot(container)})
 afterEach(()=>{act(()=>root.unmount());container.remove();useUI.getState().stopRest();useUI.getState().stopWork();vi.clearAllTimers();vi.useRealTimers()})
 function mount(target={},sets=[{w:40,r:10,done:false},{w:40,r:10,done:false}],plan=null){
  const S=structuredClone(DEF);Object.assign(S,{lang:'en',strictReps:true,effort:'rir'});
@@ -138,6 +139,35 @@ it('keeps previous before next, hides missing neighbors and pairs using current 
 
 it('shows real set fields in tour practice without creating an active workout or changing history',()=>{
  const S=structuredClone(DEF);S.lang='en';S.effort='none';useStore.setState({S,user:null});useUI.setState({appTourWorkoutPreview:true});act(()=>root.render(<MemoryRouter><Workout/></MemoryRouter>));expect(input('RIR')).toBeTruthy();expect(container.querySelector('[data-tour="sets"]')).not.toBeNull();expect(state().active).toBeNull();expect(state().workouts).toEqual([]);act(()=>useUI.setState({appTourWorkoutPreview:false}));expect(container.querySelector('.workout-tour-preview')).toBeNull()
+})
+
+function TourRouteProbe(){const location=useLocation();return <output data-current-route>{location.pathname}</output>}
+const tourClick=label=>act(()=>[...container.querySelectorAll('.tour-actions button')].find(button=>button.textContent===label).click())
+const routedTour=initialPath=><MemoryRouter initialEntries={[initialPath]}><TourRouteProbe/><div id="app"><Routes><Route path="/workout" element={<Workout/>}/><Route path="*" element={<div/>}/></Routes></div><AppTour/></MemoryRouter>
+const restoredTourSession=()=>({id:'preserved-session',d:'2026-10-22',name:'Existing session',unit:'kg',start:Date.now()-60000,timerPausedAt:Date.now()-30000,routineCompletedAt:Date.now()-30000,pauseReason:'completion',cur:0,entries:[{id:'0025',asked:true,target:{mode:'reps',reps:8},sets:[{w:40,r:8,done:true}]}]})
+
+it('never mounts an existing session between tour practice steps and releases practice after the return route commits',()=>{
+ const S={...structuredClone(DEF),lang:'en',hasCompletedOnboarding:true,hasCompletedAppTour:true,active:restoredTourSession()}
+ useStore.setState({S,user:null});localStorage.setItem('gym_state_v1',JSON.stringify(S));const persisted=localStorage.getItem('gym_state_v1')
+ replayAppTour();act(()=>root.render(routedTour('/settings')))
+ const releases=[],stop=useUI.subscribe((next,before)=>{if(before.appTourWorkoutPreview&&!next.appTourWorkoutPreview)releases.push(container.querySelector('[data-current-route]')?.textContent)})
+ tourClick('Next');tourClick('Next');expect(container.querySelector('.workout-tour-preview')).not.toBeNull()
+ tourClick('Next');tourClick('Next');tourClick('Back');tourClick('Back');tourClick('Back')
+ expect(useUI.getState().sheets).toEqual([]);expect(releases).toEqual([])
+ tourClick('Next');tourClick('Skip')
+ expect(container.querySelector('[data-current-route]').textContent).toBe('/settings')
+ expect(releases).toEqual(['/settings']);stop()
+ expect(useUI.getState().sheets).toEqual([]);expect(state()).toEqual(S)
+ expect(localStorage.getItem('gym_state_v1')).toBe(persisted)
+})
+
+it.each([true,false])('guards the initial workout render before replay or first-tour effects run (completed=%s)',completed=>{
+ const S={...structuredClone(DEF),lang:'en',hasCompletedOnboarding:true,hasCompletedAppTour:completed,active:restoredTourSession()}
+ useStore.setState({S,user:null});if(completed)replayAppTour()
+ act(()=>root.render(routedTour('/workout')))
+ expect(container.querySelector('[data-current-route]').textContent).toBe('/home')
+ expect(useUI.getState().sheets).toEqual([]);expect(state()).toEqual(S)
+ expect(localStorage.getItem('gym_state_v1')).toBeNull()
 })
 
 it('derives Back-off weight and reps, protects manual fields and retains them in reopened history',()=>{

@@ -1,16 +1,61 @@
-.settings-reminders>.sect-b{background:none;overflow:visible}
-.reminder-panel{padding:18px;margin:0;background:var(--surface);border:1px solid var(--sep);border-radius:var(--r);min-width:0}
+﻿.settings-reminders>.sect-b{background:none;overflow:visible}
+/* Keep Settings form geometry stable while WebKit scrolls into an action. */
+.narrow.settings-page .sect{content-visibility:visible;contain-intrinsic-size:none}
+.reminder-panel{padding:16px;margin:0;background:var(--surface);border:1px solid var(--sep);border-radius:var(--r);min-width:0}
 .reminder-panel+.reminder-panel{margin-top:12px}
-.reminder-heading{display:flex;align-items:flex-start;gap:12px}
-.reminder-heading>div{flex:1;min-width:0}.reminder-heading h3{font-size:16px;line-height:1.4;margin:0;overflow-wrap:anywhere}
-.reminder-heading p{font-size:13px;line-height:1.55;color:var(--label-2);margin:5px 0 0}
-.reminder-heading .sw{flex-shrink:0}.reminder-summary{font-size:13px;line-height:1.55;margin:14px 0 0;overflow-wrap:anywhere}
-.reminder-controls{margin-top:14px}.reminder-controls .lrow{padding-left:0;padding-right:0;flex-wrap:wrap;gap:10px}.reminder-controls .lrow:first-child{border-top:0}
-.reminder-feedback{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12px;line-height:1.55;margin:12px 0 0;padding:10px 12px;border-radius:var(--r-sm);background:var(--surface-2)}
-.reminder-feedback span{flex:1;min-width:160px}.reminder-feedback.warning{border-left:3px solid var(--orange)}.reminder-feedback .btn{min-height:44px}
-.reminder-status{font-size:12px;line-height:1.5;margin:12px 0}.reminder-time{display:grid;gap:6px;min-width:0;font-size:13px;font-weight:600}.reminder-time input{min-height:44px;max-width:100%;min-width:0;width:100%}
-.reminder-times{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0}.reminder-days{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}.reminder-days span{display:inline-flex;align-items:center;gap:4px;background:var(--acc-soft);color:var(--acc);border:1px solid var(--acc);padding:5px 8px;border-radius:var(--r-sm);font-size:12px}.reminder-days svg{width:12px;height:12px}
-.reminder-details{margin-top:14px}.reminder-details>summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-size:13px;font-weight:600;gap:8px}.reminder-details>summary::after{content:'⌄';margin-left:auto}.reminder-details[open]>summary::after{transform:rotate(180deg)}
-.reminder-fields{display:grid;gap:12px;margin-top:12px}.reminder-fields .field{margin:0;min-height:44px}.reminder-metric-toggle{display:flex;align-items:center;gap:12px;justify-content:space-between;margin:14px 0}.reminder-metric-toggle h4{margin:0;font-size:14px}
-.measurement-reminder-categories button{display:flex;gap:6px;align-items:center;justify-content:center;white-space:normal}.measurement-reminder-categories button svg{width:14px;height:14px;flex-shrink:0}.measurement-reminder-record{margin-top:16px}
+.reminder-heading{display:flex;align-items:flex-start;gap:10px}
+.reminder-heading-copy{flex:1;min-width:0}
+.reminder-heading h3{font-size:16px;line-height:1.35;margin:0;overflow-wrap:anywhere}
+.reminder-heading p{font-size:12px;line-height:1.45;color:var(--label-2);margin:4px 0 0}
+.reminder-heading>.sw{flex-shrink:0;margin-top:1px}
+.reminder-heading>.lrow-i{width:30px;height:30px;border-radius:9px;font-size:17px;color:var(--acc);background:var(--acc-soft)}
+.reminder-controls{margin-top:14px}
+.reminder-controls .lrow{padding:12px 0;gap:10px;border-top:1px solid var(--sep);flex-wrap:wrap}
+.reminder-controls .lrow-t{font-size:14px}.reminder-controls .lrow-s{font-size:11px}
+.reminder-controls .lrow>.lrow-i{display:none}
+.reminder-note,.reminder-feedback{font-size:12px;line-height:1.45;color:var(--label-2);overflow-wrap:anywhere}
+.reminder-note{margin:8px 0}
+.reminder-feedback{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:12px 0 0}
+.reminder-feedback span{flex:1;min-width:140px}
+.reminder-feedback.warning,.reminder-feedback[role=alert]{color:var(--label);border-left:2px solid var(--orange);padding-left:10px}
+.reminder-feedback .btn{min-height:44px}
+.reminder-time{display:grid;gap:6px;min-width:0;font-size:12px;font-weight:600}
+.reminder-time-control{position:relative;min-width:0}
+.reminder-time-control>svg{position:absolute;width:19px;height:19px;left:13px;top:50%;transform:translateY(-50%);color:var(--acc);pointer-events:none}
+.reminder-time-control input.field{font:inherit;font-size:19px;font-variant-numeric:tabular-nums;min-height:52px;max-width:100%;min-width:0;width:100%;padding:10px 12px 10px 41px;margin:0;color-scheme:inherit;cursor:pointer;background:var(--surface-2);border-radius:var(--r-sm)}
+.reminder-time-control:focus-within{outline:2px solid var(--acc);outline-offset:2px;border-radius:var(--r-sm)}
+.reminder-time-control input::-webkit-calendar-picker-indicator{cursor:pointer;min-width:24px;min-height:24px;margin:0;padding:2px}
+.reminder-time-zone{display:block;color:var(--label-2);font-size:11px;font-weight:400;line-height:1.4;overflow-wrap:anywhere;margin:0}
+.reminder-time-error{color:var(--red);font-size:11px;font-weight:400;line-height:1.4}
+.schedule-reminder>.reminder-time{width:100%}
+.reminder-times{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:12px 0}
+.reminder-times>.reminder-time:only-child{grid-column:1/-1}
+.reminder-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;margin:0 0 14px}
+.reminder-days span{display:flex;align-items:center;justify-content:center;min-height:28px;border-bottom:2px solid var(--sep);color:var(--label-2);font-size:11px}
+.reminder-days span.scheduled{color:var(--acc);border-color:var(--acc);font-weight:650}
+.reminder-details{margin-top:10px;border-top:1px solid var(--sep)}
+.reminder-details>summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-size:12px;font-weight:600;gap:8px}
+.reminder-details>summary::after{content:'⌄';margin-left:auto;color:var(--label-2)}
+.reminder-details[open]>summary::after{transform:rotate(180deg)}
+.reminder-details h4{margin:16px 0 8px;font-size:12px;color:var(--label-2)}
+.reminder-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;gap:12px;margin:14px 0}
+.reminder-fields .field{margin:0;min-height:52px}.reminder-fields .field-label{margin:0;font-size:12px}
+.reminder-fields select{display:block;width:100%;margin-top:6px}
+.reminder-fields .measurement-reminder-interval{grid-column:1/-1}
+.reminder-fields .measurement-reminder-interval .field{margin-top:6px}
+.reminder-panel .measurement-reminder-categories{display:grid;gap:0;margin:0;border-block:1px solid var(--sep)}
+.reminder-metric-toggle{display:flex;align-items:center;gap:10px;min-width:0}
+.reminder-metric-toggle+.reminder-metric-toggle{border-top:1px solid var(--sep)}
+.reminder-metric-toggle>.sw{flex-shrink:0}
+.measurement-reminder-choice{position:relative;display:grid;align-content:center;gap:3px;flex:1;min-width:0;min-height:56px;padding:10px 26px 10px 0;text-align:left;white-space:normal}
+.reminder-panel .measurement-reminder-choice[aria-pressed=true]{background:none;color:inherit}
+.measurement-reminder-choice>span{font-size:14px;font-weight:550;line-height:1.35}
+.measurement-reminder-choice>small{font-size:11px;font-weight:400;color:var(--label-2);line-height:1.4}
+.measurement-reminder-choice>svg{position:absolute;right:4px;top:22px;width:14px;height:14px;color:var(--label-2)}
+.reminder-metric-toggle.selected .measurement-reminder-choice>span,.reminder-metric-toggle.selected .measurement-reminder-choice>svg{color:var(--acc)}
+.measurement-reminder-actions{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.measurement-reminder-actions .btn{flex:1;min-height:44px;font-size:12px}
+.measurement-reminder-record{margin-top:16px;padding-top:14px;border-top:1px solid var(--sep)}
+.measurement-reminder-record h4{margin:0 0 8px;font-size:14px}
+@media(max-width:480px){.reminder-fields,.reminder-times{grid-template-columns:1fr}.reminder-fields .measurement-reminder-interval{grid-column:auto}}
 @media(max-width:360px){.reminder-panel{padding:14px}.reminder-times{grid-template-columns:1fr}.reminder-heading{gap:8px}.reminder-heading>.lrow-i{display:none}}

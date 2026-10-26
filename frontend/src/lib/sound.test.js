@@ -50,6 +50,14 @@ it('does not duplicate native rest alerts or haptics',async()=>{
  native.play.mockResolvedValue({handled:true,played:false});await sound.playAppSound({},'rest',{occurrence:123})
  expect(native.play).toHaveBeenCalledWith({},'rest',{occurrence:123});expect(start).not.toHaveBeenCalled();expect(haptics).not.toHaveBeenCalled()
 })
+it('mutes automatic notification audio independently and allows other cues and deliberate previews',async()=>{
+ const prefs={notificationSoundOn:false}
+ expect(await sound.playAppSound(prefs,'notification')).toBe(false)
+ expect(start).not.toHaveBeenCalled()
+ expect(await sound.playAppSound(prefs,'rest')).toBe(true)
+ expect(await sound.playAppSound(prefs,'notification',{preview:true})).toBe(true)
+ expect(start).toHaveBeenCalledTimes(2)
+})
 it('stops previous audio immediately and invalidates late decoding',async()=>{
  await sound.playAppSound({},'set',{preview:true})
  let finish;decode.mockImplementationOnce(()=>new Promise(resolve=>{finish=resolve}))

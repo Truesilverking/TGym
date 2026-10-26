@@ -41,6 +41,9 @@ describe('notification sound routing', () => {
   it('uses the selected channel and silences audio independently of vibration',()=>{
     expect(notificationSoundOptions({},settings)).toEqual({channelId:'chosen'})
     expect(notificationSoundOptions({sound:false},settings)).toEqual({channelId:'muted'})
+    expect(notificationSoundOptions({notificationSoundOn:false},settings)).toEqual({channelId:'muted'})
+    expect(notificationSoundOptions({notificationSoundOn:true,soundMuted:true},settings)).toEqual({channelId:'muted'})
+    expect(notificationSoundOptions({notificationSoundOn:true,soundVolume:0},settings)).toEqual({channelId:'muted'})
     expect(notificationSoundOptions({},null)).toEqual({})
     expect(notificationSoundOptions({}, {...settings,notificationSoundsSupported:false})).toEqual({})
   })

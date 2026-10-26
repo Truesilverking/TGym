@@ -62,10 +62,10 @@ it.each(['midnight','timezone'])('refreshes immediately when %s changes between 
 it('refreshes Home at local midnight without editing or persisting the profile', () => {
   const S = mountHome(), update = vi.spyOn(useStore.getState(),'update'), write = vi.spyOn(localStorage,'setItem')
   expect(streak()).toBe('1'); expect(metric('Completion')).toBe('100%')
-  expect(host.querySelector('.hdr-center .sub').textContent).toContain('Friday')
+  expect(host.querySelector('.training-date').textContent).toContain('Friday')
   act(() => vi.advanceTimersByTime(60001))
   expect(streak()).toBe('0'); expect(metric('Completion')).toBe('50%')
-  expect(host.querySelector('.hdr-center .sub').textContent).toContain('Saturday')
+  expect(host.querySelector('.training-date').textContent).toContain('Saturday')
   expect(useStore.getState().S).toBe(S)
   expect(update).not.toHaveBeenCalled(); expect(write).not.toHaveBeenCalled()
 })
@@ -86,7 +86,7 @@ it.each(['focus','pageshow'])('refreshes Home on %s without waiting for a poll o
   vi.setSystemTime(new Date('2026-10-03T00:01:00-04:00'))
   act(() => window.dispatchEvent(new Event(event)))
   expect(streak()).toBe('0')
-  expect(host.querySelector('.hdr-center .sub').textContent).toContain('Saturday')
+  expect(host.querySelector('.training-date').textContent).toContain('Saturday')
   expect(useStore.getState().S).toBe(S)
 })
 
