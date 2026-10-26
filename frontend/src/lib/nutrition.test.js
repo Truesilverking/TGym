@@ -121,3 +121,43 @@ it('copies a day of meals with fresh ids and leaves water alone', () => {
   expect(copyDayItems('2026-10-09', '2026-10-10')).toBe(0)
   expect(copiedItems([{ id: 'x', name: 'a' }], 5)[0]).toMatchObject({ name: 'a', loggedAt: 5 })
 })
+
+import { calculateAdaptiveTDEE, getEffectiveDailyGoals } from './nutrition.js'
+
+it('calculates adaptive TDEE based on calorie logs and scale weight delta', () => {
+  const now = Date.now()
+  const bodyweightLogs = [
+    { t: now - 14 * 86400000, w: 80 },
+    { t: now - 7 * 86400000, w: 79.5 },
+    { t: now, w: 79.0 }, // lost 1 kg in 14 days = ~550 kcal/day deficit
+  ]
+  const nutritionLogs = {
+    '2026-10-12': { items: [{ calories: 2000, qty: 1 }] },
+    '2026-10-13': { items: [{ calories: 2000, qty: 1 }] },
+    '2026-10-14': { items: [{ calories: 2000, qty: 1 }] },
+    '2026-10-15': { items: [{ calories: 2000, qty: 1 }] },
+    '2026-10-16': { items: [{ calories: 2000, qty: 1 }] },
+  }
+
+  const result = calculateAdaptiveTDEE({ bodyweightLogs, nutritionLogs, lookbackDays: 15 })
+  expect(result.adaptive).toBe(true)
+  expect(result.tdee).toBeGreaterThan(2400) // TDEE ~ 2000 + 550 = ~2550
+  expect(result.weightChangeKg).toBe(-1)
+})
+
+it('differentiates targets between training and rest days when cycling is enabled', () => {
+  const S = useStore.getState().S
+  S.nutrition.goals = { calories: 2200, carbs: 200, protein: 150, fat: 60, cycleTrainingDays: true }
+  S.week = { 0: ['routine-1'] } // Monday is training day
+
+  const trainingDayGoals = getEffectiveDailyGoals(S, '2026-10-26') // 2026-10-26 is Monday
+  expect(trainingDayGoals.isTrainingDay).toBe(true)
+  expect(trainingDayGoals.calories).toBe(2400)
+  expect(trainingDayGoals.carbs).toBe(240)
+
+  const restDayGoals = getEffectiveDailyGoals(S, '2026-10-27') // Tuesday rest
+  expect(restDayGoals.isTrainingDay).toBe(false)
+  expect(restDayGoals.calories).toBe(2050)
+  expect(restDayGoals.carbs).toBe(170)
+})
+

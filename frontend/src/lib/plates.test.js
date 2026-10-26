@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { platesPerSide, groupPlates, plateColor, BAR_WEIGHTS } from './plates.js'
+import { platesPerSide, groupPlates, plateColor, roundToAvailablePlates, BAR_WEIGHTS } from './plates.js'
 
 describe('platesPerSide', () => {
   it('loads the heaviest plates first on each side', () => {
@@ -33,6 +33,16 @@ describe('platesPerSide', () => {
 
   it('respects a restricted plate inventory', () => {
     expect(platesPerSide(100, { bar: 20, plates: [20, 10, 5] }).perSide).toEqual([20, 20])
+  })
+})
+
+describe('roundToAvailablePlates', () => {
+  it('snaps fractional weights down to what available plates can build', () => {
+    // With smallest plate 2.5 kg, 102.5 kg cannot be loaded on a 20 kg bar (needs 41.25 per side)
+    // Achieved is 100 kg (40 per side: 20+20)
+    expect(roundToAvailablePlates(102.5, { bar: 20, plates: [20, 10, 5, 2.5] })).toBe(100)
+    // If 1.25 kg plate is available: 102.5 can be made exactly (20 + 2*41.25 -> 20 + 2*(20+20+1.25) = 102.5)
+    expect(roundToAvailablePlates(102.5, { bar: 20, plates: [20, 10, 5, 2.5, 1.25] })).toBe(102.5)
   })
 })
 

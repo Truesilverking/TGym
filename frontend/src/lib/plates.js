@@ -39,6 +39,15 @@ export function platesPerSide(total, { unit = 'kg', bar = BAR_WEIGHTS[unit]?.[0]
   return { perSide, achieved: achievedC / 100, remainder: (target - achievedC) / 100, belowBar: false, bar }
 }
 
+/**
+ * Rounds any target load to the nearest weight realistically loadable
+ * with the available plate inventory and bar.
+ */
+export function roundToAvailablePlates(target, options = {}) {
+  const result = platesPerSide(target, options)
+  return result.achieved
+}
+
 /** Groups a per-side list into [{ plate, count }] for compact display. */
 export function groupPlates(perSide) {
   const out = []

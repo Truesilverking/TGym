@@ -225,3 +225,101 @@ export function copyDayItems(fromIso, toIso) {
   })
   return copies.length
 }
+
+/**
+ * Calculates adaptive TDEE by correlating actual calorie intake with scale weight changes.
+ * 1 kg mass delta ≈ 7,700 kcal.
+ */
+export function calculateAdaptiveTDEE({ bodyweightLogs = [], nutritionLogs = {}, targetGoal = 'maintain', lookbackDays = 14 }) {
+  const now = Date.now()
+  const cutoff = now - lookbackDays * 86400000
+
+  // Filter weight entries within window
+  const weights = (bodyweightLogs || [])
+    .filter(b => (b.t || new Date(b.d).getTime()) >= cutoff)
+    .sort((a, b) => (a.t || new Date(a.d).getTime()) - (b.t || new Date(b.d).getTime()))
+
+  if (weights.length < 3) {
+    return { adaptive: false, reason: 'insufficient_weight_data' }
+  }
+
+  // Calculate average daily calories in the period
+  const loggedDays = Object.entries(nutritionLogs || {})
+    .filter(([date]) => new Date(date).getTime() >= cutoff)
+
+  if (loggedDays.length < 5) {
+    return { adaptive: false, reason: 'insufficient_nutrition_data' }
+  }
+
+  let totalCals = 0
+  for (const [, log] of loggedDays) {
+    const dayTotal = (log.items || []).reduce((acc, it) => acc + Math.round((it.calories || 0) * (it.qty || 1)), 0)
+    totalCals += dayTotal
+  }
+  const avgCalories = totalCals / loggedDays.length
+
+  const startWeight = weights[0].w
+  const endWeight = weights[weights.length - 1].w
+  const weightDeltaKg = endWeight - startWeight
+
+  const firstTime = weights[0].t || new Date(weights[0].d).getTime()
+  const lastTime = weights[weights.length - 1].t || new Date(weights[weights.length - 1].d).getTime()
+  const daysElapsed = Math.max(3, (lastTime - firstTime) / 86400000)
+
+  // Energy imbalance per day:
+  const dailyImbalanceCals = (weightDeltaKg * 7700) / daysElapsed
+  // TDEE = What you ate MINUS the surplus (or plus the deficit)
+  let calculatedTDEE = Math.round(avgCalories - dailyImbalanceCals)
+  calculatedTDEE = Math.max(1200, Math.min(4500, calculatedTDEE))
+
+  const goalDelta = DIET_GOALS[targetGoal]?.delta || 0
+  const recommendedCalories = Math.max(1200, calculatedTDEE + goalDelta)
+
+  return {
+    adaptive: true,
+    tdee: calculatedTDEE,
+    recommendedCalories,
+    weightChangeKg: Math.round(weightDeltaKg * 10) / 10,
+    avgLoggedCalories: Math.round(avgCalories),
+    daysAnalyzed: Math.round(daysElapsed),
+  }
+}
+
+/**
+ * Returns daily targets tailored for Training vs Rest days
+ */
+export function getEffectiveDailyGoals(state, dateIso = todayISO()) {
+  const S = state || useStore.getState().S
+  const nutrition = S?.nutrition || { goals: { calories: 2200, protein: 140, carbs: 220, fat: 60, water: 2500 } }
+  const baseGoals = nutrition.goals || { calories: 2200, protein: 140, carbs: 220, fat: 60, water: 2500 }
+
+  // Check if training day: routine assigned in week schedule or completed workout
+  const dayOfWeek = (new Date(dateIso + 'T12:00:00').getDay() + 6) % 7 // Monday=0
+  const hasScheduledRoutine = !!(S?.week?.[dayOfWeek]?.length || S?.dayPlan?.[dateIso])
+  const hasCompletedWorkout = (S?.workouts || []).some(w => w.d === dateIso)
+  const isTrainingDay = hasScheduledRoutine || hasCompletedWorkout
+
+  if (!baseGoals.cycleTrainingDays) {
+    return { ...baseGoals, isTrainingDay }
+  }
+
+  // Carb & Calorie cycling:
+  // Training days: +200 kcal, +40g carbs for workout performance
+  // Rest days: -150 kcal, -30g carbs (lower glycogen demand)
+  if (isTrainingDay) {
+    return {
+      ...baseGoals,
+      isTrainingDay: true,
+      calories: baseGoals.calories + 200,
+      carbs: baseGoals.carbs + 40,
+    }
+  } else {
+    return {
+      ...baseGoals,
+      isTrainingDay: false,
+      calories: Math.max(1200, baseGoals.calories - 150),
+      carbs: Math.max(40, baseGoals.carbs - 30),
+    }
+  }
+}
+
