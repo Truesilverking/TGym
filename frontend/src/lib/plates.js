@@ -27,13 +27,49 @@ const cents = n => Math.round(Number(n) * 100)
  */
 export function platesPerSide(total, { unit = 'kg', bar = BAR_WEIGHTS[unit]?.[0] ?? 20, plates = PLATE_SETS[unit] || PLATE_SETS.kg } = {}) {
   const target = cents(total), barC = cents(bar)
+  const invalid = () => ({ perSide: [], achieved: Number.isFinite(barC) && barC >= 0 ? barC / 100 : 0, remainder: 0, belowBar: false, bar: Number.isFinite(barC) && barC >= 0 ? barC / 100 : 0, invalid: true })
+  // Bound hypothetical/custom inputs before allocating reachability states or
+  // rendering a plate per item. These limits are far beyond a physical barbell.
+  if (!Number.isSafeInteger(target) || !Number.isSafeInteger(barC) || barC < 0 || target > 100_000_000 || !Array.isArray(plates) || plates.length > 64) return invalid()
   if (!Number.isFinite(target) || target <= barC) {
     return { perSide: [], achieved: bar, remainder: Number.isFinite(target) ? Math.max(0, target - barC) / 100 : 0, belowBar: Number.isFinite(target) && target < barC, bar }
   }
-  let side = Math.floor((target - barC) / 2)
+  const side = Math.floor((target - barC) / 2)
   const perSide = []
-  for (const plate of [...plates].map(cents).sort((a, b) => b - a)) {
-    while (plate > 0 && side >= plate) { perSide.push(plate / 100); side -= plate }
+  const available = [...new Set(plates.map(cents).filter(p => Number.isSafeInteger(p) && p > 0 && p <= side))].sort((a, b) => b - a)
+  if (available.length) {
+    if (side / available.at(-1) > 10000) return invalid()
+    const gcd = (a, b) => b ? gcd(b, a % b) : a
+    const step = available.reduce(gcd), coins = available.map(p => p / step)
+    const limit = Math.floor(side / step), smallest = coins.at(-1)
+    // The smallest reachable amount for each residue tells us whether a tail
+    // can be filled. Greedy alone misses exact loads, e.g. 4 kg per side:
+    // 2.5 + 1.25 leaves 0.25, while 2.5 + 0.5 + 0.5 + 0.5 is exact.
+    const distances = new Map([[0, 0]]), queue = [[0, 0]]
+    let examined = 0
+    while (queue.length) {
+      queue.sort((a, b) => b[1] - a[1])
+      const [residue, distance] = queue.pop()
+      if (distance !== distances.get(residue)) continue
+      for (const coin of coins) {
+        if (++examined > 100000) return invalid()
+        const next = distance + coin, nextResidue = next % smallest
+        if (next <= limit && next < (distances.get(nextResidue) ?? Infinity)) {
+          distances.set(nextResidue, next); queue.push([nextResidue, next])
+          if (distances.size > 10000 || queue.length > 4096) return invalid()
+        }
+      }
+    }
+    let remaining = 0
+    for (const [residue, distance] of distances) {
+      const candidate = limit - ((limit - residue) % smallest + smallest) % smallest
+      if (candidate >= distance) remaining = Math.max(remaining, candidate)
+    }
+    for (const coin of coins) {
+      while (remaining >= coin && (distances.get((remaining - coin) % smallest) ?? Infinity) <= remaining - coin) {
+        perSide.push(coin * step / 100); remaining -= coin
+      }
+    }
   }
   const achievedC = barC + 2 * perSide.reduce((sum, p) => sum + cents(p), 0)
   return { perSide, achieved: achievedC / 100, remainder: (target - achievedC) / 100, belowBar: false, bar }

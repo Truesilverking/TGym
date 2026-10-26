@@ -71,7 +71,11 @@ function loadState() {
   return clone(DEF)
 }
 
-const hasData = st => !!(st.trainingStartDate || (st.workouts || []).length || (st.routines || []).length || (st.bodyweight || []).length || (st.measurements || []).length || (st.inbody || []).length || (st.trainingPauses || []).length)
+// A nutrition-only profile is populated too: it must follow the same freshness
+// policy as training data and must not restart mobile onboarding after recovery.
+const hasNutritionData = nutrition => Object.keys(nutrition?.logs || {}).length || (nutrition?.customFoods || []).length ||
+  Object.entries(nutrition?.goals || {}).some(([key, value]) => key === 'cycleTrainingDays' ? value === true : Object.hasOwn(DEF.nutrition.goals, key) && Number(value) !== DEF.nutrition.goals[key])
+const hasData = st => !!(st.trainingStartDate || (st.workouts || []).length || (st.routines || []).length || (st.bodyweight || []).length || (st.measurements || []).length || (st.inbody || []).length || (st.trainingPauses || []).length || hasNutritionData(st.nutrition))
 
 export const useStore = create((set, get) => {
   let pushTm = null

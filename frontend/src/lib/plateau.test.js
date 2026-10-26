@@ -34,3 +34,14 @@ it('does not flag plateau when user is consistently progressing', () => {
   const result = detectExercisePlateau(workouts, 'bench')
   expect(result.isPlateau).toBe(false)
 })
+
+it('uses the shared 1RM rep cap and ignores future, cancelled and duplicate sessions', () => {
+  const now = Date.now()
+  const session = (id, ago, extra = {}) => ({ id, start: now - ago * 86400000, entries: [{ id: 'bench', sets: [{ w: 100, r: 5, done: true }] }], ...extra })
+  const a = session('a', 5)
+  expect(detectExercisePlateau([a, a, session('future', -2), session('cancelled', 3, { cancelled: true })], 'bench').sessionCount).toBe(1)
+  const highReps = [1, 2, 3].map(i => session('r' + i, i, { entries: [{ id: 'bench', sets: [{ w: 100, r: 30, done: true }] }] }))
+  expect(detectExercisePlateau(highReps, 'bench').sessionCount).toBe(0)
+  const timed = [1, 2, 3].map(i => session('t' + i, i, { entries: [{ id: 'bench', target: { mode: 'time' }, sets: [{ w: 100, r: 5, sec: 30, done: true }] }] }))
+  expect(detectExercisePlateau(timed, 'bench').sessionCount).toBe(0)
+})

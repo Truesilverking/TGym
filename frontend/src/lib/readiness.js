@@ -7,11 +7,11 @@ import { todayISO } from './format.js'
  * Soreness: 1 (no soreness) to 5 (extreme soreness/stiff)
  * Energy: 1 (exhausted) to 5 (fired up)
  */
-export function calculateReadinessScore({ sleep = 3, soreness = 3, energy = 3 }) {
-  const s = Math.max(1, Math.min(5, Number(sleep) || 3))
+export function calculateReadinessScore({ sleep = 3, soreness = 3, energy = 3 } = {}) {
+  const level = value => Number.isFinite(Number(value)) ? Math.max(1, Math.min(5, Number(value))) : 3
+  const s = level(sleep), sore = level(soreness), e = level(energy)
   // For soreness: 1 is best (0 penalty), 5 is worst
-  const invertedSoreness = 6 - Math.max(1, Math.min(5, Number(soreness) || 3))
-  const e = Math.max(1, Math.min(5, Number(energy) || 3))
+  const invertedSoreness = 6 - sore
 
   // Max score: 5 + 5 + 5 = 15; Min score: 1 + 1 + 1 = 3
   const total = s + invertedSoreness + e
@@ -41,7 +41,7 @@ export function calculateReadinessScore({ sleep = 3, soreness = 3, energy = 3 })
     rirDelta,
     suggestion,
     sleep: s,
-    soreness: Number(soreness) || 3,
+    soreness: sore,
     energy: e,
   }
 }

@@ -1,6 +1,5 @@
-import { musclesOf } from './muscles.js'
-import { EXIDX, exOr } from './exercises.js'
-import { isWarmupRow } from './workout-model.js'
+import { loadOfWorkouts } from './muscles.js'
+import { loggedWorkouts } from './daily-plan.js'
 
 export const DEFAULT_VOLUME_TARGETS = {
   min: 10, // MEV (Minimum Effective Volume)
@@ -8,37 +7,25 @@ export const DEFAULT_VOLUME_TARGETS = {
 }
 
 export const MUSCLE_GROUPS = [
-  'chest', 'back', 'quads', 'hamstrings', 'shoulders', 'biceps', 'triceps', 'calves', 'abs', 'glutes'
+  'chest', 'upper-back', 'quadriceps', 'hamstring', 'deltoids', 'biceps', 'triceps', 'calves', 'abs', 'gluteal'
 ]
 
 /**
  * Calculates completed weekly hard sets per muscle and compares against target volume
  */
-export function calculateWeeklyMuscleVolume(workouts = [], { weekStartMs = 0, targets = {} } = {}) {
+export function calculateWeeklyMuscleVolume(workouts = [], { weekStartMs = 0, weekEndMs = Date.now(), targets = {} } = {}) {
   const cutoff = weekStartMs > 0 ? weekStartMs : Date.now() - 7 * 86400000
-  const counts = {}
-
-  for (const w of workouts) {
-    const timestamp = Number(w.start || new Date(w.d).getTime())
-    if (!Number.isFinite(timestamp) || timestamp < cutoff) continue
-
-    for (const entry of w.entries || []) {
-      const hardSets = (entry.sets || []).filter(s => s.done && !isWarmupRow(s)).length
-      if (hardSets === 0) continue
-
-      const ex = EXIDX[entry.id] || exOr(entry.id)
-      const muscles = musclesOf(ex)
-
-      for (const [slug, weight] of Object.entries(muscles)) {
-        // Direct / primary muscles get full count; secondary get fractional contribution (0.5)
-        const contribution = (Number(weight) || 1) >= 0.8 ? hardSets : hardSets * 0.5
-        counts[slug] = (counts[slug] || 0) + contribution
-      }
-    }
-  }
+  const sessions = loggedWorkouts({ workouts }).filter(w => {
+    const timestamp = Number(w.start || new Date(w.d + 'T12:00:00').getTime())
+    return Number.isFinite(timestamp) && timestamp >= cutoff && timestamp <= weekEndMs
+  })
+  // Reuse the map's weighted metadata and historical snapshots. Deleted/custom
+  // exercises must retain their muscles, and secondary weights must not be guessed.
+  const counts = loadOfWorkouts(sessions)
 
   const result = {}
-  for (const [slug, rawSets] of Object.entries(counts)) {
+  for (const slug of new Set([...Object.keys(counts), ...Object.keys(targets)])) {
+    const rawSets = counts[slug] || 0
     const sets = Math.round(rawSets * 10) / 10
     const muscleTarget = targets[slug] || DEFAULT_VOLUME_TARGETS
     const min = muscleTarget.min ?? DEFAULT_VOLUME_TARGETS.min

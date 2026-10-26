@@ -75,7 +75,7 @@ The session-origin/activity correction is included in the published 1.15.48 APK/
 | Ordered daily schedules, activities and training breaks | `frontend/src/lib/daily-plan.js`, `activities.js`, `training-pause.js`, `components/DailyPlan.jsx`, `components/Activities.jsx` |
 | PWA mirror and additive migrations | `frontend/src/lib/web-state.js`, `state-migrations.js` |
 
-Routes are `/home`, `/plan`, `/plan/r/:id`, `/workout`, `/stats`, `/history`, `/library`, `/settings` and admin-only `/admin`. Main tabs expose Home, Routine, Start/Resume, Stats and Exercises. Calendar and measurements are sheets, not standalone routes. Nested dialogs/sheets share UI state and back handling.
+Routes are `/home`, `/plan`, `/plan/r/:id`, `/workout`, `/stats`, `/body`, `/records`, `/progress`, `/history`, `/library`, `/nutrition`, `/settings` and admin-only `/admin`. Main tabs expose Today, Routine, Start/Resume, Nutrition and Stats. Module switches retain access to Exercises under Routine and Body, Personal records, History and Report under Stats. Calendar and measurements remain sheets. Nested dialogs/sheets share UI state and back handling.
 
 ## State, models and storage
 

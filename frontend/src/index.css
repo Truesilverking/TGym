@@ -200,8 +200,8 @@ button,.chip,.tile,.item,.wday,.cal-d,.swatch,.hm-c,.lrow,.seg button,.stp butto
   stroke-linecap:round;stroke-linejoin:round;
 }
 
-@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
-:root[data-reduce-motion="true"] *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+:root[data-reduce-motion="true"] *,:root[data-reduce-motion="true"] *::before,:root[data-reduce-motion="true"] *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
 
 /* ------------------------------------------------------------ type scale -- */
 .t-large  {font-size:34px;line-height:1.06;font-weight:700;letter-spacing:-.028em}

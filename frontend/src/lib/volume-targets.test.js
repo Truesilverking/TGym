@@ -25,3 +25,15 @@ it('flags volume as low when below minimum target', () => {
   expect(report.chest.sets).toBe(2)
   expect(report.chest.status).toBe('low')
 })
+
+it('retains custom historical muscle weights and excludes duplicate, cancelled and future sessions', () => {
+  const now = Date.now()
+  const session = { id: 'one', start: now - 86400000, entries: [{ id: 'deleted-custom', muscleSnapshot: { muscleWeights: { chest: 1, triceps: 0.25 } }, sets: [{ done: true }, { done: true, phase: 'warmup' }] }] }
+  const report = calculateWeeklyMuscleVolume([session, session, { ...session, id: 'cancelled', cancelled: true }, { ...session, id: 'future', start: now + 86400000 }])
+  expect(report.chest.sets).toBe(1)
+  expect(report.triceps.sets).toBe(0.3)
+})
+
+it('reports zero volume for explicitly targeted muscles that were not trained', () => {
+  expect(calculateWeeklyMuscleVolume([], { targets: { quadriceps: { min: 5, max: 10 } } }).quadriceps).toMatchObject({ sets: 0, status: 'low' })
+})

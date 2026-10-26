@@ -35,6 +35,19 @@ it('boots from the native mirror after WebView storage loss and immediately pers
   expect(native.save.mock.calls[0][0].active.timerPausedAt).toBe(432 * minute)
 })
 
+it.each([
+  { logs: { '2026-10-20': { items: [{ id: 'meal', calories: 200 }], water: 250 } } },
+  { goals: { ...DEF.nutrition.goals, calories: 2600 } },
+])('restores a nutrition-only native profile without restarting initial setup (%j)', async fields => {
+  const nutrition = { ...structuredClone(DEF.nutrition), ...fields }
+  native.load.mockResolvedValue({ ...structuredClone(DEF), _ts: 1, nutrition })
+  native.save.mockResolvedValue(true)
+  await useStore.getState().boot()
+  expect(useStore.getState().S.nutrition).toEqual(nutrition)
+  expect(useStore.getState().needsMobileOnboarding).toBe(false)
+  expect(JSON.parse(localStorage.getItem('gym_state_v1')).nutrition).toEqual(nutrition)
+})
+
 it('offline native reopen pauses an unfinished session at the persisted thirty-minute boundary', async () => {
   const active={id:'unfinished',start:360*minute,lastUserInteractionAt:400*minute,entries:[{id:'ex',sets:[{done:true,r:8,doneAt:400*minute},{done:false,r:8}]}]}
   native.load.mockResolvedValue({...structuredClone(DEF),_ts:400*minute,active})

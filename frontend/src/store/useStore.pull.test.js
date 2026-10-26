@@ -25,6 +25,24 @@ function pendingPull() {
   return { pulling, respond: state => resolveRead({ state }) }
 }
 
+it.each([
+  { logs: { '2026-10-20': { items: [{ id: 'meal', calories: 200 }], water: 250 } }, customFoods: [] },
+  { logs: {}, customFoods: [{ id: 'custom-food', name: 'Saved food', calories: 100 }] },
+  { goals: { ...DEF.nutrition.goals, calories: 2600 }, logs: {}, customFoods: [] },
+  { goals: { ...DEF.nutrition.goals, cycleTrainingDays: true }, logs: {}, customFoods: [] },
+])('keeps a newer clean nutrition-only profile when an older server copy returns (%j)', async nutrition => {
+  const current = { ...structuredClone(DEF), nutrition: { ...structuredClone(DEF.nutrition), ...nutrition }, _ts: Date.now() }
+  useStore.setState({ S: current })
+  localStorage.setItem('gym_state_v1', JSON.stringify(current))
+  const { pulling, respond } = pendingPull()
+  respond({ ...structuredClone(DEF), _ts: 1 })
+  expect(await pulling).toBe(true)
+  expect(useStore.getState().S.nutrition).toEqual(current.nutrition)
+  const uploaded = api.mock.calls.find(([, options]) => options?.method === 'PUT')
+  expect(uploaded).toBeTruthy()
+  expect(JSON.parse(uploaded[1].body).state.nutrition).toEqual(current.nutrition)
+})
+
 it.each([true, false])('keeps preference edits made during a pending read (sync intent %s)', async push => {
   const { pulling, respond } = pendingPull()
   useStore.getState().update(s => {

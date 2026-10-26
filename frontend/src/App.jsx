@@ -9,7 +9,7 @@ import { primeAudio, stopSound, reportSoundError } from './lib/sound.js'
 import { syncNativeSounds } from './lib/native-sound.js'
 import { bindUI } from './components/ui.jsx'
 import { ACCENTS } from './lib/format.js'
-import { setLang, useLang, t } from './lib/i18n.js'
+import { setLang, useLang, t, LANGS } from './lib/i18n.js'
 import { setNav } from './lib/nav.js'
 import { initBackButton } from './lib/back.js'
 import { useWakeLock } from './lib/wakelock.js'
@@ -65,6 +65,7 @@ function applyPrefs(theme, accent, reduceMotion = false) {
 
 export function ThemePreferences() {
   const S = useStore(s => s.S)
+  const language = Object.hasOwn(LANGS, S.lang) ? S.lang : 'en'
   useLayoutEffect(() => installViewportLayout(), [])
   useLayoutEffect(() => { applyPrefs(S.theme, S.accent, S.reduceMotion) }, [S.theme, S.accent, S.reduceMotion])
   // 'system' needs to react live if the OS theme flips while the app is open, not just on
@@ -77,8 +78,8 @@ export function ThemePreferences() {
     mql.addEventListener('change', onChange)
     return () => mql.removeEventListener('change', onChange)
   }, [S.theme, S.accent, S.reduceMotion])
-  useEffect(() => { setLang(S.lang || 'en') }, [S.lang])
-  useEffect(() => { document.documentElement.lang = S.lang || 'en' }, [S.lang])
+  useEffect(() => { setLang(language) }, [language])
+  useEffect(() => { document.documentElement.lang = language }, [language])
   return null
 }
 

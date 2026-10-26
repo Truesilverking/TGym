@@ -211,7 +211,7 @@ export default function Settings() {
     <Section className="profile-preferences" title={t('General')} footer={t('Changing a unit automatically converts all saved values, including history and active workouts.')}>
       <SelectRow
         icon="globe" iconTint="var(--blue)" title={t('Language')}
-        value={S.lang || 'en'} onChange={v => update(s => { s.lang = v })}
+        value={Object.hasOwn(LANGS, S.lang) ? S.lang : 'en'} onChange={v => update(s => { s.lang = v })}
         options={Object.entries(LANGS).map(([k, name]) => ({
           value: k, label: name,
           subtitle: INSTR_LANGS.includes(k) ? null : t("Exercise instructions aren't available in this language yet — they stay in English."),

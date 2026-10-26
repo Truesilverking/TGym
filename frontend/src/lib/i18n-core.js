@@ -22,7 +22,7 @@ export const getVersion = () => version
 
 // Translate a source string; {0},{1}… are replaced with args (also on the English fallback).
 export function t(s, ...args) {
-  let v = dict[s] || s
+  let v = Object.hasOwn(dict, s) && typeof dict[s] === 'string' && dict[s] ? dict[s] : s
   for (let i = 0; i < args.length; i++) v = v.replaceAll('{' + i + '}', args[i])
   return v
 }
@@ -39,7 +39,7 @@ export const originalExerciseNameFor = (ex, S = {}, context = {}) => {
   const saved = (S?.customEx || []).find(e => e.id === id)
   const snapshot = entry?.n || entry?.muscleSnapshot?.n
   const base = saved || (ex?.missing && snapshot ? { id, n: snapshot } : ex)
-  const translated = exerciseNames && base && !base.custom && exerciseNames[id]
+  const translated = exerciseNames && base && !base.custom && Object.hasOwn(exerciseNames, id) && exerciseNames[id]
   if (!translated) return base?.n || snapshot || id || ''
   return translated
 }
@@ -58,7 +58,7 @@ export function exerciseNameFor(ex, S = {}, context = {}) {
 
 // Search both the localized and canonical English title without changing persisted data.
 export const exerciseNameSearchText = ex => {
-  const translated = exerciseNames && ex && exerciseNames[ex.id]
+  const translated = exerciseNames && ex && Object.hasOwn(exerciseNames, ex.id) && exerciseNames[ex.id]
   return translated ? `${translated} ${ex.n}` : (ex?.n || '')
 }
 
@@ -66,7 +66,7 @@ export const exerciseNameSearchText = ex => {
 // exported as setLang because loading packs requires import.meta.glob, which is Vite-only.
 // `dict`, `instr` and `exerciseNames` may be null to reset to their English fallbacks.
 export function _setLangState(newLang, newDict, newInstr, newExerciseNames) {
-  lang = LANGS[newLang] ? newLang : 'en'
+  lang = Object.hasOwn(LANGS, newLang) ? newLang : 'en'
   dict = lang === 'en' ? {} : (newDict || {})
   instr = lang === 'en' || !INSTR_LANGS.includes(lang) ? null : (newInstr || null)
   exerciseNames = lang === 'en' || !EXERCISE_NAME_LANGS.includes(lang) ? null : (newExerciseNames || null)

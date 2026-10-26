@@ -2136,5 +2136,18 @@ export default {
   "Copy {0} foods from {1}": "Copiar {0} alimentos de {1}",
   "Personal records": "Récords personales",
   "Copy 1 food from {0}": "Copiar 1 alimento de {0}",
-  "Tap to return to today": "Toca para volver a hoy"
+  "Tap to return to today": "Toca para volver a hoy",
+  "Complete set": "Completar serie",
+  "Could not create the share image. Please try again.": "No se pudo crear la imagen para compartir. Inténtalo de nuevo.",
+  "Exit": "Salir",
+  "Generating…": "Generando…",
+  "Hands-free mode": "Modo manos libres",
+  "Set {0} completed. Start resting.": "Serie {0} completada. Empieza a descansar.",
+  "Share story": "Compartir historia",
+  "Voice": "Voz",
+  "Decrease load": "Reducir carga",
+  "Decrease reps": "Reducir repeticiones",
+  "Enter a valid load.": "Introduce una carga válida.",
+  "Increase load": "Aumentar carga",
+  "Increase reps": "Aumentar repeticiones"
 };

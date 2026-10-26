@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import Icon from './Icon.jsx'
-import { Button } from './ui.jsx'
-import { t } from '../lib/i18n.js'
+import { t, getLang } from '../lib/i18n.js'
+import { weightStepFor } from '../lib/unit-conversion.js'
 
 export function speakAnnouncement(text, lang = 'es') {
   if (typeof window === 'undefined' || !window.speechSynthesis) return
@@ -29,11 +29,13 @@ export default function HandsFreeConsole({
   onClose,
 }) {
   const [voiceOn, setVoiceOn] = useState(true)
+  const weightStep = weightStepFor(unit)
+  useEffect(() => () => { window.speechSynthesis?.cancel?.() }, [])
 
   const handleComplete = () => {
     onCompleteSet?.()
     if (voiceOn) {
-      speakAnnouncement(`Serie ${setIndex + 1} completada. Inicia descanso.`)
+      speakAnnouncement(t('Set {0} completed. Start resting.', setIndex + 1), getLang())
     }
   }
 
@@ -54,7 +56,7 @@ export default function HandsFreeConsole({
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <div style={{ fontSize: 13, color: 'var(--acc)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-            {t('Modo Manos Libres')} · {t('Serie')} {setIndex + 1} / {totalSets}
+            {t('Hands-free mode')} · {t('Set')} {setIndex + 1} / {totalSets}
           </div>
           <h1 style={{ margin: '4px 0 0', fontSize: 26, fontWeight: 800, lineHeight: 1.1 }}>
             {exerciseName}
@@ -63,8 +65,9 @@ export default function HandsFreeConsole({
         <div style={{ display: 'flex', gap: 8 }}>
           <button
             className="iconbtn"
-            onClick={() => setVoiceOn(!voiceOn)}
-            aria-label={t('Voz')}
+            onClick={() => { if (voiceOn) window.speechSynthesis?.cancel?.(); setVoiceOn(!voiceOn) }}
+            aria-label={t('Voice')}
+            aria-pressed={voiceOn}
             style={{ color: voiceOn ? 'var(--acc)' : 'var(--label-3)', width: 48, height: 48 }}
           >
             <Icon name={voiceOn ? 'bell' : 'bell'} />
@@ -72,7 +75,7 @@ export default function HandsFreeConsole({
           <button
             className="iconbtn"
             onClick={onClose}
-            aria-label={t('Salir')}
+            aria-label={t('Exit')}
             style={{ width: 48, height: 48 }}
           >
             <Icon name="xmark" />
@@ -94,14 +97,15 @@ export default function HandsFreeConsole({
           border: '1px solid #27272a',
         }}>
           <div style={{ fontSize: 13, color: 'var(--label-2)', textTransform: 'uppercase', fontWeight: 700 }}>
-            {t('Carga')} ({unit})
+            {t('Load')} ({unit})
           </div>
           <div style={{ fontSize: 56, fontWeight: 900, fontFamily: 'var(--font-display)', margin: '8px 0', color: 'var(--acc)' }}>
             {weight}
           </div>
           <div style={{ display: 'flex', gap: 12, width: '100%', maxWidth: 160 }}>
             <button
-              onClick={() => onAdjustWeight?.(-2.5)}
+              onClick={() => onAdjustWeight?.(-weightStep)}
+              aria-label={t('Decrease load')}
               style={{
                 flex: 1,
                 minHeight: 52,
@@ -117,7 +121,8 @@ export default function HandsFreeConsole({
               −
             </button>
             <button
-              onClick={() => onAdjustWeight?.(2.5)}
+              onClick={() => onAdjustWeight?.(weightStep)}
+              aria-label={t('Increase load')}
               style={{
                 flex: 1,
                 minHeight: 52,
@@ -155,6 +160,7 @@ export default function HandsFreeConsole({
           <div style={{ display: 'flex', gap: 12, width: '100%', maxWidth: 160 }}>
             <button
               onClick={() => onAdjustReps?.(-1)}
+              aria-label={t('Decrease reps')}
               style={{
                 flex: 1,
                 minHeight: 52,
@@ -171,6 +177,7 @@ export default function HandsFreeConsole({
             </button>
             <button
               onClick={() => onAdjustReps?.(1)}
+              aria-label={t('Increase reps')}
               style={{
                 flex: 1,
                 minHeight: 52,
@@ -211,7 +218,7 @@ export default function HandsFreeConsole({
         }}
       >
         <Icon name="check" style={{ fontSize: 26 }} />
-        <span>{t('Completar Serie')}</span>
+        <span>{t('Complete set')}</span>
       </button>
     </div>
   )

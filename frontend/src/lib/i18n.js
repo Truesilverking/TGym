@@ -34,7 +34,7 @@ export async function setLang(l) {
   // Locale packs load asynchronously. A slow request for the previous language must never
   // overwrite a newer choice made during onboarding or in Settings.
   const request = ++langRequest
-  if (!LANGS[l]) l = 'en'
+  if (!Object.hasOwn(LANGS, l)) l = 'en'
   if (l === getLang() && getVersion() > 0) return
   let dict = {}, instr = null, exerciseNames = null
   try { dict = l === 'en' ? {} : (await localePacks['../locales/' + l + '.js']()).default } catch (e) { dict = {} }

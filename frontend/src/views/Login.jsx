@@ -10,28 +10,35 @@ import AuthIdentity from '../components/AuthIdentity.jsx'
 import { Button } from '../components/ui.jsx'
 import Icon from '../components/Icon.jsx'
 import { parseTGymJson } from '../lib/json-import.js'
+import { saveImportUndo } from '../lib/import-undo.js'
+import { confirmSheet } from '../sheets.jsx'
 
 function RegisterSheet({ close }) {
   const { setUser, pushState, pullState, loadConfig } = useStore()
   const config = useStore(s => s.config)
   const [name, setName] = useState('')
   const [code, setCode] = useState('')
+  const [busy, setBusy] = useState(false)
+  const pending = useRef(false)
   const inviteOnly = !!config?.invite_only
   const ref = useRef(null)
-  useEffect(() => { setTimeout(() => ref.current?.focus(), 250) }, [])
+  useEffect(() => { const timer = setTimeout(() => ref.current?.focus(), 250); return () => clearTimeout(timer) }, [])
   // Boot already fetched this; retry here only if that attempt failed, so the invite field still
   // appears on an instance whose config arrived late rather than never.
   useEffect(() => { loadConfig() }, [loadConfig])
   const go = async () => {
+    if (pending.current) return
     const n = name.trim()
     if (!n) { useUI.getState().toast(t('Enter a name')); return }
     if (inviteOnly && !code.trim()) { useUI.getState().toast(t('An invite code is required')); return }
+    pending.current = true; setBusy(true)
     try {
       const u = await passkeyRegister(n, code.trim())
       setUser(u); close()
-      if (hasData(useStore.getState().S)) { await pushState(); useUI.getState().toast(t('Profile created — data from this device moved into it')) }
-      else { await pullState(); useUI.getState().toast(t('Welcome, {0}', u.name)) }
+      if (hasData(useStore.getState().S)) { await pushState({ strict: true }); useUI.getState().toast(t('Profile created — data from this device moved into it')) }
+      else { const synced = await pullState(); useUI.getState().toast(synced === false ? t('Server synchronization failed. Your local data was kept.') : t('Welcome, {0}', u.name)) }
     } catch (e) { if (e.name !== 'NotAllowedError' && e.name !== 'AbortError') useUI.getState().toast(e.message || t('Registration failed')) }
+    finally { pending.current = false; setBusy(false) }
   }
   return <>
     <h3>{t('Create your profile')}</h3>
@@ -44,7 +51,7 @@ function RegisterSheet({ close }) {
       <div className="dim small" style={{ marginTop: 6 }}>{t('This app is invite-only — enter the code you were given.')}</div>
     </>}
     <div style={{ height: 12 }} />
-    <Button variant="primary" onClick={go}>{t('Create passkey')}</Button>
+    <Button variant="primary" disabled={busy} onClick={go}>{t('Create passkey')}</Button>
   </>
 }
 
@@ -53,18 +60,23 @@ export default function Login() {
   const config = useStore(s => s.config)
   const canGuest = guestAllowed(config)
   const fileRef = useRef(null)
+  const signInPending = useRef(false)
+  const [signInBusy, setSignInBusy] = useState(false)
 
   const signIn = async () => {
+    if (signInPending.current) return
+    signInPending.current = true; setSignInBusy(true)
     try {
       const u = await passkeyLogin()
       setUser(u)
-      await pullState()
-      useUI.getState().toast(t('Welcome back, {0}', u.name))
+      const synced = await pullState()
+      useUI.getState().toast(synced === false ? t('Server synchronization failed. Your local data was kept.') : t('Welcome back, {0}', u.name))
     } catch (e) {
       if (e.name !== 'NotAllowedError' && e.name !== 'AbortError') {
         useUI.getState().toast(e.message || t('Sign-in failed'))
       }
     }
+    finally { signInPending.current = false; setSignInBusy(false) }
   }
 
   const restoreBackup = e => {
@@ -74,11 +86,22 @@ export default function Login() {
     const rd = new FileReader()
     rd.onload = () => {
       try {
+        if (!guestAllowed(useStore.getState().config)) return
         const imported = parseTGymJson(rd.result)
         if (imported.kind === 'backup') {
-          replaceState(imported.data, false)
-          setGuest(true)
-          useUI.getState().toast(t('Backup imported'))
+          const restore = () => {
+            if (!guestAllowed(useStore.getState().config)) return
+            const current = useStore.getState().S
+            try {
+              if (hasData(current) && !saveImportUndo(current)) throw new Error('Undo snapshot unavailable')
+              replaceState(imported.data, false)
+              setGuest(true)
+              useUI.getState().toast(t('Backup imported'))
+            } catch { useUI.getState().toast(t('Could not save. Check available storage and try again.')) }
+          }
+          if (hasData(useStore.getState().S)) {
+            confirmSheet({ title: t('Import backup?'), message: t('This replaces all current data with the backup file.'), confirmText: t('Import'), danger: true, onConfirm: restore })
+          } else restore()
         } else {
           useUI.getState().toast(t('Invalid backup file'))
         }
@@ -159,7 +182,7 @@ export default function Login() {
 
           {webauthnOK() ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <Button variant="tinted" icon="person" onClick={signIn}>
+              <Button variant="tinted" icon="person" disabled={signInBusy} onClick={signIn}>
                 {t('Sign in with passkey')}
               </Button>
               <Button variant="ghost" icon="sparkles" onClick={() => useUI.getState().openSheet(close => <RegisterSheet close={close} />)}>
@@ -177,13 +200,13 @@ export default function Login() {
       </div>
 
       {/* Restore a backup */}
-      <div style={{ marginTop: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+      {canGuest && <div style={{ marginTop: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
         <button type="button" className="auth-restore-btn" onClick={() => fileRef.current?.click()}>
           <Icon name="upload" />
           <span>{t('Have a backup? Restore a file')}</span>
         </button>
         <input ref={fileRef} type="file" accept=".json,application/json" hidden onChange={restoreBackup} />
-      </div>
+      </div>}
 
       <div className="auth-trust-pill">
         <Icon name="shield" style={{ width: 13, height: 13, color: 'var(--acc)' }} />

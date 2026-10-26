@@ -7,17 +7,21 @@
 import { bestSetOf, DEFAULT_FORMULA } from './onerm.js'
 import { bestWeightForEntry } from './history.js'
 import { loggedWorkouts } from './daily-plan.js'
+import { modeForSet } from './workout-model.js'
 
 export function personalRecords(S, { formula = DEFAULT_FORMULA } = {}) {
   const byExercise = new Map()
-  for (const workout of loggedWorkouts(S)) {
+  const workouts = loggedWorkouts(S).sort((a, b) => String(a.d).localeCompare(String(b.d)) || (Number(a.start) || 0) - (Number(b.start) || 0))
+  for (const workout of workouts) {
+    const seen = new Set()
     for (const entry of workout.entries || []) {
       const rec = byExercise.get(entry.id) || { id: entry.id, sessions: 0, bestWeight: null, best1RM: null, lastDate: null, entry }
-      rec.sessions++
+      if (!seen.has(entry.id)) rec.sessions++
+      seen.add(entry.id)
       if (!rec.lastDate || String(workout.d) > rec.lastDate) { rec.lastDate = workout.d; rec.entry = entry; rec.routineId = workout.routineId }
       const weight = bestWeightForEntry(entry)
       if (weight > 0 && (!rec.bestWeight || weight > rec.bestWeight.w)) rec.bestWeight = { w: weight, d: workout.d }
-      const best = bestSetOf(entry, formula)
+      const best = bestSetOf({ ...entry, sets: (entry.sets || []).filter(s => modeForSet(s, entry.target || entry) === 'reps') }, formula)
       if (best && (!rec.best1RM || best.est > rec.best1RM.est)) rec.best1RM = { ...best, d: workout.d }
       byExercise.set(entry.id, rec)
     }

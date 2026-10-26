@@ -31,3 +31,8 @@ it('stores and retrieves daily readiness in store', () => {
   expect(saved.score).toBeGreaterThan(60)
   expect(saved.sleep).toBe(4)
 })
+
+it('normalizes all returned ratings to the same finite values used by the score', () => {
+  expect(calculateReadinessScore({ sleep: Infinity, soreness: 99, energy: -10 })).toMatchObject({ sleep: 3, soreness: 5, energy: 1 })
+  expect(calculateReadinessScore().score).toBe(50)
+})

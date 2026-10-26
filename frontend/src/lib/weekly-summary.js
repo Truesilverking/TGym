@@ -1,12 +1,18 @@
 import { calculateWeeklyMuscleVolume } from './volume-targets.js'
 import { personalRecords, recentRecords } from './personal-records.js'
+import { isoOf } from './format.js'
+import { loggedWorkouts } from './daily-plan.js'
+import { nutritionTotals } from './nutrition-totals.js'
+import { validDate } from './training-history.js'
+
+const dateOf = row => validDate(row.d) ? row.d : Number.isFinite(Number(row.start ?? row.t)) ? isoOf(new Date(Number(row.start ?? row.t))) : ''
 
 /**
  * Builds a weekly recap card aggregating workouts, PRs, muscle volume, nutrition & weight
  */
 export function buildWeeklySummary(state, anchorDate = new Date()) {
   const S = state || {}
-  const d = new Date(anchorDate)
+  const d = typeof anchorDate === 'string' && validDate(anchorDate) ? new Date(anchorDate + 'T12:00:00') : new Date(anchorDate)
   // Find Monday of the current/target week
   const day = (d.getDay() + 6) % 7 // Monday = 0
   const monday = new Date(d)
@@ -18,25 +24,24 @@ export function buildWeeklySummary(state, anchorDate = new Date()) {
   sunday.setDate(monday.getDate() + 6)
   sunday.setHours(23, 59, 59, 999)
   const sundayMs = sunday.getTime()
-  const mondayIso = monday.toISOString().slice(0, 10)
-  const sundayIso = sunday.toISOString().slice(0, 10)
+  const mondayIso = isoOf(monday)
+  const sundayIso = isoOf(sunday)
 
   // 1. Workouts completed in this week
-  const weekWorkouts = (S.workouts || []).filter(w => {
-    const t = Number(w.start || new Date(w.d).getTime())
-    return Number.isFinite(t) && t >= mondayMs && t <= sundayMs
-  })
+  const history = loggedWorkouts(S).map(w => ({ ...w, d: dateOf(w) })).filter(w => w.d && w.d <= sundayIso)
+  const weekWorkouts = history.filter(w => dateOf(w) >= mondayIso)
 
   // 2. Personal records achieved this week
-  const allRecords = personalRecords(S)
+  // A later all-time record must not hide a record earned in this historical week.
+  const allRecords = personalRecords({ ...S, workouts: history })
   const newPRs = recentRecords(allRecords, mondayIso).filter(r => String(r.recordDate) <= sundayIso)
 
   // 3. Muscle volume
-  const muscleVolume = calculateWeeklyMuscleVolume(weekWorkouts, { weekStartMs: mondayMs })
+  const muscleVolume = calculateWeeklyMuscleVolume(weekWorkouts, { weekStartMs: mondayMs, weekEndMs: sundayMs })
 
   // 4. Nutrition adherence
   const nutritionLogs = S.nutrition?.logs || {}
-  const proteinGoal = S.nutrition?.goals?.protein || 140
+  const proteinGoal = Number.isFinite(Number(S.nutrition?.goals?.protein)) && Number(S.nutrition.goals.protein) > 0 ? Number(S.nutrition.goals.protein) : 140
   let daysLogged = 0
   let proteinHitDays = 0
   let totalCalories = 0
@@ -44,12 +49,12 @@ export function buildWeeklySummary(state, anchorDate = new Date()) {
   for (let i = 0; i < 7; i++) {
     const cur = new Date(monday)
     cur.setDate(monday.getDate() + i)
-    const iso = cur.toISOString().slice(0, 10)
-    const log = nutritionLogs[iso]
-    if (log?.items?.length) {
+    const items = nutritionLogs[isoOf(cur)]?.items
+    if (Array.isArray(items) && items.length) {
       daysLogged++
-      const dayCals = log.items.reduce((sum, it) => sum + Math.round((it.calories || 0) * (it.qty || 1)), 0)
-      const dayProt = log.items.reduce((sum, it) => sum + Math.round((it.protein || 0) * (it.qty || 1)), 0)
+      const totals = nutritionTotals(items)
+      const dayCals = totals.calories
+      const dayProt = totals.protein
       totalCalories += dayCals
       if (dayProt >= proteinGoal * 0.9) {
         proteinHitDays++
@@ -59,15 +64,15 @@ export function buildWeeklySummary(state, anchorDate = new Date()) {
 
   // 5. Weight change
   const weekWeights = (S.bodyweight || []).filter(b => {
-    const t = Number(b.t || new Date(b.d).getTime())
-    return Number.isFinite(t) && t >= mondayMs && t <= sundayMs
-  }).sort((a, b) => (a.t || new Date(a.d).getTime()) - (b.t || new Date(b.d).getTime()))
+    const date = dateOf(b)
+    return date && date >= mondayIso && date <= sundayIso && Number.isFinite(Number(b.w)) && Number(b.w) > 0
+  }).sort((a, b) => dateOf(a).localeCompare(dateOf(b)) || (Number(a.t) || 0) - (Number(b.t) || 0))
 
   const weightDelta = weekWeights.length >= 2 ? Math.round((weekWeights[weekWeights.length - 1].w - weekWeights[0].w) * 10) / 10 : null
 
   return {
-    mondayIso: monday.toISOString().slice(0, 10),
-    sundayIso: sunday.toISOString().slice(0, 10),
+    mondayIso,
+    sundayIso,
     workoutsCount: weekWorkouts.length,
     prsCount: newPRs.length,
     prs: newPRs,

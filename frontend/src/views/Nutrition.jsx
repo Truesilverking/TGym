@@ -1,22 +1,25 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { t } from '../lib/i18n.js'
-import { todayISO, isoOf, fmtDate } from '../lib/format.js'
-import { LB_PER_KG } from '../lib/unit-conversion.js'
+import { isoOf, fmtDate, fmtNum } from '../lib/format.js'
+import { useLocalNow } from '../lib/use-local-now.js'
+import { LB_PER_KG, CM_PER_IN } from '../lib/unit-conversion.js'
 import Icon from '../components/Icon.jsx'
 import { Button, Segmented, NumberField, SearchField, Row, Switch } from '../components/ui.jsx'
 import {
   COMMON_FOODS,
+  NUTRITION_GOAL_MINIMUMS,
   calculateTDEE,
   getDailyNutrition,
+  getNutritionGoals,
+  nutritionTotals,
   logFoodItem,
   removeFoodItem,
   logWater,
   updateNutritionGoals,
   recentFoods,
   customFoods,
-  saveCustomFood,
   removeCustomFood,
   copyDayItems,
 } from '../lib/nutrition.js'
@@ -43,15 +46,26 @@ const shiftIso = (iso, days) => {
   return isoOf(new Date(y, m - 1, d + days))   // local calendar arithmetic, no UTC drift
 }
 const macroLine = item => {
-  const q = Number(item.qty) || 1
+  const totals = nutritionTotals([item])
   return t('{0} kcal · P {1} g · C {2} g · F {3} g',
-    Math.round(item.calories * q), Math.round(item.protein * q), Math.round(item.carbs * q), Math.round(item.fat * q))
+    fmtNum(totals.calories), fmtNum(totals.protein), fmtNum(totals.carbs), fmtNum(totals.fat))
+}
+const saveChange = action => {
+  try {
+    const result = action()
+    if (result === false || result === null) { useUI.getState().toast(t('Enter a valid number')); return false }
+    return true
+  } catch {
+    useUI.getState().toast(t('Could not save changes. Try again.'))
+    return false
+  }
 }
 
 export default function Nutrition() {
   const S = useStore(s => s.S)
-  const today = todayISO()
-  const [dateIso, setDateIso] = useState(today)
+  const today = isoOf(useLocalNow())
+  const [selectedDate, setDateIso] = useState(null)
+  const dateIso = selectedDate || today
   const daily = getDailyNutrition(S, dateIso)
   const { goals, totals } = daily
   const isToday = dateIso === today
@@ -60,8 +74,12 @@ export default function Nutrition() {
   const prevIso = shiftIso(dateIso, -1)
   const prevCount = S.nutrition?.logs?.[prevIso]?.items?.length || 0
   const copyPrevious = () => {
-    const n = copyDayItems(prevIso, dateIso)
-    if (n) useUI.getState().toast(t('{0} foods copied from {1}', n, fmtDate(prevIso, true)))
+    // A second click can arrive before the old empty-day button has unmounted.
+    if (useStore.getState().S.nutrition?.logs?.[dateIso]?.items?.length) return
+    saveChange(() => {
+      const n = copyDayItems(prevIso, dateIso)
+      if (n) useUI.getState().toast(t('{0} foods copied from {1}', n, fmtDate(prevIso, true)))
+    })
   }
   const macros = [
     { key: 'protein', label: 'Protein', color: 'var(--teal)' },
@@ -69,7 +87,7 @@ export default function Nutrition() {
     { key: 'fat', label: 'Fat', color: 'var(--yellow)' },
   ]
 
-  const openGoals = () => useUI.getState().openSheet(close => <NutritionGoalsSheet close={close} S={S} goals={goals} />)
+  const openGoals = () => useUI.getState().openSheet(close => <NutritionGoalsSheet close={close} S={S} goals={getNutritionGoals(S)} />)
   const openAddFood = meal => useUI.getState().openSheet(close => <AddFoodSheet close={close} dateIso={dateIso} initialMeal={meal} />)
 
   return (
@@ -84,12 +102,12 @@ export default function Nutrition() {
       </div>
 
       <div className="card nutri-date">
-        <button className="iconbtn" onClick={() => setDateIso(d => shiftIso(d, -1))} aria-label={t('Previous day')}><Icon name="chevronLeft" /></button>
-        <button type="button" onClick={() => setDateIso(today)} disabled={isToday} aria-label={isToday ? undefined : t('Back to today')}>
+        <button className="iconbtn" onClick={() => setDateIso(shiftIso(dateIso, -1))} aria-label={t('Previous day')}><Icon name="chevronLeft" /></button>
+        <button type="button" onClick={() => setDateIso(null)} disabled={isToday} aria-label={isToday ? undefined : t('Back to today')}>
           <b>{isToday ? t('Today') : fmtDate(dateIso, true)}</b>
           {isToday ? <small>{fmtDate(dateIso, true, true)}</small> : <small>{t('Tap to return to today')}</small>}
         </button>
-        <button className="iconbtn" onClick={() => setDateIso(d => shiftIso(d, 1))} aria-label={t('Next day')}><Icon name="chevronRight" /></button>
+        <button className="iconbtn" onClick={() => setDateIso(shiftIso(dateIso, 1))} aria-label={t('Next day')}><Icon name="chevronRight" /></button>
       </div>
 
       {!daily.items.length && prevCount > 0 && (
@@ -134,16 +152,15 @@ export default function Nutrition() {
         </div>
         <div className="nutri-meter" aria-hidden="true"><i style={{ width: pct(daily.waterMl, goals.water) + '%' }} /></div>
         <div className="nutri-water-actions">
-          <Button size="sm" onClick={() => logWater(dateIso, -250)} disabled={daily.waterMl <= 0} aria-label={t('Remove {0} ml of water', 250)}>−250</Button>
-          <Button size="sm" variant="tinted" onClick={() => logWater(dateIso, 250)} aria-label={t('Add {0} ml of water', 250)}>+250</Button>
-          <Button size="sm" variant="tinted" onClick={() => logWater(dateIso, 500)} aria-label={t('Add {0} ml of water', 500)}>+500</Button>
+          <Button size="sm" onClick={() => saveChange(() => logWater(dateIso, -250))} disabled={daily.waterMl <= 0} aria-label={t('Remove {0} ml of water', 250)}>−250</Button>
+          <Button size="sm" variant="tinted" onClick={() => saveChange(() => logWater(dateIso, 250))} aria-label={t('Add {0} ml of water', 250)}>+250</Button>
+          <Button size="sm" variant="tinted" onClick={() => saveChange(() => logWater(dateIso, 500))} aria-label={t('Add {0} ml of water', 500)}>+500</Button>
         </div>
       </section>
 
       {MEALS.map(meal => {
         const items = daily.items.filter(it => it.meal === meal.key)
-        const kcal = items.reduce((sum, it) => sum + Math.round((it.calories || 0) * (it.qty || 1)), 0)
-        const protein = items.reduce((sum, it) => sum + Math.round((it.protein || 0) * (it.qty || 1)), 0)
+        const mealTotals = nutritionTotals(items), kcal = mealTotals.calories, protein = fmtNum(mealTotals.protein)
         return (
           <section key={meal.key} className="card nutri-meal" aria-label={t(meal.label)}>
             <div className="nutri-meal-head">
@@ -161,7 +178,7 @@ export default function Nutrition() {
                       <b>{item.name}{item.qty && item.qty !== 1 ? ` × ${item.qty}` : ''}</b>
                       <small>{macroLine(item)}</small>
                     </span>
-                    <button className="iconbtn" onClick={() => removeFoodItem(dateIso, item.id)} aria-label={t('Remove {0}', item.name)}><Icon name="trash" /></button>
+                    <button className="iconbtn" onClick={() => saveChange(() => removeFoodItem(dateIso, item.id))} aria-label={t('Remove {0}', item.name)}><Icon name="trash" /></button>
                   </li>
                 ))}
               </ul>
@@ -189,6 +206,10 @@ function AddFoodSheet({ close, dateIso, initialMeal }) {
   const [carbs, setCarbs] = useState(null)
   const [fat, setFat] = useState(null)
   const [keep, setKeep] = useState(true)
+  const committed = useRef(false)
+  const form = useRef(null)
+  const validQuantity = Number.isFinite(Number(qty)) && Number(qty) > 0
+  const validMacros = [calories, protein, carbs, fat].every(value => value == null || Number.isFinite(Number(value)) && Number(value) >= 0)
 
   const query = search.trim().toLowerCase()
   const matches = list => query ? list.filter(f => f.name.toLowerCase().includes(query)) : list
@@ -196,20 +217,24 @@ function AddFoodSheet({ close, dateIso, initialMeal }) {
   const foods = matches(COMMON_FOODS)
 
   const add = food => {
-    logFoodItem(dateIso, { ...food, meal, qty: qty || 1 })
-    close()
+    if (committed.current || !validQuantity) return
+    if (form.current?.querySelector('[aria-invalid="true"]')) { toast(t('Enter a valid number')); return }
+    committed.current = true
+    if (saveChange(() => logFoodItem(dateIso, { ...food, meal, qty }))) close()
+    else committed.current = false
   }
   const addCustom = () => {
-    if (!name.trim()) return
+    if (committed.current || !name.trim() || !validMacros) return
+    if (form.current?.querySelector('[aria-invalid="true"]')) { toast(t('Enter a valid number')); return }
     const food = { name: name.trim(), serving: serving.trim() || t('1 serving'), calories, protein, carbs, fat }
-    if (keep) saveCustomFood(food)
-    logFoodItem(dateIso, { ...food, meal, qty: 1 })
+    committed.current = true
+    if (!saveChange(() => logFoodItem(dateIso, { ...food, meal, qty: 1 }, { saveFood: keep }))) { committed.current = false; return }
     toast(keep ? t('Added and saved to My foods') : t('Added'))
     close()
   }
   const row = (food, key, onRemove) => (
     <div key={key} className="nutri-food-row">
-      <button type="button" onClick={() => add(food)}>
+      <button type="button" disabled={!validQuantity} onClick={() => add(food)}>
         <span style={{ flex: 1, minWidth: 0 }}>
           <b style={{ display: 'block', fontWeight: 600 }}>{food.name}</b>
           <small className="dim">{food.serving ? food.serving + ' · ' : ''}{macroLine({ ...food, qty: 1 })}</small>
@@ -221,7 +246,7 @@ function AddFoodSheet({ close, dateIso, initialMeal }) {
   )
 
   return (
-    <>
+    <div ref={form}>
       <h3>{t('Add food')}</h3>
       <div className="field-label">{t('Meal')}</div>
       <div className="chips choice-grid" style={{ marginBottom: 14 }}>
@@ -239,12 +264,12 @@ function AddFoodSheet({ close, dateIso, initialMeal }) {
         <>
           <div className="nutri-form" style={{ gridTemplateColumns: 'minmax(0,1fr) 92px', marginBottom: 10 }}>
             <SearchField value={search} onChange={e => setSearch(e.target.value)} onClear={() => setSearch('')} placeholder={t('Search food…')} aria-label={t('Search food…')} />
-            <NumberField className="field" value={qty} onChange={setQty} aria-label={t('Servings')} title={t('Servings')} style={{ textAlign: 'center' }} />
+            <NumberField className="field" value={qty} onChange={setQty} validation={{ min: 0.1 }} retainInvalid aria-label={t('Servings')} title={t('Servings')} style={{ textAlign: 'center' }} />
           </div>
           <div className="nutri-food-list">
             {tab === 'recent' ? matches(recent).map((f, i) => row(f, 'r' + i)) : <>
               {myFoods.length > 0 && <div className="nutri-food-group">{t('My foods')}</div>}
-              {myFoods.map(f => row(f, f.id, () => removeCustomFood(f.id)))}
+              {myFoods.map(f => row(f, f.id, () => saveChange(() => removeCustomFood(f.id))))}
               {myFoods.length > 0 && foods.length > 0 && <div className="nutri-food-group">{t('Common foods')}</div>}
               {foods.map(f => row(f, f.id))}
             </>}
@@ -258,19 +283,19 @@ function AddFoodSheet({ close, dateIso, initialMeal }) {
               <input className="field" value={name} onChange={e => setName(e.target.value)} autoComplete="off" /></label>
             <label className="wide"><span className="field-label">{t('Serving (optional)')}</span>
               <input className="field" value={serving} onChange={e => setServing(e.target.value)} placeholder={t('e.g. 100 g or 1 cup')} autoComplete="off" /></label>
-            <label><span className="field-label">{t('Calories (kcal)')}</span><NumberField className="field" decimal={false} nullable value={calories} onChange={setCalories} /></label>
-            <label><span className="field-label">{t('Protein (g)')}</span><NumberField className="field" nullable value={protein} onChange={setProtein} /></label>
-            <label><span className="field-label">{t('Carbs (g)')}</span><NumberField className="field" nullable value={carbs} onChange={setCarbs} /></label>
-            <label><span className="field-label">{t('Fat (g)')}</span><NumberField className="field" nullable value={fat} onChange={setFat} /></label>
+            <label><span className="field-label">{t('Calories (kcal)')}</span><NumberField className="field" decimal={false} nullable value={calories} onChange={setCalories} validation={{ min: 0 }} retainInvalid /></label>
+            <label><span className="field-label">{t('Protein (g)')}</span><NumberField className="field" nullable value={protein} onChange={setProtein} validation={{ min: 0 }} retainInvalid /></label>
+            <label><span className="field-label">{t('Carbs (g)')}</span><NumberField className="field" nullable value={carbs} onChange={setCarbs} validation={{ min: 0 }} retainInvalid /></label>
+            <label><span className="field-label">{t('Fat (g)')}</span><NumberField className="field" nullable value={fat} onChange={setFat} validation={{ min: 0 }} retainInvalid /></label>
           </div>
           <div className="sect-b" style={{ marginTop: 14 }}>
             <Row title={t('Save to My foods')} subtitle={t('Find it again under Foods next time.')}><Switch checked={keep} onChange={setKeep} /></Row>
           </div>
           <div style={{ height: 16 }} />
-          <Button variant="primary" disabled={!name.trim()} onClick={addCustom}>{t('Add food')}</Button>
+          <Button variant="primary" disabled={!name.trim() || !validMacros} onClick={addCustom}>{t('Add food')}</Button>
         </>
       )}
-    </>
+    </div>
   )
 }
 
@@ -278,33 +303,42 @@ function NutritionGoalsSheet({ close, S, goals }) {
   const toast = useUI(s => s.toast)
   const [tab, setTab] = useState('tdee')
   const [manual, setManual] = useState({ calories: goals.calories, protein: goals.protein, carbs: goals.carbs, fat: goals.fat, water: goals.water })
-  const lastWeight = S.bodyweight?.[S.bodyweight.length - 1]?.w
-  const [weightKg, setWeightKg] = useState(lastWeight ? Math.round((S.unit === 'lb' ? lastWeight / LB_PER_KG : lastWeight) * 10) / 10 : 75)
-  const [heightCm, setHeightCm] = useState(S.heightCm || 175)
+  const lastWeight = (Array.isArray(S.bodyweight) ? S.bodyweight : []).filter(b => b && Number.isFinite(Number(b.w)) && Number(b.w) > 0).sort((a, b) => String(a.d || '').localeCompare(String(b.d || '')) || (Number(a.t) || 0) - (Number(b.t) || 0)).at(-1)
+  const weightUnit = ['kg', 'lb'].includes(lastWeight?.unit) ? lastWeight.unit : S.unit
+  const [weightKg, setWeightKg] = useState(lastWeight ? Math.round((weightUnit === 'lb' ? lastWeight.w / LB_PER_KG : Number(lastWeight.w)) * 10) / 10 : 75)
+  const storedHeight = Number(S.heightCm)
+  const [heightCm, setHeightCm] = useState(Number.isFinite(storedHeight) && storedHeight > 0 ? Math.round(storedHeight * (S.measurementUnit === 'in' ? CM_PER_IN : 1) * 100) / 100 : 175)
   const [age, setAge] = useState(28)
   const [sex, setSex] = useState(S.body === 'female' ? 'female' : 'male')
   const [activity, setActivity] = useState('moderate')
   const [goal, setGoal] = useState('maintain')
   const preview = calculateTDEE({ weightKg, heightCm, age, sex, activity, goal })
+  const committed = useRef(false)
+  const form = useRef(null)
+  const validCalculator = [weightKg, heightCm, age].every(value => Number.isFinite(Number(value)) && Number(value) > 0)
+  const validManual = Object.entries(manual).every(([key, value]) => Number.isFinite(Number(value)) && Number(value) >= NUTRITION_GOAL_MINIMUMS[key])
 
   const save = values => {
-    updateNutritionGoals(values)
+    if (committed.current) return
+    if (form.current?.querySelector('[aria-invalid="true"]')) { toast(t('Enter a valid number')); return }
+    committed.current = true
+    if (!saveChange(() => updateNutritionGoals(values))) { committed.current = false; return }
     toast(t('Nutrition goals updated'))
     close()
   }
   const setField = key => value => setManual(m => ({ ...m, [key]: value }))
 
   return (
-    <>
+    <div ref={form}>
       <h3>{t('Nutrition goals')}</h3>
       <Segmented options={[{ value: 'tdee', label: t('Calculator') }, { value: 'manual', label: t('Manual') }]} value={tab} onChange={setTab} />
       <div style={{ height: 16 }} />
       {tab === 'tdee' ? (
         <>
           <div className="nutri-form" style={{ gridTemplateColumns: 'repeat(3,minmax(0,1fr))' }}>
-            <label><span className="field-label">{t('Weight (kg)')}</span><NumberField className="field" value={weightKg} onChange={setWeightKg} /></label>
-            <label><span className="field-label">{t('Height (cm)')}</span><NumberField className="field" value={heightCm} onChange={setHeightCm} /></label>
-            <label><span className="field-label">{t('Age')}</span><NumberField className="field" decimal={false} value={age} onChange={setAge} /></label>
+            <label><span className="field-label">{t('Weight (kg)')}</span><NumberField className="field" value={weightKg} onChange={setWeightKg} validation={{ min: 1 }} retainInvalid /></label>
+            <label><span className="field-label">{t('Height (cm)')}</span><NumberField className="field" value={heightCm} onChange={setHeightCm} validation={{ min: 1 }} retainInvalid /></label>
+            <label><span className="field-label">{t('Age')}</span><NumberField className="field" decimal={false} value={age} onChange={setAge} validation={{ min: 1 }} retainInvalid /></label>
           </div>
           <div className="field-label" style={{ marginTop: 14 }}>{t('Biological sex')}</div>
           <Segmented options={[{ value: 'male', label: t('Male') }, { value: 'female', label: t('Female') }]} value={sex} onChange={setSex} />
@@ -329,21 +363,21 @@ function NutritionGoalsSheet({ close, S, goals }) {
             </dl>
           </div>
           <div style={{ height: 16 }} />
-          <Button variant="primary" onClick={() => save(preview)}>{t('Apply recommendation')}</Button>
+          <Button variant="primary" disabled={!validCalculator} onClick={() => save(preview)}>{t('Apply recommendation')}</Button>
         </>
       ) : (
         <>
           <div className="nutri-form">
-            <label className="wide"><span className="field-label">{t('Daily calories (kcal)')}</span><NumberField className="field" decimal={false} value={manual.calories} onChange={setField('calories')} /></label>
-            <label><span className="field-label">{t('Protein (g)')}</span><NumberField className="field" decimal={false} value={manual.protein} onChange={setField('protein')} /></label>
-            <label><span className="field-label">{t('Carbs (g)')}</span><NumberField className="field" decimal={false} value={manual.carbs} onChange={setField('carbs')} /></label>
-            <label><span className="field-label">{t('Fat (g)')}</span><NumberField className="field" decimal={false} value={manual.fat} onChange={setField('fat')} /></label>
-            <label><span className="field-label">{t('Daily water (ml)')}</span><NumberField className="field" decimal={false} value={manual.water} onChange={setField('water')} /></label>
+            <label className="wide"><span className="field-label">{t('Daily calories (kcal)')}</span><NumberField className="field" decimal={false} value={manual.calories} onChange={setField('calories')} validation={{ min: NUTRITION_GOAL_MINIMUMS.calories }} retainInvalid /></label>
+            <label><span className="field-label">{t('Protein (g)')}</span><NumberField className="field" decimal={false} value={manual.protein} onChange={setField('protein')} validation={{ min: NUTRITION_GOAL_MINIMUMS.protein }} retainInvalid /></label>
+            <label><span className="field-label">{t('Carbs (g)')}</span><NumberField className="field" decimal={false} value={manual.carbs} onChange={setField('carbs')} validation={{ min: NUTRITION_GOAL_MINIMUMS.carbs }} retainInvalid /></label>
+            <label><span className="field-label">{t('Fat (g)')}</span><NumberField className="field" decimal={false} value={manual.fat} onChange={setField('fat')} validation={{ min: NUTRITION_GOAL_MINIMUMS.fat }} retainInvalid /></label>
+            <label><span className="field-label">{t('Daily water (ml)')}</span><NumberField className="field" decimal={false} value={manual.water} onChange={setField('water')} validation={{ min: NUTRITION_GOAL_MINIMUMS.water }} retainInvalid /></label>
           </div>
           <div style={{ height: 16 }} />
-          <Button variant="primary" onClick={() => save(manual)}>{t('Save goals')}</Button>
+          <Button variant="primary" disabled={!validManual} onClick={() => save(manual)}>{t('Save goals')}</Button>
         </>
       )}
-    </>
+    </div>
   )
 }

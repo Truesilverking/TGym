@@ -1,5 +1,37 @@
 import { useStore } from '../store/useStore.js'
-import { todayISO, uid } from './format.js'
+import { todayISO, isoOf, uid } from './format.js'
+import { loggedWorkouts, scheduledRoutineIds } from './daily-plan.js'
+import { hasWorkoutActivity } from './session-activity.js'
+import { LB_PER_KG } from './unit-conversion.js'
+import { dayNumber } from './training-pause.js'
+import { nutritionTotals } from './nutrition-totals.js'
+export { nutritionTotals } from './nutrition-totals.js'
+
+export const DEFAULT_NUTRITION_GOALS = { calories: 2200, protein: 140, carbs: 220, fat: 60, water: 2500 }
+export const NUTRITION_GOAL_MINIMUMS = { calories: 800, protein: 20, carbs: 20, fat: 10, water: 500 }
+const NUTRIENTS = ['calories', 'protein', 'carbs', 'fat']
+const MEALS = new Set(['breakfast', 'lunch', 'dinner', 'snack'])
+const listOf = value => Array.isArray(value) ? value : []
+const record = value => value && typeof value === 'object' && !Array.isArray(value)
+const finite = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback
+const positive = (value, fallback) => finite(value) > 0 ? Number(value) : fallback
+const text = value => typeof value === 'string' ? value : ''
+const validDate = iso => typeof iso === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(iso) && isoOf(new Date(iso + 'T12:00:00')) === iso
+const goalsOf = goals => ({ ...(record(goals) ? goals : {}), ...Object.fromEntries(Object.entries(DEFAULT_NUTRITION_GOALS).map(([key, fallback]) => [key, positive(goals?.[key], fallback)])) })
+export const getNutritionGoals = state => goalsOf(state?.nutrition?.goals)
+const ensureNutrition = s => {
+  if (!record(s.nutrition)) s.nutrition = { goals: { ...DEFAULT_NUTRITION_GOALS }, logs: {}, customFoods: [] }
+  return s.nutrition
+}
+const ensureDay = (s, iso) => {
+  const nutrition = ensureNutrition(s)
+  if (!record(nutrition.logs)) nutrition.logs = {}
+  if (!record(nutrition.logs[iso])) nutrition.logs[iso] = { items: [], waterMl: 0 }
+  const day = nutrition.logs[iso]
+  day.items = listOf(day.items)
+  return day
+}
+const qtyOf = item => positive(item?.qty, 1)
 
 export const COMMON_FOODS = [
   { id: 'f_chicken', name: 'Pechuga de Pollo', serving: '100g', calories: 165, protein: 31, carbs: 0, fat: 3.6 },
@@ -36,10 +68,10 @@ export const DIET_GOALS = {
 /**
  * Calculates BMR and TDEE using the Mifflin-St Jeor formula
  */
-export function calculateTDEE({ weightKg, heightCm, sex = 'male', age = 28, activity = 'moderate', goal = 'maintain' }) {
-  const w = Number(weightKg) || 75
-  const h = Number(heightCm) || 175
-  const a = Number(age) || 28
+export function calculateTDEE({ weightKg, heightCm, sex = 'male', age = 28, activity = 'moderate', goal = 'maintain' } = {}) {
+  const w = positive(weightKg, 75)
+  const h = positive(heightCm, 175)
+  const a = positive(age, 28)
 
   // Mifflin-St Jeor BMR
   let bmr = 10 * w + 6.25 * h - 5 * a
@@ -75,103 +107,80 @@ export function calculateTDEE({ weightKg, heightCm, sex = 'male', age = 28, acti
 
 export function getDailyNutrition(state, dateIso = todayISO()) {
   const S = state || useStore.getState().S
-  const nutrition = S?.nutrition || { goals: { calories: 2200, protein: 140, carbs: 220, fat: 60, water: 2500 }, logs: {} }
-  const goals = nutrition.goals || { calories: 2200, protein: 140, carbs: 220, fat: 60, water: 2500 }
-  const dayLog = nutrition.logs?.[dateIso] || { items: [], waterMl: 0 }
-
-  const totals = (dayLog.items || []).reduce((acc, item) => {
-    const qty = Number(item.qty) || 1
-    acc.calories += Math.round((item.calories || 0) * qty)
-    acc.protein += Math.round((item.protein || 0) * qty)
-    acc.carbs += Math.round((item.carbs || 0) * qty)
-    acc.fat += Math.round((item.fat || 0) * qty)
-    return acc
-  }, { calories: 0, protein: 0, carbs: 0, fat: 0 })
+  const baseGoals = getNutritionGoals(S)
+  const goals = baseGoals.cycleTrainingDays === true ? getEffectiveDailyGoals(S, dateIso) : baseGoals
+  const dayLog = S?.nutrition?.logs?.[dateIso] || {}
+  const items = listOf(dayLog.items).filter(item => item && typeof item === 'object').map(item => ({ ...item, ...foodFields(item), meal: MEALS.has(item.meal) ? item.meal : 'lunch', qty: qtyOf(item) }))
 
   return {
     date: dateIso,
     goals,
-    items: dayLog.items || [],
-    waterMl: Number(dayLog.waterMl) || 0,
-    totals,
+    items,
+    waterMl: Math.max(0, finite(dayLog.waterMl)),
+    totals: nutritionTotals(items),
   }
 }
 
-export function logFoodItem(dateIso, item) {
-  const update = useStore.getState().update
-  update(s => {
-    if (!s.nutrition) s.nutrition = { goals: { calories: 2200, protein: 140, carbs: 220, fat: 60, water: 2500 }, logs: {}, customFoods: [] }
-    if (!s.nutrition.logs) s.nutrition.logs = {}
-    if (!s.nutrition.logs[dateIso]) s.nutrition.logs[dateIso] = { items: [], waterMl: 0 }
-
-    const entry = {
-      id: uid(),
-      name: item.name || 'Alimento',
-      meal: item.meal || 'lunch',
-      calories: Math.max(0, Math.round(Number(item.calories) || 0)),
-      protein: Math.max(0, Math.round(Number(item.protein) || 0)),
-      carbs: Math.max(0, Math.round(Number(item.carbs) || 0)),
-      fat: Math.max(0, Math.round(Number(item.fat) || 0)),
-      qty: Math.max(0.1, Number(item.qty) || 1),
-      serving: item.serving || '1 porción',
-      loggedAt: Date.now(),
-    }
-
-    s.nutrition.logs[dateIso].items.push(entry)
+export function logFoodItem(dateIso, item, { saveFood = false } = {}) {
+  if (!validDate(dateIso) || !validFood(item) || item.qty != null && (!Number.isFinite(Number(item.qty)) || Number(item.qty) <= 0) || NUTRIENTS.some(key => !Number.isFinite(finite(item[key]) * qtyOf(item)))) return null
+  const entry = { id: uid(), ...foodFields(item), meal: MEALS.has(item.meal) ? item.meal : 'lunch', qty: qtyOf(item), loggedAt: Date.now() }
+  useStore.getState().update(s => {
+    const day = ensureDay(s, dateIso)
+    if (saveFood) saveFoodDraft(s, item)
+    day.items.push(entry)
   })
+  return entry
 }
 
 export function removeFoodItem(dateIso, itemId) {
   const update = useStore.getState().update
   update(s => {
-    if (!s.nutrition?.logs?.[dateIso]?.items) return
-    s.nutrition.logs[dateIso].items = s.nutrition.logs[dateIso].items.filter(it => it.id !== itemId)
+    if (!Array.isArray(s.nutrition?.logs?.[dateIso]?.items)) return
+    s.nutrition.logs[dateIso].items = s.nutrition.logs[dateIso].items.filter(it => it?.id !== itemId)
   })
 }
 
 export function logWater(dateIso, deltaMl) {
+  if (!validDate(dateIso) || !Number.isFinite(Number(deltaMl))) return false
   const update = useStore.getState().update
   update(s => {
-    if (!s.nutrition) s.nutrition = { goals: { calories: 2200, protein: 140, carbs: 220, fat: 60, water: 2500 }, logs: {}, customFoods: [] }
-    if (!s.nutrition.logs) s.nutrition.logs = {}
-    if (!s.nutrition.logs[dateIso]) s.nutrition.logs[dateIso] = { items: [], waterMl: 0 }
-    const current = Number(s.nutrition.logs[dateIso].waterMl) || 0
-    s.nutrition.logs[dateIso].waterMl = Math.max(0, current + deltaMl)
+    const day = ensureDay(s, dateIso)
+    const next = finite(day.waterMl) + Number(deltaMl)
+    if (!Number.isFinite(next)) throw new Error('Invalid water amount')
+    day.waterMl = Math.max(0, next)
   })
+  return true
 }
 
-export function updateNutritionGoals(newGoals) {
+export function updateNutritionGoals(newGoals = {}) {
+  if (!record(newGoals)) return false
+  if (Object.keys(DEFAULT_NUTRITION_GOALS).some(key => key in newGoals && !Number.isFinite(Number(newGoals[key])))) return false
   const update = useStore.getState().update
   update(s => {
-    if (!s.nutrition) s.nutrition = { goals: {}, logs: {}, customFoods: [] }
-    s.nutrition.goals = {
-      ...(s.nutrition.goals || {}),
-      calories: Math.max(800, Math.round(Number(newGoals.calories) || 2200)),
-      protein: Math.max(20, Math.round(Number(newGoals.protein) || 140)),
-      carbs: Math.max(20, Math.round(Number(newGoals.carbs) || 220)),
-      fat: Math.max(10, Math.round(Number(newGoals.fat) || 60)),
-      water: Math.max(500, Math.round(Number(newGoals.water) || 2500)),
-    }
+    const nutrition = ensureNutrition(s), current = goalsOf(nutrition.goals)
+    const minimums = NUTRITION_GOAL_MINIMUMS
+    nutrition.goals = { ...current, ...Object.fromEntries(Object.keys(minimums).filter(key => key in newGoals).map(key => [key, Math.max(minimums[key], Math.round(Number(newGoals[key])))])) }
+    if ('cycleTrainingDays' in newGoals) nutrition.goals.cycleTrainingDays = newGoals.cycleTrainingDays === true
   })
+  return true
 }
 
 const foodKey = name => String(name || '').trim().toLowerCase()
-const foodFields = item => ({
-  name: String(item.name || '').trim(),
-  serving: item.serving || '',
-  calories: Math.max(0, Math.round(Number(item.calories) || 0)),
-  protein: Math.max(0, Math.round(Number(item.protein) || 0)),
-  carbs: Math.max(0, Math.round(Number(item.carbs) || 0)),
-  fat: Math.max(0, Math.round(Number(item.fat) || 0)),
+const foodFields = (item = {}) => ({
+  name: text(item.name).trim(),
+  serving: text(item.serving),
+  ...Object.fromEntries(NUTRIENTS.map(key => [key, Math.max(0, finite(item[key]))])),
 })
+const validFood = item => item && typeof item === 'object' && text(item.name).trim() && NUTRIENTS.every(key => item[key] == null || Number.isFinite(Number(item[key])) && Number(item[key]) >= 0)
 
 /** Distinct foods from the newest logs first (per-serving values), for one-tap re-logging. */
 export function recentFoods(state, limit = 8) {
+  if (limit <= 0) return []
   const logs = state?.nutrition?.logs || {}
   const seen = new Set(), out = []
   for (const day of Object.keys(logs).sort().reverse()) {
     // newest first; items logged in the same millisecond keep their append order (later = newer)
-    const items = (logs[day]?.items || []).map((item, i) => ({ item, i }))
+    const items = listOf(logs[day]?.items).filter(item => item && typeof item === 'object').map((item, i) => ({ item, i }))
       .sort((a, b) => (b.item.loggedAt || 0) - (a.item.loggedAt || 0) || b.i - a.i).map(x => x.item)
     for (const item of items) {
       const key = foodKey(item.name)
@@ -185,43 +194,44 @@ export function recentFoods(state, limit = 8) {
 }
 
 /** The user's saved foods, alphabetical. */
-export const customFoods = state => [...(state?.nutrition?.customFoods || [])].sort((a, b) => a.name.localeCompare(b.name))
+export const customFoods = state => listOf(state?.nutrition?.customFoods).filter(f => f && typeof f.name === 'string').map(f => ({ ...f, ...foodFields(f) })).sort((a, b) => a.name.localeCompare(b.name))
+
+function saveFoodDraft(s, food) {
+  const nutrition = ensureNutrition(s), entry = foodFields(food), list = listOf(nutrition.customFoods)
+  const previous = list.find(f => foodKey(f?.name) === foodKey(entry.name))
+  const saved = { id: previous?.id || uid(), ...entry }
+  nutrition.customFoods = [...list.filter(f => foodKey(f?.name) !== foodKey(entry.name)), saved]
+  return saved
+}
 
 /** Saves (or replaces, by name) a food in "My foods". */
 export function saveCustomFood(food) {
-  const entry = foodFields(food)
-  if (!entry.name) return null
-  const saved = { id: uid(), ...entry }
-  useStore.getState().update(s => {
-    if (!s.nutrition) s.nutrition = { goals: { calories: 2200, protein: 140, carbs: 220, fat: 60, water: 2500 }, logs: {}, customFoods: [] }
-    const list = (s.nutrition.customFoods || []).filter(f => foodKey(f.name) !== foodKey(entry.name))
-    s.nutrition.customFoods = [...list, saved]
-  })
+  if (!validFood(food)) return null
+  let saved
+  useStore.getState().update(s => { saved = saveFoodDraft(s, food) })
   return saved
 }
 
 export function removeCustomFood(id) {
   useStore.getState().update(s => {
-    if (!s.nutrition?.customFoods) return
-    s.nutrition.customFoods = s.nutrition.customFoods.filter(f => f.id !== id)
+    if (!Array.isArray(s.nutrition?.customFoods)) return
+    s.nutrition.customFoods = s.nutrition.customFoods.filter(f => f?.id !== id)
   })
 }
 
 /** Pure: fresh copies of a day's items (new ids, same meals and quantities). Water is not copied. */
 export function copiedItems(items, now = Date.now()) {
-  return (items || []).map((item, i) => ({ ...item, id: uid(), loggedAt: now + i }))
+  return listOf(items).filter(item => item && typeof item === 'object').map((item, i) => ({ ...item, id: uid(), loggedAt: now + i }))
 }
 
 /** Appends every food logged on `fromIso` to `toIso`. Returns how many were copied. */
 export function copyDayItems(fromIso, toIso) {
-  const source = useStore.getState().S?.nutrition?.logs?.[fromIso]?.items || []
+  if (!validDate(fromIso) || !validDate(toIso)) return 0
+  const source = listOf(useStore.getState().S?.nutrition?.logs?.[fromIso]?.items)
   if (!source.length || fromIso === toIso) return 0
   const copies = copiedItems(source)
   useStore.getState().update(s => {
-    if (!s.nutrition) s.nutrition = { goals: { calories: 2200, protein: 140, carbs: 220, fat: 60, water: 2500 }, logs: {}, customFoods: [] }
-    if (!s.nutrition.logs) s.nutrition.logs = {}
-    if (!s.nutrition.logs[toIso]) s.nutrition.logs[toIso] = { items: [], waterMl: 0 }
-    s.nutrition.logs[toIso].items.push(...copies)
+    ensureDay(s, toIso).items.push(...copies)
   })
   return copies.length
 }
@@ -230,22 +240,29 @@ export function copyDayItems(fromIso, toIso) {
  * Calculates adaptive TDEE by correlating actual calorie intake with scale weight changes.
  * 1 kg mass delta ≈ 7,700 kcal.
  */
-export function calculateAdaptiveTDEE({ bodyweightLogs = [], nutritionLogs = {}, targetGoal = 'maintain', lookbackDays = 14 }) {
-  const now = Date.now()
-  const cutoff = now - lookbackDays * 86400000
-
-  // Filter weight entries within window
-  const weights = (bodyweightLogs || [])
-    .filter(b => (b.t || new Date(b.d).getTime()) >= cutoff)
-    .sort((a, b) => (a.t || new Date(a.d).getTime()) - (b.t || new Date(b.d).getTime()))
+export function calculateAdaptiveTDEE({ bodyweightLogs = [], nutritionLogs = {}, targetGoal = 'maintain', lookbackDays = 14, unit = 'kg', now = Date.now() } = {}) {
+  const today = isoOf(new Date(now)), endDay = dayNumber(today)
+  const cutoff = endDay - positive(lookbackDays, 14)
+  const perDay = new Map()
+  for (const weight of listOf(bodyweightLogs)) {
+    if (!weight || !Number.isFinite(Number(weight.w)) || Number(weight.w) <= 0) continue
+    // A backdated measurement's date is authoritative, not its recording timestamp.
+    const date = validDate(weight.d) ? weight.d : isoOf(new Date(weight.t))
+    const day = dayNumber(date)
+    if (!Number.isFinite(day) || day < cutoff || day > endDay) continue
+    const previous = perDay.get(date)
+    if (!previous || finite(weight.t) >= finite(previous.t)) perDay.set(date, { ...weight, date, day, w: Number(weight.w) / (unit === 'lb' ? LB_PER_KG : 1) })
+  }
+  const weights = [...perDay.values()].sort((a, b) => a.day - b.day)
 
   if (weights.length < 3) {
     return { adaptive: false, reason: 'insufficient_weight_data' }
   }
 
-  // Calculate average daily calories in the period
-  const loggedDays = Object.entries(nutritionLogs || {})
-    .filter(([date]) => new Date(date).getTime() >= cutoff)
+  // Match intake to the same measurement interval. The final scale day is still partial.
+  const first = weights[0], last = weights.at(-1)
+  const loggedDays = Object.entries(record(nutritionLogs) ? nutritionLogs : {})
+    .filter(([date, log]) => validDate(date) && date >= first.date && date < last.date && nutritionTotals(log?.items).calories > 0)
 
   if (loggedDays.length < 5) {
     return { adaptive: false, reason: 'insufficient_nutrition_data' }
@@ -253,18 +270,17 @@ export function calculateAdaptiveTDEE({ bodyweightLogs = [], nutritionLogs = {},
 
   let totalCals = 0
   for (const [, log] of loggedDays) {
-    const dayTotal = (log.items || []).reduce((acc, it) => acc + Math.round((it.calories || 0) * (it.qty || 1)), 0)
+    const dayTotal = nutritionTotals(log.items).calories
     totalCals += dayTotal
   }
   const avgCalories = totalCals / loggedDays.length
 
-  const startWeight = weights[0].w
-  const endWeight = weights[weights.length - 1].w
+  const startWeight = first.w
+  const endWeight = last.w
   const weightDeltaKg = endWeight - startWeight
 
-  const firstTime = weights[0].t || new Date(weights[0].d).getTime()
-  const lastTime = weights[weights.length - 1].t || new Date(weights[weights.length - 1].d).getTime()
-  const daysElapsed = Math.max(3, (lastTime - firstTime) / 86400000)
+  const daysElapsed = last.day - first.day
+  if (daysElapsed < 3) return { adaptive: false, reason: 'insufficient_weight_data' }
 
   // Energy imbalance per day:
   const dailyImbalanceCals = (weightDeltaKg * 7700) / daysElapsed
@@ -290,16 +306,12 @@ export function calculateAdaptiveTDEE({ bodyweightLogs = [], nutritionLogs = {},
  */
 export function getEffectiveDailyGoals(state, dateIso = todayISO()) {
   const S = state || useStore.getState().S
-  const nutrition = S?.nutrition || { goals: { calories: 2200, protein: 140, carbs: 220, fat: 60, water: 2500 } }
-  const baseGoals = nutrition.goals || { calories: 2200, protein: 140, carbs: 220, fat: 60, water: 2500 }
+  const baseGoals = goalsOf(S?.nutrition?.goals)
+  const safeState = { ...S, routines: listOf(S?.routines).filter(record), workouts: listOf(S?.workouts).filter(record) }
+  // Reuse the app's Sunday-based schedule, explicit rest overrides, pauses and actual activity.
+  const isTrainingDay = validDate(dateIso) && (scheduledRoutineIds(safeState, dateIso).length > 0 || loggedWorkouts(safeState).some(w => w.d === dateIso && hasWorkoutActivity(w)))
 
-  // Check if training day: routine assigned in week schedule or completed workout
-  const dayOfWeek = (new Date(dateIso + 'T12:00:00').getDay() + 6) % 7 // Monday=0
-  const hasScheduledRoutine = !!(S?.week?.[dayOfWeek]?.length || S?.dayPlan?.[dateIso])
-  const hasCompletedWorkout = (S?.workouts || []).some(w => w.d === dateIso)
-  const isTrainingDay = hasScheduledRoutine || hasCompletedWorkout
-
-  if (!baseGoals.cycleTrainingDays) {
+  if (baseGoals.cycleTrainingDays !== true) {
     return { ...baseGoals, isTrainingDay }
   }
 

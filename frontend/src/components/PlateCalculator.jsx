@@ -44,7 +44,7 @@ export default function PlateCalculator({ initialWeight, close }) {
       <span className="plate-sleeve end" />
     </div>
 
-    {result.belowBar ? <p className="plate-note warn">{t('That is lighter than the bar ({0} {1}).', fmtNum(bar), unit)}</p>
+    {result.invalid ? <p className="plate-note warn">{t('Enter a valid load.')}</p> : result.belowBar ? <p className="plate-note warn">{t('That is lighter than the bar ({0} {1}).', fmtNum(bar), unit)}</p>
       : groups.length ? <>
         <div className="field-label">{t('Each side')}</div>
         <div className="plate-list">

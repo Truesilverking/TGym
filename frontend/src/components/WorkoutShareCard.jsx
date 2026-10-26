@@ -1,54 +1,48 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Icon from './Icon.jsx'
 import { Button } from './ui.jsx'
 import { t } from '../lib/i18n.js'
 import { fmtVol, fmtDur } from '../lib/format.js'
 import { plateColor } from '../lib/plates.js'
+import { workoutVolume } from '../lib/history.js'
+import { workoutElapsedMs } from '../lib/workout-time.js'
+import { isWarmupRow } from '../lib/workout-model.js'
+import { saveReportFile } from '../lib/report-file.js'
 
 export default function WorkoutShareCard({ workout, prs = [], unit = 'kg', close }) {
   const cardRef = useRef(null)
   const [sharing, setSharing] = useState(false)
+  const [error, setError] = useState(false)
+  const sharingRef = useRef(false)
+  const mounted = useRef(true)
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false } }, [])
 
   const w = workout || {}
-  const volume = w.entries ? w.entries.reduce((sum, e) => sum + (e.sets || []).reduce((sSum, s) => sSum + (s.done ? (s.w || 0) * (s.r || 0) : 0), 0), 0) : 0
-  const durationSec = Math.round(((w.end || Date.now()) - (w.start || Date.now())) / 1000)
-  const totalSets = (w.entries || []).reduce((sum, e) => sum + (e.sets || []).filter(s => s.done).length, 0)
+  const entries = (w.entries || []).map(e => ({ ...e, sets: e.sets || [] }))
+  const volume = workoutVolume({ ...w, entries })
+  const duration = w.start != null && w.start !== '' && Number.isFinite(Number(w.start)) ? fmtDur(workoutElapsedMs(w)) : '—'
+  const totalSets = entries.reduce((sum, e) => sum + e.sets.filter(s => s.done && !isWarmupRow(s)).length, 0)
 
   const handleShare = async () => {
+    if (sharingRef.current) return
+    sharingRef.current = true
     setSharing(true)
+    setError(false)
     try {
-      const html2canvas = (await import('html2canvas')).default
-      if (!cardRef.current) return
-      const canvas = await html2canvas(cardRef.current, {
-        scale: 2,
+      const { toBlob } = await import('html-to-image')
+      if (!mounted.current || !cardRef.current) return
+      const blob = await toBlob(cardRef.current, {
+        pixelRatio: 2,
         backgroundColor: '#0a0a0c',
-        useCORS: true,
       })
-      canvas.toBlob(async blob => {
-        if (!blob) return
-        const file = new File([blob], `tgym-workout-${w.d || 'session'}.png`, { type: 'image/png' })
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          try {
-            await navigator.share({
-              files: [file],
-              title: 'Mi entrenamiento en TGym',
-              text: `${w.name || 'Entrenamiento'} completado en TGym! 💪`,
-            })
-          } catch {
-            // Dismissed
-          }
-        } else {
-          // Download fallback
-          const a = document.createElement('a')
-          a.href = URL.createObjectURL(blob)
-          a.download = `tgym-workout-${w.d || 'session'}.png`
-          a.click()
-        }
-      })
+      if (!mounted.current) return
+      if (!blob) throw new Error('Share image was empty')
+      await saveReportFile({ blob, name: `tgym-workout-${w.d || 'session'}.png` }, { share: true })
     } catch (e) {
-      console.error(e)
+      if (mounted.current && e?.name !== 'AbortError' && !/^Share cancel(?:led|ed)$/i.test(e?.message || '')) setError(true)
     } finally {
-      setSharing(false)
+      sharingRef.current = false
+      if (mounted.current) setSharing(false)
     }
   }
 
@@ -57,7 +51,8 @@ export default function WorkoutShareCard({ workout, prs = [], unit = 'kg', close
       <div
         ref={cardRef}
         style={{
-          width: 320,
+          width: '100%',
+          maxWidth: 320,
           aspectRatio: '9/16',
           maxHeight: '68vh',
           background: 'radial-gradient(circle at top right, #1f1f28, #0e0e12 70%)',
@@ -83,23 +78,23 @@ export default function WorkoutShareCard({ workout, prs = [], unit = 'kg', close
             <span style={{ fontSize: 12, color: 'var(--label-2)' }}>{w.d}</span>
           </div>
           <h2 style={{ margin: '0 0 6px', fontSize: 24, fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.15 }}>
-            {w.name || t('Entrenamiento')}
+            {w.name || t('Workout')}
           </h2>
         </div>
 
         {/* Big Metrics Grid */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, margin: '14px 0' }}>
           <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 12, padding: '10px 8px', textAlign: 'center' }}>
-            <div style={{ fontSize: 10, color: 'var(--label-2)', textTransform: 'uppercase' }}>{t('Volumen')}</div>
-            <div style={{ fontSize: 16, fontWeight: 800, marginTop: 2 }}>{fmtVol(volume)}</div>
+            <div style={{ fontSize: 10, color: 'var(--label-2)', textTransform: 'uppercase' }}>{t('Volume')}</div>
+            <div style={{ fontSize: 16, fontWeight: 800, marginTop: 2 }}>{fmtVol(volume, unit)}</div>
           </div>
           <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 12, padding: '10px 8px', textAlign: 'center' }}>
-            <div style={{ fontSize: 10, color: 'var(--label-2)', textTransform: 'uppercase' }}>{t('Series')}</div>
+            <div style={{ fontSize: 10, color: 'var(--label-2)', textTransform: 'uppercase' }}>{t('Sets')}</div>
             <div style={{ fontSize: 16, fontWeight: 800, marginTop: 2 }}>{totalSets}</div>
           </div>
           <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 12, padding: '10px 8px', textAlign: 'center' }}>
-            <div style={{ fontSize: 10, color: 'var(--label-2)', textTransform: 'uppercase' }}>{t('Tiempo')}</div>
-            <div style={{ fontSize: 16, fontWeight: 800, marginTop: 2 }}>{fmtDur(durationSec)}</div>
+            <div style={{ fontSize: 10, color: 'var(--label-2)', textTransform: 'uppercase' }}>{t('Time')}</div>
+            <div style={{ fontSize: 16, fontWeight: 800, marginTop: 2 }}>{duration}</div>
           </div>
         </div>
 
@@ -108,12 +103,12 @@ export default function WorkoutShareCard({ workout, prs = [], unit = 'kg', close
           <div style={{ background: 'rgba(255, 215, 0, 0.08)', border: '1px solid rgba(255, 215, 0, 0.3)', borderRadius: 12, padding: '10px 12px' }}>
             <div style={{ fontSize: 11, fontWeight: 750, color: '#ffd700', display: 'flex', alignItems: 'center', gap: 5, marginBottom: 4 }}>
               <Icon name="sparkles" style={{ fontSize: 12 }} />
-              <span>{t('¡Récords Personales!')}</span>
+              <span>{t('Personal records')}</span>
             </div>
             <div style={{ fontSize: 12, display: 'flex', flexDirection: 'column', gap: 3 }}>
               {prs.slice(0, 3).map((pr, idx) => (
                 <div key={idx} style={{ overflowWrap: 'anywhere' }}>
-                  • {pr.entry?.name || pr.id}: <b>{pr.bestWeight?.w || pr.best1RM?.est} {unit}</b>
+                  • {pr.entry?.n || pr.entry?.name || pr.id}: <b>{pr.bestWeight?.w || pr.best1RM?.est} {unit}</b>
                 </div>
               ))}
             </div>
@@ -147,10 +142,11 @@ export default function WorkoutShareCard({ workout, prs = [], unit = 'kg', close
 
       <div className="row" style={{ gap: 8, width: '100%', maxWidth: 320 }}>
         <Button variant="primary" icon="upload" onClick={handleShare} disabled={sharing} style={{ flex: 1 }}>
-          {sharing ? t('Generando...') : t('Compartir Historia')}
+          {sharing ? t('Generating…') : t('Share story')}
         </Button>
-        <Button onClick={close}>{t('Cerrar')}</Button>
+        <Button onClick={close}>{t('Close')}</Button>
       </div>
+      {error && <p role="alert">{t('Could not create the share image. Please try again.')}</p>}
     </div>
   )
 }

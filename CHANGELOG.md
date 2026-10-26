@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.15.101 (development / QA)
+
+- Preserve nutrition-only profiles during server restoration and native reopening, including custom foods and edited goals.
+- Correct serving precision, hydration arithmetic, nutrition goals, calendar boundaries and kg/lb calculations; keep failed food saves editable and atomic.
+- Correct historical records, weekly summaries, plateau calculations, plate loading, share-card rendering and photo-storage failure reporting.
+- Harden language fallbacks, translate new controls, respect reduced motion, and report authentication/synchronization failures accurately. Confirm destructive welcome-screen imports and retain Undo.
+- Update vulnerable runtime and development dependencies while preserving the Capacitor 7 native identity and existing Excel import patches.
+
 ## 1.15.93
 
 - Refresh Training, Streak Calendar and Home Body Weight while preserving history, routine/exercise identity, calendar rules and exports.

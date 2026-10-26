@@ -34,6 +34,18 @@ describe('platesPerSide', () => {
   it('respects a restricted plate inventory', () => {
     expect(platesPerSide(100, { bar: 20, plates: [20, 10, 5] }).perSide).toEqual([20, 20])
   })
+
+  it('finds exact loads that greedy plate selection misses', () => {
+    expect(platesPerSide(28, { bar: 20 })).toMatchObject({ achieved: 28, remainder: 0, perSide: [2.5, 0.5, 0.5, 0.5] })
+    expect(platesPerSide(36, { bar: 20, plates: [6, 4] })).toMatchObject({ achieved: 36, remainder: 0, perSide: [4, 4] })
+  })
+
+  it('bounds invalid bars and huge custom loads before constructing plates', () => {
+    expect(platesPerSide(100, { bar: -10 }).invalid).toBe(true)
+    expect(platesPerSide(1e12).invalid).toBe(true)
+    expect(platesPerSide(100, { bar: Infinity }).invalid).toBe(true)
+    expect(platesPerSide(1e6, { plates: [0.01] }).invalid).toBe(true)
+  })
 })
 
 describe('roundToAvailablePlates', () => {

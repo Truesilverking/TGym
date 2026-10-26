@@ -39,4 +39,18 @@ describe('personalRecords', () => {
   it('returns an empty list with no history', () => {
     expect(personalRecords({ workouts: [] })).toEqual([])
   })
+
+  it('counts repeated entries once per session and dates ties by when the record was first earned', () => {
+    const first = workout('a', '2026-10-01', [{ id: 'bench', sets: [set(80, 5)] }, { id: 'bench', sets: [set(70, 6)] }])
+    const later = workout('b', '2026-10-08', [{ id: 'bench', sets: [set(80, 5)] }])
+    const [record] = personalRecords({ workouts: [later, first] })
+    expect(record.sessions).toBe(2)
+    expect(record.recordDate).toBe('2026-10-01')
+  })
+
+  it('does not estimate a 1RM from stale reps on a timed entry', () => {
+    const [record] = personalRecords({ workouts: [workout('t', '2026-10-01', [{ id: 'carry', target: { mode: 'time' }, sets: [set(30, 10, { sec: 60 })] }])] })
+    expect(record.bestWeight.w).toBe(30)
+    expect(record.best1RM).toBeNull()
+  })
 })
