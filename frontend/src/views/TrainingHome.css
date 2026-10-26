@@ -1,5 +1,5 @@
 .training-header.hdr-centered { row-gap:8px; margin-bottom:12px; }
-.training-header.hdr-centered:has(.header-streak) h1 { font-size:clamp(25px,6.4vw,34px); line-height:1.15; }
+.training-header.hdr-centered:has(.header-streak) h1 { font-size:clamp(20px,6.4vw,34px); line-height:1.15; }
 .training-header .header-streak { align-self:center; }
 .training-header.hdr-centered > .iconbtn { justify-self:end; }
 .training-header .header-streak .streak-flame { width:31px; height:34px; flex:none; }

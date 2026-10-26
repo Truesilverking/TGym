@@ -13,5 +13,11 @@ export function nutritionTotals(items) {
       if (Number.isFinite(next)) sums[key] = next
     }
   }
-  return Object.fromEntries(NUTRIENTS.map(key => [key, key === 'calories' ? Math.round(sums[key]) : Number(sums[key].toFixed(1))]))
+  return Object.fromEntries(NUTRIENTS.map(key => {
+    const value = sums[key]
+    if (key === 'calories') return [key, Math.round(value)]
+    // Match fmtNum's half-up rounding, without overflowing a valid large total.
+    const scaled = value * 10
+    return [key, Number.isFinite(scaled) ? Math.round(scaled) / 10 : value]
+  }))
 }
