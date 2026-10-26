@@ -23,7 +23,7 @@ import { rebaseEmptyApiProfile } from '../lib/api-bootstrap.js'
 const KEY = 'gym_state_v1'
 export const DEF = {
   storageVersion: STATE_SCHEMA, hasCompletedOnboarding: false, hasCompletedAppTour: false, healthConnection: {},
-  inAppReminderMode:'both', inAppReminderDismissed:[], streakCalendarShowProfile:false, notificationSoundOn:true,
+  inAppReminderMode:'both', inAppReminderDismissed:[], streakCalendarShowProfile:false, notificationSoundOn:true, enableSpotifreeSync: true,
   unit: 'kg', restSec: 90, restPauseSec: 15, restAdvanced: { warmup: 45, supersetMove: 0, supersetRound: 120 }, sound: true, vibration: true, reduceMotion: false, keepAwake: true, lang: 'es',
   sounds: { ...DEFAULT_SOUNDS }, customSounds: [], soundVolume: 1, soundMuted: false,
   theme: 'dark', accent: 'red', body: 'male', targetW: null, heightCm: null,

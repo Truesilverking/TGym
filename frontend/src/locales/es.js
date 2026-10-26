@@ -2149,5 +2149,11 @@ export default {
   "Decrease reps": "Reducir repeticiones",
   "Enter a valid load.": "Introduce una carga válida.",
   "Increase load": "Aumentar carga",
-  "Increase reps": "Aumentar repeticiones"
+  "Increase reps": "Aumentar repeticiones",
+  "Spotifree Integration": "Integración con Spotifree",
+  "Sync rest timers with Spotifree (ducks music volume during rest and alerts on completion)": "Sincroniza los descansos con Spotifree (baja el volumen de la música y avisa al terminar)",
+  "Open Spotifree": "Abrir Spotifree",
+  "Open Spotifree companion music player": "Abrir reproductor de música Spotifree",
+  "Spotifree Music": "Música (Spotifree)",
+  "Música de Spotifree": "Música de Spotifree",
 };

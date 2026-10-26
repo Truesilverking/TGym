@@ -1,3 +1,4 @@
+import { launchSpotifree } from '../lib/spotifree-sync.js'
 import { openHealthActivities } from '../components/Activities.jsx'
 import { replayAppTour } from '../components/AppTour.jsx'
 import { openTrainingHistory } from '../components/TrainingHistory.jsx'
@@ -270,6 +271,13 @@ export default function Settings() {
       </Row>
       <Row icon="bell" iconTint="var(--acc)" title={t('Sound preferences')} subtitle={t('Alert tones and your own short sounds')} accessory="chevron" onClick={openSoundSettings} />
       <Row icon="bolt" iconTint="var(--orange)" title={t('Vibration')}><Switch checked={S.vibration !== false} onChange={v => update(s => { s.vibration = v })} /></Row>
+      <Row icon="music" iconTint="var(--green)" title={t('Spotifree Integration')}
+        subtitle={t('Sync rest timers with Spotifree (ducks music volume during rest and alerts on completion)')}>
+        <Switch checked={S.enableSpotifreeSync !== false} onChange={v => update(s => { s.enableSpotifreeSync = v })} />
+      </Row>
+      <Row icon="music" iconTint="var(--blue)" title={t('Open Spotifree')}
+        subtitle={t('Open Spotifree companion music player')}
+        accessory="chevron" onClick={() => launchSpotifree()} />
       <Row icon="sparkles" iconTint="var(--yellow)" title={t('Reduce animations')} subtitle={t('Use simpler movement effects throughout the app.')}><Switch checked={!!S.reduceMotion} onChange={v => update(s => { s.reduceMotion = v })} /></Row>
       <Row icon="target" iconTint="var(--teal)" title={t('Strict reps')} subtitle={t('Keep repetition controls inside each exercise range.')}>
         <Switch checked={!!S.strictReps} onChange={v => update(s => { s.strictReps = v })} />

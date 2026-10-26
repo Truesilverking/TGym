@@ -117,6 +117,8 @@ const P = {
   shuffle: <><path d="M3.6 7.2h2.9c1.6 0 2.8.9 3.8 2.4l3 4.8c1 1.5 2.2 2.4 3.8 2.4h2.9M3.6 16.8h2.9c1.6 0 2.8-.9 3.8-2.4l.7-1.1M15.6 9.9l.7-1.1c1-1.5 2.2-2.4 3.8-2.4h1.9" /><path d="m17.9 4.3 2.8 2.1-2.8 2.1M17.9 14.7l2.8 2.1-2.8 2.1" /></>,
   info: <><circle cx="12" cy="12" r="8.2" /><path d="M12 11v5.4" /><circle cx="12" cy="7.9" r=".9" fill="currentColor" stroke="none" /></>,
   warning: <><path d="M12 3.4 21.2 19.4H2.8Z" /><path d="M12 9.6v4.4" /><circle cx="12" cy="16.6" r=".9" fill="currentColor" stroke="none" /></>,
+  music: <><circle cx="8" cy="16.5" r="3.2" /><circle cx="18" cy="14.5" r="3.2" /><path d="M11.2 16.5V6.2l9.6-2v10.3M11.2 10.4l9.6-2" /></>,
+  headphones: <><path d="M4 14.5v-2.5a8 8 0 0 1 16 0v2.5" /><rect x="3" y="14" width="4" height="6.5" rx="1.5" /><rect x="17" y="14" width="4" height="6.5" rx="1.5" /></>,
 }
 
 // A few keys are aliases so call sites can say what they mean.
@@ -126,6 +128,7 @@ P.exercises = P.magnifier
 P.weight = P.scale
 P.streak = P.flame
 P.done = P.check
+P.spotifree = P.music
 
 export const ICON_NAMES = Object.keys(P)
 

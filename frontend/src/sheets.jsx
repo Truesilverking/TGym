@@ -1,3 +1,4 @@
+import { emitWorkoutFinish } from './lib/spotifree-sync.js'
 import { clearWorkoutNotification } from './lib/workout-notification.js'
 import DailyPlan, { ScheduleEditor } from './components/DailyPlan.jsx'
 import { dailyPlan, nextDailyRoutine, routineIds, loggedWorkouts } from './lib/daily-plan.js'

@@ -1,3 +1,4 @@
+import { emitRestStart, emitRestEnd } from '../lib/spotifree-sync.js'
 import { create } from 'zustand'
 import { uid } from '../lib/format.js'
 import { playAppSound, vibrate } from '../lib/sound.js'
@@ -100,18 +101,20 @@ export const useUI = create((set, get) => ({
     toastTm = setTimeout(() => set({ toastMsg: '' }), 2200)
   },
 
-  startRest(sec, restored = null) {
+  startRest(sec, restored = null, exerciseName = '') {
     get().stopRest()
     // Rest timer set to Off. Stopping and returning rather than starting a zero-length timer
     // keeps every caller honest: the four places that start a rest do not each need to know.
     if (!(sec > 0)) return
     const endsAt = restored?.endsAt ?? Date.now() + sec * 1000
-    const timer = { left: sec, total: restored?.total ?? sec, endsAt }
+    const exName = exerciseName || restored?.exerciseName || ''
+    const timer = { left: sec, total: restored?.total ?? sec, endsAt, exerciseName: exName }
     saveRest(timer)
     set({ timer })
     void syncWorkoutNotification(useStore.getState().S.active,timer)
     requestRestNotificationPermission()
     pushRestTimer(sec)
+    emitRestStart(sec, endsAt, timer.total, exName)
     timerTick = () => {
       const tm = get().timer
       if (!tm) return
@@ -139,6 +142,7 @@ export const useUI = create((set, get) => ({
     saveRest(get().timer)
     void syncWorkoutNotification(useStore.getState().S.active,get().timer)
     pushRestTimer(left)
+    emitRestStart(left, tm.endsAt + sec * 1000, tm.total + sec, tm.exerciseName || '')
   },
   stopRest() {
     if (timerInt) clearInterval(timerInt); timerInt = null
@@ -147,13 +151,14 @@ export const useUI = create((set, get) => ({
     saveRest(null)
     set({ timer: null })
     void syncWorkoutNotification(useStore.getState().S.active,null)
+    emitRestEnd()
   },
   restoreRest() {
     if (get().timer) return
     const saved=useStore.getState().S.active?.restTimer
     if (!saved) return
     if (!Number.isFinite(saved.endsAt) || saved.endsAt <= Date.now()) { saveRest(null); return }
-    get().startRest(Math.ceil((saved.endsAt-Date.now())/1000), saved)
+    get().startRest(Math.ceil((saved.endsAt-Date.now())/1000), saved, saved.exerciseName || '')
   },
 
   /* ---- work timer (issue #16) ----
