@@ -136,6 +136,46 @@ it('blocks applying the calculator while a raw numeric draft is invalid', () => 
   } finally { act(() => root.unmount()); container.remove() }
 })
 
+it('blocks the continuing pointer click after saving food, then allows the next ordinary click', () => {
+  const container = document.createElement('div'); document.body.appendChild(container)
+  const root = createRoot(container), action = vi.fn(), underlay = document.createElement('button')
+  underlay.addEventListener('click', action); document.body.appendChild(underlay)
+  try {
+    act(() => root.render(<WithSheets />))
+    act(() => button(container, 'Add').click())
+    const food = [...container.querySelectorAll('.nutri-food-row>button')][0]
+    act(() => food.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, detail: 1 })))
+    expect(useUI.getState().sheets).toHaveLength(0)
+    const continuation = new MouseEvent('click', { bubbles: true, cancelable: true, detail: 2 })
+    act(() => underlay.dispatchEvent(continuation))
+    expect(continuation.defaultPrevented).toBe(true)
+    expect(action).not.toHaveBeenCalled()
+    act(() => underlay.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 })))
+    expect(action).toHaveBeenCalledOnce()
+  } finally { act(() => root.unmount()); container.remove(); underlay.remove() }
+})
+
+it('does not block a keyboard activation after a pointer save or arm the guard for keyboard food saves', () => {
+  const container = document.createElement('div'); document.body.appendChild(container)
+  const root = createRoot(container), action = vi.fn(), underlay = document.createElement('button')
+  underlay.addEventListener('click', action); document.body.appendChild(underlay)
+  try {
+    act(() => root.render(<WithSheets />))
+    act(() => button(container, 'Add').click())
+    const food = [...container.querySelectorAll('.nutri-food-row>button')][0]
+    act(() => food.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 })))
+    act(() => underlay.click())
+    expect(action).toHaveBeenCalledOnce()
+    // The keyboard click consumed the one-shot listener; no later click is blocked.
+    act(() => underlay.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 2 })))
+    expect(action).toHaveBeenCalledTimes(2)
+    act(() => button(container, 'Add').click())
+    act(() => [...container.querySelectorAll('.nutri-food-row>button')][0].click())
+    act(() => underlay.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 2 })))
+    expect(action).toHaveBeenCalledTimes(3)
+  } finally { act(() => root.unmount()); container.remove(); underlay.remove() }
+})
+
 it.each([
   { profileUnit: 'lb', rowUnit: undefined, storedWeight: 176.3698 },
   { profileUnit: 'lb', rowUnit: 'kg', storedWeight: 80 },

@@ -216,25 +216,34 @@ function AddFoodSheet({ close, dateIso, initialMeal }) {
   const myFoods = matches(mine)
   const foods = matches(COMMON_FOODS)
 
-  const add = food => {
+  const closeAfterSave = event => {
+    // A mouse double-click can finish on the newly exposed page after the first
+    // click closes this sheet. Consume only its continuing click; a new single
+    // click or keyboard activation remains immediate and removes the listener.
+    if (event?.detail > 0) window.addEventListener('click', next => {
+      if (next.detail > 1) { next.preventDefault(); next.stopImmediatePropagation() }
+    }, { capture: true, once: true })
+    close()
+  }
+  const add = (food, event) => {
     if (committed.current || !validQuantity) return
     if (form.current?.querySelector('[aria-invalid="true"]')) { toast(t('Enter a valid number')); return }
     committed.current = true
-    if (saveChange(() => logFoodItem(dateIso, { ...food, meal, qty }))) close()
+    if (saveChange(() => logFoodItem(dateIso, { ...food, meal, qty }))) closeAfterSave(event)
     else committed.current = false
   }
-  const addCustom = () => {
+  const addCustom = event => {
     if (committed.current || !name.trim() || !validMacros) return
     if (form.current?.querySelector('[aria-invalid="true"]')) { toast(t('Enter a valid number')); return }
     const food = { name: name.trim(), serving: serving.trim() || t('1 serving'), calories, protein, carbs, fat }
     committed.current = true
     if (!saveChange(() => logFoodItem(dateIso, { ...food, meal, qty: 1 }, { saveFood: keep }))) { committed.current = false; return }
     toast(keep ? t('Added and saved to My foods') : t('Added'))
-    close()
+    closeAfterSave(event)
   }
   const row = (food, key, onRemove) => (
     <div key={key} className="nutri-food-row">
-      <button type="button" disabled={!validQuantity} onClick={() => add(food)}>
+      <button type="button" disabled={!validQuantity} onClick={event => add(food, event)}>
         <span style={{ flex: 1, minWidth: 0 }}>
           <b style={{ display: 'block', fontWeight: 600 }}>{food.name}</b>
           <small className="dim">{food.serving ? food.serving + ' · ' : ''}{macroLine({ ...food, qty: 1 })}</small>
