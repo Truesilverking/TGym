@@ -144,6 +144,8 @@ function BwSheet({ required, onDone, close, initialDate }) {
   const [weightValid, setWeightValid] = useState(true)
   const pickerDraft = useRef(null)
   const reading = useRef({id:uid(),t:Date.now()})
+  const mounted = useRef(true)
+  useEffect(()=>{ mounted.current=true; return()=>{ mounted.current=false } },[])
   const [saving, setSaving] = useState(false)
   // Keep the guard after a successful close: stale double taps must not run the
   // synchronous pre-workout callback twice. A failed save still permits retry.
@@ -162,19 +164,22 @@ function BwSheet({ required, onDone, close, initialDate }) {
     savingWeight.current = true
     setSaving(true)
     try {
-    update(s => {
+    await useStore.getState().updateAtomic(s => {
       const iso = date
       const ex = s.bodyweight.find(b => b.d === iso)
       if (ex) {
-        const samples = Array.isArray(ex.samples) ? ex.samples : [{ w: ex.w, t: ex.t || Date.now() }]
-        const sample={...reading.current,w:n},index=samples.findIndex(x=>x.id===sample.id)
+        const samples = Array.isArray(ex.samples) && ex.samples.length ? ex.samples : [{ w: ex.w, t: ex.t ?? Date.now() }]
+        const sample={...reading.current,w:n},index=samples.findIndex(x=>x?.id===sample.id)
         if(index>=0)samples[index]=sample;else samples.push(sample)
         ex.samples = samples
-        ex.w = Math.round((samples.reduce((sum, x) => sum + x.w, 0) / samples.length) * 10) / 10; ex.t = Date.now()
+        const values = samples.map(x=>Number(x?.w)).filter(value=>Number.isFinite(value)&&value>0)
+        const average = values.reduce((mean,value,index)=>mean+(value-mean)/(index+1),0)
+        ex.w = Number.isFinite(average*10) ? Math.round(average*10)/10 : average; ex.t = Date.now()
       } else s.bodyweight.push({ d: iso, w: n, t: Date.now(), samples: [{...reading.current,w:n}] })
       s.bodyweight.sort((a, b) => (a.d < b.d ? -1 : 1))
     })
     if(!required)await useStore.getState().flushPersistence()
+    if(!mounted.current)return
     close()
     if (onDone) onDone(n); else toast(t('Weight saved'))
     } catch { savingWeight.current = false; toast(t('Could not save. Check available storage and try again.')) } finally {setSaving(false)}
@@ -209,7 +214,8 @@ function BwSheet({ required, onDone, close, initialDate }) {
 export function bwSheet(opts = {}) {
   // Weighing in is optional, even when it appears before a workout. Keep the sheet
   // dismissible by backdrop, Android back and a downward swipe.
-  const h = ui().openSheet(close => <BwSheet {...opts} close={close} />)
+  const { onClose, ...props } = opts
+  const h = ui().openSheet(close => <BwSheet {...props} close={close} />, { onClose })
   return h
 }
 
@@ -1635,12 +1641,15 @@ export function WorkoutRow({ w, onClick }) {
 }
 
 /* ============================ workout lifecycle ============================ */
+let startingWorkoutDecision = null
 export function startFlow(routineId) {
   useStore.getState().reconcileActiveClock()
   if (S().active) {nav('/workout');return}
   if (routineId === undefined) routineId = nextDailyRoutine(S(),todayISO())?.id || null
   if(isTrainingPaused(S(),todayISO())) return ui().openSheet(close=><TrainingPauseCard onSaved={close} />)
-  bwSheet({ required: true, onDone: bw => beginWorkout(routineId, bw) })
+  if (startingWorkoutDecision && ui().sheets.some(sheet=>sheet.id===startingWorkoutDecision.id)) return startingWorkoutDecision
+  startingWorkoutDecision = bwSheet({ required: true, onDone: bw => beginWorkout(routineId, bw), onClose:()=>{ startingWorkoutDecision=null } })
+  return startingWorkoutDecision
 }
 export function beginWorkout(routineId, bw) {
   useStore.getState().reconcileActiveClock()
@@ -1932,9 +1941,10 @@ export function finishWorkout() {
   if (!A) return
   const done = setsDoneActive(A)
   const remaining = A.entries.reduce((n, e) => n + e.sets.filter(set => !isWarmupRow(set) && !set.done).length, 0)
-  const cancel = A.timerPausedAt != null ? () => {} : resumeActiveWorkoutClock
-  if (!done) { pauseActiveWorkoutClock(); confirmSheet({ title: t('Nothing logged yet'), message: t('You haven’t checked off any sets. Finish the workout anyway?'), confirmText: t('Finish anyway'), onConfirm: doFinishWorkout, onCancel: cancel }); return }
-  if (remaining) { pauseActiveWorkoutClock(); confirmSheet({ title: t('Finish early?'), message: t(remaining === 1 ? '{0} set still unchecked. Finish the workout now?' : '{0} sets still unchecked. Finish the workout now?', remaining), confirmText: t('Finish workout'), onConfirm: doFinishWorkout, onCancel: cancel }); return }
+  const cancel = () => { if (A.timerPausedAt == null && S().active?.id === A.id) resumeActiveWorkoutClock() }
+  const confirm = () => { if (S().active?.id === A.id) doFinishWorkout() }
+  if (!done) { pauseActiveWorkoutClock(); confirmSheet({ title: t('Nothing logged yet'), message: t('You haven’t checked off any sets. Finish the workout anyway?'), confirmText: t('Finish anyway'), onConfirm: confirm, onCancel: cancel }); return }
+  if (remaining) { pauseActiveWorkoutClock(); confirmSheet({ title: t('Finish early?'), message: t(remaining === 1 ? '{0} set still unchecked. Finish the workout now?' : '{0} sets still unchecked. Finish the workout now?', remaining), confirmText: t('Finish workout'), onConfirm: confirm, onCancel: cancel }); return }
   doFinishWorkout()
 }
 export function doFinishWorkout(options = {}) {
@@ -1984,6 +1994,7 @@ export function doFinishWorkout(options = {}) {
     saved = true
   })
   if (!saved) return
+  if (hasWorkoutActivity(w)) emitWorkoutFinish(w)
   useStore.getState().autoBackupNow()
   useUI.getState().stopRest()
   useUI.getState().stopWork()

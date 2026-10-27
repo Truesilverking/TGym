@@ -12,7 +12,7 @@ export function buildCompletedWorkout(active, { end = Date.now(), prs = [], reas
       topW: entry.topW || null,
       target: entry.target || null,
     }
-    const snapshot = typeof snapshotFor === 'function' ? snapshotFor(entry) : null
+    const snapshot = (typeof snapshotFor === 'function' ? snapshotFor(entry) : null) || entry.muscleSnapshot
     if (snapshot && typeof snapshot === 'object' && !Array.isArray(snapshot) && Object.keys(snapshot).length) {
       completed.muscleSnapshot = { ...snapshot }
     }

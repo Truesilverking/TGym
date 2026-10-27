@@ -2150,6 +2150,8 @@ export default {
   "Enter a valid load.": "Introduce una carga válida.",
   "Increase load": "Aumentar carga",
   "Increase reps": "Aumentar repeticiones",
+  "Rest timer sharing is available only to compatible players on this site. External app sync is not available.": "Solo los reproductores compatibles de este sitio pueden recibir los descansos. La sincronización con una app externa no está disponible.",
+  "The music player could not be opened.": "No se pudo abrir el reproductor de música.",
   "Spotifree Integration": "Integración con Spotifree",
   "Sync rest timers with Spotifree (ducks music volume during rest and alerts on completion)": "Sincroniza los descansos con Spotifree (baja el volumen de la música y avisa al terminar)",
   "Open Spotifree": "Abrir Spotifree",

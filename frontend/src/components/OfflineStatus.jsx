@@ -20,18 +20,33 @@ export default function OfflineStatus() {
     if(e.data?.update){void activatePwaUpdate(reg,navigator.serviceWorker,()=>location.reload()).catch(()=>{if(!gone)setStatus('error')});return}
     setStatus(e.data?.ready?'ready':'error')
    }
-   reg.active.postMessage({type:attempt?'REPAIR_OFFLINE':'OFFLINE_STATUS'},[channel.port2])
+   try {reg.active.postMessage({type:attempt?'REPAIR_OFFLINE':'OFFLINE_STATUS'},[channel.port2])}
+   catch {clearTimeout(timer);channel.port1.close();if(!gone)setStatus('error')}
   }
   const changed=()=>{if(installing?.state==='activated')check();else if(installing?.state==='redundant'&&!gone)setStatus('error')}
   const found=()=>{installing?.removeEventListener('statechange',changed);installing=reg.installing;installing?.addEventListener('statechange',changed)}
   if(!window.isSecureContext||!navigator.serviceWorker){setStatus('unsupported');return}
   setStatus('checking')
   timer=setTimeout(()=>{if(!gone)setStatus('error')},15000)
-  navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>{
-   if(gone)return
+  const attach=r=>{
+   reg?.removeEventListener('updatefound',found);installing?.removeEventListener('statechange',changed)
    reg=r;reg.addEventListener('updatefound',found);found();check()
-   if(attempt)void reg.update().catch(()=>{if(!gone)setStatus('error')})
-  }).catch(()=>{if(!gone)setStatus('error')})
+  }
+  void (async()=>{
+   let existing
+   try {existing=await navigator.serviceWorker.getRegistration?.()}catch { /* A fresh registration may still work online. */ }
+   if(gone)return
+   if(existing)attach(existing)
+   // Cached access does not require a new worker-script network request. Safari
+   // may reject register() offline even while the installed worker serves the app.
+   if(!online){if(!existing?.active){clearTimeout(timer);setStatus('error')}return}
+   try {
+    const next=await navigator.serviceWorker.register('sw.js',{updateViaCache:'none'})
+    if(gone)return
+    if(next!==reg)attach(next)
+    if(attempt)void reg.update().catch(()=>{if(!gone&&!reg?.active)setStatus('error')})
+   }catch {if(!gone&&!existing?.active)setStatus('error')}
+  })()
   return()=>{gone=true;clearTimeout(timer);channel?.port1.close();reg?.removeEventListener('updatefound',found);installing?.removeEventListener('statechange',changed)}
  },[attempt,online])
  if(MOBILE||import.meta.env.DEV)return null

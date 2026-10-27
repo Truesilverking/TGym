@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { t } from '../lib/i18n.js'
-import { fmtNum } from '../lib/format.js'
+import { fmtNum, isoOf } from '../lib/format.js'
+import { validMeasurementDate } from '../lib/body-records.js'
 import { bwSheet, goalSheet, heightSheet, measurementsSheet } from '../sheets.jsx'
 import { Button, Row, Section } from './ui.jsx'
 import Icon from './Icon.jsx'
@@ -57,7 +58,12 @@ export default function LocalProfile({ close }) {
     } catch { setError(t('Could not save. Check available storage and try again.')) }
     finally { setSaving(false) }
   }
-  const weight = [...(S.bodyweight || [])].sort((a,b) => b.d.localeCompare(a.d) || (b.t || 0) - (a.t || 0))[0]
+  const weight = (Array.isArray(S.bodyweight) ? S.bodyweight : []).map(row => {
+    const stamp = row?.t != null && row.t !== '' ? Number(row.t) : NaN
+    const date = validMeasurementDate(row?.d, '9999-12-31') ? row.d : Number.isFinite(stamp) ? isoOf(new Date(stamp)) : ''
+    return { row, date }
+  }).filter(({row,date}) => validMeasurementDate(date, '9999-12-31') && Number.isFinite(Number(row?.w)) && Number(row.w) > 0)
+    .sort((a,b) => b.date.localeCompare(a.date) || (Number(b.row.t) || 0) - (Number(a.row.t) || 0))[0]?.row
   return <div className="local-profile" data-tour="profile-editor">
     <h3>{t('Profile')}</h3><p className="muted small">{t('Your profile is saved with your training data. No cloud account is required.')}</p>
     <form onSubmit={save}>

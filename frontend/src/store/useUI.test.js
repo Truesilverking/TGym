@@ -74,3 +74,25 @@ it.each([[38000,38],[120000,90]])('finishes suspended work after %i ms without e
    expect(done).toHaveBeenCalledOnce()
  } finally {useUI.getState().stopWork();vi.useRealTimers()}
 })
+
+it.each([Infinity, NaN, Symbol('invalid')])('ignores nonfinite timer edits without corrupting an existing rest: %s', value => {
+ vi.useFakeTimers()
+ try {
+  useUI.getState().startRest(60)
+  const timer = useUI.getState().timer
+  expect(() => useUI.getState().addRest(value)).not.toThrow()
+  expect(() => useUI.getState().startRest(value)).not.toThrow()
+  expect(() => useUI.getState().startWork(value, 'Hold', vi.fn())).not.toThrow()
+  expect(useUI.getState().timer).toBe(timer)
+  expect(useUI.getState().work).toBeNull()
+ } finally { useUI.getState().stopRest(); vi.useRealTimers() }
+})
+
+it('removes an invalid restored rest without inventing a last-rest timestamp', async () => {
+ const { useStore, DEF } = await import('./useStore.js')
+ useStore.setState({ S: { ...structuredClone(DEF), active: { id: 'invalid-rest', start: Date.now() - 10000, entries: [], restTimer: { endsAt: NaN, total: 60 } } }, user: null })
+ useUI.getState().restoreRest()
+ expect(useUI.getState().timer).toBeNull()
+ expect(useStore.getState().S.active.restTimer).toBeUndefined()
+ expect(useStore.getState().S.active.lastRestEndedAt).toBeUndefined()
+})

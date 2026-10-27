@@ -68,6 +68,16 @@ it('keeps unsent preferences made before a pull even without training records', 
   expect(JSON.parse(api.mock.calls[1][1].body).state.unit).toBe('lb')
 })
 
+it('preserves the Spotifree opt-out made while the initial server profile is loading', async () => {
+  const { pulling, respond } = pendingPull()
+  useStore.getState().update(s => { s.enableSpotifreeSync = false })
+  respond({ ...cloudProfile(), enableSpotifreeSync: true })
+  expect(await pulling).toBe(true)
+  expect(useStore.getState().S.enableSpotifreeSync).toBe(false)
+  expect(useStore.getState().S.workouts).toEqual(cloudProfile().workouts)
+  expect(JSON.parse(api.mock.calls.find(([, options]) => options?.method === 'PUT')[1].body).state.enableSpotifreeSync).toBe(false)
+})
+
 it.each([undefined, ['history', 'consistency']])('preserves a Stats-only section selection during initial cloud restoration (previous %j)', async previous => {
   if (previous) useStore.setState({ S: { ...structuredClone(DEF), statsSections: previous } })
   const { pulling, respond } = pendingPull()

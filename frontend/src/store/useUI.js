@@ -1,4 +1,4 @@
-import { emitRestStart, emitRestEnd } from '../lib/spotifree-sync.js'
+import { emitRestStart, emitRestEnd, clearSpotifreeRest } from '../lib/spotifree-sync.js'
 import { create } from 'zustand'
 import { uid } from '../lib/format.js'
 import { playAppSound, vibrate } from '../lib/sound.js'
@@ -12,6 +12,7 @@ import {syncWorkoutNotification} from '../lib/workout-notification.js'
 // before the local timer completes. No-ops for guests / offline.
 const pushRestTimer = sec => { if (useStore.getState().user) api('/api/push/rest-timer', { method: 'POST', body: JSON.stringify({ seconds: sec }) }).catch(() => {}) }
 const cancelPushRestTimer = () => { if (useStore.getState().user) api('/api/push/rest-timer/cancel', { method: 'POST', body: '{}' }).catch(() => {}) }
+const timerNumber = value => { try { return Number(value) } catch { return NaN } }
 
 const notificationsSupported = () => typeof window !== 'undefined' && 'Notification' in window
 let requestRestNotificationPermissionP = null
@@ -62,7 +63,15 @@ const maybeRestNotification = async () => {
 const saveRest = timer => {
   const store=useStore.getState()
   if (!store.S.active || (!timer && !store.S.active.restTimer)) return
-  store.update(s => { if(s.active) { if(timer) s.active.restTimer={endsAt:timer.endsAt,total:timer.total}; else { s.active.lastRestEndedAt=Math.min(Date.now(),s.active.restTimer.endsAt); delete s.active.restTimer } } }, true, false)
+  store.update(s => {
+    if (!s.active) return
+    if (timer) s.active.restTimer={endsAt:timer.endsAt,total:timer.total,exerciseName:timer.exerciseName || ''}
+    else if (s.active.restTimer) {
+      const end = s.active.restTimer.endsAt
+      if (Number.isFinite(end)) s.active.lastRestEndedAt=Math.min(Date.now(),end)
+      delete s.active.restTimer
+    }
+  }, true, false)
 }
 
 let toastTm = null
@@ -102,13 +111,17 @@ export const useUI = create((set, get) => ({
   },
 
   startRest(sec, restored = null, exerciseName = '') {
-    get().stopRest()
+    sec = timerNumber(sec)
+    if (!Number.isFinite(sec)) return
+    get().stopRest(!(sec > 0))
     // Rest timer set to Off. Stopping and returning rather than starting a zero-length timer
     // keeps every caller honest: the four places that start a rest do not each need to know.
     if (!(sec > 0)) return
-    const endsAt = restored?.endsAt ?? Date.now() + sec * 1000
+    const endsAt = timerNumber(restored?.endsAt ?? Date.now() + sec * 1000)
+    const total = timerNumber(restored?.total ?? sec)
+    if (!Number.isFinite(endsAt) || endsAt <= Date.now() || !Number.isFinite(total) || total <= 0) { clearSpotifreeRest(); return }
     const exName = exerciseName || restored?.exerciseName || ''
-    const timer = { left: sec, total: restored?.total ?? sec, endsAt, exerciseName: exName }
+    const timer = { left: sec, total, endsAt, exerciseName: exName }
     saveRest(timer)
     set({ timer })
     void syncWorkoutNotification(useStore.getState().S.active,timer)
@@ -132,32 +145,35 @@ export const useUI = create((set, get) => ({
     document.addEventListener('visibilitychange', timerTick)
   },
   addRest(sec) {
+    sec = timerNumber(sec)
+    if (!Number.isFinite(sec)) return
     const tm = get().timer
     if (!tm) return
     const left = Math.ceil((tm.endsAt - Date.now()) / 1000) + sec
     // taking off more than is left means "I'm ready now" — same as skipping, and it keeps a
     // negative duration out of both the progress bar and the server-side push schedule
     if (left <= 0) { get().stopRest(); return }
+    if (!Number.isFinite(left) || !Number.isFinite(tm.total + sec) || !Number.isFinite(tm.endsAt + sec * 1000)) return
     set({ timer: { ...tm, left, total: tm.total + sec, endsAt: tm.endsAt + sec * 1000 } })
     saveRest(get().timer)
     void syncWorkoutNotification(useStore.getState().S.active,get().timer)
     pushRestTimer(left)
     emitRestStart(left, tm.endsAt + sec * 1000, tm.total + sec, tm.exerciseName || '')
   },
-  stopRest() {
+  stopRest(announceEnd = true) {
     if (timerInt) clearInterval(timerInt); timerInt = null
     if (timerTick) document.removeEventListener('visibilitychange', timerTick); timerTick = null
     if (get().timer) cancelPushRestTimer()
     saveRest(null)
     set({ timer: null })
     void syncWorkoutNotification(useStore.getState().S.active,null)
-    emitRestEnd()
+    if (announceEnd) emitRestEnd()
   },
   restoreRest() {
     if (get().timer) return
     const saved=useStore.getState().S.active?.restTimer
-    if (!saved) return
-    if (!Number.isFinite(saved.endsAt) || saved.endsAt <= Date.now()) { saveRest(null); return }
+    if (!saved) { clearSpotifreeRest(); return }
+    if (!Number.isFinite(saved.endsAt) || saved.endsAt <= Date.now()) { saveRest(null); clearSpotifreeRest(); return }
     get().startRest(Math.ceil((saved.endsAt-Date.now())/1000), saved, saved.exerciseName || '')
   },
 
@@ -171,6 +187,8 @@ export const useUI = create((set, get) => ({
      hold records 0:38 rather than crediting the full target. A natural finish already
      plays its work alert; callers must not replace it with the set-completed cue. */
   startWork(sec, label, onDone, userInitiated = true, getLabel = null) {
+    sec = timerNumber(sec)
+    if (!Number.isFinite(sec) || !Number.isFinite(Date.now() + Math.max(1, Math.round(sec) || 1) * 1000)) return
     get().stopWork()
     get().stopRest()
     const total = Math.max(1, Math.round(sec) || 1)

@@ -9,10 +9,12 @@ import { bindUI } from './ui.jsx'
 import { doFinishWorkout, finishWorkout } from '../sheets.jsx'
 import { playAppSound } from '../lib/sound.js'
 import { trainingStreak } from '../lib/training-plan.js'
+import { emitWorkoutFinish } from '../lib/spotifree-sync.js'
 
 vi.mock('../lib/sound.js', () => ({ playAppSound: vi.fn(), vibrate: vi.fn() }))
 vi.mock('../lib/api.js', () => ({ api: vi.fn(async () => ({})), setRemoteAuth: vi.fn() }))
 vi.mock('../lib/web-state.js', () => ({ loadWebState: async () => null, saveWebState: async () => true }))
+vi.mock('../lib/spotifree-sync.js', () => ({ emitWorkoutFinish: vi.fn(), emitRestStart: vi.fn(), emitRestEnd: vi.fn() }))
 vi.mock('../lib/i18n.js', async original => ({ ...await original(), t: (key, ...values) => key.replace(/\{(\d+)\}/g, (_, index) => values[index]) }))
 
 const today = '2026-10-08'
@@ -49,6 +51,8 @@ it('shows the first active-day streak only after successful save, without requir
   expect(JSON.parse(localStorage.getItem('gym_state_v1')).workouts).toHaveLength(1)
   expect(number()).toBe('1'); expect(host.querySelector('.streak-flame-fill').getAttribute('opacity')).toBe('1')
   expect(host.querySelector('.streak-celebration')).toBeNull()
+  expect(emitWorkoutFinish).toHaveBeenCalledTimes(1)
+  expect(emitWorkoutFinish.mock.calls[0][0]).toEqual(state().workouts[0])
 })
 it('uses the persisted post-save total for an ordinary four-day streak', () => {
   const previous = ['2026-10-05', '2026-10-06', '2026-10-07'].map((date, index) => workout('saved-' + index, date))
@@ -63,6 +67,7 @@ it('keeps a saved session without confirmed activity at zero and neutral', () =>
   act(() => doFinishWorkout())
   expect(state().workouts).toHaveLength(1); expect(trainingStreak(state()).current).toBe(0)
   expect(number()).toBe('0'); expect(host.querySelector('.streak-flame.inactive')).not.toBeNull()
+  expect(emitWorkoutFinish).not.toHaveBeenCalled()
 })
 it('does not show or count a cancelled finish confirmation or a session that never started', () => {
   act(() => doFinishWorkout()); expect(useUI.getState().sheets).toHaveLength(0)
@@ -73,6 +78,7 @@ it('does not show or count a cancelled finish confirmation or a session that nev
   expect(number()).toBeUndefined(); expect(state().workouts).toHaveLength(0)
   expect(state().active.id).toBe('pending'); expect(trainingStreak(state()).current).toBe(0)
   expect(playAppSound).not.toHaveBeenCalled()
+  expect(emitWorkoutFinish).not.toHaveBeenCalled()
 })
 it('finishes completed required work without an early warning for an unchecked warmup', () => {
   const session = active('work-complete')
@@ -115,4 +121,22 @@ it('does not open a phantom summary or replay completion for a repeated or dupli
   act(() => useStore.setState({ S: { ...state(), active: active('same-id') } })); act(() => doFinishWorkout())
   expect(useUI.getState().sheets).toHaveLength(0); expect(state().workouts).toEqual(saved)
   expect(playAppSound.mock.calls.filter(([, event]) => event === 'completion')).toHaveLength(1)
+  expect(emitWorkoutFinish).toHaveBeenCalledTimes(1)
+})
+
+it('emits no finished workout when primary persistence fails, then emits once after a successful retry', () => {
+  act(() => useStore.setState({ S: { ...state(), active: active('save-retry') } }))
+  const before = structuredClone(state())
+  const original = localStorage.setItem.bind(localStorage)
+  const write = vi.spyOn(localStorage, 'setItem').mockImplementation((key, value) => {
+    if (key === 'gym_state_v1') throw new DOMException('Storage full', 'QuotaExceededError')
+    return original(key, value)
+  })
+  expect(() => act(() => doFinishWorkout())).toThrow('Storage full')
+  expect(state()).toEqual(before)
+  expect(emitWorkoutFinish).not.toHaveBeenCalled()
+  write.mockRestore()
+  act(() => doFinishWorkout())
+  expect(emitWorkoutFinish).toHaveBeenCalledTimes(1)
+  expect(emitWorkoutFinish.mock.calls[0][0]).toEqual(JSON.parse(localStorage.getItem('gym_state_v1')).workouts[0])
 })

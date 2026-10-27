@@ -8,26 +8,31 @@ import {
   launchSpotifree,
   SPOTIFREE_BUS_CHANNEL,
   SPOTIFREE_STORAGE_KEY_REST,
+  clearSpotifreeRest,
 } from './spotifree-sync.js'
 import { useStore, DEF } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 
 describe('spotifree-sync bridge', () => {
   let postedMessages = []
+  let channels = []
 
   class MockBroadcastChannel {
     constructor(name) {
       this.name = name
+      this.close = vi.fn()
+      channels.push(this)
     }
     postMessage(data) {
       postedMessages.push(data)
     }
-    close() {}
   }
 
   beforeEach(() => {
+    clearSpotifreeRest()
     postedMessages = []
-    globalThis.BroadcastChannel = MockBroadcastChannel
+    channels = []
+    vi.stubGlobal('BroadcastChannel', MockBroadcastChannel)
     localStorage.clear()
     useStore.setState({
       S: {
@@ -42,6 +47,7 @@ describe('spotifree-sync bridge', () => {
   afterEach(() => {
     useUI.getState().stopRest()
     vi.restoreAllMocks()
+    vi.unstubAllGlobals()
     localStorage.clear()
   })
 
@@ -151,5 +157,88 @@ describe('spotifree-sync bridge', () => {
     expect(res).toBe(true)
 
     window.open = originalOpen
+  })
+
+  it('never emits an end before first start or when replacing a running rest', () => {
+    useUI.getState().stopRest()
+    expect(postedMessages).toEqual([])
+    useUI.getState().startRest(60)
+    useUI.getState().startRest(90)
+    expect(postedMessages.map(message => message.type)).toEqual(['REST_START', 'REST_START'])
+    useUI.getState().stopRest()
+    useUI.getState().stopRest()
+    expect(postedMessages.map(message => message.type)).toEqual(['REST_START', 'REST_START', 'REST_END'])
+  })
+
+  it('cleans announced rest immediately on opt-out without stopping the TGym timer', () => {
+    useUI.getState().startRest(60)
+    const timer = useUI.getState().timer
+    postedMessages = []
+    useStore.getState().update(s => { s.enableSpotifreeSync = false })
+    expect(localStorage.getItem(SPOTIFREE_STORAGE_KEY_REST)).toBeNull()
+    expect(useUI.getState().timer).toBe(timer)
+    useUI.getState().stopRest()
+    expect(postedMessages).toEqual([])
+  })
+
+  it('closes every send-only channel even if posting fails', () => {
+    emitRestStart(60)
+    expect(channels[0].name).toBe(SPOTIFREE_BUS_CHANNEL)
+    expect(channels[0].close).toHaveBeenCalledOnce()
+    vi.spyOn(MockBroadcastChannel.prototype, 'postMessage').mockImplementation(() => { throw new Error('closed') })
+    expect(() => emitRestEnd()).not.toThrow()
+    expect(channels[1].close).toHaveBeenCalledOnce()
+  })
+
+  it.each([Infinity, NaN, Symbol('invalid'), -1, 0])('rejects invalid bridge rest seconds %s', seconds => {
+    expect(() => emitRestStart(seconds)).not.toThrow()
+    expect(postedMessages).toEqual([])
+    expect(localStorage.getItem(SPOTIFREE_STORAGE_KEY_REST)).toBeNull()
+  })
+
+  it('rejects nonfinite deadlines/totals without writing a malformed rest', () => {
+    emitRestStart(60, Infinity, 60)
+    emitRestStart(60, Date.now() + 60000, NaN)
+    expect(postedMessages).toEqual([])
+    expect(localStorage.getItem(SPOTIFREE_STORAGE_KEY_REST)).toBeNull()
+  })
+
+  it('clears stale rest metadata when no saved rest can be restored', () => {
+    emitRestStart(60)
+    postedMessages = []
+    useUI.getState().restoreRest()
+    expect(localStorage.getItem(SPOTIFREE_STORAGE_KEY_REST)).toBeNull()
+    expect(postedMessages).toEqual([])
+  })
+
+  it('cleans malformed or expired rest metadata without announcing a phantom end', () => {
+    for (const value of ['bad JSON', JSON.stringify({ endsAt: Date.now() - 1000, total: 60 })]) {
+      localStorage.setItem(SPOTIFREE_STORAGE_KEY_REST, value)
+      emitRestEnd()
+      expect(localStorage.getItem(SPOTIFREE_STORAGE_KEY_REST)).toBeNull()
+      expect(postedMessages).toEqual([])
+    }
+  })
+
+  it('announces a completed workout once and ignores active or invalid sessions', () => {
+    const workout = { id: 'finish-dedupe', d: '2026-10-27', start: 100000, end: 160000 }
+    emitWorkoutFinish({ ...workout, end: undefined })
+    emitWorkoutFinish({ ...workout, end: Infinity })
+    emitWorkoutFinish(workout)
+    emitWorkoutFinish(structuredClone(workout))
+    expect(postedMessages).toEqual([{ type: 'WORKOUT_FINISH', workout: { id: workout.id, d: workout.d, duration: 60000 } }])
+  })
+
+  it('opens HTTPS directly without navigating the training page or scheduling a popup', async () => {
+    const initialUrl = window.location.href
+    const open = vi.spyOn(window, 'open').mockReturnValue(null)
+    const timeout = vi.spyOn(globalThis, 'setTimeout')
+    expect(await launchSpotifree()).toBe(true)
+    expect(open).toHaveBeenCalledWith('https://spotifree.app', '_blank', 'noopener,noreferrer')
+    expect(window.location.href).toBe(initialUrl)
+    expect(timeout).not.toHaveBeenCalled()
+    open.mockClear()
+    expect(await launchSpotifree('../evil?token=secret')).toBe(false)
+    expect(open).not.toHaveBeenCalled()
   })
 })

@@ -46,47 +46,63 @@ function BackupSheet({ onExport, onImport }) {
   </div></>
 }
 
-function DevicePinSheet({ removing, close, onChanged }) {
+function DevicePinSheet({ removing, close, onChanged, onBusy }) {
   const [pin, setPin] = useState('')
   const [again, setAgain] = useState('')
   const [error, setError] = useState('')
   const [recoveryKey, setRecoveryKey] = useState('')
+  const [busy, setBusy] = useState(false)
+  const pending = useRef(false), input = useRef(null)
+  useEffect(() => { if (error && !busy) input.current?.focus() }, [error, busy])
   const clean = setter => e => setter(e.target.value.replace(/\D/g, '').slice(0, 4))
   const save = async () => {
+    if (pending.current) return
+    if (!removing && pin.length !== 4) { setError(t('PIN must contain 4 digits')); return }
+    if (!removing && pin !== again) { setError(t('PINs do not match')); return }
+    pending.current = true; setBusy(true); onBusy?.(true); setError('')
+    try {
     if (removing) {
       const result = await verifyDevicePin(pin)
       if (!result.ok) { setError(result.waitMs ? t('Try again in a moment.') : t('Incorrect PIN')); return }
       removeDevicePin(); onChanged(false); close(); return
     }
-    if (pin.length !== 4) { setError(t('PIN must contain 4 digits')); return }
-    if (pin !== again) { setError(t('PINs do not match')); return }
     const key = await setDevicePin(pin); onChanged(true); setRecoveryKey(key)
+    } catch { setError(t('Could not save. Check available storage and try again.')) }
+    finally { pending.current = false; setBusy(false); onBusy?.(false) }
   }
   if (recoveryKey) return <><h3>{t('Save your recovery key')}</h3><div className="muted small" style={{ marginBottom: 14 }}>{t('Keep it somewhere private. It is the only way to enter TGym if you forget the PIN.')}</div>
     <div className="card" style={{ textAlign: 'center', fontSize: 20, letterSpacing: 2, userSelect: 'all' }}><b>{recoveryKey}</b></div><div style={{ height: 14 }} /><Button variant="primary" onClick={close}>{t('I saved it')}</Button></>
   return <>
     <h3>{removing ? t('Disable app lock') : t('Create app PIN')}</h3>
     <div className="muted small" style={{ marginBottom: 14 }}>{removing ? t('Enter your current PIN to continue.') : t('This PIN stays only on this device and is not included in backups.')}</div>
-    <input className="input" type="password" inputMode="numeric" placeholder={t('4-digit PIN')} value={pin} onChange={clean(setPin)} maxLength={4} />
-    {!removing && <input className="input" style={{ marginTop: 10 }} type="password" inputMode="numeric" placeholder={t('Repeat PIN')} value={again} onChange={clean(setAgain)} maxLength={4} />}
-    {error && <div className="small" style={{ color: 'var(--red)', marginTop: 10 }}>{error}</div>}
-    <div style={{ height: 14 }} /><Button variant="primary" onClick={save}>{removing ? t('Disable') : t('Save')}</Button>
+    <input ref={input} className="input" disabled={busy} type="password" inputMode="numeric" placeholder={t('4-digit PIN')} value={pin} onChange={clean(setPin)} maxLength={4} />
+    {!removing && <input className="input" disabled={busy} style={{ marginTop: 10 }} type="password" inputMode="numeric" placeholder={t('Repeat PIN')} value={again} onChange={clean(setAgain)} maxLength={4} />}
+    {error && <div className="small" role="alert" style={{ color: 'var(--red)', marginTop: 10 }}>{error}</div>}
+    <div style={{ height: 14 }} /><Button variant="primary" disabled={busy} aria-busy={busy} onClick={save}>{removing ? t('Disable') : t('Save')}</Button>
   </>
 }
 
-function VerifyDevicePinSheet({ close, onVerified }) {
+function VerifyDevicePinSheet({ close, onVerified, onBusy }) {
   const [pin, setPin] = useState('')
   const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+  const pending = useRef(false), input = useRef(null)
+  useEffect(() => { if (error && !busy) input.current?.focus() }, [error, busy])
   const verify = async () => {
+    if (pending.current) return
+    pending.current = true; setBusy(true); onBusy?.(true); setError('')
+    try {
     const result = await verifyDevicePin(pin)
     if (!result.ok) { setPin(''); setError(result.waitMs ? t('Try again in a moment.') : t('Incorrect PIN')); return }
     close(); onVerified()
+    } catch { setError(t('Could not unlock. Try again.')) }
+    finally { pending.current = false; setBusy(false); onBusy?.(false) }
   }
   return <><h3>{t('Confirm your PIN')}</h3><div className="muted small" style={{ marginBottom: 14 }}>{t('Authentication is required for this action.')}</div>
-    <input autoFocus className="input" type="password" inputMode="numeric" placeholder={t('4-digit PIN')} value={pin} maxLength={4}
+    <input autoFocus ref={input} disabled={busy} className="input" type="password" inputMode="numeric" placeholder={t('4-digit PIN')} value={pin} maxLength={4}
       onChange={e => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))} onKeyDown={e => { if (e.key === 'Enter' && pin.length === 4) verify() }} />
-    {error && <div className="small" style={{ color: 'var(--red)', marginTop: 10 }}>{error}</div>}
-    <div style={{ height: 14 }} /><Button variant="primary" disabled={pin.length !== 4} onClick={verify}>{t('Confirm')}</Button></>
+    {error && <div className="small" role="alert" style={{ color: 'var(--red)', marginTop: 10 }}>{error}</div>}
+    <div style={{ height: 14 }} /><Button variant="primary" disabled={busy || pin.length !== 4} aria-busy={busy} onClick={verify}>{t('Confirm')}</Button></>
 }
 
 export default function Settings() {
@@ -96,6 +112,7 @@ export default function Settings() {
   const serverSyncError = useStore(s => s.serverSyncError)
   const [serverSyncBusy, setServerSyncBusy] = useState(false)
   const serverSyncPending = useRef(false)
+  const playerLaunchPending = useRef(false)
   const { update, replaceState, setUser, pullState, pushState, signOut, signOutAll, resetDemo, disconnectServer, setGuest } = useStore()
   const toast = useUI(s => s.toast)
   const fileRef = useRef(null)
@@ -105,7 +122,11 @@ export default function Settings() {
   const [bioOn, setBioOn] = useState(() => biometricEnabled())
   const [bioAvailable, setBioAvailable] = useState(false)
   useEffect(() => { if (MOBILE || STANDALONE) checkDeviceBiometry().then(info => setBioAvailable(info.available)) }, [])
-  const editDeviceLock = () => useUI.getState().openSheet(close => <DevicePinSheet removing={lockOn} close={close} onChanged={v => { setLockOn(v); if (!v) setBioOn(false) }} />)
+  const editDeviceLock = () => {
+    let handle
+    handle = useUI.getState().openSheet(close => <DevicePinSheet removing={lockOn} close={close} onBusy={value => handle.lock(value)} onChanged={v => { setLockOn(v); if (!v) setBioOn(false) }} />)
+    return handle
+  }
   const toggleBiometry = async enabled => {
     if (!enabled) { setBiometricEnabled(false); setBioOn(false); return }
     try {
@@ -113,9 +134,23 @@ export default function Settings() {
       setBiometricEnabled(true); setBioOn(true); toast(t('Biometric unlock enabled'))
     } catch { toast(t('Biometric authentication was not completed')) }
   }
-  const authorize = action => lockOn
-    ? useUI.getState().openSheet(close => <VerifyDevicePinSheet close={close} onVerified={action} />)
-    : action()
+  const changeSpotifree = enabled => {
+    try { update(s => { s.enableSpotifreeSync = enabled }) }
+    catch { toast(t('Could not save. Check available storage and try again.')) }
+  }
+  const openSpotifree = async () => {
+    if (playerLaunchPending.current) return
+    playerLaunchPending.current = true
+    try { if (await launchSpotifree() === false) toast(t('The music player could not be opened.')) }
+    catch { toast(t('The music player could not be opened.')) }
+    finally { playerLaunchPending.current = false }
+  }
+  const authorize = action => {
+    if (!lockOn) return action()
+    let handle
+    handle = useUI.getState().openSheet(close => <VerifyDevicePinSheet close={close} onVerified={action} onBusy={value => handle.lock(value)} />)
+    return handle
+  }
 
   const exportNow = async () => {
     const json = JSON.stringify(createBackup(S), null, 2)
@@ -137,7 +172,11 @@ export default function Settings() {
       try {
         const imported = parseTGymJson(rd.result)
         if (imported.kind === 'plan') { planImportSheet(imported.bundle); return }
-        confirmSheet({ title: t('Import backup?'), message: t('This replaces all current data with the backup file.'), confirmText: t('Import'), danger: true, onConfirm: () => { saveImportUndo(S); replaceState(Object.assign(JSON.parse(JSON.stringify(DEF)), imported.data), true); toast(t('Backup imported')) } })
+        confirmSheet({ title: t('Import backup?'), message: t('This replaces all current data with the backup file.'), confirmText: t('Import'), danger: true, onConfirm: () => {
+          if (!saveImportUndo(useStore.getState().S)) { toast(t('Could not save. Check available storage and try again.')); return }
+          replaceState(Object.assign(JSON.parse(JSON.stringify(DEF)), imported.data), true)
+          toast(t('Backup imported'))
+        } })
       } catch (e) { toast(t('Import failed: {0}', e.message)) }
     }
     rd.readAsText(f)
@@ -272,12 +311,12 @@ export default function Settings() {
       <Row icon="bell" iconTint="var(--acc)" title={t('Sound preferences')} subtitle={t('Alert tones and your own short sounds')} accessory="chevron" onClick={openSoundSettings} />
       <Row icon="bolt" iconTint="var(--orange)" title={t('Vibration')}><Switch checked={S.vibration !== false} onChange={v => update(s => { s.vibration = v })} /></Row>
       <Row icon="music" iconTint="var(--green)" title={t('Spotifree Integration')}
-        subtitle={t('Sync rest timers with Spotifree (ducks music volume during rest and alerts on completion)')}>
-        <Switch checked={S.enableSpotifreeSync !== false} onChange={v => update(s => { s.enableSpotifreeSync = v })} />
+        subtitle={t('Rest timer sharing is available only to compatible players on this site. External app sync is not available.')}>
+        <Switch checked={S.enableSpotifreeSync !== false} onChange={changeSpotifree} />
       </Row>
       <Row icon="music" iconTint="var(--blue)" title={t('Open Spotifree')}
         subtitle={t('Open Spotifree companion music player')}
-        accessory="chevron" onClick={() => launchSpotifree()} />
+        accessory="chevron" onClick={openSpotifree} />
       <Row icon="sparkles" iconTint="var(--yellow)" title={t('Reduce animations')} subtitle={t('Use simpler movement effects throughout the app.')}><Switch checked={!!S.reduceMotion} onChange={v => update(s => { s.reduceMotion = v })} /></Row>
       <Row icon="target" iconTint="var(--teal)" title={t('Strict reps')} subtitle={t('Keep repetition controls inside each exercise range.')}>
         <Switch checked={!!S.strictReps} onChange={v => update(s => { s.strictReps = v })} />

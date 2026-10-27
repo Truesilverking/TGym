@@ -41,6 +41,13 @@ describe('completed workout boundary', () => {
     const active = { id: 'w', d: '2026-08-08', start: 1, unit: 'lb', bwUnit: 'lb', deload: true, entries: [{ id: 'x', sets: [{ done: true, w: 100, r: 5 }] }] }
     expect(buildCompletedWorkout(active, { end: 2 })).toMatchObject({ unit: 'lb', bwUnit: 'lb', deload: true })
   })
+
+  it('retains a historical custom muscle snapshot when the exercise no longer exists in the catalogue', () => {
+    const muscleSnapshot = { n: 'Removed custom lift', muscleWeights: { chest: 1, triceps: 0.5 } }
+    const active = { id: 'continued', d: '2026-10-27', start: 1, entries: [{ id: 'deleted-custom', muscleSnapshot, sets: [{ done: true, w: 10, r: 8 }] }] }
+    const saved = buildCompletedWorkout(active, { end: 2, snapshotFor: () => null })
+    expect(saved.entries[0].muscleSnapshot).toEqual(muscleSnapshot)
+  })
 })
 
 // Notes written during a session have to survive it, or "write a note during your workout"

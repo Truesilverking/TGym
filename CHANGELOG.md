@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.15.102
+
+- Recover from primary PWA storage quota when logging body weight, preserve legacy daily readings and make repeated or cancelled check-ins safe.
+- Reuse verified installed offline caches without requiring a new network registration; retain offline readiness when a background worker update fails.
+- Stop timed work when discarding a session, bind Finish/Cancel to the reviewed session and preserve historical muscle snapshots and strength mode rules.
+- Preserve current import Undo data, handle PIN/storage failures, provide keyboard-accessible onboarding and correct optional music-bridge event ordering, cleanup and availability feedback.
+
 ## 1.15.101 (development / QA)
 
 - Preserve nutrition-only profiles during server restoration and native reopening, including custom foods and edited goals.

@@ -59,3 +59,11 @@ it('rejects unsupported and oversized photos before decoding',async()=>{
   await expect(readProfilePhoto(new File(['x'],'x.svg',{type:'image/svg+xml'}))).rejects.toThrow()
   await expect(readProfilePhoto({type:'image/png',size:9*1024*1024})).rejects.toThrow()
 })
+it('opens an accepted legacy profile with missing or malformed weight dates without altering its records',async()=>{
+  const bodyweight=[{d:'2026-10-02',w:80},{w:81,t:Date.parse('2026-10-03T10:00:00')},{d:null,w:100},{d:123,w:200},{d:'not-a-date',w:'bad'}]
+  const restored=readBackup(createBackup({...useStore.getState().S,bodyweight}))
+  await act(async()=>useStore.setState({S:restored}))
+  expect(host.textContent).toContain('81 kg')
+  expect(useStore.getState().S.bodyweight).toEqual(bodyweight)
+  expect(localStorage.getItem('gym_state_v1')).toBeNull()
+})

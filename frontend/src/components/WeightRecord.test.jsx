@@ -4,15 +4,15 @@ import {createRoot} from 'react-dom/client'
 import {beforeEach,afterEach,it,expect,vi} from 'vitest'
 import {DEF,useStore} from '../store/useStore.js'
 import {useUI} from '../store/useUI.js'
-import {bwSheet} from '../sheets.jsx'
+import {bwSheet,startFlow} from '../sheets.jsx'
 import {setLang,t} from '../lib/i18n.js'
 import {convertWeightState} from '../lib/unit-conversion.js'
 
-let root,host,flush
+let root,host,flush,atomic
 beforeEach(async()=>{
  globalThis.IS_REACT_ACT_ENVIRONMENT=true
  vi.useFakeTimers();vi.setSystemTime(new Date('2026-10-24T12:00:00-04:00'))
- await setLang('en');localStorage.clear();flush=useStore.getState().flushPersistence
+ await setLang('en');localStorage.clear();flush=useStore.getState().flushPersistence;atomic=useStore.getState().updateAtomic
  useStore.setState({S:{...structuredClone(DEF),lang:'en',hasCompletedOnboarding:true,hasCompletedAppTour:true,
   bodyweight:[{d:'2026-10-10',w:78},{d:'2026-10-20',w:80}],targetW:85,
   routines:[{id:'keep-routine',name:'Keep',ex:[{id:'bench',weight:100,sets:3}]}],
@@ -23,7 +23,7 @@ beforeEach(async()=>{
 })
 afterEach(async()=>{
  await act(()=>root.unmount());host.remove();useUI.getState().closeAll()
- useStore.setState({flushPersistence:flush});vi.clearAllTimers();vi.useRealTimers();vi.restoreAllMocks()
+ useStore.setState({flushPersistence:flush,updateAtomic:atomic});vi.clearAllTimers();vi.useRealTimers();vi.restoreAllMocks()
 })
 function Sheets(){return useUI(s=>s.sheets).map(s=><div key={s.id}>{s.render(()=>useUI.getState().closeSheet(s.id))}</div>)}
 const open=async(opts={})=>act(()=>{root.render(<Sheets/>);bwSheet(opts)})
@@ -85,6 +85,25 @@ it('averages two separate readings on the same day while retaining both samples'
  expect(new Set(day.samples.map(sample=>sample.id)).size).toBe(2)
  expect(S.bodyweight.slice(0,2)).toEqual(before.bodyweight);expect(protectedData(S)).toEqual(protectedData(before))
 })
+it.each([{samples:[]},{samples:[{id:'legacy',w:'80',t:100}]}])('preserves an existing legacy weigh-in when its samples are $samples',async({samples})=>{
+ const S=useStore.getState().S
+ useStore.setState({S:{...S,bodyweight:[...S.bodyweight,{d:'2026-10-24',w:80,t:100,samples}]}})
+ await open({initialDate:'2026-10-24'});await enter('82');await save()
+ const day=useStore.getState().S.bodyweight.at(-1)
+ expect(day.w).toBe(81)
+ expect(day.samples).toHaveLength(2)
+ expect(Number(day.samples[0].w)).toBe(80)
+ expect(day.samples[1].w).toBe(82)
+})
+it('opens one pre-workout weigh-in when Start is tapped twice and saves one reading',async()=>{
+ await act(()=>{root.render(<Sheets/>);startFlow(null);startFlow(null)})
+ expect(useUI.getState().sheets).toHaveLength(1)
+ await enter('80,5');await save(true)
+ const S=useStore.getState().S
+ expect(S.active.bw).toBe(80.5)
+ expect(S.bodyweight.at(-1)).toMatchObject({d:'2026-10-24',w:80.5,samples:[{w:80.5}]})
+ expect(useUI.getState().sheets).toHaveLength(0)
+})
 it('retries a failed durable save without duplicating its sample or changing the daily average',async()=>{
  const S=useStore.getState().S
  useStore.setState({S:{...S,bodyweight:[...S.bodyweight,{d:'2026-10-24',w:80,t:100,samples:[{id:'original',w:80,t:100}]}]}})
@@ -113,12 +132,30 @@ it.each(['','invalid','0'])('blocks an invalid draft %j instead of saving the pr
  expect(button('Save').disabled).toBe(true);await save()
  expect(useStore.getState().S).toEqual(before);expect(localStorage.getItem('gym_state_v1')).toBeNull();expect(useStore.getState().flushPersistence).not.toHaveBeenCalled()
 })
-it('keeps the pre-workout weigh-in callback synchronous, canonical and single-shot',async()=>{
+it('waits for the atomic weigh-in save before starting a workout and invokes its callback once',async()=>{
  useStore.setState({S:{...useStore.getState().S,unit:'lb'}})
+ let release
+ const gate=new Promise(resolve=>{release=resolve})
+ useStore.setState({updateAtomic:vi.fn(async mut=>{await gate;return atomic(mut)})})
  const onDone=vi.fn();await open({required:true,onDone});await enter('176.5')
- act(()=>{const start=button('Save & start workout');start.click();expect(onDone).toHaveBeenCalledExactlyOnceWith(176.5);start.click()})
+ act(()=>{const start=button('Save & start workout');start.click();expect(onDone).not.toHaveBeenCalled();start.click()})
+ expect(useStore.getState().updateAtomic).toHaveBeenCalledTimes(1)
+ expect(useStore.getState().S.bodyweight).toHaveLength(2)
+ await act(async()=>release())
  expect(onDone).toHaveBeenCalledOnce();expect(useUI.getState().sheets).toHaveLength(0)
+ expect(onDone).toHaveBeenCalledWith(176.5)
  expect(useStore.getState().flushPersistence).not.toHaveBeenCalled();expect(useStore.getState().S.bodyweight.at(-1).w).toBe(176.5)
+})
+it('does not start a workout from a dismissed check-in while its requested save is pending',async()=>{
+ let release
+ const gate=new Promise(resolve=>{release=resolve})
+ useStore.setState({updateAtomic:vi.fn(async mut=>{await gate;return atomic(mut)})})
+ const onDone=vi.fn();await open({required:true,onDone});await enter('80.5')
+ act(()=>button('Save & start workout').click())
+ await dismiss();await act(async()=>release())
+ expect(onDone).not.toHaveBeenCalled()
+ expect(useStore.getState().S.active).toBeNull()
+ expect(useStore.getState().S.bodyweight.at(-1).w).toBe(80.5)
 })
 it('starts without weighing in synchronously while leaving readings and preferences intact',async()=>{
  useStore.setState({S:{...useStore.getState().S,unit:'lb'}})

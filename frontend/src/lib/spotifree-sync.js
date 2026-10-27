@@ -5,157 +5,121 @@ import { useStore } from '../store/useStore.js'
 export const SPOTIFREE_BUS_CHANNEL = 'tgym_sync_bus'
 export const SPOTIFREE_STORAGE_KEY_REST = 'tgym_active_rest'
 
+// This bridge reaches compatible receivers on this origin/partition only.
+// It cannot control a player on another website or in a separate native app.
 let busChannel = null
+let restActive = false
+let stopObservingPreferences = null
+const finishedWorkouts = new Set()
+const number = value => { try { return Number(value) } catch { return NaN } }
+
+export function isSpotifreeSyncEnabled() {
+  try {
+    const state = useStore.getState?.()?.S
+    return !!state && state.enableSpotifreeSync !== false
+  } catch { return false }
+}
 
 export function getSpotifreeChannel() {
-  if (busChannel) return busChannel
-  if (typeof globalThis !== 'undefined' && typeof globalThis.BroadcastChannel === 'function') {
-    try {
-      busChannel = new globalThis.BroadcastChannel(SPOTIFREE_BUS_CHANNEL)
-    } catch {
-      busChannel = null
-    }
+  observePreferences()
+  if (!isSpotifreeSyncEnabled()) return null
+  if (!busChannel && typeof globalThis.BroadcastChannel === 'function') {
+    try { busChannel = new globalThis.BroadcastChannel(SPOTIFREE_BUS_CHANNEL) } catch {}
   }
   return busChannel
 }
 
-export function isSpotifreeSyncEnabled() {
-  try {
-    const s = useStore.getState?.()?.S
-    return s ? s.enableSpotifreeSync !== false : true
-  } catch {
-    return true
-  }
+function closeChannel() {
+  try { busChannel?.close() } catch {}
+  busChannel = null
 }
 
-/**
- * Emit REST_START event to BroadcastChannel and save active rest in localStorage.
- * Spotifree ducks music volume to 30% when receiving this.
- */
+function post(message) {
+  try { getSpotifreeChannel()?.postMessage(message) } catch {}
+  finally { closeChannel() }
+}
+
+export function clearSpotifreeRest() {
+  restActive = false
+  try { globalThis.localStorage?.removeItem(SPOTIFREE_STORAGE_KEY_REST) } catch {}
+  closeChannel()
+}
+
+// Install only when the bridge is used. Importing a launch button must not
+// require a fully initialized/subscribable store or perform storage writes.
+function observePreferences() {
+  if (stopObservingPreferences || typeof useStore.subscribe !== 'function') return
+  stopObservingPreferences = useStore.subscribe((state, previous) => {
+    if (state.S?.enableSpotifreeSync === false && previous?.S?.enableSpotifreeSync !== false) clearSpotifreeRest()
+  })
+}
+
+/** Prepare an optional same-origin rest event; no external player is controlled. */
 export function emitRestStart(seconds, endsAt, total, exerciseName = '') {
-  if (!isSpotifreeSyncEnabled()) return
-  const sec = Math.max(0, Math.round(Number(seconds) || 0))
-  const end = endsAt != null ? Number(endsAt) : Date.now() + sec * 1000
-  const tot = total != null ? Number(total) : sec
+  observePreferences()
+  if (!isSpotifreeSyncEnabled()) { clearSpotifreeRest(); return }
+  const sec = Math.ceil(number(seconds))
+  const now = Date.now()
+  const end = endsAt == null ? now + sec * 1000 : number(endsAt)
+  const tot = total == null ? sec : number(total)
+  if (!Number.isFinite(sec) || sec <= 0 || !Number.isFinite(end) || end <= now || !Number.isFinite(tot) || tot <= 0) return
   const name = typeof exerciseName === 'string' ? exerciseName : ''
-
-  const message = {
-    type: 'REST_START',
-    seconds: sec,
-    endsAt: end,
-    total: tot,
-    exerciseName: name,
-  }
-
+  restActive = true
+  post({ type: 'REST_START', seconds: sec, endsAt: end, total: tot, exerciseName: name })
   try {
-    getSpotifreeChannel()?.postMessage(message)
-  } catch {}
-
-  try {
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem(
-        SPOTIFREE_STORAGE_KEY_REST,
-        JSON.stringify({
-          endsAt: end,
-          total: tot,
-          exerciseName: name,
-          startedAt: Date.now(),
-        })
-      )
-    }
+    globalThis.localStorage?.setItem(SPOTIFREE_STORAGE_KEY_REST,
+      JSON.stringify({ endsAt: end, total: tot, exerciseName: name, startedAt: now }))
   } catch {}
 }
 
-/**
- * Emit REST_END event to BroadcastChannel and clear active rest from localStorage.
- * Spotifree plays harmonic chime and restores volume to 100%.
- */
+/** End an announced rest once; idle stops must not signal a completed rest. */
 export function emitRestEnd() {
-  if (!isSpotifreeSyncEnabled()) return
-
+  let stored = false
   try {
-    getSpotifreeChannel()?.postMessage({ type: 'REST_END' })
+    const rest = JSON.parse(globalThis.localStorage?.getItem(SPOTIFREE_STORAGE_KEY_REST) || 'null')
+    stored = Number.isFinite(rest?.endsAt) && rest.endsAt > Date.now() && Number.isFinite(rest.total) && rest.total > 0
   } catch {}
-
-  try {
-    if (typeof localStorage !== 'undefined') {
-      localStorage.removeItem(SPOTIFREE_STORAGE_KEY_REST)
-    }
-  } catch {}
+  if (isSpotifreeSyncEnabled() && (restActive || stored)) post({ type: 'REST_END' })
+  clearSpotifreeRest()
 }
 
-/**
- * Emit WORKOUT_FINISH event with duration from workout-time.js.
- * Spotifree updates workoutStreakDays upon receiving this.
- */
+/** Emit only a completed saved session, using the shared authoritative clock. */
 export function emitWorkoutFinish(workout) {
-  if (!isSpotifreeSyncEnabled() || !workout) return
+  if (!isSpotifreeSyncEnabled() || !workout || typeof workout.id !== 'string' || !workout.id ||
+    typeof workout.d !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(workout.d) ||
+    !Number.isFinite(workout.start) || !Number.isFinite(workout.end) || workout.end < workout.start) return
   const duration = workoutElapsedMs(workout)
-  const message = {
-    type: 'WORKOUT_FINISH',
-    workout: {
-      id: workout.id,
-      d: workout.d,
-      duration,
-    },
-  }
-
-  try {
-    getSpotifreeChannel()?.postMessage(message)
-  } catch {}
+  if (!Number.isFinite(duration)) return
+  const key = workout.id + ':' + workout.d
+  if (finishedWorkouts.has(key)) return
+  finishedWorkouts.add(key)
+  if (finishedWorkouts.size > 100) finishedWorkouts.delete(finishedWorkouts.values().next().value)
+  post({ type: 'WORKOUT_FINISH', workout: { id: workout.id, d: workout.d, duration } })
 }
 
-/**
- * Launches Spotifree native app or opens web player fallback.
- */
-export async function launchSpotifree(playlistId = 'pl-gym-beast-mode') {
-  const uri = playlistId ? `spotifree://playlist/${playlistId}` : 'spotifree://'
+/** Request a launch after a user click; this does not confirm app/playback success. */
+export async function launchSpotifree(playlistId = null) {
+  if (typeof window === 'undefined') return false
+  if (playlistId != null && (typeof playlistId !== 'string' || !/^[\w-]{1,128}$/.test(playlistId))) return false
+  const uri = playlistId ? 'spotifree://playlist/' + encodeURIComponent(playlistId) : 'spotifree://'
   const webFallbackUrl = 'https://spotifree.app'
-
-  if (typeof window !== 'undefined') {
-    // 1. If running under Capacitor native runtime
-    const capacitorLauncher = globalThis.Capacitor?.Plugins?.AppLauncher
-    if (capacitorLauncher) {
-      try {
-        const canOpen = await capacitorLauncher.canOpenUrl({ url: uri })
-        if (canOpen?.value) {
-          await capacitorLauncher.openUrl({ url: uri })
-          return true
-        }
-      } catch {}
-    }
-
-    if (MOBILE) {
-      try {
-        window.open(uri, '_system')
-        return true
-      } catch {}
-    }
-
-    // 2. Web / PWA browser environment
+  const launcher = globalThis.Capacitor?.Plugins?.AppLauncher
+  if (MOBILE && launcher?.canOpenUrl && launcher?.openUrl) {
     try {
-      let blurTriggered = false
-      const onBlur = () => { blurTriggered = true }
-      window.addEventListener('blur', onBlur, { once: true })
-
-      window.location.href = uri
-
-      setTimeout(() => {
-        window.removeEventListener('blur', onBlur)
-        if (!blurTriggered && typeof document !== 'undefined' && document.hasFocus()) {
-          try {
-            window.open(webFallbackUrl, '_blank', 'noopener')
-          } catch {}
-        }
-      }, 1500)
-      return true
-    } catch {
-      try {
-        window.open(webFallbackUrl, '_blank', 'noopener')
-        return true
-      } catch {}
-    }
+      if ((await launcher.canOpenUrl({ url: uri }))?.value) {
+        const result = await launcher.openUrl({ url: uri })
+        if (result?.completed === true) return true
+      }
+    } catch {}
   }
-
-  return false
+  try {
+    if (MOBILE) {
+      const { Browser } = await import('@capacitor/browser')
+      await Browser.open({ url: webFallbackUrl })
+    } else {
+      // Delayed fallback popups lose user activation. Keep training on this page.
+      window.open(webFallbackUrl, '_blank', 'noopener,noreferrer')
+    }
+    return true
+  } catch { return false }
 }

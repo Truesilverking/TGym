@@ -7,7 +7,7 @@ import Settings from './Settings.jsx'
 import { DEF, useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { bindUI } from '../components/ui.jsx'
-import { canUndoImport, saveImportUndo } from '../lib/import-undo.js'
+import { canUndoImport, restoreImportUndo, saveImportUndo } from '../lib/import-undo.js'
 
 vi.mock('../lib/mobile.js', async original => ({ ...await original(), MOBILE: false }))
 vi.mock('../lib/demo.js', async original => ({ ...await original(), DEMO: false, STANDALONE: false }))
@@ -37,7 +37,7 @@ beforeEach(async () => {
   await act(async () => root.render(<App />))
 })
 afterEach(async () => {
-  await act(async () => root.unmount()); host.remove(); vi.restoreAllMocks(); vi.clearAllTimers(); vi.useRealTimers()
+  await act(async () => root.unmount()); host.remove(); vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.clearAllTimers(); vi.useRealTimers()
 })
 
 it('retains Undo after an actual primary storage quota failure, then restores exactly once on retry', async () => {
@@ -67,4 +67,57 @@ it('canceling Undo preserves the current profile and its recovery snapshot', asy
   expect(useStore.getState().S.routines[0].id).toBe('after')
   expect(canUndoImport()).toBe(true)
   expect(toast).not.toHaveBeenCalled()
+})
+
+async function chooseBackup() {
+  const incoming = { ...structuredClone(DEF), routines: [{ id: 'incoming', name: 'Incoming backup', ex: [] }] }
+  vi.stubGlobal('FileReader', class { readAsText() { this.result = JSON.stringify(incoming); this.onload() } })
+  const input = host.querySelector('input[type=file][accept=".json,application/json"]')
+  Object.defineProperty(input, 'files', { configurable: true, value: [new File(['synthetic'], 'backup.json')] })
+  await act(async () => input.dispatchEvent(new Event('change', { bubbles: true })))
+}
+function denyWrite(name, deniedKey) {
+  const original = globalThis[name]
+  vi.stubGlobal(name, new Proxy(original, { get(target, key) {
+    if (key === 'setItem') return (entry, value) => {
+      if (entry === deniedKey) throw new DOMException('Synthetic quota', 'QuotaExceededError')
+      return target.setItem(entry, value)
+    }
+    const value = Reflect.get(target, key, target)
+    return typeof value === 'function' ? value.bind(target) : value
+  } }))
+  return () => { globalThis[name] = original }
+}
+
+it('snapshots the profile current at import confirmation instead of the stale file-open render', async () => {
+  await chooseBackup()
+  await act(async () => useStore.getState().update(s => { s.routines[0].name = 'Latest legitimate edit' }))
+  await click('Import')
+  expect(useStore.getState().S.routines[0].id).toBe('incoming')
+  await act(async () => restoreImportUndo(useStore.getState().replaceState))
+  expect(useStore.getState().S.routines[0].name).toBe('Latest legitimate edit')
+})
+
+it('keeps the profile and reports failure when the pre-import Undo cannot be saved', async () => {
+  await chooseBackup()
+  const current = localStorage.getItem('gym_state_v1')
+  denyWrite('sessionStorage', 'framegym_last_import_undo_v1')
+  await click('Import')
+  expect(localStorage.getItem('gym_state_v1')).toBe(current)
+  expect(useStore.getState().S.routines[0].id).toBe('after')
+  expect(toast).not.toHaveBeenCalledWith('Backup imported')
+  expect(toast).toHaveBeenCalledWith('Could not save. Check available storage and try again.')
+})
+
+it('preserves the profile and pre-import Undo after a primary failure, then imports once on retry', async () => {
+  await chooseBackup()
+  const current = localStorage.getItem('gym_state_v1'), restoreWrites = denyWrite('localStorage', 'gym_state_v1')
+  await click('Import')
+  expect(localStorage.getItem('gym_state_v1')).toBe(current)
+  expect(canUndoImport()).toBe(true)
+  expect(toast).not.toHaveBeenCalledWith('Backup imported')
+  restoreWrites()
+  await chooseBackup(); await click('Import')
+  expect(useStore.getState().S.routines.map(r => r.id)).toEqual(['incoming'])
+  expect(toast.mock.calls.filter(([message]) => message === 'Backup imported')).toHaveLength(1)
 })
