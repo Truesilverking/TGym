@@ -17,6 +17,7 @@ public class WorkoutNotificationTestActivity extends Activity {
                 .put("workoutLabel","Workout").put("restLabel","Rest").put("restDoneLabel","Done").put("accentColor","#BF5AF2").put("elapsedMs",3720000)
                 .put("setLabel","SET 2").put("setNumber",2)
                 .put("observedAt",now).put("paused",false).put("restEndsAt",now+5000).put("autoPauseAt",now+60000);
+            if(getIntent().getBooleanExtra("omitAccentColor",false))payload.remove("accentColor");
             ContextCompat.startForegroundService(this,new Intent(this,WorkoutNotificationService.class).putExtra("state",payload.toString()));
         } catch(Exception ignored) {}
         getWindow().getDecorView().postDelayed(this::finish,250);
