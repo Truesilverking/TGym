@@ -32,10 +32,11 @@ export function addActivityRoutine(S, type, minutes, name) {
   return routine.id
 }
 export function attachActivity(S, routineId, type, minutes) {
-  const routine = S.routines.find(r => r.id === routineId)
+  const routine = (S.routines || []).find(r => r && r.id === routineId)
   if (!routine) throw new Error('Routine no longer exists')
   ensureActivityExercise(S,type)
-  if (routine.ex.some(e => e.id === activityExerciseId(type))) throw new Error('Activity already belongs to this routine')
+  if ((routine.ex || []).some(e => e && e.id === activityExerciseId(type))) throw new Error('Activity already belongs to this routine')
+  routine.ex ||= []
   routine.ex.push(activityConfig(type,minutes))
 }
 const numeric = (value, min, max) => {
@@ -56,8 +57,8 @@ export function createActivityWorkout(S, input, now = Date.now()) {
     hrZone:numeric(input.hrZone,1,5),rpe:numeric(input.rpe,1,10),sourceUpdatedAt:input.sourceUpdatedAt || null}
   const id = ensureActivityExercise(S,type.id,input.name), cfg = activityConfig(type.id,minutes), end = start + minutes * 60000
   const existing = input.id && S.workouts?.find(w=>w.id===input.id)
-  const scheduled = existing ? existing.routineId : input.routineId || dailyPlan(S,isoOf(new Date(start))).pending.find(item=>item.routine.ex.length===1 && item.routine.ex[0].activityType===type.id)?.id
-  const routine = S.routines.find(r => r.id === scheduled && r.ex.length === 1 && r.ex[0].activityType === type.id)
+  const scheduled = existing ? existing.routineId : input.routineId || dailyPlan(S,isoOf(new Date(start))).pending.find(item=>item.routine?.ex?.length===1 && item.routine.ex[0]?.activityType===type.id)?.id
+  const routine = (S.routines || []).find(r => r && r.id === scheduled && (r.ex || []).length === 1 && r.ex[0]?.activityType === type.id)
   return {id:input.id || uid(),sessionOrigin:existing ? {...sessionOrigin(existing,S.routines)} : startSessionOrigin(routine?.id),d:isoOf(new Date(start)),name:input.name || type.label,start,end,entries:[{id,target:cfg,exercise:S.customEx.find(e=>e.id===id),sets:[{done:true,doneAt:end,min:minutes,sec:minutes*60,speed:metrics.distanceKm ? metrics.distanceKm/minutes*60 : 0,distanceKm:metrics.distanceKm}]}],routineId:existing?.routineId ?? routine?.id ?? null,unit:S.unit,vol:0,kind:'activity',activity:metrics,note:String(input.note || '').slice(0,2000)}
 }
 export function activityEntries(workout) {

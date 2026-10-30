@@ -54,16 +54,16 @@ export default function HandsFreeConsole({
       boxSizing: 'border-box',
     }}>
       {/* Top Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+        <div style={{ minWidth: 0, flex: '1 1 auto' }}>
           <div style={{ fontSize: 13, color: 'var(--acc)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
             {t('Hands-free mode')} · {t('Set')} {setIndex + 1} / {totalSets}
           </div>
-          <h1 style={{ margin: '4px 0 0', fontSize: 26, fontWeight: 800, lineHeight: 1.1 }}>
+          <h1 style={{ margin: '4px 0 0', fontSize: 26, fontWeight: 800, lineHeight: 1.1, overflowWrap: 'anywhere' }}>
             {exerciseName}
           </h1>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, flex: 'none' }}>
           <button
             className="iconbtn"
             onClick={() => { if (voiceOn) window.speechSynthesis?.cancel?.(); setVoiceOn(!voiceOn) }}

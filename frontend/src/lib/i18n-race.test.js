@@ -45,4 +45,10 @@ describe('language selection', () => {
       expect(exerciseNameSearchText(exercise)).toBe('Original exercise')
     }
   })
+
+  it('handles non-string inputs safely without throwing on replaceAll', () => {
+    expect(t(null, 'ignored')).toBe('')
+    expect(t(undefined, 'ignored')).toBe('')
+    expect(t(123, 'ignored')).toBe('123')
+  })
 })

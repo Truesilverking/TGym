@@ -23,18 +23,19 @@ export function loggedWorkouts(S) {
 }
 export function dailyPlan(S, date) {
   const workouts = loggedWorkouts(S).filter(w => w.d === date && hasWorkoutActivity(w)), matched = new Set()
+  const routines = Array.isArray(S?.routines) ? S.routines : []
   const items = scheduledRoutineIds(S,date).map((id,index) => {
-    const routine = S.routines.find(r => r.id === id)
-    const session = workouts.find(w => !matched.has(w) && matchesScheduled(w,id,S.routines))
+    const routine = routines.find(r => r && r.id === id)
+    const session = workouts.find(w => !matched.has(w) && matchesScheduled(w,id,routines))
     if (session) matched.add(session)
     return {id, routine, index, session, status: session ? 'completed' : routineIds(S.daySkipped?.[date]).includes(id) ? 'skipped' : 'pending'}
   })
   return {date, items, total:items.length, completed:items.filter(i=>i.status==='completed').length,
     skipped:items.filter(i=>i.status==='skipped').length, pending:items.filter(i=>i.status==='pending'),
     active:workouts.length > 0,
-    plannedSessions:workouts.filter(w=>sessionOrigin(w,S.routines).type==='planned').length,
-    unscheduledPlanned:workouts.filter(w=>!matched.has(w) && sessionOrigin(w,S.routines).type==='planned').length,
-    extra:workouts.filter(w=>sessionOrigin(w,S.routines).type==='extra').length}
+    plannedSessions:workouts.filter(w=>sessionOrigin(w,routines).type==='planned').length,
+    unscheduledPlanned:workouts.filter(w=>!matched.has(w) && sessionOrigin(w,routines).type==='planned').length,
+    extra:workouts.filter(w=>sessionOrigin(w,routines).type==='extra').length}
 }
 export const nextDailyRoutine = (S,date) => dailyPlan(S,date).pending[0]?.routine || null
 export function skipDailyRoutine(S,date,id) {

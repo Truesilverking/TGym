@@ -25,7 +25,7 @@ export function statisticsState(S, today = todayISO()) {
     return true
   })
   const result = { ...S, workouts }
-  for (const key of ['bodyweight','measurements','inbody']) result[key] = (S[key] || []).filter(row => row.d >= start && row.d <= today)
+  for (const key of ['bodyweight','measurements','inbody']) result[key] = (S[key] || []).filter(row => row?.d && row.d >= start && row.d <= today)
   return result
 }
 export function historySummary(S, today = todayISO()) {

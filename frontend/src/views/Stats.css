@@ -39,4 +39,7 @@
 .stats-view-control.draggable>.stats-sections-trigger{touch-action:none;cursor:grab;user-select:none}
 .stats-view-control.draggable[data-dragging=true]>.stats-sections-trigger{cursor:grabbing}
 .stats-view-control.draggable[data-side=left]>.stats-sections-trigger{border:1px solid var(--panel-edge);border-left:0;border-radius:0 14px 14px 0}
+.stats-view-control.draggable[data-side=left] .stats-customization-popover{left:calc(100% + 8px);right:auto}
 .stats-control-hint{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.measurement-history{flex:1;min-width:0;overflow-wrap:anywhere}
+.measurement-history summary{cursor:pointer;font-weight:600;font-size:14px}

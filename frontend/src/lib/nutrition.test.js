@@ -234,6 +234,8 @@ it('uses scheduled routine identities, rest overrides, pauses and recorded activ
   expect(getEffectiveDailyGoals(S, '2026-10-27').isTrainingDay).toBe(false)
   S.workouts.push({ id: 'actual', d: '2026-10-27', entries: [{ id: 'x', sets: [{ w: 10, r: 5, done: true }] }] })
   expect(getEffectiveDailyGoals(S, '2026-10-27').isTrainingDay).toBe(true)
+  S.workouts = []; S.active = { d: '2026-10-27', entries: [{ id: 'x', sets: [{ w: 10, r: 5, done: true }] }] }
+  expect(getEffectiveDailyGoals(S, '2026-10-27').isTrainingDay).toBe(true)
 })
 
 it('keeps adaptive estimates on local measurement dates, rejects duplicate/future/water-only data, and converts pounds', () => {
@@ -245,6 +247,8 @@ it('keeps adaptive estimates on local measurement dates, rejects duplicate/futur
   expect(kg).toMatchObject({ adaptive: true, tdee: 2550, weightChangeKg: -1, daysAnalyzed: 14 })
   const lb = calculateAdaptiveTDEE({ ...options, unit: 'lb', bodyweightLogs: bodyweightLogs.map(w => ({ ...w, w: w.w * 2.2046226218487757 })) })
   expect(lb).toEqual(kg)
+  const mixed = calculateAdaptiveTDEE({ ...options, unit: 'kg', bodyweightLogs: [{ d: '2026-10-12', w: 80 * 2.2046226218487757, unit: 'lb' }, { d: '2026-10-19', w: 79.5 }, { d: '2026-10-26', w: 79 }] })
+  expect(mixed).toEqual(kg)
   expect(calculateAdaptiveTDEE({ ...options, bodyweightLogs: [bodyweightLogs[0], bodyweightLogs[0], bodyweightLogs[0]] }).adaptive).toBe(false)
   expect(calculateAdaptiveTDEE({ ...options, nutritionLogs: Object.fromEntries(Object.keys(nutritionLogs).map(d => [d, { waterMl: 500 }])) }).adaptive).toBe(false)
   expect(calculateAdaptiveTDEE({ ...options, bodyweightLogs: [...bodyweightLogs, { d: '2026-10-27', w: 20 }], nutritionLogs: { ...nutritionLogs, '2026-10-27': { items: [{ calories: 90000 }] } } })).toEqual(kg)

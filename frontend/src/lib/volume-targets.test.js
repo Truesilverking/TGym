@@ -37,3 +37,13 @@ it('retains custom historical muscle weights and excludes duplicate, cancelled a
 it('reports zero volume for explicitly targeted muscles that were not trained', () => {
   expect(calculateWeeklyMuscleVolume([], { targets: { quadriceps: { min: 5, max: 10 } } }).quadriceps).toMatchObject({ sets: 0, status: 'low' })
 })
+
+it('accepts ISO string timestamps for workout start', () => {
+  const now = Date.now()
+  const isoStart = new Date(now - 2 * 86400000).toISOString()
+  const workouts = [
+    { id: 'iso', start: isoStart, entries: [{ id: '0025', sets: [{ done: true }] }] },
+  ]
+  const report = calculateWeeklyMuscleVolume(workouts, { weekStartMs: now - 7 * 86400000 })
+  expect(report.chest.sets).toBe(1)
+})

@@ -13,7 +13,9 @@ export const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', '
 export const MONTHS_LONG = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
 export function fmtDate(iso, long, withYear = false) {
+  if (!iso) return ''
   const d = new Date(iso + 'T12:00:00')
+  if (!Number.isFinite(d.getTime())) return ''
   const options = long ? { weekday: 'short', day: 'numeric', month: 'short' } : { day: 'numeric', month: 'short' }
   if (withYear) options.year = 'numeric'
   return d.toLocaleDateString(dateLocale(), options)

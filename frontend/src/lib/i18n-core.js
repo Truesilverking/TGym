@@ -22,7 +22,8 @@ export const getVersion = () => version
 
 // Translate a source string; {0},{1}… are replaced with args (also on the English fallback).
 export function t(s, ...args) {
-  let v = Object.hasOwn(dict, s) && typeof dict[s] === 'string' && dict[s] ? dict[s] : s
+  const key = typeof s === 'string' ? s : String(s ?? '')
+  let v = Object.hasOwn(dict, key) && typeof dict[key] === 'string' && dict[key] ? dict[key] : key
   for (let i = 0; i < args.length; i++) v = v.replaceAll('{' + i + '}', args[i])
   return v
 }

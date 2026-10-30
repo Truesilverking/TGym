@@ -3,7 +3,7 @@ export const startSessionOrigin = routineId => ({ type: routineId ? 'planned' : 
 export function sessionOrigin(workout, routines = []) {
   if (['planned', 'extra'].includes(workout?.sessionOrigin?.type)) return workout.sessionOrigin
   if (workout?.routineId) return startSessionOrigin(workout.routineId)
-  const matches = routines.filter(r => r.name === workout?.name)
+  const matches = (Array.isArray(routines) ? routines : []).filter(r => r?.name && r.name === workout?.name)
   return startSessionOrigin(matches.length === 1 ? matches[0].id : null)
 }
 const positive = value => value !== true && Number.isFinite(Number(value)) && Number(value) > 0

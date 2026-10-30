@@ -368,7 +368,7 @@ function NutritionGoalsSheet({ close, S, goals }) {
               <div><dt>{t('Protein')}</dt><dd>{preview.protein} g</dd></div>
               <div><dt>{t('Carbs')}</dt><dd>{preview.carbs} g</dd></div>
               <div><dt>{t('Fat')}</dt><dd>{preview.fat} g</dd></div>
-              <div><dt>{t('Water')}</dt><dd>{preview.water}</dd></div>
+              <div><dt>{t('Water')}</dt><dd>{preview.water} ml</dd></div>
             </dl>
           </div>
           <div style={{ height: 16 }} />

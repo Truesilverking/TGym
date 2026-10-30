@@ -49,3 +49,15 @@ it('keeps local calendar boundaries, excludes cancelled copies and preserves his
     expect(result.weightDelta).toBe(-1)
   } finally { if (previousTZ == null) delete process.env.TZ; else process.env.TZ = previousTZ }
 })
+
+it('normalizes mixed units for weekly weight delta against profile unit', () => {
+  const S = {
+    unit: 'kg',
+    bodyweight: [
+      { d: '2026-10-19', w: 176.37, unit: 'lb' },
+      { d: '2026-10-25', w: 79.0, unit: 'kg' },
+    ],
+  }
+  const result = buildWeeklySummary(S, '2026-10-25')
+  expect(result.weightDelta).toBe(-1)
+})

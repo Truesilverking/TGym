@@ -14,3 +14,7 @@ it('migrates missing, stale and duplicate IDs additively and appends new routine
 it('treats concurrent display orders as one cloud conflict, preserving schedule order',()=>{
  const a=migrateState(state(3)),b=structuredClone(a);reorderRoutine(b,'r2','r0');const r=mergeTGymStates(a,b);expect(r.conflicts.some(c=>c.path==='routineOrder')).toBe(true);expect(r.merged.routineOrder).toEqual(a.routineOrder);expect(r.merged.week).toEqual(a.week)
 })
+it('safely handles empty or sparse routines with null items', () => {
+ expect(orderedRoutines({ routines: [null, { id: 'r1', name: 'R1' }, undefined] }).map(r => r.id)).toEqual(['r1'])
+ expect(orderedRoutines({})).toEqual([])
+})

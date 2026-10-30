@@ -1,6 +1,6 @@
 // Presentation order only: schedule arrays, history and routine records are untouched.
 export function orderedRoutines(S) {
- const rows=S.routines || [], byId=new Map(rows.map(r=>[r.id,r]))
+ const rows=(S?.routines || []).filter(Boolean), byId=new Map(rows.map(r=>[r.id,r]))
  const ids=[...new Set([...(Array.isArray(S.routineOrder)?S.routineOrder:[]),...rows.map(r=>r.id)])]
  return ids.map(id=>byId.get(id)).filter(Boolean)
 }

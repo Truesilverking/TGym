@@ -211,7 +211,7 @@ export default function Settings() {
   return <div className="narrow settings-page">
     <div className="hdr">
       <button className="iconbtn" onClick={() => nav('/home')} aria-label={t('Home')}><Icon name="chevronLeft" /></button>
-      <div style={{ flex: 1, marginLeft: 10 }}><h1>{t('Settings')}</h1></div>
+      <div style={{ flex: 1, minWidth: 0, marginLeft: 10 }}><h1>{t('Settings')}</h1></div>
     </div>
 
     <div data-tour="profile"><Section title={t('Profile')}><Row icon="personCircle" iconTint="var(--acc)" title={S.profile?.name || user?.name || t('Profile')} subtitle={t('Name, photo and personal data')} accessory="chevron" onClick={openLocalProfile} /></Section></div>

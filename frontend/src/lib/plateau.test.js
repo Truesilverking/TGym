@@ -21,6 +21,7 @@ it('detects a plateau when e1RM fails to progress across 3+ sessions over weeks'
   expect(result.isPlateau).toBe(true)
   expect(result.recommendations.length).toBeGreaterThanOrEqual(2)
   expect(result.recommendations.some(r => r.type === 'deload')).toBe(true)
+  expect(detectExercisePlateau(workouts.map(w => ({ ...w, entries: [{ id: '0025', sets: [{ w: 100, r: 5, done: true }] }] })), '0025').muscle).toBe('pectorals')
 })
 
 it('does not flag plateau when user is consistently progressing', () => {
@@ -44,4 +45,5 @@ it('uses the shared 1RM rep cap and ignores future, cancelled and duplicate sess
   expect(detectExercisePlateau(highReps, 'bench').sessionCount).toBe(0)
   const timed = [1, 2, 3].map(i => session('t' + i, i, { entries: [{ id: 'bench', target: { mode: 'time' }, sets: [{ w: 100, r: 5, sec: 30, done: true }] }] }))
   expect(detectExercisePlateau(timed, 'bench').sessionCount).toBe(0)
+  expect(detectExercisePlateau([session('iso', 5, { start: new Date(now - 5 * 86400000).toISOString() })], 'bench').sessionCount).toBe(1)
 })

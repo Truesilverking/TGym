@@ -24,8 +24,8 @@ export default function History() {
   const workouts = filteredHistory(S, { query: q, period }).reverse()
   return <>
     <div className="hdr">
-      <div style={{ flex: 1 }}><h1>{t('History')}</h1><div className="sub">{t('{0} workouts', history.length)}</div></div>
-      <div className="row" style={{ gap: 4 }}><button className="iconbtn" onClick={activityHistorySheet} aria-label={t('Activity — last 12 months')} title={t('Activity — last 12 months')}><Icon name="calendar" /></button><button className="iconbtn" onClick={() => exportHistory(S, { query: q, period })} aria-label={t('Export for Excel')} title={t('Export for Excel')}><Icon name="download" /></button></div></div>
+      <div style={{ flex: 1, minWidth: 0 }}><h1>{t('History')}</h1><div className="sub">{t('{0} workouts', history.length)}</div></div>
+      <div className="row" style={{ gap: 4, flex: 'none' }}><button className="iconbtn" onClick={activityHistorySheet} aria-label={t('Activity — last 12 months')} title={t('Activity — last 12 months')}><Icon name="calendar" /></button><button className="iconbtn" onClick={() => exportHistory(S, { query: q, period })} aria-label={t('Export for Excel')} title={t('Export for Excel')}><Icon name="download" /></button></div></div>
     <ModuleSwitch items={PROGRESS_VIEWS} current="/history" />
     <SearchField value={q} onChange={e => setQ(e.target.value)} onClear={() => setQ('')} placeholder={t('Search workouts or exercises…')} />
     <div style={{ height: 10 }} /><Segmented value={period} onChange={setPeriod} options={[{ value: '30', label: t('30 days') }, { value: '90', label: t('90 days') }, { value: 'all', label: t('All') }]} />

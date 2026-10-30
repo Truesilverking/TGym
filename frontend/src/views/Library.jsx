@@ -51,7 +51,7 @@ export default function Library() {
     <div className="hdr hdr-centered"><span className="hdr-slot" aria-hidden="true" /><div className="hdr-center"><h1>{t('Exercises')}</h1></div><span className="hdr-slot" aria-hidden="true" /></div>
     <ModuleSwitch current="/library" />
     <div data-tour="exercises"><SearchField aria-label={t('Search…')} placeholder={t('Search…')} value={q} onChange={e => { setQ(e.target.value); setShown(40) }} onClear={() => { setQ(''); setShown(40) }} /></div>
-    {profile && <div className="small dim row" style={{ margin: '-4px 2px 10px', gap: 6, alignItems: 'center' }}>
+    {profile && <div className="small dim row" style={{ margin: '-4px 2px 10px', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
       <Icon name="dumbbell" style={{ fontSize: 13 }} />
       {showAll ? t('Showing all equipment') : t('Showing what you have in "{0}"', profile.name)}
       <button className="chip nocap" style={{ marginLeft: 'auto', padding: '3px 10px', fontSize: 12 }} onClick={() => setShowAll(v => !v)}>

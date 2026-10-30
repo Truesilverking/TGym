@@ -22,7 +22,7 @@ export default function Records() {
   const shown = query ? records.filter(rec => `${nameOf(rec)} ${exerciseNameSearchText(exerciseOf(rec))}`.toLowerCase().includes(query)) : records
 
   return <>
-    <div className="hdr"><div><h1>{t('Personal records')}</h1><div className="sub">{t('{0} exercises with a record', records.length)}</div></div></div>
+    <div className="hdr"><div style={{ minWidth: 0 }}><h1>{t('Personal records')}</h1><div className="sub">{t('{0} exercises with a record', records.length)}</div></div></div>
     <ModuleSwitch items={PROGRESS_VIEWS} current="/records" />
     {records.length > 0 && <SearchField value={q} onChange={e => setQ(e.target.value)} onClear={() => setQ('')} placeholder={t('Search exercises…')} aria-label={t('Search exercises…')} />}
     <div style={{ height: 12 }} />

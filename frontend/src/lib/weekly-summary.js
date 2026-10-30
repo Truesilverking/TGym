@@ -4,6 +4,7 @@ import { isoOf } from './format.js'
 import { loggedWorkouts } from './daily-plan.js'
 import { nutritionTotals } from './nutrition-totals.js'
 import { validDate } from './training-history.js'
+import { LB_PER_KG } from './unit-conversion.js'
 
 const dateOf = row => validDate(row.d) ? row.d : Number.isFinite(Number(row.start ?? row.t)) ? isoOf(new Date(Number(row.start ?? row.t))) : ''
 
@@ -68,7 +69,13 @@ export function buildWeeklySummary(state, anchorDate = new Date()) {
     return date && date >= mondayIso && date <= sundayIso && Number.isFinite(Number(b.w)) && Number(b.w) > 0
   }).sort((a, b) => dateOf(a).localeCompare(dateOf(b)) || (Number(a.t) || 0) - (Number(b.t) || 0))
 
-  const weightDelta = weekWeights.length >= 2 ? Math.round((weekWeights[weekWeights.length - 1].w - weekWeights[0].w) * 10) / 10 : null
+  const profileUnit = S.unit === 'lb' ? 'lb' : 'kg'
+  const toProfileWeight = b => {
+    const rowUnit = b?.unit === 'lb' || b?.unit === 'kg' ? b.unit : profileUnit
+    if (rowUnit === profileUnit) return Number(b.w)
+    return rowUnit === 'lb' ? Number(b.w) / LB_PER_KG : Number(b.w) * LB_PER_KG
+  }
+  const weightDelta = weekWeights.length >= 2 ? Math.round((toProfileWeight(weekWeights[weekWeights.length - 1]) - toProfileWeight(weekWeights[0])) * 10) / 10 : null
 
   return {
     mondayIso,

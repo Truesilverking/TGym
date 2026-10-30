@@ -219,7 +219,7 @@
 /* -------------------------------------------------------- module switch -- */
 /* Plan and Exercises share one tab; this pill switch moves between them. */
 .module-switch{display:flex;gap:4px;padding:4px;margin:0 0 18px;border-radius:var(--r-pill);background:var(--surface-2);width:100%}
-.module-switch a,.module-switch button{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;min-height:38px;border-radius:var(--r-pill);font-size:14px;font-weight:600;color:var(--label-2)}
+.module-switch a,.module-switch button{flex:1;min-width:0;display:flex;align-items:center;justify-content:center;gap:6px;min-height:38px;border-radius:var(--r-pill);font-size:14px;font-weight:600;color:var(--label-2)}
 .module-switch .icn{font-size:16px}
 .module-switch [aria-current="page"]{background:var(--surface);color:var(--label);box-shadow:0 1px 3px rgba(0,0,0,.25)}
 :root[data-theme="light"] .module-switch [aria-current="page"]{box-shadow:0 1px 3px rgba(22,21,18,.12)}
@@ -368,12 +368,13 @@
 .nutri-macro .nutri-figure small{font-size:13px;margin-left:3px}
 .nutri-macro .nutri-meter{height:5px;margin:8px 0 0}
 .nutri-water-top{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.nutri-water-top .nutri-figure{font-size:36px}
+.nutri-water-top>div{min-width:0}
+.nutri-water-top .nutri-figure{font-size:clamp(24px,7.5vw,36px)}
 .nutri-water-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}
 .nutri-water-actions .btn{min-height:44px}
 .nutri-meal{padding-block:14px}
 .nutri-meal-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.nutri-meal-head h2{display:flex;align-items:center;gap:10px}
+.nutri-meal-head h2{display:flex;align-items:center;gap:10px;min-width:0;overflow-wrap:anywhere}
 .nutri-meal-head h2 .icn{color:var(--acc);font-size:16px;box-sizing:content-box;padding:7px;border-radius:var(--r-sm);background:var(--acc-soft)}
 .nutri-meal-sum{display:block;font-size:13px;color:var(--label-2);margin:3px 0 0 44px;font-variant-numeric:tabular-nums}
 .nutri-items{list-style:none;margin:12px 0 0;padding:0}
@@ -396,6 +397,7 @@
 .nutri-result dt{font-family:var(--font-label);text-transform:uppercase;letter-spacing:.07em;font-size:11px;font-weight:600;color:var(--label-2)}
 .nutri-result dd{margin:0;font-family:var(--font-display);font-weight:800;font-size:20px}
 @media(max-width:360px){.nutri-macros{gap:6px}.nutri-macro{padding:10px 8px}.nutri-macro .nutri-figure{font-size:24px}.nutri-figure{font-size:46px}}
+@media(max-width:380px){.nutri-result dl{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}}
 
 /* ------------------------------------------------- remaining surfaces -- */
 .consistency-summary{border-radius:var(--r-lg);background:var(--surface-2);border:0;box-shadow:none}
@@ -430,7 +432,7 @@ a.metric{text-decoration:none}
 .plate-calc .plate-target .num{font-family:var(--font-display);font-weight:800;font-size:34px}
 .plate-calc .plate-target{min-height:60px}
 .plate-calc .plate-target button{height:60px;width:56px}
-.plate-bar{position:relative;display:flex;align-items:center;gap:2px;height:132px;margin:18px 0 14px;padding:0 10px;border-radius:var(--r-lg);background:var(--surface-2);overflow:hidden}
+.plate-bar{position:relative;display:flex;align-items:center;gap:2px;height:132px;margin:18px 0 14px;padding:0 10px;border-radius:var(--r-lg);background:var(--surface-2);overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch}
 .plate-sleeve{flex:none;width:28px;height:14px;border-radius:3px;background:linear-gradient(180deg,#d9d9d9,#8c8c8c)}
 .plate-sleeve.end{flex:1;min-width:16px;border-radius:0 3px 3px 0}
 .plate-collar{flex:none;width:10px;height:34px;margin-right:3px;border-radius:3px;background:linear-gradient(90deg,#9a9a9a,#e6e6e6,#9a9a9a)}

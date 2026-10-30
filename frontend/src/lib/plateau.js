@@ -12,7 +12,7 @@ export function detectExercisePlateau(workouts = [], exerciseId, { lookbackDays 
   // Filter workouts containing this exercise within lookback window
   const sessions = []
   for (const w of loggedWorkouts({ workouts })) {
-    const timestamp = Number(w.start || new Date(w.d + 'T12:00:00').getTime())
+    const timestamp = Number.isFinite(Number(w.start)) && Number(w.start) > 0 ? Number(w.start) : Number.isFinite(new Date(w.start).getTime()) ? new Date(w.start).getTime() : new Date(w.d + 'T12:00:00').getTime()
     if (!Number.isFinite(timestamp) || timestamp < cutoff || timestamp > now) continue
 
     const entry = (w.entries || []).find(e => e.id === exerciseId)
@@ -52,7 +52,7 @@ export function detectExercisePlateau(workouts = [], exerciseId, { lookbackDays 
   const isPlateau = improvementPct <= 0
 
   const ex = EXIDX[exerciseId] || exOr(exerciseId)
-  const muscle = ex?.m || ex?.bodypart || 'general'
+  const muscle = ex?.tg || ex?.m || ex?.bp || ex?.bodypart || 'general'
 
   return {
     isPlateau,

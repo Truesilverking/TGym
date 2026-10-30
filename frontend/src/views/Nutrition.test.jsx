@@ -123,6 +123,7 @@ it('blocks applying the calculator while a raw numeric draft is invalid', () => 
   try {
     act(() => root.render(<WithSheets />))
     act(() => container.querySelector('[aria-label="Nutrition goals"]').click())
+    expect(container.querySelector('.nutri-result dl').textContent).toMatch(/\d+\s*ml/)
     type(input(container, 'Weight (kg)'), '-80')
     expect(input(container, 'Weight (kg)').getAttribute('aria-invalid')).toBe('true')
     const before = structuredClone(useStore.getState().S)
@@ -189,6 +190,7 @@ it.each([
   try {
     act(() => root.render(<WithSheets />))
     act(() => container.querySelector('[aria-label="Nutrition goals"]').click())
+    expect(container.querySelector('.nutri-result dl').textContent).toMatch(/\d+\s*ml/)
     expect(Number(input(container, 'Height (cm)').value)).toBe(177.8)
     expect(Number(input(container, 'Weight (kg)').value)).toBe(80)
     expect(useStore.getState().S).toEqual(before)

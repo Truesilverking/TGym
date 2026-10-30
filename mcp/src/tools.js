@@ -1,4 +1,4 @@
-import { routineIds, dailyPlan } from '../../frontend/src/lib/daily-plan.js'
+import { routineIds, dailyPlan, loggedWorkouts } from '../../frontend/src/lib/daily-plan.js'
 import { isTrainingPaused } from '../../frontend/src/lib/training-pause.js'
 /* The eight read-only tools. Each handler returns JSON; labels.js pre-substitutes any
    {0}/{1} template the lib returns so the LLM gets final text, not template strings.
@@ -48,7 +48,7 @@ function entryView(e, S) {
 // Best estimate per exercise, mirroring the UI's PR table: every eligible set across history, biggest wins.
 function prTable(S, formula) {
   const byId = new Map()
-  for (const w of (S.workouts || [])) {
+  for (const w of loggedWorkouts(S)) {
     for (const e of (w.entries || [])) {
       for (const s of (e.sets || [])) {
         if (!s.done) continue

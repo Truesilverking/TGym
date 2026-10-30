@@ -251,7 +251,8 @@ export function calculateAdaptiveTDEE({ bodyweightLogs = [], nutritionLogs = {},
     const day = dayNumber(date)
     if (!Number.isFinite(day) || day < cutoff || day > endDay) continue
     const previous = perDay.get(date)
-    if (!previous || finite(weight.t) >= finite(previous.t)) perDay.set(date, { ...weight, date, day, w: Number(weight.w) / (unit === 'lb' ? LB_PER_KG : 1) })
+    const rowUnit = ['kg', 'lb'].includes(weight?.unit) ? weight.unit : unit
+    if (!previous || finite(weight.t) >= finite(previous.t)) perDay.set(date, { ...weight, date, day, w: Number(weight.w) / (rowUnit === 'lb' ? LB_PER_KG : 1) })
   }
   const weights = [...perDay.values()].sort((a, b) => a.day - b.day)
 
@@ -309,7 +310,7 @@ export function getEffectiveDailyGoals(state, dateIso = todayISO()) {
   const baseGoals = goalsOf(S?.nutrition?.goals)
   const safeState = { ...S, routines: listOf(S?.routines).filter(record), workouts: listOf(S?.workouts).filter(record) }
   // Reuse the app's Sunday-based schedule, explicit rest overrides, pauses and actual activity.
-  const isTrainingDay = validDate(dateIso) && (scheduledRoutineIds(safeState, dateIso).length > 0 || loggedWorkouts(safeState).some(w => w.d === dateIso && hasWorkoutActivity(w)))
+  const isTrainingDay = validDate(dateIso) && (scheduledRoutineIds(safeState, dateIso).length > 0 || loggedWorkouts(safeState).some(w => w.d === dateIso && hasWorkoutActivity(w)) || (safeState.active?.d === dateIso && hasWorkoutActivity(safeState.active)))
 
   if (baseGoals.cycleTrainingDays !== true) {
     return { ...baseGoals, isTrainingDay }
