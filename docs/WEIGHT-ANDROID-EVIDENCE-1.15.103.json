@@ -1,0 +1,202 @@
+{
+  "schema": 1,
+  "version": "1.15.103",
+  "versionCode": 139,
+  "commit": "309ff599d2d13940e8e33c811b5bc2e81f44a186",
+  "personalArtifactsExcluded": true,
+  "published": true,
+  "recordedAt": "2026-10-30T15:20:00.368Z",
+  "tests": {
+    "frontend": {
+      "files": 242,
+      "tests": 2743,
+      "failures": 0
+    },
+    "api": {
+      "tests": 16,
+      "failures": 0
+    },
+    "mcp": {
+      "tests": 38,
+      "failures": 0
+    },
+    "catalog": {
+      "tests": 6,
+      "failures": 0
+    },
+    "locales": true,
+    "sourceStrings": true,
+    "nodeLoadability": true,
+    "fatigueProbe": true
+  },
+  "ci": {
+    "runs": [
+      {
+        "id": 41077742649,
+        "name": "Build signed Android candidate",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/Truesilverking/TGym/actions/runs/41077742649"
+      },
+      {
+        "id": 41077707654,
+        "name": "Tests",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/Truesilverking/TGym/actions/runs/41077707654"
+      },
+      {
+        "id": 41077690307,
+        "name": "Validate PWA",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/Truesilverking/TGym/actions/runs/41077690307"
+      },
+      {
+        "id": 41077690387,
+        "name": "Tests",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/Truesilverking/TGym/actions/runs/41077690387"
+      },
+      {
+        "id": 41077690317,
+        "name": "Validate Android",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/Truesilverking/TGym/actions/runs/41077690317"
+      }
+    ],
+    "androidInstrumented": {
+      "tests": 43,
+      "failures": 0,
+      "errors": null,
+      "skipped": 0
+    },
+    "release": {
+      "id": 41078632579,
+      "conclusion": "success",
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/41078632579"
+    }
+  },
+  "physicalQa": {
+    "model": "Pixel 10",
+    "package": "app.framegym.mobile.qa",
+    "version": "1.15.103",
+    "code": 139,
+    "sourceCommit": "309ff599d2d13940e8e33c811b5bc2e81f44a186",
+    "qaSigningContinuity": true,
+    "installed": true,
+    "coldReopen": true,
+    "weightFieldsChecked": 5,
+    "geometryPassed": true,
+    "pageErrors": 0,
+    "webNativeProfileEqual": true,
+    "allOtherStoredUserFieldsEqual": true,
+    "runtimeClocksMonotonic": true,
+    "productionAccessed": false
+  },
+  "browsers": {
+    "compiledEdgeCases": 4,
+    "compiledWebKitCases": 12,
+    "publicEdgeCases": 1,
+    "publicWebKitCases": 2,
+    "wholeWeightDisplay": true,
+    "numericStringLegacyCases": true,
+    "preciseDataPreserved": true,
+    "normalUpdate102To103": {
+      "edge": true,
+      "webkit": true,
+      "method": "Settings - Check for updates - Update",
+      "embeddedResourceCharacters": 1600126
+    }
+  },
+  "publicArtifacts": {
+    "pass": true,
+    "recordedAt": "2026-10-30T15:17:58Z",
+    "version": "1.15.103",
+    "versionCode": 139,
+    "commit": "309ff599d2d13940e8e33c811b5bc2e81f44a186",
+    "package": "app.framegym.mobile",
+    "apkSha256": "d5075bf2743872bb47aa28f87a9fa0b4d168836b2c7c30a67cf3dc7e60520522",
+    "releaseAndPagesApkIdentical": true,
+    "certificateSha256": "8ee233c984615e2b3f6f083dc0c47d148bb8956ff7caca97be0b9a0d260e6082",
+    "officialSigningContinuity": true,
+    "debuggable": false,
+    "aabSha256": "ca5b65162856b64809f15d01fccf245b3a15d37ccc260880a0b3ab39b736e3d9",
+    "aabSignatureVerified": true,
+    "aabBuildExact": true,
+    "apkBuildExact": true,
+    "releaseChecksumsExact": true,
+    "candidateSharedRuntimeAssetsExact": 53,
+    "publicManifestAndBuildExact": true,
+    "pwaFilesChecked": 49,
+    "allReleasePagesFilesExact": true,
+    "files": [
+      "icon-192.png",
+      "about.html",
+      "icon-180.png",
+      "manifest.json",
+      "assets/rolldown-runtime-Dd_uD5pT.js",
+      "assets/web-CmFoe-yw.js",
+      "assets/barlow-condensed-600-DepVgxBB.woff2",
+      "assets/index-C4G1Ml94.js",
+      "assets/demoSeed-DDUuwY7Y.js",
+      "assets/barlow-400-qiz4-Cze.woff2",
+      "assets/exceljs-U49Es7uO.js",
+      "assets/routine-exchange-pdf-CfjKOjQc.js",
+      "assets/body-paths-D_5SR19s.js",
+      "assets/barlow-700-A9pxMQ4z.woff2",
+      "assets/esm-CHi98vDE.js",
+      "assets/barlow-ext-600-B8NK_A3D.woff2",
+      "assets/pdf-vendor-DdLndbtQ.js",
+      "assets/base-Cze7fAi1.js",
+      "assets/barlow-600-DILqtrty.woff2",
+      "assets/web-CXwp_5GA.js",
+      "assets/barlow-condensed-700-v1xN8_Wq.woff2",
+      "assets/barlow-ext-400-HxX4XjxC.woff2",
+      "assets/esm-Caulr7wp.js",
+      "assets/definitions-DwW88UtK.js",
+      "assets/web-DmgV3_hs.js",
+      "assets/esm-CsSmEN10.js",
+      "assets/web-D0qNOIFg.js",
+      "assets/purify.es-DHPJxOTj.js",
+      "assets/es-CV6jEsaS.js",
+      "assets/esm-BKE4nRgi.js",
+      "assets/index-F-PEtY7d.css",
+      "assets/web-F9-M_ev4.js",
+      "assets/index.es-BMIS6r9K.js",
+      "assets/exercise-catalog-H26CG040.js",
+      "assets/big-shoulders-display-Bn_gnr7w.woff2",
+      "assets/es-D4JGg1Lh.js",
+      "assets/esm-DiOAPcBj.js",
+      "assets/web-BdCfg_j5.js",
+      "assets/es-B6eXLS-1.js",
+      "assets/native-BOKG1nkX.js",
+      "assets/esm-DlsadAwN.js",
+      "assets/html2canvas-CI5GuChk.js",
+      "assets/barlow-500-BPAOfeC8.woff2",
+      "build.json",
+      "privacy.html",
+      "icon-512.png",
+      "sw.js",
+      "updates/latest.json",
+      "index.html"
+    ],
+    "notificationReceiptOnPhysicalPhoneVerified": false
+  },
+  "notifications": {
+    "policy": "suppressed_by_annotated_tag",
+    "topicSend": "skipped",
+    "resend": false
+  },
+  "limits": {
+    "physicalIPhoneValidated": false,
+    "nativeIOSBuild": false,
+    "productionAndroidInstall": false,
+    "forcedOfflineWebKitWindows": "internal engine error reproduced on both baseline and candidate; HTTP503 cached reopen passes",
+    "localAndroidLintWarnings": 20,
+    "localAndroidLintErrors": 0,
+    "zeroErrorsInAllPossibleScenariosGuaranteed": false
+  }
+}
