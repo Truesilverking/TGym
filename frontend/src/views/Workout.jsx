@@ -11,7 +11,7 @@ import { useUI } from '../store/useUI.js'
 import { exOr, isCardio } from '../lib/exercises.js'
 import { ACTIVITY_TYPES } from '../lib/activities.js'
 import { lastEntryFor, bestWeightFor, buildSets, freestyleConfig, defaultConfig, setsDoneActive, supersetUnits, unitOf, setLabel, modeOf, isBw, isPerSide, sideReps, displayReps, storedReps, repStep, fmtSec, EFFORT, effortOf, stepEffort, cascadeWeight, cascadeTopBackWeight, cascadeTopBackReps, insertWarmupRow, removeRowAt, pairAdjacent, unpairSuperset, cleanupSg, applyIntensifierPlan, pinnedNoteFor, exNoteFor, rerampWarmups } from '../lib/history.js'
-import { fmtNum, fmtDate, todayISO, exCount, DAYN } from '../lib/format.js'
+import { fmtNum, fmtWeight, fmtDate, todayISO, exCount, DAYN } from '../lib/format.js'
 import { playAppSound, vibrate } from '../lib/sound.js'
 import { t, exerciseNameFor, dateLocale } from '../lib/i18n.js'
 import { api } from '../lib/api.js'
@@ -243,7 +243,7 @@ function ExerciseBlock({ preview, entryIdx, compact, onToggle, onField, onAddSet
       {!cardio && isPerSide(cfg) && <span className="tag acc nocap"><Icon name="shuffle" />{timed ? `${fmtSec(entry.sets.find(s => !s.done)?.sec ?? entry.sets[0]?.sec)} ${t('/ side')}` : t('{0} per side', fmtNum(sideReps(entry.sets.find(s => !s.done)?.r ?? entry.sets[0]?.r, cfg)))}</span>}
       {(ex.tg || ex.bp) && <span className="tag">{t(ex.tg || ex.bp)}</span>}
       {ex.eq && <span className="tag">{t(ex.eq)}</span>}
-      {best > 0 && <span className="tag nocap">{t('Best:')} {fmtNum(best)} {S.unit}</span>}
+      {best > 0 && <span className="tag nocap">{t('Best:')} {fmtWeight(best)} {S.unit}</span>}
     </div>
     {(cfg.note || standingNote || pinnedNote || entry.note) && <details className="workout-notes">
       <summary>{t('Exercise notes')}<Icon name="chevronDown" /></summary>
@@ -257,7 +257,7 @@ function ExerciseBlock({ preview, entryIdx, compact, onToggle, onField, onAddSet
     <div className="exercise-history-context">
       {last ? <div className="small muted"><b>{t('Last time')}</b> ({fmtDate(last.d)}): {last.sets.map(s => setLabel(entry.id, s, last.target)).join(', ')}</div>
         : <div className="small muted first-history"><Icon name="history" /> {t('Nothing logged yet — this session sets the baseline.')}</div>}
-      {plan?.why && !['off','first'].includes(plan.kind) && <div className={'progline' + (plan.kind === 'deload' ? ' warn' : '')}><Icon name={plan.kind === 'up' ? 'arrowUp' : plan.kind === 'deload' ? 'arrowDown' : 'lightbulb'} /><span>{t(...plan.why)}</span></div>}
+      {plan?.why && !['off','first'].includes(plan.kind) && <div className={'progline' + (plan.kind === 'deload' ? ' warn' : '')}><Icon name={plan.kind === 'up' ? 'arrowUp' : plan.kind === 'deload' ? 'arrowDown' : 'lightbulb'} /><span>{t(...plan.why.map((value,index,args) => index > 0 && ['kg','lb'].includes(args[index+1]) ? fmtWeight(value) : value))}</span></div>}
     </div>
     {!cardio && !timed && (() => {
       const targetRir = targetRirRangeFor(cfg, null)
@@ -265,7 +265,7 @@ function ExerciseBlock({ preview, entryIdx, compact, onToggle, onField, onAddSet
         {targetRir && cfg.setScheme !== 'topback' && <span className="tag nocap">{t('Target RIR')}: {rirRangeLabel(targetRir)}</span>}
       </div>
     })()}
-    {S.exerciseGoals?.[entry.id] && <div className="small row" style={{ color: 'var(--yellow)', gap: 5, marginBottom: 8 }}><Icon name="target" />{t('Goal')}: {S.exerciseGoals[entry.id].weight > 0 ? fmtNum(S.exerciseGoals[entry.id].weight) + ' ' + S.unit : ''}{S.exerciseGoals[entry.id].weight > 0 && S.exerciseGoals[entry.id].reps > 0 ? ' × ' : ''}{S.exerciseGoals[entry.id].reps > 0 ? S.exerciseGoals[entry.id].reps + ' ' + t('reps') : ''}</div>}
+    {S.exerciseGoals?.[entry.id] && <div className="small row" style={{ color: 'var(--yellow)', gap: 5, marginBottom: 8 }}><Icon name="target" />{t('Goal')}: {S.exerciseGoals[entry.id].weight > 0 ? fmtWeight(S.exerciseGoals[entry.id].weight) + ' ' + S.unit : ''}{S.exerciseGoals[entry.id].weight > 0 && S.exerciseGoals[entry.id].reps > 0 ? ' × ' : ''}{S.exerciseGoals[entry.id].reps > 0 ? S.exerciseGoals[entry.id].reps + ' ' + t('reps') : ''}</div>}
     {bw && !added && <Button size="sm" variant="tinted" icon="plus" onClick={() => update(s => { s.active.entries[entryIdx].logAddedWeight = true })}>{t('Log added weight')}</Button>}
     <div className="card sets-card" style={{ marginTop: 10, marginBottom: 0 }}>
       {entry.sets.map((s, i) => {
@@ -292,12 +292,12 @@ function ExerciseBlock({ preview, entryIdx, compact, onToggle, onField, onAddSet
               <button type="button" className="set-undo" aria-label={`${t('Undo Completed')} · ${t('Set')} ${phaseNum}`} onClick={() => onToggle(i)}>{t('Undo Completed')}</button>
             </div>
             <dl className="set-summary-values">
-              {[col1, col2].filter(Boolean).map(col => <div key={col.f}><dt>{col.hd}</dt><dd>{Number(metricValue(s,col) ?? 0).toLocaleString(dateLocale(), {maximumFractionDigits: 10})}</dd></div>)}
+              {[col1, col2].filter(Boolean).map(col => <div key={col.f}><dt>{col.hd}</dt><dd>{col.f === 'w' ? fmtWeight(metricValue(s,col) ?? 0) : Number(metricValue(s,col) ?? 0).toLocaleString(dateLocale(), {maximumFractionDigits: 10})}</dd></div>)}
               {mode === 'reps' && ['rir','rpe'].filter(k => s[k] != null || (col3?.eff || 'rir') === k).map(k => <div key={k}><dt>{k.toUpperCase()}</dt><dd>{s[k] == null ? '—' : effortValue(k, s[k])}</dd></div>)}
               {timed && isPerSide(cfg) && ['left','right'].map(side => <div key={side}><dt>{t(side === 'left' ? 'Left' : 'Right')}</dt><dd>{fmtSec(s[`${side}Sec`] ?? s.sec)}</dd></div>)}
             </dl>
             {(dropsOf(s).length > 0 || clustersOf(s).length > 0) && <div className="set-summary-details">
-              {dropsOf(s).map((d,di)=><span key={`d${di}`}>{t('Drop {0}',di+1)} · {Number(d.w).toLocaleString(dateLocale(), {maximumFractionDigits: 10})} {S.unit} × {displayReps(d.r, cfg)} {t('reps')}</span>)}
+              {dropsOf(s).map((d,di)=><span key={`d${di}`}>{t('Drop {0}',di+1)} · {fmtWeight(d.w)} {S.unit} × {displayReps(d.r, cfg)} {t('reps')}</span>)}
               {clustersOf(s).map((c,ci)=><span key={`c${ci}`}>{t('Burst {0}',ci+1)} · {displayReps(c.r, cfg)} {t('reps')} · {c.restSec}s</span>)}
             </div>}
           </div> : <div data-tour={i===Math.max(0,entry.sets.findIndex(row=>!isWarmupRow(row)))?'sets':undefined} className={'setrow set-console' + (currentSet === i ? ' current' : '') + (mode === 'reps' ? ' set-reps-console' + (supportPair ? ' set-support-pair' : '') : '')}>

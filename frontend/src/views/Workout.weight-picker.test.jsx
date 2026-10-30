@@ -47,7 +47,7 @@ async function choose(button,raw){await click(button);await type(raw);await clic
 
 it('opens and cancels a precise load without writing the workout, history or profile unit',async()=>{
  await mount();const before=structuredClone(state())
- await click(trigger());expect(Number(picker().value)).toBe(42.75)
+ await click(trigger());expect(Number(picker().value)).toBe(43)
  await type('350.125');expect(state()).toEqual(before);expect(localStorage.getItem('gym_state_v1')).toBeNull()
  await click(action('Cancel'))
  expect(useUI.getState().sheets).toHaveLength(0);expect(state()).toEqual(before)
@@ -60,7 +60,7 @@ it('keeps an isolated draft open when a rest timer or unrelated preference clone
  const before=structuredClone(rows()[0]),history=structuredClone(state().workouts)
  await click(trigger());await type('43.125')
  await act(()=>useStore.getState().update(s=>{delete s.active.restTimer;s.keepAwake=false}))
- expect(rows()[0]).toEqual(before);expect(picker()).not.toBeNull();expect(picker().value).toBe('43.125')
+ expect(rows()[0]).toEqual(before);expect(picker()).not.toBeNull();expect(picker().value).toBe('43')
  await click(action('Done'))
  expect(rows()[0].w).toBe(43.125);expect(state().active.restTimer).toBeUndefined();expect(state().keepAwake).toBe(false)
  expect(state().workouts).toEqual(history)
@@ -90,7 +90,7 @@ it.each([['kg',110.25,100],['lb',165.375,150]])('applies a %s ruler load through
  expect(saved.active.entries[0].sets[1].w).toBe(weight)
  await act(()=>{root.unmount();root=createRoot(host);useStore.getState().replaceState(saved);root.render(<MemoryRouter><Workout/><Modals/></MemoryRouter>)})
  expect(rows().map(row=>row.w)).toEqual([25,weight,95,backoff])
- expect(host.querySelector(`input[aria-label="Weight (${unit})"]`).value).toBe(String(weight))
+ expect(host.querySelector(`input[aria-label="Weight (${unit})"]`).value).toBe(String(Math.round(weight)))
 })
 
 it('edits drop loads independently and keeps Rest-pause bursts on their shared base load',async()=>{

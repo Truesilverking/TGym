@@ -15,7 +15,7 @@ import { useStore } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
 import { EXDB, EXIDX, BODYPARTS, isCardio, isBodyweightEq, allExercises, equipmentOf, smOf, exerciseSearchScore, exOr } from './lib/exercises.js'
 import { activeProfile, exAvailable, ALL_EQUIPMENT, newProfile } from './lib/equipment.js'
-import { fmtDate, fmtNum, fmtVol, fmtDur, durPart, todayISO, isoOf, localTZ, uid, exCount, DAYN, MONTHS_LONG, ACCENTS } from './lib/format.js'
+import { fmtDate, fmtNum, fmtWeight, fmtVol, fmtDur, durPart, todayISO, isoOf, localTZ, uid, exCount, DAYN, MONTHS_LONG, ACCENTS } from './lib/format.js'
 import { lastEntryFor, bestWeightFor, buildSets, effectiveRoutineId, workoutVolume, setsDone, setsDoneActive, lastBW, supersetUnits, unitOf, setLabel, defaultConfig, cleanupSg, modeOf, effortOf, isBw, isPerSide, displayReps, storedReps, displayRepConfig, workSetsDone, applyIntensifierPlan, MAX_PLANNED_WARMUPS, NOTE_MAX } from './lib/history.js'
 import { playAppSound, vibrate } from './lib/sound.js'
 import { t, instrFor, exerciseNameFor, originalExerciseNameFor, getLang, INSTR_LANGS, dateLocale } from './lib/i18n.js'
@@ -204,7 +204,7 @@ function BwSheet({ required, onDone, close, initialDate }) {
       <div className="list" style={{ gap: 0 }}>
         {recent.map(b => <div key={b.d} className="row between" style={{ padding: '9px 2px', borderBottom: '1px solid var(--sep)' }}>
           <span className="small muted">{fmtDate(b.d, true)}</span>
-          <span className="row" style={{ gap: 12 }}><b>{fmtNum(b.w)} {unit}</b>
+          <span className="row" style={{ gap: 12 }}><b>{fmtWeight(b.w)} {unit}</b>
             <button className="iconbtn" style={{ width: 32, height: 30, borderRadius: 8, fontSize: 15, color: 'var(--red)' }} onClick={() => delEntry(b.d)} aria-label="delete"><Icon name="trash" /></button></span>
         </div>)}
       </div>
@@ -406,7 +406,7 @@ function GoalSheet({ close }) {
       const n = Math.round(canonical * 10) / 10
       if (!weightValid || !Number.isFinite(n) || n <= 0) { toast(t('Enter a valid weight')); return }
       update(s => { s.targetW = n }); close()
-      const b = lastBW(S()); toast(t('Goal set: {0}', fmtNum(n) + ' ' + st.unit) + (b ? ' (' + t('{0} to go', fmtNum(Math.abs(n - b.w))) + ')' : ''))
+      const b = lastBW(S()); toast(t('Goal set: {0}', fmtWeight(n) + ' ' + st.unit) + (b ? ' (' + t('{0} to go', fmtWeight(Math.abs(n - b.w))) + ')' : ''))
     }}>{t('Save goal')}</Button>
     {st.targetW && <><div style={{ height: 8 }} /><Button variant="danger" onClick={() => { update(s => { s.targetW = null }); close(); toast(t('Goal removed')) }}>{t('Remove goal')}</Button></>}
   </>
@@ -425,8 +425,8 @@ function OneRM({ ex }) {
   return <>
     <h4 className="sec">{t('Estimated 1RM')}</h4>
     {best && <div className="small" style={{ marginBottom: 8 }}>
-      {t('From your log:')} <b className="accent">{fmtNum(best.est)} {st.unit}</b>
-      <span className="dim"> · {t('{0} × {1} on {2}', fmtNum(best.w) + ' ' + st.unit, best.r, fmtDate(best.d, true))}</span>
+      {t('From your log:')} <b className="accent">{fmtWeight(best.est)} {st.unit}</b>
+      <span className="dim"> · {t('{0} × {1} on {2}', fmtWeight(best.w) + ' ' + st.unit, best.r, fmtDate(best.d, true))}</span>
     </div>}
     <div className="row cfgrow" style={{ marginBottom: 10 }}>
       <WeightField showLabel label={t('Weight ({0})', st.unit)} unit={st.unit} value={w} step={weightStepFor(st.unit)} onChange={setW} />
@@ -434,7 +434,7 @@ function OneRM({ ex }) {
     </div>
     <div className="row between" style={{ marginBottom: 4 }}>
       <span className="muted small">{t('Estimate')}</span>
-      <b className="accent" style={{ fontSize: 20 }}>{est === null ? '—' : fmtNum(est) + ' ' + st.unit}</b>
+      <b className="accent" style={{ fontSize: 20 }}>{est === null ? '—' : fmtWeight(est) + ' ' + st.unit}</b>
     </div>
     <div className="small dim">{est === null
       ? t('Enter a weight and 1–{0} reps — beyond that an estimate is guesswork.', REP_CAP)
@@ -469,7 +469,7 @@ function ExerciseDetail({ ex, context = {}, close }) {
       {(ex.secondaries?.length ? ex.secondaries : smOf(ex)).slice(0, 3).map((s, i) => <span key={i} className="tag">{t(s)}</span>)}
     </div>
     {ex.desc && <div className="exnote">{ex.desc}</div>}
-    {best > 0 && <div className="small row" style={{ marginBottom: 6, gap: 5 }}><Icon name="trophy" style={{ fontSize: 14, color: 'var(--yellow)' }} />{t('Best:')} <b className="accent">{fmtNum(best)} {st.unit}</b>{last ? ` · ${t('last')} ${fmtDate(last.d)}: ${last.sets.map(s => setLabel(ex.id, s, last.target)).join(', ')}` : ''}</div>}
+    {best > 0 && <div className="small row" style={{ marginBottom: 6, gap: 5 }}><Icon name="trophy" style={{ fontSize: 14, color: 'var(--yellow)' }} />{t('Best:')} <b className="accent">{fmtWeight(best)} {st.unit}</b>{last ? ` · ${t('last')} ${fmtDate(last.d)}: ${last.sets.map(s => setLabel(ex.id, s, last.target)).join(', ')}` : ''}</div>}
     {!isCardio(ex) && <div className="card" style={{ margin: '10px 0' }}><h2>{t('Exercise goal')}</h2><div className="row cfgrow"><WeightField showLabel label={t('Weight ({0})', st.unit)} unit={st.unit} value={goalW} step={weightStepFor(st.unit)} onChange={setGoalW} /><Stepper label={t('Reps')} value={goalR} step={1} decimal={false} onChange={setGoalR} /></div><div style={{ height: 8 }} /><Button size="sm" onClick={() => { updateStore(s => { s.exerciseGoals = s.exerciseGoals || {}; if (goalW > 0 || goalR > 0) s.exerciseGoals[ex.id] = { weight: goalW, reps: goalR }; else delete s.exerciseGoals[ex.id] }); toast(goalW > 0 || goalR > 0 ? t('Goal saved') : t('Goal removed')) }}>{t('Save goal')}</Button></div>}
     <Button variant="primary" icon="plus" style={{ margin: '10px 0 4px' }} onClick={() => addToRoutineSheet(ex)}>{t('Add to my plan')}</Button>
     <Button variant="ghost" icon={st.avoidedExercises?.[ex.id] ? 'reset' : 'warning'} style={{ marginTop: 6 }} onClick={() => { updateStore(s => { s.avoidedExercises = s.avoidedExercises || {}; if (s.avoidedExercises[ex.id]) delete s.avoidedExercises[ex.id]; else s.avoidedExercises[ex.id] = true }); toast(st.avoidedExercises?.[ex.id] ? t('Exercise available again') : t('Exercise temporarily avoided')) }}>{st.avoidedExercises?.[ex.id] ? t('Make available again') : t('Temporarily avoid exercise')}</Button>
@@ -1351,8 +1351,8 @@ function InBodyHistory() {
     ]} /><div style={{ height: 12 }} /><Button variant="primary" disabled={scanning || saving} onClick={save}>{t('Save InBody result')}</Button></>
   return <><div className="row between inbody-header"><div><div className="eyebrow">TGym · {t('Stats')}</div><h3>{t('InBody history')}</h3></div><Button size="sm" icon="plus" onClick={() => { setEditing(null); draftId.current=uid(); setDate(todayISO()); setValues({}); setImage(''); setAdding(true) }}>{t('Add')}</Button></div>
     <Segmented value={range} onChange={setRange} options={[{ value: 30, label: '30d' }, { value: 90, label: '90d' }, { value: 180, label: '6m' }, { value: 0, label: t('All') }]} />
-    {first && last && first !== last && <div className="card inbody-compare"><div className="small dim">{fmtDate(first.d, true)} → {fmtDate(last.d, true)}</div>{INBODY_FIELDS.filter(([key]) => first[key] != null && last[key] != null).map(([key, label, unit]) => { const delta = Math.round((last[key] - first[key]) * 10) / 10, trend = trendClass(key, first[key], last[key]); return <div className="row between" key={key}><span>{t(label)}</span><b className={trend}>{delta > 0 ? '+' : ''}{fmtNum(delta)} {unit}{trend && <small> · {t(trend === 'better' ? 'Improved' : 'Moved away from target')}</small>}</b></div> })}</div>}
-    {shown.length ? <div className="list inbody-list">{[...shown].reverse().map(r => <button type="button" className="item" key={r.id || st.inbody.indexOf(r)} onClick={() => { setEditing({record:r,index:st.inbody.indexOf(r)}); draftId.current=uid(); setDate(r.d); setValues(Object.fromEntries(INBODY_FIELDS.map(([k]) => [k, r[k]]))); setImage(r.image || ''); setAdding(true) }}><span className="lrow-i"><Icon name="person" /></span><div className="grow"><div className="tt">{fmtDate(r.d, true)}</div><div className="ss">{[r.weight && `${fmtNum(r.weight)} kg`, r.skeletalMuscle && `${t('Muscle')} ${fmtNum(r.skeletalMuscle)} kg`, r.bodyFatPct && `${t('Body fat')} ${fmtNum(r.bodyFatPct)}%`].filter(Boolean).join(' · ')}</div></div><Icon name="chevronRight" /></button>)}</div> : <div className="empty">{t('No InBody results in this period')}</div>}
+    {first && last && first !== last && <div className="card inbody-compare"><div className="small dim">{fmtDate(first.d, true)} → {fmtDate(last.d, true)}</div>{INBODY_FIELDS.filter(([key]) => first[key] != null && last[key] != null).map(([key, label, unit]) => { const delta = Math.round((last[key] - first[key]) * 10) / 10, trend = trendClass(key, first[key], last[key]); return <div className="row between" key={key}><span>{t(label)}</span><b className={trend}>{delta > 0 ? '+' : ''}{(unit === 'kg' || unit === 'lb' ? fmtWeight : fmtNum)(delta)} {unit}{trend && <small> · {t(trend === 'better' ? 'Improved' : 'Moved away from target')}</small>}</b></div> })}</div>}
+    {shown.length ? <div className="list inbody-list">{[...shown].reverse().map(r => <button type="button" className="item" key={r.id || st.inbody.indexOf(r)} onClick={() => { setEditing({record:r,index:st.inbody.indexOf(r)}); draftId.current=uid(); setDate(r.d); setValues(Object.fromEntries(INBODY_FIELDS.map(([k]) => [k, r[k]]))); setImage(r.image || ''); setAdding(true) }}><span className="lrow-i"><Icon name="person" /></span><div className="grow"><div className="tt">{fmtDate(r.d, true)}</div><div className="ss">{[r.weight && `${fmtWeight(r.weight)} kg`, r.skeletalMuscle && `${t('Muscle')} ${fmtWeight(r.skeletalMuscle)} kg`, r.bodyFatPct && `${t('Body fat')} ${fmtNum(r.bodyFatPct)}%`].filter(Boolean).join(' · ')}</div></div><Icon name="chevronRight" /></button>)}</div> : <div className="empty">{t('No InBody results in this period')}</div>}
     <div className="small dim" style={{ marginTop: 10 }}>{t('Changes are descriptive. InBody conditions such as hydration and meal timing can affect each reading.')}</div></>
 }
 export const inBodySheet = () => ui().openSheet(() => <InBodyHistory />)
@@ -1388,7 +1388,7 @@ function WorkoutDetail({ w: original, close }) {
     {['inactivity','abandoned','auto_completed'].includes(w.finishReason)&&<div className="card"><p>{t('Auto-ended at {0}',clockAt(w.end))}</p><label>{t('Duration (minutes)')}<input className="input" type="number" min="0.1" step="0.1" value={duration} onChange={e=>setDuration(e.target.value)}/></label>{durationError&&<p role="alert">{durationError}</p>}<Button onClick={()=>{const corrected=correctWorkoutDuration(w,duration);if(!corrected){setDurationError(t('Enter a valid duration ending before now.'));return}update(s=>{const i=s.workouts.findIndex(row=>row.id===w.id);if(i>=0)s.workouts[i]=corrected});setDurationError('');toast(t('Workout updated'))}}>{t('Save duration')}</Button></div>}
     <ActivityMetrics workout={st.workouts.find(row=>row.id===w.id) || w} />
     {['inactivity','abandoned','auto_completed'].includes(w.finishReason) && w.resumeSnapshot && !st.active && <Button onClick={()=>{update(s=>resumeAutoFinished(s,w.id));close();nav('/workout')}}>{t('Continue in a new session')}</Button>}
-    <div className="muted small" style={{ marginBottom: 12 }}>{[fmtDate(w.d, true), ...(Number(w.end) > Number(w.start) ? [clockAt(w.start) + '–' + clockAt(w.end)] : []), ...durPart(workoutElapsedMs(w)), ...(!w.activity || w.activity.preservesWorkout ? [fmtVol(w.vol, st.unit)] : []), ...(w.bw ? [fmtNum(w.bw) + ' ' + st.unit] : [])].join(' · ')}</div>
+    <div className="muted small" style={{ marginBottom: 12 }}>{[fmtDate(w.d, true), ...(Number(w.end) > Number(w.start) ? [clockAt(w.start) + '–' + clockAt(w.end)] : []), ...durPart(workoutElapsedMs(w)), ...(!w.activity || w.activity.preservesWorkout ? [fmtVol(w.vol, st.unit)] : []), ...(w.bw ? [fmtWeight(w.bw) + ' ' + st.unit] : [])].join(' · ')}</div>
     {(w.activity && !w.activity.preservesWorkout ? [] : editing ? draftEntries : w.entries).map((e, i) => {
       const ex = EXIDX[e.id]
       return <div key={i} className="row" style={{ marginBottom: 12, alignItems: 'flex-start' }}>
@@ -1717,14 +1717,14 @@ function TopWeight({ entryIdx, close }) {
     if (advance && unitDone) {
       if (effectiveWorkoutComplete(A)) workoutCompleteSheet()
       else if (!isLastUnit) update(s => { s.active.cur = units[unitIdx + 1][0] })
-    } else toast(t('Tracked — next time starts at {0}', fmtNum(S().exWeights[entry.id].w) + ' ' + st.unit))
+    } else toast(t('Tracked — next time starts at {0}', fmtWeight(S().exWeights[entry.id].w) + ' ' + st.unit))
   }
   return <>
     <h3 className="capitalize row" style={{ gap: 8 }}><Icon name="checkCircle" style={{ color: 'var(--acc)' }} />{t('{0} done', exerciseNameFor(ex, { entry, routineId: A.routineId }))}</h3>
     <div className="muted small">{t('Confirm the weight you worked with — your highest becomes the default next time.')}{!unitDone && unit.length > 1 ? ' ' + t('Then finish the superset partner.') : ''}</div>
     <BodyWeightPicker ref={pickerDraft} value={v} onChange={setV} unit={st.unit} label={t('Weight')} min={0} max={Number.MAX_SAFE_INTEGER} precision={6} onValidityChange={setWeightValid} />
     <div style={{ height: 10 }} />
-    {prevBest > 0 ? <div className="small dim" style={{ textAlign: 'center', marginBottom: 12 }}>{t('Previous best:')} {fmtNum(prevBest)} {st.unit}{maxSet > prevBest && <span style={{ color: 'var(--yellow)' }}> — {t('new record!')}</span>}</div> : <div style={{ height: 4 }} />}
+    {prevBest > 0 ? <div className="small dim" style={{ textAlign: 'center', marginBottom: 12 }}>{t('Previous best:')} {fmtWeight(prevBest)} {st.unit}{maxSet > prevBest && <span style={{ color: 'var(--yellow)' }}> — {t('new record!')}</span>}</div> : <div style={{ height: 4 }} />}
     {unitDone ? <>
       <Button variant="primary" disabled={!weightValid} trailingIcon={isLastUnit ? null : 'chevronRight'} onClick={() => commit(true)}>{isLastUnit ? t('Save') : t('Save & next exercise')}</Button>
       <div style={{ height: 8 }} /><Button variant="ghost" className="dim" disabled={!weightValid} onClick={() => commit(false)}>{t('Just close')}</Button>
@@ -1926,7 +1926,7 @@ function FinishSummary({ w, prs, e1prs = [], presentation, close }) {
       })}
       {e1prs.map(p => {
         const entry = w.entries?.find(e => e.id === p.id)
-        return <div key={p.id} className="small accent capitalize row" style={{ gap: 5 }}><Icon name="chartLine" style={{ fontSize: 13 }} />{t('Best estimated 1RM:')} {exerciseNameFor(EXIDX[p.id] || entry || { id: p.id }, { entry, routineId: w.routineId })} · {fmtNum(p.est)} {st.unit}</div>
+        return <div key={p.id} className="small accent capitalize row" style={{ gap: 5 }}><Icon name="chartLine" style={{ fontSize: 13 }} />{t('Best estimated 1RM:')} {exerciseNameFor(EXIDX[p.id] || entry || { id: p.id }, { entry, routineId: w.routineId })} · {fmtWeight(p.est)} {st.unit}</div>
       })}
     </div>}
     <h4 className="sec" style={{ textAlign: 'left' }}>{t('What you just trained')}</h4>

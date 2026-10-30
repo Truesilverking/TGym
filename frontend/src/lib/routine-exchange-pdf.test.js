@@ -60,10 +60,21 @@ describe('routine PDF complete prescription projection', () => {
     const S=fixture(),id=CATALOGUE.find(ex=>ex.bp==='back').id
     S.unit='kg';S.routines[0].ex=[{id,sets:3,reps:8,weight:103,inc:2.5,setScheme:'topback',topSets:1,backoffSets:2,topRepsMin:6,topRepsMax:8,backoffPct:15}]
     const data=createRoutineExchange(S),svg=content(routinePDFPages(data))
-    expect(data.routines[0].ex[0]).toMatchObject({loadingStep:5,backoffRepsOverride:true})
+    expect(data.routines[0].ex[0]).toMatchObject({inc:2.5,loadingStep:5,backoffRepsOverride:true})
     expect(svg).toContain('90 kg');expect(svg).not.toContain('87.5 kg')
-    expect(svg).toContain('Increment 2.5 kg | Load step 5 kg')
+    expect(svg).toContain('Increment 3 kg | Load step 5 kg')
     expect(svg).toContain('Reps same');expect(svg).not.toContain('follow app setting')
+  })
+
+  it('prints whole loads while leaving fractional transfer data and cardio values precise', () => {
+    const S = fixture(); S.routines[0].ex[0].weight = 20.75
+    const data = createRoutineExchange(S), before = structuredClone(data)
+    const svg = content(routinePDFPages(data))
+    expect(svg).toContain('Bodyweight +21 lb')
+    expect(svg).toContain('7.5 km/h')
+    expect(svg).toContain('2.5 km')
+    expect(data).toEqual(before)
+    expect(data.routines[0].ex[0].weight).toBe(20.75)
   })
 
   it('renders rest-pause activation and one work total according to the existing execution helper', () => {

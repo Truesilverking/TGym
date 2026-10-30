@@ -9,6 +9,15 @@ it('does not flag plateau when there are not enough sessions', () => {
   expect(result.isPlateau).toBe(false)
 })
 
+it.each([undefined, null, 0, '0', false])('uses the recorded workout date when legacy start is %j', start => {
+  const now = Date.now()
+  const workouts = [1, 2, 3].map(ago => ({ id: `legacy-${ago}`, d: new Date(now - ago * 86400000).toISOString().slice(0, 10), start,
+    entries: [{ id: '0025', sets: [{ done: true, w: 40, r: 8 }] }] }))
+  const before = structuredClone(workouts)
+  expect(detectExercisePlateau(workouts, '0025')).toMatchObject({ sessionCount: 3, isPlateau: true })
+  expect(workouts).toEqual(before)
+})
+
 it('detects a plateau when e1RM fails to progress across 3+ sessions over weeks', () => {
   const now = Date.now()
   const workouts = [

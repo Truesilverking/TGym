@@ -1,7 +1,7 @@
 import { scheduledRoutineIds, loggedWorkouts } from './daily-plan.js'
 import { hasWorkoutActivity } from './session-activity.js'
 // Pure helpers over the state object S (ported 1:1 from the vanilla app).
-import { todayISO, isoOf, weekKey, fmtNum } from './format.js'
+import { todayISO, isoOf, weekKey, fmtNum, fmtWeight } from './format.js'
 import { isCardio, isBodyweightEq } from './exercises.js'
 import { phaseForSet, modeForSet, modeForEntry, isWarmupRow, normalizeMode, extraVolumeOf, nextDropWeight, splitBurstReps } from './workout-model.js'
 import { warmupPrescription, recalculatePendingWarmups } from './warmup.js'
@@ -133,17 +133,17 @@ export function setLabel(id, s, cfg) {
   if (mode === 'time') {
     const side = isPerSide(c) || s.side
     const actual = side && (s.leftSec != null || s.rightSec != null) ? ` · L ${fmtSec(s.leftSec ?? s.sec)} · R ${fmtSec(s.rightSec ?? s.sec)}` : ''
-    return fmtSec(s.sec) + (side ? ` ${t('/ side')}` : '') + actual + (s.w > 0 ? ` · ${fmtNum(s.w)}` : '')
+    return fmtSec(s.sec) + (side ? ` ${t('/ side')}` : '') + actual + (s.w > 0 ? ` · ${fmtWeight(s.w)}` : '')
   }
   // Bodyweight reads as what you did — "12", or "+10 × 12" once there is a belt involved —
   // rather than "0×12", which says a set was performed with no weight and means nothing.
   // Present old and new per-side rows with the same count and unit.
   const reps = fmtNum(displayReps(s.r || 0, c)) + (isPerSide(c) ? ` ${t('/ side')}` : '')
   if (isBw({ ...c, id: c.id ?? id })) {
-    const load = s.w > 0 ? `+${fmtNum(s.w)} × ` : ''
+    const load = s.w > 0 ? `+${fmtWeight(s.w)} × ` : ''
     return `${load}${reps}` + effortTail(s)
   }
-  return `${fmtNum(s.w || 0)}×${reps}` + effortTail(s)
+  return `${fmtWeight(s.w || 0)}×${reps}` + effortTail(s)
 }
 // Default config for a freshly added exercise.
 export function defaultConfig(id, mode) {
@@ -161,7 +161,7 @@ export function exLine(cfg, unit) {
   const mode = modeOf(cfg)
   const n = cfg.sets || 1
   // Added weight reads as added: "+10 kg" on a dip belt, "60 kg" on a barbell.
-  const load = cfg.weight ? ' · ' + (isBw(cfg) ? '+' : '') + fmtNum(cfg.weight) + ' ' + unit : ''
+  const load = cfg.weight ? ' · ' + (isBw(cfg) ? '+' : '') + fmtWeight(cfg.weight) + ' ' + unit : ''
   if (mode === 'cardio') return `${n} × ${cfg.min || 20} min @ ${fmtNum(cfg.speed ?? 8)} km/h`
   if (mode === 'time') return `${n} × ${fmtSec(cfg.sec || 45)}${isPerSide(cfg) ? ` ${t('/ side')}` : ''}${load}`
   const side = isPerSide(cfg) ? ` ${t('/ side')}` : ''

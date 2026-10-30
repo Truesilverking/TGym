@@ -26,6 +26,15 @@ it('flags volume as low when below minimum target', () => {
   expect(report.chest.status).toBe('low')
 })
 
+it.each([undefined, null, 0, '0', false])('counts dated legacy sessions when start is %j', start => {
+  const now = Date.now()
+  const workouts = [{ id: 'legacy', d: new Date(now - 2 * 86400000).toISOString().slice(0, 10), start,
+    entries: [{ id: '0025', sets: [{ done: true }] }] }]
+  const before = structuredClone(workouts)
+  expect(calculateWeeklyMuscleVolume(workouts, { weekStartMs: now - 7 * 86400000 }).chest.sets).toBe(1)
+  expect(workouts).toEqual(before)
+})
+
 it('retains custom historical muscle weights and excludes duplicate, cancelled and future sessions', () => {
   const now = Date.now()
   const session = { id: 'one', start: now - 86400000, entries: [{ id: 'deleted-custom', muscleSnapshot: { muscleWeights: { chest: 1, triceps: 0.25 } }, sets: [{ done: true }, { done: true, phase: 'warmup' }] }] }

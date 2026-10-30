@@ -52,7 +52,8 @@ it.each([['kg','80.16',80.2],['lb','176.54',176.5]])('saves a configured %s prof
 it('retains the configured unit and draft through repeated focus without rounding drift or saved-data writes',async()=>{
  const before=structuredClone(useStore.getState().S);await open();await enter('80.1')
  for(let i=0;i<6;i++)await act(()=>{field().focus();field().blur()})
- expect(Number(field().value.replace(',','.'))).toBe(80.1)
+ expect(field().value).toBe('80');expect(Number(host.querySelector('[role=slider]').getAttribute('aria-valuenow'))).toBe(80.1)
+ await act(()=>field().focus());expect(field().value).toBe('80.1');await act(()=>field().blur())
  expect(useStore.getState().S).toEqual(before);expect(localStorage.getItem('gym_state_v1')).toBeNull()
  await dismiss();expect(useStore.getState().S).toEqual(before);expect(useStore.getState().flushPersistence).not.toHaveBeenCalled()
 })
@@ -165,7 +166,7 @@ it('starts without weighing in synchronously while leaving readings and preferen
  expect(useStore.getState().S).toEqual(before);expect(localStorage.getItem('gym_state_v1')).toBeNull()
  expect(useStore.getState().flushPersistence).not.toHaveBeenCalled();expect(useUI.getState().sheets).toHaveLength(0)
 })
-it('cancels a moving draft without saving, then saves exactly the current visible tenth during a flight',async()=>{
+it('cancels a moving draft without saving, then saves its exact current painted draft during a flight',async()=>{
  let clock=0,next=0;const frames=new Map()
  vi.spyOn(performance,'now').mockImplementation(()=>clock)
  vi.spyOn(globalThis,'requestAnimationFrame').mockImplementation(fn=>{const id=++next;frames.set(id,fn);return id})
@@ -184,7 +185,8 @@ it('cancels a moving draft without saving, then saves exactly the current visibl
  expect(useStore.getState().S).toEqual(before);expect(localStorage.getItem('gym_state_v1')).toBeNull()
  await dismiss();expect(frames.size).toBe(0);expect(useStore.getState().S).toEqual(before)
  await open();await fling(200)
- const shown=Number(field().value.replace(',','.'));expect(shown).toBeGreaterThan(80.4)
+ const shown=Number(host.querySelector('[role=slider]').getAttribute('aria-valuenow'));expect(shown).toBeGreaterThan(80.4)
+ expect(field().value).toBe(String(Math.round(shown)))
  await act(()=>button('Save').dispatchEvent(new MouseEvent('pointerdown',{bubbles:true})))
  await save();expect(frames.size).toBe(0)
  const S=useStore.getState().S
@@ -207,10 +209,11 @@ it('saves the painted pounds value when the parent moving draft is one tick ahea
  }
  await open();await point('pointerdown',200,0);await point('pointermove',170,30);await point('pointerup',160,50)
  clock=90;const first=[...frames.values()];frames.clear();await act(()=>first.forEach(fn=>fn(clock)))
- expect(Number(field().value)).toBe(181.7);expect(frames.size).toBe(1)
+ expect(field().value).toBe('182');expect(Number(host.querySelector('[role=slider]').getAttribute('aria-valuenow'))).toBe(181.7);expect(frames.size).toBe(1)
  const stale=[...frames.values()][0]
- // Do not dispatch input: this is the rendered value, not a new user edit.
- Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(field(),'181.6')
+ // Do not dispatch input: the older painted frame carries exact metadata even
+ // when both 181.6 and the queued 181.7 readout round to the same whole unit.
+ field().dataset.weightValue='181.6'
  expect(useStore.getState().S).toEqual(before);expect(localStorage.getItem('gym_state_v1')).toBeNull()
  await act(()=>button('Save').dispatchEvent(new MouseEvent('pointerdown',{bubbles:true})))
  await save();expect(frames.size).toBe(0)

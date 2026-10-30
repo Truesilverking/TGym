@@ -3,6 +3,7 @@ import BodyWeightPicker from './BodyWeightPicker.jsx'
 import Icon from './Icon.jsx'
 import { Button, NumberField } from './ui.jsx'
 import { t } from '../lib/i18n.js'
+import { fmtWeight } from '../lib/format.js'
 import { useUI } from '../store/useUI.js'
 import './WeightField.css'
 
@@ -74,7 +75,7 @@ export default function WeightField({ value, onChange, unit = 'kg', min = 0, max
     <div className={'stp weight-field ' + className} data-nodrag>
       <button type="button" disabled={disabled} onClick={() => adjust(-1)} aria-label={t('Decrease')}><Icon name="minus"/></button>
       <span className="val">
-        <NumberField {...inputProps} id={fieldId} value={value} displayValue={displayValue} nullable={nullable}
+        <NumberField {...inputProps} id={fieldId} value={value} displayValue={displayValue ?? (finite(value) ? fmtWeight(value) : '')} nullable={nullable}
           decimal retainInvalid disabled={disabled} aria-label={name} validation={{ min, max }}
           onChange={next => { if (!disabled) onChange(next) }}/>
         {unit && <i>{unit}</i>}

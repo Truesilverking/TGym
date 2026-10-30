@@ -58,6 +58,14 @@ describe('fmtSec', () => {
 })
 
 describe('setLabel', () => {
+  it('presents whole loads without rounding effort, speed or the source record', () => {
+    const row = { w: 62.75, r: 8, rir: 1.5 }, before = { ...row }
+    expect(setLabel(LIFT, row)).toBe('63×8 (RIR 1.5)')
+    expect(setLabel(LIFT, { sec: 90, w: 17.5 }, { mode: 'time' })).toBe('1:30 · 18')
+    expect(setLabel(CARDIO, { min: 20, speed: 7.5 })).toBe('20 min @ 7.5 km/h')
+    expect(row).toEqual(before)
+  })
+
   it('describes each mode in its own terms', () => {
     expect(setLabel(LIFT, { w: 60, r: 10 })).toBe('60×10')
     expect(setLabel(CARDIO, { min: 20, speed: 9 })).toBe('20 min @ 9 km/h')

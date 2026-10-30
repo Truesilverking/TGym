@@ -18,7 +18,7 @@ function Controlled({initial=80,unit='kg',disabled=false}){
 const mount=async props=>act(()=>root.render(<Controlled {...props}/>))
 const field=()=>host.querySelector(`input[aria-label="${t('Weight')}"]`)
 const ruler=()=>host.querySelector('[role=slider]')
-const amount=()=>Number(field().value.replace(',','.'))
+const amount=()=>Number(ruler().getAttribute('aria-valuenow'))
 const enter=async raw=>act(()=>{
  const input=field();input.focus();Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,raw)
  input.dispatchEvent(new Event('input',{bubbles:true}));input.blur()
@@ -39,15 +39,16 @@ it.each([['kg',80,300],['lb',176.4,660]])('uses the configured %s unit with an a
  expect(ruler().getAttribute('aria-label')).toBe(t('Weight ruler'));expect(ruler().tabIndex).toBe(0)
  expect(ruler().getAttribute('aria-orientation')).toBe('horizontal')
  expect(Number(ruler().getAttribute('aria-valuemin'))).toBe(1);expect(Number(ruler().getAttribute('aria-valuemax'))).toBe(max)
- expect(Number(ruler().getAttribute('aria-valuenow'))).toBe(initial);expect(ruler().getAttribute('aria-valuetext')).toBe(`${initial} ${unit}`)
+ expect(Number(ruler().getAttribute('aria-valuenow'))).toBe(initial);expect(ruler().getAttribute('aria-valuetext')).toBe(`${Math.round(initial)} ${unit}`)
+ expect(field().value).toBe(String(Math.round(initial)))
  expect(document.getElementById(ruler().getAttribute('aria-describedby'))).not.toBeNull()
  expect(changed).not.toHaveBeenCalled();expect(validity).toHaveBeenLastCalledWith(true);expect(localStorage.getItem('gym_state_v1')).toBeNull()
 })
 
-it.each([[80.123,'kg',80.1],[176.456,'lb',176.5]])('focuses or blurs %s %s without rounding the controlled canonical value',async(initial,unit,display)=>{
+it.each([[80.123,'kg',80],[176.456,'lb',176]])('focuses or blurs %s %s without rounding the controlled canonical value',async(initial,unit,display)=>{
  await mount({initial,unit})
  for(let i=0;i<8;i++)await act(()=>{field().focus();field().blur()})
- expect(Number(ruler().getAttribute('aria-valuenow'))).toBe(initial);expect(amount()).toBe(display)
+ expect(Number(ruler().getAttribute('aria-valuenow'))).toBe(initial);expect(field().value).toBe(String(display))
  expect(changed).not.toHaveBeenCalled();expect(localStorage.getItem('gym_state_v1')).toBeNull()
 })
 
@@ -70,7 +71,7 @@ it.each([['kg','80.123',80.123],['lb','176.567',176.567]])('edits %s directly in
 
 it('accepts a comma decimal and uses its locale for the accessible ruler value',async()=>{
  await setLang('es');await mount();await enter('80,5')
- expect(changed).toHaveBeenCalledExactlyOnceWith(80.5);expect(ruler().getAttribute('aria-valuetext')).toBe('80,5 kg')
+ expect(changed).toHaveBeenCalledExactlyOnceWith(80.5);expect(ruler().getAttribute('aria-valuetext')).toBe('81 kg');expect(field().value).toBe('81')
 })
 
 it.each(['','bad','0','Infinity','301'])('keeps invalid draft %j visible and invalid instead of emitting a stale or coerced value',async raw=>{
@@ -101,6 +102,24 @@ it('previews a horizontal drag locally and commits its canonical value exactly o
 it.each(['pointercancel','lostpointercapture'])('restores the original reading after %s without committing a preview',async type=>{
  await mount();await pointer('pointerdown',200,30);await pointer('pointermove',170,30);expect(amount()).toBe(80.3)
  await pointer(type,170,30);expect(amount()).toBe(80);expect(changed).not.toHaveBeenCalled()
+})
+
+it.each(['pointerup','pointercancel'])('keeps the primary drag when a second touch emits %s',async type=>{
+ await mount();await pointer('pointerdown',200,30);await pointer('pointermove',170,30)
+ await pointer(type,100,30,2)
+ expect(amount()).toBe(80.3);expect(changed).not.toHaveBeenCalled()
+ await pointer('pointermove',150,30);await pointer('pointerup',150,30)
+ expect(changed).toHaveBeenCalledExactlyOnceWith(80.5)
+})
+
+it.each(['en','es'])('shows whole weights in %s and exposes the exact draft only while editing',async lang=>{
+ await setLang(lang);await mount({initial:80.123456})
+ expect(field().value).toBe('80')
+ await act(()=>field().focus())
+ expect(field().value).toBe(lang==='es'?'80,123456':'80.123456')
+ expect(field().selectionStart).toBe(0);expect(field().selectionEnd).toBe(field().value.length)
+ await act(()=>field().blur());expect(field().value).toBe('80')
+ expect(changed).not.toHaveBeenCalled();expect(amount()).toBe(80.123456)
 })
 
 it('allows a vertical gesture and a tap without changing weight or taking pointer capture',async()=>{

@@ -4,7 +4,7 @@ import { useStore } from '../store/useStore.js'
 import { buildProgressReport, PROGRESS_PERIODS } from '../lib/progress-report.js'
 import { t, exerciseNameFor } from '../lib/i18n.js'
 import { exerciseNameFor as reportExerciseNameFor } from '../lib/i18n-core.js'
-import { fmtNum, fmtDate, todayISO } from '../lib/format.js'
+import { fmtNum, fmtWeight, fmtDate, todayISO } from '../lib/format.js'
 import { Button } from '../components/ui.jsx'
 import ProgressBody from '../components/ProgressBody.jsx'
 import LineChart from '../components/LineChart.jsx'
@@ -16,7 +16,7 @@ import { buildProgressFile, saveProgressFile } from '../lib/progress-file.js'
 import ModuleSwitch, { PROGRESS_VIEWS } from '../components/ModuleSwitch.jsx'
 
 export const metricLabel = m => m.muscle?t(m.label,t(m.muscle)):t(m.label)
-const value = (n,u='') => n==null?'—':`${fmtNum(n)}${u?' '+t(u):''}`
+const value = (n,u='') => n==null?'—':`${(u === 'kg' || u === 'lb' ? fmtWeight : fmtNum)(n)}${u?' '+t(u):''}`
 const change = m => m.delta==null?t('More data needed'):`${m.delta>0?'+':''}${value(m.delta,m.deltaUnit)}${m.percent!=null?' · '+(m.percent>0?'+':'')+fmtNum(m.percent)+'%':''}`
 const DashboardContext=createContext(null)
 const PathContext=createContext('')

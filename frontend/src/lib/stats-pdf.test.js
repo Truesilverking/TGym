@@ -23,6 +23,23 @@ beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(now) })
 afterEach(() => vi.useRealTimers())
 
 describe('Stats dashboard PDF source isolation', () => {
+  it('keeps whole-weight chart ticks unique over a fractional range without rounding records', () => {
+    const S = fixture(); S.bodyweight = [{ d: '2026-10-05', w: 70.1 }, { d: '2026-10-06', w: 70.4 }]; S.targetW = null
+    const before = structuredClone(S), pages = statsReportPages(S, options({ sections: ['bodyweight'] }))
+    const labels = pages.flatMap(page => [...doc(page.svg).querySelectorAll('text[x="128"]')].map(node => node.textContent))
+    expect(labels).toEqual(['70', '71'])
+    expect(S).toEqual(before)
+  })
+
+  it('shows whole bodyweight and goal values while preserving recorded precision', () => {
+    const S = fixture(); S.bodyweight.at(-1).w = 86.75; S.targetW = 85.25
+    const before = structuredClone(S), pages = statsReportPages(S, options({ sections: ['bodyweight', 'bmi'] }))
+    expect(texts(pages)).toContain('87 kg')
+    expect(texts(pages)).toContain('Goal: 85 kg')
+    expect(all(pages)).not.toContain('86.75 kg')
+    expect(S).toEqual(before)
+  })
+
   it.each(STATS_SECTIONS)('exports only the selected %s section, including hidden sections', (id, title) => {
     const S = fixture(), before = structuredClone(S), pages = statsReportPages(S, options({ sections: [id] }))
     expect(pages.length).toBeGreaterThan(0)

@@ -5,6 +5,7 @@ import { restSeconds } from './rest-policy.js'
 import { policyFor, loadingStepFor } from './progression.js'
 import { routineIds } from './daily-plan.js'
 import { withBackoffRepsMode } from './training-plan.js'
+import { fmtWeight } from './format.js'
 
 const WIDTH = 794, HEIGHT = 1123, LEFT = 48, INNER = 698, TOP = 112, BOTTOM = 1044
 const COLUMN_WIDTHS = [40, 87, 253, 115, 85, 118]
@@ -89,7 +90,7 @@ export function routinePDFPages(data) {
     const side = e.side ? ' / side' : ''
     const target = type === 'Warm-up' ? 'Automatic TGym warm-up' : sec !== '' ? `${number(sec)} s${side}` : minutes !== '' ? `${number(minutes)} min @ ${number(speed)} km/h\nDistance ${number(Number(minutes) * Number(speed) / 60)} km` : `${range(min, max, e)} reps${side}${e.amrap ? ' (AMRAP)' : ''}`
     const bodyweight = isBw(e)
-    const load = weight === '' || minutes !== '' ? '-' : bodyweight ? `Bodyweight${Number(weight) ? ` +${number(weight)} ${unit}` : ''}` : `${number(weight)} ${unit}`
+    const load = weight === '' || minutes !== '' ? '-' : bodyweight ? `Bodyweight${Number(weight) ? ` +${fmtWeight(weight)} ${unit}` : ''}` : `${fmtWeight(weight)} ${unit}`
     return [String(order), type, target, load, rirMin === '' ? '-' : rirMin === rirMax ? number(rirMax) : `${number(rirMin)}-${number(rirMax)}`, `${number(rest)} s`]
   }
   const cellLines = cells => cells.map((value, index) => wrap(value, COLUMN_WIDTHS[index] - 14, 14))
@@ -159,7 +160,7 @@ export function routinePDFPages(data) {
       }
       const policy = policyFor(e, routine, mode)
       const loadingStep = loadingStepFor(e, data.unit, ex?.definition)
-      paragraph(`Progression: ${policy}${policy !== 'off' ? ` | Increment ${number(e.inc || (mode === 'time' ? 5 : loadingStep))} ${mode === 'time' ? 's' : data.unit}` : ''}${mode !== 'cardio' ? ` | Load step ${number(loadingStep)} ${data.unit}` : ''}${mode === 'reps' ? ` | Strict rep targets: ${(e.strictReps ?? data.rules.strictReps) ? 'on' : 'off'}${e.amrap ? ' | AMRAP (target limit does not apply)' : ''}` : ''}`)
+      paragraph(`Progression: ${policy}${policy !== 'off' ? ` | Increment ${(mode === 'time' ? number : fmtWeight)(e.inc || (mode === 'time' ? 5 : loadingStep))} ${mode === 'time' ? 's' : data.unit}` : ''}${mode !== 'cardio' ? ` | Load step ${fmtWeight(loadingStep)} ${data.unit}` : ''}${mode === 'reps' ? ` | Strict rep targets: ${(e.strictReps ?? data.rules.strictReps) ? 'on' : 'off'}${e.amrap ? ' | AMRAP (target limit does not apply)' : ''}` : ''}`)
       if (e.intensifier?.type === 'dropset') paragraph(`Drop-set: ${e.intensifier.count || 1} drops after each work set | Load reduction ${e.intensifier.pct ?? 20}% per drop`)
       if (e.intensifier?.type === 'restpause') paragraph(`Rest-pause: activation + one working set | Total ${number(displayReps(e.intensifier.totalReps || 1, e))} reps${e.side ? ' / side' : ''} | Cluster rest ${e.intensifier.restSec || 15} s`)
       if (e.sg) paragraph(`Superset: ${e.sg} | Superset move rest: ${restSeconds({ state: data.rules, routine, target: e, phase: 'supersetMove' })} s | Round rest: ${restSeconds({ state: data.rules, routine, target: e, phase: 'supersetRound' })} s`)

@@ -303,11 +303,11 @@
 .set-target{flex-direction:row;justify-content:center;align-items:baseline;gap:10px;padding:4px 0;font-size:12px;border-block:0}
 .set-target strong{font-size:30px;line-height:1}
 .set-console .set-metric>label{min-height:20px;margin-bottom:4px;font-size:11px}
-.set-console .set-metric .stp{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;border-radius:var(--r-md);background:var(--surface);border:0;box-shadow:none}
-.set-console .set-metric .stp .val{grid-column:2;grid-row:1;padding:0 2px}
-.set-console .set-metric .stp button{grid-row:1;height:48px;border:0;background:transparent;border-radius:var(--r-md)}
-.set-console .set-metric .stp button:first-child{grid-column:1}
-.set-console .set-metric .stp button:last-child{grid-column:3;border:0}
+.set-console .set-metric .stp:not(.weight-field){display:grid;grid-template-columns:44px minmax(0,1fr) 44px;border-radius:var(--r-md);background:var(--surface);border:0;box-shadow:none}
+.set-console .set-metric .stp:not(.weight-field) .val{grid-column:2;grid-row:1;padding:0 2px}
+.set-console .set-metric .stp:not(.weight-field) button{grid-row:1;height:48px;border:0;background:transparent;border-radius:var(--r-md)}
+.set-console .set-metric .stp:not(.weight-field) button:first-child{grid-column:1}
+.set-console .set-metric .stp:not(.weight-field) button:last-child{grid-column:3;border:0}
 .set-console .set-metric .stp .num{font-size:26px;min-height:46px;line-height:46px}
 .set-console .set-metric .stp.disabled{min-height:48px}
 .set-phase{border-radius:var(--r-pill);font-size:11px;background:var(--surface-2);border:0;padding:5px 12px;color:var(--label-2);display:inline-flex}
@@ -315,11 +315,11 @@
 .exercise-history-context{border-left:3px solid var(--acc-line);border-radius:2px}
 @media(max-width:480px){
   .sets-card .set-console,.sets-card .set-console.eff3{gap:8px;padding:10px}
-  .set-console .set-metric .stp{grid-template-columns:38px minmax(0,1fr) 38px}
+  .set-console .set-metric .stp:not(.weight-field){grid-template-columns:38px minmax(0,1fr) 38px}
   .set-console.eff3 .set-metric.eff .stp{grid-template-columns:44px minmax(0,1fr) 44px}
   .set-console .set-metric .stp .num{font-size:24px}
 }
-@media(max-width:360px){.set-console .set-metric .stp{grid-template-columns:36px minmax(0,1fr) 36px}.set-console .set-metric .stp .num{font-size:21px}}
+@media(max-width:360px){.set-console .set-metric .stp:not(.weight-field){grid-template-columns:36px minmax(0,1fr) 36px}.set-console .set-metric .stp .num{font-size:21px}}
 
 /* -------------------------------------------------------- brand & access -- */
 .brand-mark{display:inline-flex;align-items:center;gap:.14em;font-size:44px;color:var(--label)}

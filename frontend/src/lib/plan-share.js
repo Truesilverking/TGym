@@ -11,7 +11,7 @@ import { routineIds } from './daily-plan.js'
 
 import { EXIDX, isBodyweightEq } from './exercises.js'
 import { modeOf, fmtSec, isBw, isPerSide, displayReps, MAX_PLANNED_WARMUPS } from './history.js'
-import { uid, todayISO, DAYN, fmtNum, exCount } from './format.js'
+import { uid, todayISO, DAYN, fmtNum, fmtWeight, exCount } from './format.js'
 import { t, exerciseNameFor } from './i18n-core.js'
 
 const PLAN_FMT = 1
@@ -207,7 +207,7 @@ function scheme(e, unit) {
   }
   const reps = displayReps(e.reps ?? 10, e)
   let s = mode === 'time' ? `${sets} × ${fmtSec(e.sec || 45)}` : `${sets} × ${typeof reps === 'number' ? fmtNum(reps) : reps}${isPerSide(e) ? ` ${t('/ side')}` : ''}`
-  if (e.weight) s += ` · ${isBw(e) ? '+' : ''}${fmtNum(e.weight)} ${unit}`
+  if (e.weight) s += ` · ${isBw(e) ? '+' : ''}${fmtWeight(e.weight)} ${unit}`
   return s
 }
 

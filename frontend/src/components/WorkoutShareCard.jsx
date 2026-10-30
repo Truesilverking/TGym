@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import Icon from './Icon.jsx'
 import { Button } from './ui.jsx'
 import { t } from '../lib/i18n.js'
-import { fmtVol, fmtDur } from '../lib/format.js'
+import { fmtVol, fmtDur, fmtWeight } from '../lib/format.js'
 import { plateColor } from '../lib/plates.js'
 import { workoutVolume } from '../lib/history.js'
 import { workoutElapsedMs } from '../lib/workout-time.js'
@@ -108,7 +108,7 @@ export default function WorkoutShareCard({ workout, prs = [], unit = 'kg', close
             <div style={{ fontSize: 12, display: 'flex', flexDirection: 'column', gap: 3 }}>
               {prs.slice(0, 3).map((pr, idx) => (
                 <div key={idx} style={{ overflowWrap: 'anywhere' }}>
-                  • {pr.entry?.n || pr.entry?.name || pr.id}: <b>{pr.bestWeight?.w || pr.best1RM?.est} {unit}</b>
+                  • {pr.entry?.n || pr.entry?.name || pr.id}: <b>{fmtWeight(pr.bestWeight?.w || pr.best1RM?.est)} {unit}</b>
                 </div>
               ))}
             </div>

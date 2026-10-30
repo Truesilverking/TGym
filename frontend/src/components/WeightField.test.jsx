@@ -41,16 +41,16 @@ const pointer = async (type, x, y = 30) => {
 
 it('keeps manual decimals and a changed ruler draft isolated until confirmation', async () => {
   await mount({ step:2.5 }); await open()
-  expect(input().value).toBe('42.75'); expect(changed).not.toHaveBeenCalled()
-  await enter('43.25'); expect(inline().value).toBe('42.75'); expect(changed).not.toHaveBeenCalled()
+  expect(input().value).toBe('43'); expect(changed).not.toHaveBeenCalled()
+  await enter('43.25'); expect(inline().value).toBe('43'); expect(changed).not.toHaveBeenCalled()
   await act(() => action('Done').click())
-  expect(changed).toHaveBeenCalledExactlyOnceWith(43.25); expect(inline().value).toBe('43.25'); expect(editor()).toBeNull()
+  expect(changed).toHaveBeenCalledExactlyOnceWith(43.25); expect(inline().value).toBe('43'); expect(editor()).toBeNull()
   expect(localStorage.getItem('gym_state_v1')).toBeNull()
 })
 
 it('does not round an unchanged imported value to its display precision or loading step', async () => {
   await mount({ initial:42.750000123, precision:2, step:2.5 }); await open()
-  expect(input().value).toBe('42.75'); await act(() => { input().focus(); input().blur() })
+  expect(input().value).toBe('43'); await act(() => { input().focus(); input().blur() })
   await act(() => action('Done').click())
   expect(changed).toHaveBeenCalledExactlyOnceWith(42.750000123)
 })
@@ -67,9 +67,9 @@ it('accepts zero and large legacy loads without the bodyweight upper limit', asy
 it('uses the caller increment for ruler and keyboard without writing on moving frames', async () => {
   await mount({ initial:40, step:.25 }); await open()
   await pointer('pointerdown',200); await pointer('pointermove',180)
-  expect(input().value).toBe('40.5'); expect(changed).not.toHaveBeenCalled()
+  expect(input().value).toBe('41'); expect(Number(editor().querySelector('[role=slider]').getAttribute('aria-valuenow'))).toBe(40.5); expect(changed).not.toHaveBeenCalled()
   await pointer('pointerup',180); await key('ArrowRight')
-  expect(input().value).toBe('40.75'); expect(changed).not.toHaveBeenCalled()
+  expect(input().value).toBe('41'); expect(Number(editor().querySelector('[role=slider]').getAttribute('aria-valuenow'))).toBe(40.75); expect(changed).not.toHaveBeenCalled()
   await act(() => action('Done').click()); expect(changed).toHaveBeenCalledExactlyOnceWith(40.75)
 })
 
@@ -89,19 +89,19 @@ it('settles a fling on the caller grid while keeping all animated drafts local',
   await dispatch('pointerdown',200,0); await dispatch('pointermove',170,30); await dispatch('pointerup',160,50)
   expect(input().value).toBe('50'); expect(changed).not.toHaveBeenCalled()
   now = 250; const pending = [...frames.values()]; frames.clear(); await act(() => pending.forEach(callback => callback(now)))
-  const moving = Number(input().value); expect(moving).toBeGreaterThan(50); expect(moving/2.5).toBe(Math.round(moving/2.5))
-  expect(Number(ruler.getAttribute('aria-valuenow'))).toBe(moving); expect(ruler.getAttribute('aria-valuetext')).toBe(`${moving} kg`)
+  const moving = Number(ruler.getAttribute('aria-valuenow')); expect(moving).toBeGreaterThan(50); expect(moving/2.5).toBe(Math.round(moving/2.5))
+  expect(input().value).toBe(String(Math.round(moving))); expect(ruler.getAttribute('aria-valuetext')).toBe(`${Math.round(moving)} kg`)
   expect(input().style.width).toBe(width); expect(changed).not.toHaveBeenCalled()
   now = 2050; const remaining = [...frames.values()]; frames.clear(); await act(() => remaining.forEach(callback => callback(now)))
-  const settled = Number(input().value); expect(settled/2.5).toBe(Math.round(settled/2.5)); expect(frames.size).toBe(0)
+  const settled = Number(ruler.getAttribute('aria-valuenow')); expect(settled/2.5).toBe(Math.round(settled/2.5)); expect(frames.size).toBe(0)
   await act(() => action('Done').click()); expect(changed).toHaveBeenCalledExactlyOnceWith(settled)
 })
 
 it('cancels edited values and canceled gestures without publishing the draft', async () => {
   await mount(); await open(); await enter('80.25'); await act(() => action('Cancel').click())
-  expect(changed).not.toHaveBeenCalled(); expect(inline().value).toBe('42.75')
+  expect(changed).not.toHaveBeenCalled(); expect(inline().value).toBe('43')
   await open(); await pointer('pointerdown',200); await pointer('pointermove',170); await pointer('pointercancel',170)
-  expect(input().value).toBe('42.75'); await act(() => action('Cancel').click()); expect(changed).not.toHaveBeenCalled()
+  expect(input().value).toBe('43'); await act(() => action('Cancel').click()); expect(changed).not.toHaveBeenCalled()
 })
 
 it.each([{unit:'lb'}, {disabled:true}, {contextKey:'other-row'}, {step:5}, {min:2}, {max:500}])('closes a stale editor when the caller changes %j', async changedProps => {
@@ -126,9 +126,22 @@ it('keeps invalid input invalid and supports explicit nullable clearing', async 
 it('keeps the draft open for retry if the caller cannot save', async () => {
   changed.mockImplementationOnce(() => { throw new Error('Quota exceeded') })
   await mount(); await open(); await enter('43.25'); await act(() => action('Done').click())
-  expect(editor()).not.toBeNull(); expect(input().value).toBe('43.25'); expect(editor().querySelector('[role=alert]')).not.toBeNull()
+  expect(editor()).not.toBeNull(); expect(input().value).toBe('43'); expect(editor().querySelector('[role=alert]')).not.toBeNull()
   await act(() => action('Done').click()); expect(changed).toHaveBeenCalledTimes(2)
-  expect(inline().value).toBe('43.25'); expect(editor()).toBeNull()
+  expect(inline().value).toBe('43'); expect(editor()).toBeNull()
+})
+
+it.each(['en','es'])('preserves an exact existing %s load while inline and ruler focus expose its precision', async lang => {
+  await setLang(lang); await mount({ initial:42.750000123, precision:6 })
+  expect(inline().value).toBe('43')
+  await act(() => inline().focus()); expect(inline().value).toBe('42.750000123')
+  await act(() => inline().blur()); expect(inline().value).toBe('43')
+  expect(changed).not.toHaveBeenCalled()
+  await open(); expect(input().value).toBe('43')
+  await act(() => input().focus()); expect(input().value).toBe(lang === 'es' ? '42,750000123' : '42.750000123')
+  await act(() => input().blur()); expect(input().value).toBe('43')
+  await act(() => action('Done').click())
+  expect(changed).toHaveBeenCalledExactlyOnceWith(42.750000123)
 })
 
 it('retains labeled inline controls, generated label association and precise increments', async () => {

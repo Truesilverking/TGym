@@ -15,7 +15,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { effectiveRoutineId, setsDoneActive, effortValue } from '../lib/history.js'
-import { fmtNum, fmtDate, isoOf, weekKey, DAYS } from '../lib/format.js'
+import { fmtWeight, fmtDate, isoOf, weekKey, DAYS } from '../lib/format.js'
 import { useLocalNow } from '../lib/use-local-now.js'
 import { t, dateLocale } from '../lib/i18n.js'
 import { bwSheet, goalSheet, dayOverrideSheet, startFlow, guidedPlansSheet, bwDeltaColor, streakDetailSheet, sessionTimingSheet, homeCalendarSheet } from '../sheets.jsx'
@@ -129,8 +129,8 @@ export default function Home() {
       </a>
       <button type="button" className="metric" onClick={() => bwSheet()} style={{ '--meter': 'var(--acc)' }} aria-label={bw ? undefined : t('Log weight')}>
         <Icon name="scale" />
-        <span className="metric-value">{bw ? fmtNum(bw.w) : '–'}{bw && <small>{S.unit}</small>}</span>
-        <span className="metric-label">{bw && delta ? <span style={{ color: bwDeltaColor(delta, bw.w) }}>{(delta > 0 ? '+' : '−') + fmtNum(Math.abs(delta))} </span> : null}{t('Body Weight')}</span>
+        <span className="metric-value">{bw ? fmtWeight(bw.w) : '–'}{bw && <small>{S.unit}</small>}</span>
+        <span className="metric-label">{bw && delta ? <span style={{ color: bwDeltaColor(delta, bw.w) }}>{(delta > 0 ? '+' : '−') + fmtWeight(Math.abs(delta))} </span> : null}{t('Body Weight')}</span>
       </button>
       <a className="metric" href="#/nutrition" style={{ '--meter': 'var(--acc)' }}>
         <Icon name="fork" />
@@ -150,21 +150,21 @@ export default function Home() {
         <div className="home-bodyweight-current">
           <span className="home-bodyweight-metric">
             <span className="home-bodyweight-label">{t('Current')}</span>
-            <span className="home-bodyweight-value"><b>{bw ? fmtNum(bw.w) : '—'}</b>{bw && <span>{S.unit}</span>}</span>
+            <span className="home-bodyweight-value"><b>{bw ? fmtWeight(bw.w) : '—'}</b>{bw && <span>{S.unit}</span>}</span>
           </span>
         </div>
         <div className="home-bodyweight-target">
           <Button className="home-bodyweight-goal" aria-label={t('Target weight')} onClick={goalSheet}>
             <span className="home-bodyweight-metric">
               <span className="home-bodyweight-label"><Icon name="target" />{t('Target weight')}</span>
-              <span className={'home-bodyweight-value' + (S.targetW ? ' has-goal' : '')}><b>{S.targetW ? fmtNum(S.targetW) : t('Goal')}</b>{!!S.targetW && <span>{S.unit}</span>}</span>
+              <span className={'home-bodyweight-value' + (S.targetW ? ' has-goal' : '')}><b>{S.targetW ? fmtWeight(S.targetW) : t('Goal')}</b>{!!S.targetW && <span>{S.unit}</span>}</span>
             </span>
           </Button>
         </div>
       </div>
       {bw && !!delta && <span className="home-bodyweight-change" style={{ color: bwDeltaColor(delta, bw.w) }}>
           <Icon name={delta > 0 ? 'arrowUp' : 'arrowDown'} />
-          <span>{t('Since previous: {0}', fmtNum(Math.abs(delta)) + ' ' + S.unit)}</span>
+          <span>{t('Since previous: {0}', fmtWeight(Math.abs(delta)) + ' ' + S.unit)}</span>
         </span>}
       {!bw && <p className="muted small home-bodyweight-empty">{t("No entries yet — log your weight to start the curve. It's also asked before every workout.")}</p>}
       {bw && <footer className="home-bodyweight-footer"><time className="home-bodyweight-last" dateTime={bw.d}>{fmtDate(bw.d, false)}</time></footer>}

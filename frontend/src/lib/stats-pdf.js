@@ -14,7 +14,7 @@ import { displayScale, scaleName, toScale, avgRir, effortSummary, effortWeeks, e
 import { lastBW, modeOf, metricModeForEntry, metricRowsForEntry, bestWeightForEntry, displayReps, effortLabel, setLabel, setsDone } from './history.js'
 import { e1rmSeries, best1RM } from './onerm.js'
 import { workoutElapsedMs } from './workout-time.js'
-import { fmtDate, fmtNum, fmtDur, fmtVol, isoOf, weekKey, ACCENTS } from './format.js'
+import { fmtDate, fmtNum, fmtWeight, fmtDur, fmtVol, isoOf, weekKey, ACCENTS } from './format.js'
 import { wrapReportText } from './progress-export.js'
 import { exerciseNameFor, originalExerciseNameFor } from './i18n-core.js'
 
@@ -44,7 +44,7 @@ export function statsReportPages(rawState, {
   const wrap = (value, width = 88, size = 17, weight = 400, maxWidth = Math.min(INNER - 32, width * 10)) => wrapReportText(value, maxWidth, size, weight)
   const lines = (x, y, values, size = 18, color = '#18202c', weight = 400) => values.map((value, i) => text(x, y + i * (size + 5), value, size, color, weight)).join('')
   const number = value => value == null || !Number.isFinite(Number(value)) ? '—' : formatNumber(Number(value))
-  const val = (value, suffix = '') => number(value) + (value != null && suffix ? ' ' + t(suffix) : '')
+  const val = (value, suffix = '') => (value != null && Number.isFinite(Number(value)) && ['kg', 'lb'].includes(suffix) ? fmtWeight(Number(value)) : number(value)) + (value != null && suffix ? ' ' + t(suffix) : '')
   const rect = (x, y, width, height) => `<rect x="${x}" y="${y}" width="${width}" height="${height}" rx="14" fill="white" stroke="#dce2e9"/>`
   const duration = value => value < 60000 ? Math.round(value / 1000) + 's' : fmtDur(value)
   const period = days => days === 7 ? t('Week') : days === 0 ? t('All time') : days === 30 ? t('Last 30 days') : days === 90 ? t('Last 3 months') : t('Last 12 months')
@@ -120,14 +120,17 @@ export function statsReportPages(rawState, {
       if (goal != null && Number.isFinite(Number(goal))) { low = Math.min(low, Number(goal)); high = Math.max(high, Number(goal)) }
       if (low === high) { low -= 1; high += 1 }
       const padding = (high - low) * 0.12; low -= padding; high += padding
+      const wholeWeight = ['kg', 'lb'].includes(suffix)
+      if (wholeWeight) { low = Math.floor(low); high = Math.ceil(high) }
       const t0 = pts[0].t, t1 = pts.at(-1).t || t0 + 1
       const X = time => t1 === t0 ? (left + right) / 2 : left + (time - t0) / (t1 - t0) * (right - left)
       const Y = value => chartTop + (invert ? (value - low) / (high - low) : 1 - (value - low) / (high - low)) * chartHeight
       const labels = formatValue || (value => val(value, suffix))
       let result = rect(LEFT, top, INNER, height) + lines(LEFT + 18, top + 29, titleRows, 21, '#18202c', 700)
-      for (let i = 0; i <= 3; i++) {
-        const value = low + (high - low) * i / 3, cy = Y(value)
-        result += `<line x1="${left}" y1="${cy}" x2="${right}" y2="${cy}" stroke="#dce2e9" stroke-dasharray="3 5"/>` + text(left - 12, cy + 6, number(value), 15, '#536174', 400, 'text-anchor="end"')
+      const tickStep = wholeWeight ? Math.max(1, Math.ceil((high - low) / 3)) : (high - low) / 3
+      for (let i = 0; i <= 3 && low + tickStep * i <= high + 1e-9; i++) {
+        const value = low + tickStep * i, cy = Y(value)
+        result += `<line x1="${left}" y1="${cy}" x2="${right}" y2="${cy}" stroke="#dce2e9" stroke-dasharray="3 5"/>` + text(left - 12, cy + 6, wholeWeight ? fmtWeight(value) : number(value), 15, '#536174', 400, 'text-anchor="end"')
       }
       if (goal != null && Number.isFinite(Number(goal))) result += `<line x1="${left}" y1="${Y(goal)}" x2="${right}" y2="${Y(goal)}" stroke="#b77900" stroke-width="2" stroke-dasharray="7 4"/>` + text(right, Y(goal) - 8, t('Goal') + ': ' + labels(goal), 16, '#926300', 700, 'text-anchor="end"')
       const coordinates = pts.map(point => `${X(point.t)},${Y(point.y)}`).join(' ')

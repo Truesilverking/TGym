@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { t } from '../lib/i18n.js'
-import { isoOf, fmtDate, fmtNum } from '../lib/format.js'
+import { isoOf, fmtDate, fmtNum, fmtWeight } from '../lib/format.js'
 import { useLocalNow } from '../lib/use-local-now.js'
 import { LB_PER_KG, CM_PER_IN } from '../lib/unit-conversion.js'
 import Icon from '../components/Icon.jsx'
@@ -345,7 +345,7 @@ function NutritionGoalsSheet({ close, S, goals }) {
       {tab === 'tdee' ? (
         <>
           <div className="nutri-form" style={{ gridTemplateColumns: 'repeat(3,minmax(0,1fr))' }}>
-            <label><span className="field-label">{t('Weight (kg)')}</span><NumberField className="field" value={weightKg} onChange={setWeightKg} validation={{ min: 1 }} retainInvalid /></label>
+            <label><span className="field-label">{t('Weight (kg)')}</span><NumberField className="field" value={weightKg} displayValue={fmtWeight(weightKg)} onChange={setWeightKg} validation={{ min: 1 }} retainInvalid /></label>
             <label><span className="field-label">{t('Height (cm)')}</span><NumberField className="field" value={heightCm} onChange={setHeightCm} validation={{ min: 1 }} retainInvalid /></label>
             <label><span className="field-label">{t('Age')}</span><NumberField className="field" decimal={false} value={age} onChange={setAge} validation={{ min: 1 }} retainInvalid /></label>
           </div>

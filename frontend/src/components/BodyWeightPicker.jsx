@@ -32,11 +32,13 @@ const RulerTicks = memo(function RulerTicks({ anchor, min, max, formatter, step 
 
 // Display and local draft use the configured profile unit. Conversion and
 // rounding of saved history remain the parent editor's job.
-const BodyWeightPicker = forwardRef(function BodyWeightPicker({ value, onChange, unit, disabled = false, onValidityChange, min:configuredMin, max:configuredMax, precision = 1, step:configuredStep = .1, label }, ref) {
+const BodyWeightPicker = forwardRef(function BodyWeightPicker({ value, onChange, unit, disabled = false, onValidityChange, min:configuredMin, max:configuredMax, step:configuredStep = .1, label }, ref) {
   const canonicalUnit = unit === 'lb' ? 'lb' : 'kg'
   const shownUnit = canonicalUnit
   const step = rulerStep(configuredStep)
-  const digits = Number.isFinite(precision) ? Math.max(0, Math.min(12, Math.floor(precision))) : 1
+  // Weight readouts use whole units; the draft and loading grid retain their
+  // exact precision. Focusing the field exposes that precision for editing.
+  const digits = 0
   const pixelsPerUnit = rulerPixelsPerUnit(step)
   const [bounds] = useState(() => ({
     min: positive(value) ? Math.min(Number.isFinite(configuredMin) && configuredMin >= 0 ? configuredMin : 1, value) : Number.isFinite(configuredMin) && configuredMin >= 0 ? configuredMin : 1,
@@ -47,6 +49,7 @@ const BodyWeightPicker = forwardRef(function BodyWeightPicker({ value, onChange,
   const [manualValue, setManualValue] = useState(null)
   const [inputLength, setInputLength] = useState(null)
   const [preview, setPreview] = useState(null)
+  const [focused, setFocused] = useState(false)
   const ruler = useRef(null), gesture = useRef(null), lastEmitted = useRef(value)
   const root = useRef(null)
   const motion = useRef(null), frame = useRef(null), pointerFrame = useRef(null)
@@ -58,7 +61,7 @@ const BodyWeightPicker = forwardRef(function BodyWeightPicker({ value, onChange,
   const canonicalShown = preview ?? (validNumber(value) ? value : lastValid.current)
   const shown = canonicalShown
   const min = bounds.min, max = bounds.max
-  // Keep an imported boundary re-enterable if its visible tenth rounds outside
+  // Keep an imported boundary re-enterable if its whole-unit readout rounds outside
   // the exact legacy value. Only explicit edits are clamped to that boundary.
   const factor = 10 ** digits
   const manualMin = Math.min(min, Math.round(min * factor) / factor)
@@ -66,22 +69,27 @@ const BodyWeightPicker = forwardRef(function BodyWeightPicker({ value, onChange,
   const validManual = next => typeof next === 'number' && Number.isFinite(next) && next >= manualMin && next <= manualMax
   // A frame may have queued a newer draft before React paints it. Read the
   // committed input for explicit actions so the saved weight matches the screen.
-  const readVisible = (preserveOriginal = true) => {
-    const text = root.current?.querySelector('input')?.value.replace(/,/g, '.') ?? ''
+  const readVisible = () => {
+    const input = root.current?.querySelector('input')
+    const text = input?.value.replace(/,/g, '.') ?? ''
     const number = text.trim() === '' ? null : Number(text)
     if (!/^\d*(?:\.\d*)?$/.test(text) || !validManual(number)) return null
-    // Formatting is presentation only. An unchanged imported value must survive
-    // opening and confirming even when the chosen display precision is shorter.
-    if (preserveOriginal && !gesture.current && !motion.current && preview === null && validNumber(value) && text === format(value).replace(/,/g, '.')) return value
+    // Read the exact value associated with the painted readout, including a
+    // local animation frame. Whole-unit formatting must never round a saved
+    // legacy value merely because the editor was opened and confirmed.
+    const painted = input?.dataset.weightValue === undefined ? null : Number(input.dataset.weightValue)
+    if (validNumber(painted) && [format(painted), editFormat(painted)].some(shown => text === shown.replace(/,/g, '.'))) return painted
     return clamp(number, min, max)
   }
   useImperativeHandle(ref, () => ({ getValue:readVisible }))
   const locale = dateLocale()
   const formatter = useMemo(() => new Intl.NumberFormat(locale, { maximumFractionDigits: digits, useGrouping:false }), [locale, digits])
+  const editFormatter = useMemo(() => new Intl.NumberFormat(locale, { maximumFractionDigits:20, useGrouping:false }), [locale])
   const format = n => formatter.format(n)
+  const editFormat = n => editFormatter.format(n)
   const currentInvalid = preview === null && !valid
   const fieldValue = currentInvalid ? null : preview === null && manualValue !== null ? manualValue : preview !== null ? clamp(snapRulerValue(shown, step), min, max) : shown
-  const fieldText = currentInvalid ? invalidText ?? (value == null ? '' : String(value)) : format(fieldValue)
+  const fieldText = currentInvalid ? invalidText ?? (value == null ? '' : String(value)) : focused ? editFormat(fieldValue) : format(fieldValue)
 
   useEffect(() => { onValidityChange?.(valid) }, [valid, onValidityChange])
 
@@ -90,9 +98,10 @@ const BodyWeightPicker = forwardRef(function BodyWeightPicker({ value, onChange,
     if (pointerFrame.current !== null) cancelAnimationFrame(pointerFrame.current)
     pointerFrame.current = null
   }
-  const cancel = () => {
+  const cancel = event => {
     const g = gesture.current
     if (!g) return
+    if (event?.pointerId != null && event.pointerId !== g.id) return
     gesture.current = null
     clearPointerFrame()
     release(g)
@@ -106,12 +115,12 @@ const BodyWeightPicker = forwardRef(function BodyWeightPicker({ value, onChange,
     frame.current = null
     if (moving) {
       if (freezeVisible) {
-        const visible = readVisible(false)
+        const visible = readVisible()
         if (visible !== null) { stopped = visible; publish(visible) }
       }
       // Disabling or changing only the unit must not emit an old value or lose
       // the painted local draft. A new controlled value takes precedence.
-      setPreview(!freezeVisible && Object.is(lastEmitted.current, value) ? readVisible(false) : null)
+      setPreview(!freezeVisible && Object.is(lastEmitted.current, value) ? readVisible() : null)
     }
     return stopped
   }
@@ -259,19 +268,20 @@ const BodyWeightPicker = forwardRef(function BodyWeightPicker({ value, onChange,
   // Seven compact tiles keep both paint bounds and reused tick coordinates
   // local. Shifting the window moves six retained wrappers, not every mark.
   const railAnchor = Math.floor(shown / (20 * step))
-  // Reserve every configured integer digit plus the decimal tenth. Crossing an
-  // integer must not resize the number and move its unit during a fast flight.
+  // Reserve enough room for the configured integer digits and a precise edit.
+  // Crossing an integer must not move the unit during a fast flight.
   const widthBound = max < 1e7 ? max : Math.max(openWidthBound, shown)
   const readoutWidth = Math.min(8, Math.max(5.25, Math.floor(Math.log10(Math.max(1, widthBound))) + 3.25))
   const hint = label ? t('Slide the ruler or tap the number to enter the weight.') : t('Slide the ruler or tap the number to enter your weight.')
 
   return <div ref={root} className={'bodyweight-picker' + (disabled ? ' is-disabled' : '')} data-nodrag>
-    <div className="bodyweight-picker-readout" onBlurCapture={() => { setInputLength(null); if (valid) setManualValue(null) }}>
+    <div className="bodyweight-picker-readout" onBlurCapture={() => { setFocused(false); setInputLength(null); if (valid) setManualValue(null) }}>
       <NumberField key={shownUnit} value={fieldValue} displayValue={fieldText} nullable retainInvalid
+        data-weight-value={fieldValue ?? undefined}
         validation={{ min:manualMin, max:manualMax }} decimal disabled={disabled} aria-label={label || t('Weight')}
         aria-invalid={currentInvalid || undefined} aria-describedby={currentInvalid ? errorId : hintId}
         style={{ width:`${Math.max(readoutWidth, Math.min(8, (inputLength ?? 0) + .25))}ch` }}
-        onFocus={event => { if (motion.current) flushSync(stopMotion); event.currentTarget.select() }} onInput={manualInput} onChange={edit}/>
+        onFocus={event => { flushSync(() => { if (motion.current) stopMotion(); setFocused(true) }); event.currentTarget.select() }} onInput={manualInput} onChange={edit}/>
       <span className="bodyweight-picker-unit" aria-hidden="true">{shownUnit}</span>
     </div>
     <div ref={ruler} className="bodyweight-picker-ruler" role="slider" tabIndex={disabled ? -1 : 0}

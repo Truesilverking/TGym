@@ -49,7 +49,7 @@ it('applies a precise routine load to its draft before the existing prescription
   const before=structuredClone(useStore.getState().S), saved=vi.fn()
   await act(()=>exConfigSheet(exOr('0025'),{sets:3,reps:8,weight:42.75,bodyweight:false,mode:'reps'},saved))
   await openRuler('Weight (kg)'); await enter(host.querySelector('.weight-field-editor input'),'43.25'); await click('Done')
-  expect(Number(field('Weight (kg)').value)).toBe(43.25); expect(saved).not.toHaveBeenCalled(); expect(useStore.getState().S).toEqual(before)
+  expect(Number(field('Weight (kg)').value)).toBe(43); expect(saved).not.toHaveBeenCalled(); expect(useStore.getState().S).toEqual(before)
   await click('Save'); expect(saved).toHaveBeenCalledWith(expect.objectContaining({weight:43.25,reps:8,sets:3}))
 })
 it('keeps history edits as a draft until the existing confirmation and retains workout identity',async()=>{

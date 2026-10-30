@@ -3,6 +3,7 @@ import { compareBody } from './body-report.js'
 import { buildProgressReport } from './progress-report.js'
 import { PROGRESS_SECTIONS } from './progress-sections.js'
 import { exerciseNameFor as resolveExerciseName } from './i18n-core.js'
+import { fmtWeight } from './format.js'
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
 function sections(report,t,name) {
  const q=report.summary
@@ -21,7 +22,7 @@ const spark = (m,x,y,w,h) => {
  return `<polyline fill="none" stroke="#b51e28" stroke-width="2" points="${pts.map(p=>`${x+(p.t-first)/span*w},${y+h-(p.y-min)/(max-min||1)*h}`).join(' ')}"/>`
 }
 export function progressReportHTML(report,{t=x=>x,state=report.exerciseNameState||{},exerciseNameFor=(exercise,context)=>resolveExerciseName(exercise,state,context),fmtNum=n=>Number(n.toFixed(1)).toLocaleString(),fmtDate=d=>d,fragment=false}={}) {
- const val=(n,u='')=>n==null?'—':esc(fmtNum(n)+' '+t(u))
+ const val=(n,u='')=>n==null?'—':esc((u==='kg'||u==='lb'?fmtWeight(n):fmtNum(n))+' '+t(u))
  let body=`<section class="progress-export"><h1>${esc(t('Progress Report'))}</h1><p>${esc(report.range.start)} → ${esc(report.range.end)}</p><p>${esc(t('Only recorded data. Changes are not automatically improvements.'))}</p>`
  for(const section of sections(report,t,exerciseNameFor)) {
   body+=`<h2>${esc(section.title)}</h2>`
@@ -88,7 +89,7 @@ export function wrapReportText(value, maxWidth, size=18, weight=400) {
 // Flow complete rows onto pages; repeat section context after every page break.
 // Only Progress Report callers supply a progress snapshot and selected sections.
 export function progressReportPages(S,{t=x=>x,now=new Date(),name=(exercise,context)=>resolveExerciseName(exercise,report.exerciseNameState||S||{},context),formatNumber=n=>Number(n.toFixed(1)).toLocaleString(),report=buildProgressReport(S,{now}),sections:chosen=PROGRESS_SECTIONS.map(s=>s[0]),bodySelection={},bodyGeometry}={}) {
- const val=(n,u='')=>n==null?'—':formatNumber(n)+(u?' '+t(u):'')
+ const val=(n,u='')=>n==null?'—':(u==='kg'||u==='lb'?fmtWeight(n):formatNumber(n))+(u?' '+t(u):'')
  const label=m=>m.muscle?t(m.label,t(m.muscle)):t(m.label)
  const text=(x,y,s,size=18,color='#17212f',weight=400)=>`<text x="${x}" y="${y}" font-size="${size}" fill="${color}" font-weight="${weight}">${esc(s)}</text>`
  const wrap=(s,width,size=18,weight=400,maxWidth=width*10)=>wrapReportText(s,maxWidth,size,weight)

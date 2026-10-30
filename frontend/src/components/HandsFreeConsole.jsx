@@ -2,6 +2,7 @@ import { launchSpotifree } from '../lib/spotifree-sync.js'
 import { useState, useEffect } from 'react'
 import Icon from './Icon.jsx'
 import { t, getLang } from '../lib/i18n.js'
+import { fmtWeight } from '../lib/format.js'
 import { weightStepFor } from '../lib/unit-conversion.js'
 
 export function speakAnnouncement(text, lang = 'es') {
@@ -101,7 +102,7 @@ export default function HandsFreeConsole({
             {t('Load')} ({unit})
           </div>
           <div style={{ fontSize: 56, fontWeight: 900, fontFamily: 'var(--font-display)', margin: '8px 0', color: 'var(--acc)' }}>
-            {weight}
+            {fmtWeight(weight)}
           </div>
           <div style={{ display: 'flex', gap: 12, width: '100%', maxWidth: 160 }}>
             <button

@@ -16,7 +16,8 @@ export const MUSCLE_GROUPS = [
 export function calculateWeeklyMuscleVolume(workouts = [], { weekStartMs = 0, weekEndMs = Date.now(), targets = {} } = {}) {
   const cutoff = weekStartMs > 0 ? weekStartMs : Date.now() - 7 * 86400000
   const sessions = loggedWorkouts({ workouts }).filter(w => {
-    const timestamp = Number.isFinite(Number(w.start)) && Number(w.start) > 0 ? Number(w.start) : Number.isFinite(new Date(w.start).getTime()) ? new Date(w.start).getTime() : new Date(w.d + 'T12:00:00').getTime()
+    const isoStart = typeof w.start === 'string' && !Number.isFinite(Number(w.start)) ? Date.parse(w.start) : NaN
+    const timestamp = Number.isFinite(Number(w.start)) && Number(w.start) > 0 ? Number(w.start) : Number.isFinite(isoStart) ? isoStart : new Date(w.d + 'T12:00:00').getTime()
     return Number.isFinite(timestamp) && timestamp >= cutoff && timestamp <= weekEndMs
   })
   // Reuse the map's weighted metadata and historical snapshots. Deleted/custom

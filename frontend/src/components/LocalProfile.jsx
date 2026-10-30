@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { t } from '../lib/i18n.js'
-import { fmtNum, isoOf } from '../lib/format.js'
+import { fmtNum, fmtWeight, isoOf } from '../lib/format.js'
 import { validMeasurementDate } from '../lib/body-records.js'
 import { bwSheet, goalSheet, heightSheet, measurementsSheet } from '../sheets.jsx'
 import { Button, Row, Section } from './ui.jsx'
@@ -77,9 +77,9 @@ export default function LocalProfile({ close }) {
       <div className="profile-form-actions"><Button type="button" variant="ghost" onClick={close} disabled={saving}>{t('Cancel')}</Button><Button variant="primary" type="submit" disabled={busy || saving}>{t('Save')}</Button></div>
     </form>
     <Section title={t('Personal data')} footer={t('These values use your existing measurements and goals.')}>
-      <Row icon="scale" title={t('Body Weight')} value={weight ? `${fmtNum(weight.w)} ${S.unit}` : '—'} accessory="chevron" onClick={() => bwSheet()} />
+      <Row icon="scale" title={t('Body Weight')} value={weight ? `${fmtWeight(weight.w)} ${S.unit}` : '—'} accessory="chevron" onClick={() => bwSheet()} />
       <Row icon="person" title={t('Height')} value={S.heightCm ? `${fmtNum(S.heightCm)} ${S.measurementUnit || 'cm'}` : '—'} accessory="chevron" onClick={() => heightSheet()} />
-      <Row icon="target" title={t('Goal')} value={S.targetW ? `${fmtNum(S.targetW)} ${S.unit}` : '—'} accessory="chevron" onClick={() => goalSheet()} />
+      <Row icon="target" title={t('Goal')} value={S.targetW ? `${fmtWeight(S.targetW)} ${S.unit}` : '—'} accessory="chevron" onClick={() => goalSheet()} />
       <Row icon="figureStrength" title={t('Body measurements')} accessory="chevron" onClick={() => measurementsSheet()} />
     </Section>
   </div>

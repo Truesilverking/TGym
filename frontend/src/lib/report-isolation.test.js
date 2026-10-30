@@ -16,6 +16,16 @@ const doc = svg => new DOMParser().parseFromString(svg, 'image/svg+xml')
 afterEach(() => vi.useRealTimers())
 
 describe('independent report sources', () => {
+ it('presents whole masses in progress and stats while preserving non-mass decimals and snapshots', () => {
+  vi.useFakeTimers();vi.setSystemTime(now)
+  const s=fixture();s.bodyweight[0].w=83.75;s.inbody[0]={d:'2026-09-20',weight:83.75,skeletalMuscle:32.6,bodyFatPct:14.5,bmi:24.7,bodyWater:40.5}
+  const before=structuredClone(s),report=buildProgressReport(s,{now})
+  const html=statsReportHTML(s),progress=progressReportHTML(report),pdf=progressReportPages(null,{report,sections:['body','inbody']}).map(p=>p.svg).join('')
+  expect(html).toContain('84 kg');expect(html).toContain('<td>33</td>');expect(html).toContain('<td>14.5</td>');expect(html).toContain('<td>40.5</td>')
+  for(const output of [progress,pdf]){expect(output).toContain('84 kg');expect(output).toContain('33 kg');expect(output).toContain('14.5 %')}
+  expect(s).toEqual(before)
+ })
+
  it.each([['week','png',1],['week','pdf',1],['month','png',1],['month','pdf',1],['year','png',1],['year','pdf',3],['full','pdf',3]])('isolates calendar %s/%s', (period, format, count) => {
   const s = fixture(), before = structuredClone(s), pages = calendarReportPages(s, now, period, format, { now })
   expect(pages).toHaveLength(count)

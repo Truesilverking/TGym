@@ -6,7 +6,7 @@ import { readRoutineExchangeFile, buildRoutineExchangeFile, exchangeCatalogue, r
 import { prepareRoutineImport, commitRoutineImport, routineImportIssueText } from '../lib/routine-import.js'
 import { routineAdaptationMessage, routineImportDiagnostics, routineImportFailureMessage } from '../lib/routine-import-feedback.js'
 import { displayReps } from '../lib/history.js'
-import { DAYN } from '../lib/format.js'
+import { DAYN, fmtWeight } from '../lib/format.js'
 import { exerciseNameFor, originalExerciseNameFor } from '../lib/i18n-core.js'
 import { saveReportFile } from '../lib/report-file.js'
 import { Capacitor } from '@capacitor/core'
@@ -29,7 +29,7 @@ const prescription = (row, ex) => {
   const [, , type, min, max, weight, unit, rirMin, rirMax, , , pct, rule, automatic, sec, minutes, speed] = row
   const range = (lo,hi) => lo === hi ? String(hi) : `${lo}–${hi}`
   const target = type === 'Warm-up' && min === '' ? t('Automatic warm-up') : sec !== '' ? `${sec} s` : minutes !== '' ? `${minutes} min · ${speed} km/h` : `${range(displayReps(min,ex),displayReps(max,ex))} reps`
-  return [target+(ex.side?` · ${t('per side')}`:''),weight!==''&&minutes===''?`${weight} ${unit}`:'',rirMin!==''?`RIR ${range(rirMin,rirMax)}`:'',type==='Back-off'?`${pct}% · ${automatic?rule==='increased'?t('Top reps +2'):rule==='same'?t('Same as Top reps'):String(rule):t('Independent reps')}`:''].filter(Boolean).join(' · ')
+  return [target+(ex.side?` · ${t('per side')}`:''),weight!==''&&minutes===''?`${fmtWeight(weight)} ${unit}`:'',rirMin!==''?`RIR ${range(rirMin,rirMax)}`:'',type==='Back-off'?`${pct}% · ${automatic?rule==='increased'?t('Top reps +2'):rule==='same'?t('Same as Top reps'):String(rule):t('Independent reps')}`:''].filter(Boolean).join(' · ')
 }
 function PrescriptionDetails({ routine, preview, catalog, rows, nameState, blocked }) {
   return <details><summary>{t('Details for {0}',routine.name||routine.id)}</summary>

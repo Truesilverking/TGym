@@ -3,7 +3,7 @@ import { useStore } from '../store/useStore.js'
 import { BODYPARTS, allExercises, equipmentOf, exerciseSearchScore } from '../lib/exercises.js'
 import { activeProfile, exAvailable } from '../lib/equipment.js'
 import { bestWeightForEntry } from '../lib/history.js'
-import { fmtNum } from '../lib/format.js'
+import { fmtWeight } from '../lib/format.js'
 import { t, exerciseNameFor, useLang } from '../lib/i18n.js'
 import { Thumb } from '../components/Media.jsx'
 import { exerciseDetailSheet, addToRoutineSheet, customExSheet } from '../sheets.jsx'
@@ -78,7 +78,7 @@ export default function Library() {
           <Thumb ex={e} />
           <div className="grow"><div className="tt capitalize">{exerciseNameFor(e)}</div><div className="ss capitalize">{t(e.tg || e.bp)} · {t(e.eq)}</div></div>
           {S.avoidedExercises?.[e.id] && <span className="tag" style={{ color: 'var(--orange)' }}>{t('Avoiding')}</span>}
-          {best > 0 && <span className="tag acc">{fmtNum(best)}</span>}
+          {best > 0 && <span className="tag acc">{fmtWeight(best)}</span>}
           </button>
           <Button size="sm" variant="tinted" icon="plus" onClick={ev => { ev.stopPropagation(); addToRoutineSheet(e) }}>{t('Routine')}</Button>
         </div>

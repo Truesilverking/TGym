@@ -31,8 +31,8 @@ function Controlled({initial=80,unit='kg',disabled=false}){
 const mount=async props=>act(()=>root.render(<Controlled {...props}/>))
 const ruler=()=>host.querySelector('[role=slider]')
 const field=()=>host.querySelector(`input[aria-label="${t('Weight')}"]`)
-const visible=()=>Number(field().value.replace(',','.'))
-// Accessibility follows the painted tenth; the rail itself remains continuous.
+const visible=()=>Number(ruler().getAttribute('aria-valuenow'))
+// Underlying precision follows the snapped draft; readouts show whole units.
 const position=()=>{
  const rail=host.querySelector('.bodyweight-picker-ticks')
  const first=Number(rail.querySelector('.bodyweight-picker-tick.major>span').textContent.replace(',','.'))

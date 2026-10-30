@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useStore } from '../store/useStore.js'
 import { t, exerciseNameFor, exerciseNameSearchText } from '../lib/i18n.js'
-import { fmtNum, fmtDate, isoOf } from '../lib/format.js'
+import { fmtWeight, fmtDate, isoOf } from '../lib/format.js'
 import { EXIDX } from '../lib/exercises.js'
 import { personalRecords, recentRecords } from '../lib/personal-records.js'
 import { exerciseDetailSheet } from '../sheets.jsx'
@@ -35,8 +35,8 @@ export default function Records() {
           </span>
           {recentIds.has(rec.id) && <span className="tag acc nocap">{t('New')}</span>}
           <span className="record-figures">
-            {rec.bestWeight && <span><span className="metric-value">{fmtNum(rec.bestWeight.w)}</span><small>{S.unit} · {t('Top set')}</small></span>}
-            {rec.best1RM && <span><span className="metric-value">{fmtNum(rec.best1RM.est)}</span><small>{S.unit} · {t('Est. 1RM')}</small></span>}
+            {rec.bestWeight && <span><span className="metric-value">{fmtWeight(rec.bestWeight.w)}</span><small>{S.unit} · {t('Top set')}</small></span>}
+            {rec.best1RM && <span><span className="metric-value">{fmtWeight(rec.best1RM.est)}</span><small>{S.unit} · {t('Est. 1RM')}</small></span>}
           </span>
         </button>
       ))}

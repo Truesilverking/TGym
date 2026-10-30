@@ -62,7 +62,7 @@ it('previews every prescribed series including warmups, ranges, units and rest b
   render(); await upload()
   expect(host.querySelectorAll('.routine-exchange-series tbody tr')).toHaveLength(3)
   expect(host.textContent).toContain('8–10 reps')
-  expect(host.textContent).toContain('12.5 kg')
+  expect(host.textContent).toContain('13 kg');expect(mock.S.routines[0].ex[0].weight).toBe(12.5)
   expect(host.textContent).toContain('RIR 1–2')
   expect(host.textContent).toContain('90 s')
   expect(mock.update).not.toHaveBeenCalled()

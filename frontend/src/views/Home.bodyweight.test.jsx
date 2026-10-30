@@ -114,8 +114,11 @@ it('keeps both existing edit actions and never saves just by opening them',async
 })
 it('reuses Spanish labels and numeric formatting',async()=>{
  await setLang('es');S.lang='es';S.bodyweight[0].w=79.5;S.bodyweight[1].w=80.5;S.targetW=85.5;await mount()
- expect(text('.home-bodyweight-current')).toContain('Actual80,5kg')
- expect(text('.home-bodyweight-target')).toContain('Peso objetivo85,5kg')
+ expect(text('.home-bodyweight-current')).toContain('Actual81kg')
+ expect(text('.home-bodyweight-target')).toContain('Peso objetivo86kg')
+ expect(useStore.getState().S.bodyweight[1].w).toBe(80.5)
+ expect(useStore.getState().S.targetW).toBe(85.5)
+ expect(localStorage.getItem('gym_state_v1')).toBeNull()
  expect(card().querySelector('.home-bodyweight-gap')).toBeNull()
  expect(text('.home-bodyweight-change')).toBe('Desde la anterior: 1 kg')
  expect(card().textContent).not.toContain('Último registro')
