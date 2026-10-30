@@ -187,7 +187,7 @@ it('starts scheduled work, navigates away, resumes, cancels early finish, then s
   expect(useStore.getState().S.active.entries[0].sets[0].done).toBe(true)
   expect(host.querySelector('#tabbar')).toBeNull()
   expect(host.querySelector('#navigation-dock-toggle')).toBeNull()
-  await route('/home')
+  await click('Back')
   await act(() => host.querySelector('#navigation-dock-toggle').click())
   await click('Stats'); await click('Resume')
   expect(host.querySelector('#tabbar')).toBeNull()
@@ -206,6 +206,27 @@ it('starts scheduled work, navigates away, resumes, cancels early finish, then s
   await click('Later'); await route('/history')
   expect(host.textContent).toContain('QA first')
   expect(mirror.value.workouts[0].entries[0].sets[0].done).toBe(true)
+  noRenderFailures()
+})
+
+it.each(['active', 'empty', 'training-paused'])('returns home from a cold workout route without losing the %s session state', async kind => {
+  const now=Date.now()
+  mirror.value={...structuredClone(DEF),lang:'en',hasCompletedOnboarding:true,hasCompletedAppTour:true,sound:false,
+    active:kind==='active'?{id:'cold-workout',d:todayISO(),name:'Cold workout',start:now-60000,timerPausedAt:now,pauseReason:'manual',lastUserInteractionAt:now,cur:0,entries:[]}:null,
+    trainingPauses:kind==='training-paused'?[{id:'pause',start:todayISO(),end:null}]:[]}
+  window.history.replaceState(null,'','\u0023/workout')
+  await mount()
+  const before=structuredClone(useStore.getState().S)
+  expect(host.querySelector('#tabbar')).toBeNull()
+  expect(host.querySelector('#navigation-dock-toggle')).toBeNull()
+  await click('Back')
+  expect(window.location.hash).toBe('#/home')
+  const after=useStore.getState().S
+  expect(after.active).toEqual(before.active)
+  expect(after.workouts).toEqual(before.workouts)
+  expect(after.trainingPauses).toEqual(before.trainingPauses)
+  expect(host.querySelector('#tabbar')).not.toBeNull()
+  if(kind==='active')expect(button('Resume')).toBeTruthy()
   noRenderFailures()
 })
 

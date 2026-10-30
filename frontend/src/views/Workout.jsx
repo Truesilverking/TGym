@@ -752,10 +752,15 @@ function WorkoutTourPreview() {
   return <div className="narrow workout-tour-preview"><p className="tag acc">{t('Practice preview - nothing is saved')}</p><ExerciseBlock preview={tourWorkout} entryIdx={0} onToggle={noop} onField={noop} onAddSet={noop} onRemoveSet={noop} onAddWarmup={noop} onPairPrev={noop} onPairNext={noop}/></div>
 }
 export default function Workout() {
+  const nav = useNavigate()
   // A replay request or first tour can arrive before AppTour's effects mount.
   // Keep the real session's effects out of that initial render as well.
   const preview = useUI(s=>!!s.appTourWorkoutPreview || !!s.appTourRequest)
   const firstTour=useStore(s=>s.S.hasCompletedOnboarding && !s.S.hasCompletedAppTour)
   const active = useStore(s => s.S.active)
-  return preview||firstTour ? <WorkoutTourPreview /> : active ? <ActiveWorkout /> : <StartChooser />
+  if(preview||firstTour)return <WorkoutTourPreview />
+  return <>
+    <div className="narrow"><Button size="sm" variant="ghost" icon="chevronLeft" style={{ minHeight:44 }} onClick={() => nav('/home')}>{t('Back')}</Button></div>
+    {active ? <ActiveWorkout /> : <StartChooser />}
+  </>
 }
