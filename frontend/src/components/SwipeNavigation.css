@@ -6,8 +6,8 @@
 .swipe-navigation[data-swipe-phase=leaving]>.swipe-navigation-content{transition:transform .14s cubic-bezier(.2,.65,.3,1);will-change:transform}
 .swipe-navigation[data-swipe-phase=entering]>.swipe-navigation-content{transition:transform .18s cubic-bezier(.16,.7,.3,1);will-change:transform}
 .module-page,.stats-hub-page{min-width:0}
-.stats-slide-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:2px 4px 16px;color:var(--label-2);font-size:14px}
-.stats-slide-heading strong{color:var(--label);font-weight:600}.stats-slide-heading small{font-variant-numeric:tabular-nums;white-space:nowrap}
+.stats-slide-heading{display:flex;align-items:center;justify-content:flex-end;margin:2px 4px 16px;color:var(--label-2);font-size:14px}
+.stats-slide-heading small{font-variant-numeric:tabular-nums;white-space:nowrap}
 .stats-section-layout.slide-layout{display:block;min-width:0}
 .stats-section-layout.slide-layout>[data-stats-section]:not([hidden]){animation:none}
 .module-jump-menu{min-width:0}.module-jump-menu>h2{margin-bottom:12px}

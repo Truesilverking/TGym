@@ -4,7 +4,7 @@ import {createRoot} from 'react-dom/client'
 import {it,expect,vi} from 'vitest'
 import AppLock from './AppLock.jsx'
 import {setLang} from '../lib/i18n.js'
-vi.mock('../lib/app-lock.js',()=>({deviceLockEnabled:()=>true,biometricEnabled:()=>false,verifyDevicePin:vi.fn(async()=>({ok:false})),recoverWithKey:vi.fn(async()=>false),authenticateDeviceBiometry:vi.fn()}))
+vi.mock('../lib/app-lock.js',()=>({deviceLockEnabled:()=>true,lockConfig:()=>({}),biometricEnabled:()=>false,verifyDevicePin:vi.fn(async()=>({ok:false})),recoverWithKey:vi.fn(async()=>false),authenticateDeviceBiometry:vi.fn()}))
 it('updates locked-screen language after async profile language loading, without unlocking',async()=>{
  globalThis.IS_REACT_ACT_ENVIRONMENT=true
  const host=document.createElement('div'),root=createRoot(host)

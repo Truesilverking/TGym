@@ -30,7 +30,7 @@ function StatsHub() {
   const active=activeStatsPage(S,location),pages=statsPages(S,active)
   const kind=active==='records'?'records':active==='workout-history'?'history':active==='report'?'report':'analytics'
   return <div className="stats-hub">
-    <div className="stats-slide-heading" aria-live="polite" aria-atomic="true"><strong>{t(STATS_PAGES.find(([id])=>id===active)?.[1]||'Stats')}</strong><small>{pages.indexOf(active)+1} / {pages.length}</small></div>
+    <div className="stats-slide-heading" role="status" aria-label={t(STATS_PAGES.find(([id])=>id===active)?.[1]||'Stats')} aria-live="polite" aria-atomic="true"><small>{pages.indexOf(active)+1} / {pages.length}</small></div>
     <RetainedPages active={kind} pages={[
       ['analytics',<Stats standaloneControl={false}/>],['records',<Records />],['history',<History />],['report',<ProgressReport />],
     ]}/>

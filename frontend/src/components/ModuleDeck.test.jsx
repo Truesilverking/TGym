@@ -82,6 +82,29 @@ it('retains analytics and record drafts separately and cleans the nested inactiv
  await go('/workout');expect([...activeEffects]).toEqual([]);expect(host.querySelector('[data-stats-control]')).toBeNull();preserved()
 })
 
+it('shows only the Stats position above the section while preserving its accessible name and selector',async()=>{
+ await mount('/stats?section=history')
+ const positions=[
+  ['/stats?section=history','Training history','1 / 5','analytics'],
+  ['/stats?section=bodyweight','Body Weight','2 / 5','analytics'],
+  ['/records','Personal records','3 / 5','records'],
+  ['/history','History','4 / 5','history'],
+  ['/progress','Progress Report','5 / 5','report'],
+ ]
+ for(const [route,label,position,id] of positions){
+  await go(route)
+  const heading=host.querySelector('.stats-slide-heading')
+  expect(heading.textContent).toBe(position)
+  expect(heading.querySelector('strong')).toBeNull()
+  expect(heading.getAttribute('role')).toBe('status')
+  expect(heading.getAttribute('aria-label')).toBe(label)
+  expect(heading.getAttribute('aria-live')).toBe('polite')
+  expect(host.querySelector('[data-stats-control]')).not.toBeNull()
+  expect(pane(id).inert).toBe(false)
+ }
+ preserved()
+})
+
 it('recovers failed analytics on a section change or revisit without offering to discard the workout',async()=>{
  broken.section='history';await mount('/stats?section=history')
  expect(host.textContent).toContain('Something went wrong');expect(host.textContent).not.toContain('Discard the running workout')
