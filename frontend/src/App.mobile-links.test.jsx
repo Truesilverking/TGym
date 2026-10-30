@@ -13,7 +13,7 @@ vi.mock('@capacitor/local-notifications',()=>({LocalNotifications:{addListener:a
 vi.mock('./lib/mobile.js',async original=>({...await original(),MOBILE:true,syncReminder:vi.fn(async()=>{})}))
 vi.mock('./lib/native-sound.js',()=>({syncNativeSounds:vi.fn(async()=>{}),stopNativeSound:vi.fn(async()=>{})}))
 vi.mock('./lib/workout-notification.js',()=>({syncWorkoutNotification:vi.fn(async()=>{})}))
-vi.mock('./lib/back.js',()=>({initBackButton:async()=>()=>{}}))
+vi.mock('./lib/back.js',()=>({initBackButton:async()=>()=>{},registerNavigationBack:()=>()=>{}}))
 vi.mock('./lib/wakelock.js',()=>({useWakeLock:()=>{}}))
 vi.mock('./lib/system-appearance.js',()=>({syncSystemAppearance:()=>{}}))
 vi.mock('./lib/viewport.js',()=>({installViewportLayout:()=>()=>{}}))

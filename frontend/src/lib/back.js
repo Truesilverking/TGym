@@ -15,25 +15,35 @@ import { t } from './i18n.js'
 
 // How long a first back press stays armed as "press again to exit" (the toast shows 2.2s).
 export const EXIT_WINDOW = 2000
+const navigationLayers = []
+// The liftable dock is a transient navigation surface, outside the sheet stack.
+export function registerNavigationBack(handler) {
+  navigationLayers.push(handler)
+  return () => { const index=navigationLayers.lastIndexOf(handler);if(index>=0)navigationLayers.splice(index,1) }
+}
 
 // What a back press means, given what is on screen. Pure, so the table below is testable.
-export function decideBack({ top, canGoBack, exitArmed }) {
+export function decideBack({ top, navigationOpen = false, canGoBack, exitArmed }) {
   if (top) return top.locked ? 'ignore' : 'sheet'   // a locked sheet swallows back on purpose
+  if (navigationOpen) return 'navigation'
   if (canGoBack) return 'history'                   // a page/tab we pushed ourselves
   return exitArmed ? 'exit' : 'arm-exit'
 }
 
-export function makeBackHandler({ getSheets, closeSheet, toast, goBack, exit, now = Date.now }) {
+export function makeBackHandler({ getSheets, closeSheet, toast, goBack, exit, now = Date.now, getNavigation = () => navigationLayers.at(-1) }) {
   let armedAt = -Infinity
   return (ev = {}) => {
     const sheets = getSheets()
+    const navigation = getNavigation()
     const action = decideBack({
       top: sheets[sheets.length - 1],
+      navigationOpen: typeof navigation === 'function',
       canGoBack: !!ev.canGoBack,
       exitArmed: now() - armedAt < EXIT_WINDOW,
     })
     if (action !== 'arm-exit') armedAt = -Infinity
     if (action === 'sheet') closeSheet(sheets[sheets.length - 1].id)
+    else if (action === 'navigation') navigation()
     else if (action === 'history') goBack()
     else if (action === 'arm-exit') { armedAt = now(); toast(t('Press back again to exit')) }
     else if (action === 'exit') exit()

@@ -7,7 +7,7 @@ import { Button } from './ui.jsx'
 import './AppTour.css'
 
 export const TOUR_STEPS = [
-  ['/home','navigation','Your training at a glance','Swipe between sections. Open a bottom menu to jump directly; the center button stays fixed.','Training'],
+  ['/home','navigation','Your training at a glance','Swipe between modules. Lift the bottom navigation to choose one; the center button stays fixed.','Training'],
   ['/home','start','Start or resume','Start planned or freestyle training. Active sessions remain available here.','Training'],
   ['/workout','sets','Log each set','Record load, reps, time, cardio and effort; distinguish warm-up, top and back-off sets.','Training'],
   ['/workout','supersets','Pair and recover','Pair exercises, rest, substitute, pause or finish. This preview saves nothing.','Training'],

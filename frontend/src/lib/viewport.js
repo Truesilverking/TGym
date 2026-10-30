@@ -6,8 +6,19 @@ export function installViewportLayout(win = window, doc = document) {
   const set = (name, value) => { if (root.style.getPropertyValue(name) !== value) root.style.setProperty(name, value) }
   const editable = () => doc.activeElement?.matches?.('input:not([type=checkbox]):not([type=radio]):not([type=range]),textarea,[contenteditable="true"]')
   const visibleTop = el => {
-    if (!el || win.getComputedStyle(el).display === 'none') return win.innerHeight
-    return Math.min(el.getBoundingClientRect().top, ...[...el.children].map(child => child.getBoundingClientRect()).filter(rect => rect.width > 0 && rect.height > 0).map(rect => rect.top))
+    if (!el || !el.getClientRects().length || win.getComputedStyle(el).display === 'none') return win.innerHeight
+    // The fixed hex can sit above both the dock and its nested button. Hidden
+    // module slots slide below the viewport and never own layout clearance.
+    const fixed=el.id==='tabbar'?[...el.querySelectorAll('button.start,button.start .cir')]:[]
+    let top=win.innerHeight
+    for(const node of new Set([el,...el.children,...fixed])){
+      if(!node.getClientRects().length)continue
+      const style=win.getComputedStyle(node)
+      if(style.display==='none'||style.visibility==='hidden'||style.visibility==='collapse')continue
+      const rect=node.getBoundingClientRect()
+      if(rect.width>0&&rect.height>0&&Number.isFinite(rect.top))top=Math.min(top,rect.top)
+    }
+    return top
   }
   const update = () => {
     frame = 0

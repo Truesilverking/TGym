@@ -14,7 +14,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { effectiveRoutineId, setsDoneActive, effortValue } from '../lib/history.js'
-import { fmtWeight, fmtDate, isoOf, weekKey, DAYS } from '../lib/format.js'
+import { fmtWeight, fmtDate, isoOf, weekKey } from '../lib/format.js'
 import { useLocalNow } from '../lib/use-local-now.js'
 import { t, dateLocale } from '../lib/i18n.js'
 import { bwSheet, goalSheet, dayOverrideSheet, startFlow, guidedPlansSheet, bwDeltaColor, streakDetailSheet, sessionTimingSheet, homeCalendarSheet } from '../sheets.jsx'
@@ -25,6 +25,7 @@ import { deloadStatus, streakTier, trainingStreak } from '../lib/training-plan.j
 import StreakFlame from '../components/StreakFlame.jsx'
 import { streakStatusText } from '../components/StreakStatus.jsx'
 import { getDailyNutrition } from '../lib/nutrition.js'
+import TodayWeekCalendar from '../components/TodayWeekCalendar.jsx'
 import './TrainingHome.css'
 
 // Home = what to do now + a quick glance. Deep charts & history live in Stats.
@@ -52,19 +53,12 @@ export default function Home() {
   const consistencyPct = consistency.rate == null ? null : Math.round(consistency.rate * 100)
   const nutriCalsPct = Math.min(100, Math.round((dailyNutri.totals.calories / Math.max(1, dailyNutri.goals.calories)) * 100))
 
-  const monday = new Date(today); monday.setDate(today.getDate() - ((today.getDay() + 6) % 7) + weekOffset * 7)
-  const strip = []
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(monday); d.setDate(monday.getDate() + i)
-    const iso = isoOf(d)
+  const weekDayState = (_date, iso) => {
     const eff = effectiveRoutineId(S, iso), ovr = S.dayPlan[iso] !== undefined, status = calendarDay(S,iso,today).status, done = status === 'completed'
     const pausedDay = isTrainingPaused(S,iso)
     const dot = isUntracked(S,iso,todayIso) ? '' : done ? ' done' : ovr && eff ? ' ovr' : eff ? ' plan' : ''
-    strip.push(<button type="button" key={i} className={'wday' + (pausedDay ? ' paused' : status === 'partial' ? ' partial' : '') + (iso === todayIso ? ' today' : '')} aria-label={fmtDate(iso,true)} aria-current={iso === todayIso ? 'date' : undefined} title={pausedDay ? t('Training paused') : undefined} onClick={() => dayOverrideSheet(iso)}>
-      <span className="lbl">{t(DAYS[d.getDay()])}</span><span className="num">{d.getDate()}</span><span className={'dot' + dot} /></button>)
+    return { className: pausedDay ? 'paused' : status === 'partial' ? 'partial' : '', dotClassName: dot.trim(), title: pausedDay ? t('Training paused') : undefined }
   }
-  const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6)
-  const wkLabel = weekOffset === 0 ? t('This week') : `${monday.getDate()} ${monday.toLocaleDateString(dateLocale(), { month: 'short' })} – ${sunday.getDate()} ${sunday.toLocaleDateString(dateLocale(), { month: 'short' })}`
 
   // today's session shown right under the week strip
   const onToday = () => { if (S.active) nav('/workout'); else if (routine && nextDate === todayIso) startFlow(routine.id); else if (routine) dayOverrideSheet(nextDate); else dayOverrideSheet(todayIso) }
@@ -79,13 +73,8 @@ export default function Home() {
 
     {S.deload?.on && (deload.active || (deload.daysUntil != null && deload.daysUntil <= 7)) && <div className="card" style={{ border: '1px solid color-mix(in srgb,var(--orange) 55%,transparent)' }}><div className="row" style={{ gap: 9 }}><Icon name="arrowDown" style={{ color: 'var(--orange)' }} /><div><b>{deload.active ? t('Deload week') : t('Deload week starts soon')}</b><div className="small dim">{deload.active ? t('Load {0}% · Working sets {1}% · RIR {2}', deload.config.loadPct, deload.config.setPct, effortValue('rir', deload.config.targetRir)) : t('Starts in {0} days.', deload.daysUntil) + ' · ' + deload.start + ' – ' + deload.end}</div></div></div></div>}
 
-    <div className="card plate" data-tour="calendar" id="training-calendar">
-      <div className="row between" style={{ marginBottom: 8 }}>
-        <button className="iconbtn" style={{ width: 30, height: 30, fontSize: 15 }} onClick={() => setWeekOffset(w => w - 1)} aria-label={t('Previous week')}><Icon name="chevronLeft" /></button>
-        <button className="week-expand" onClick={() => homeCalendarSheet(monday)} aria-label={t('Expand calendar')}>{wkLabel}<Icon name="chevronRight" /></button>
-        <button className="iconbtn" style={{ width: 30, height: 30, fontSize: 15 }} onClick={() => setWeekOffset(w => w + 1)} aria-label={t('Next week')}><Icon name="chevronRight" /></button>
-      </div>
-      <div className="week">{strip}</div>
+    <TodayWeekCalendar data-tour="calendar" id="training-calendar" today={today} weekOffset={weekOffset} onWeekOffsetChange={setWeekOffset}
+      onExpand={homeCalendarSheet} onDay={dayOverrideSheet} getDayState={weekDayState}>
       <div className="today-row home-next-workout">
         {routine ? <button type="button" className="lrow-i today-row-icon highlighted" style={{ background: S.active ? 'var(--orange)' : 'var(--acc)' }} aria-label={t('Muscles trained')} title={t('Muscles trained')} onClick={() => routineMuscleSheet(routine.id)}><Icon name="info" /></button>
           : <span className={'lrow-i today-row-icon' + (S.active ? ' highlighted' : '')} style={{ background: S.active ? 'var(--orange)' : 'var(--surface-3)' }}><Icon name={S.active ? 'timer' : 'moon'} /></span>}
@@ -100,7 +89,7 @@ export default function Home() {
             : <Icon name="plus" className="chev" />}
         </button>
       </div>
-    </div>
+    </TodayWeekCalendar>
 
     <DailyPlan date={todayIso} compact onStart={startFlow}/>
     <TrainingHistory promptOnly />

@@ -83,8 +83,6 @@
 .zoomcal.zoomcal .zoomcal-legend .zoomcal-today-key { box-shadow:inset 0 0 0 1px var(--label); }
 .zoomcal.zoomcal .zoomcal-legend i.zoomcal-future-key { border-style:dashed; }
 .calendar-export .zoomcal-day { max-width:48px; }
-.nutrition-calendar .nutri-date { margin-bottom:14px; }
-.nutrition-calendar>.zoomcal { border:0; padding:0; border-radius:0; background:transparent; }
 .zoomcal.date-picker .calendar-date { --calendar-fill:var(--surface-2); --calendar-ink:var(--label); --calendar-border:var(--sep); }
 .zoomcal.date-picker .calendar-date.selected { --calendar-fill:var(--acc); --calendar-ink:var(--on-acc); --calendar-border:var(--acc); }
 .zoomcal.date-picker .calendar-date[data-recorded="true"]::before { content:""; position:absolute; left:50%; bottom:4px; width:4px; height:4px; border-radius:50%; background:var(--calendar-ink); transform:translateX(-50%); }

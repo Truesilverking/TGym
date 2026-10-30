@@ -4,12 +4,6 @@
 .training-header.hdr-centered > .iconbtn { justify-self:end; }
 .training-header .header-streak .streak-flame { width:37px; height:40px; flex:none; }
 .training-header.hdr-centered .training-date { grid-column:1 / -1; text-align:center; margin:0; font-size:clamp(14px,3.8vw,17px); line-height:1.4; color:var(--label-2); }
-/* Keep all seven day widths; reduce only the old strip's excess vertical space. */
-[data-tour="calendar"] .week { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:6px; }
-[data-tour="calendar"] .week>.wday { min-width:0; min-height:44px; aspect-ratio:1; padding:4px 1px; border-radius:12px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; }
-[data-tour="calendar"] .week>.wday .lbl { font-size:10px; line-height:1.1; }
-[data-tour="calendar"] .week>.wday .num,[data-tour="calendar"] .week>.wday.today .num { margin:0; font-size:21px; line-height:1; }
-[data-tour="calendar"] .week>.wday .dot { width:5px; height:5px; margin:0 auto; flex:none; }
 .today-row.home-next-workout { display:flex; align-items:center; gap:10px; }
 .today-row .today-row-icon { display:grid; place-items:center; line-height:1; width:44px; height:44px; border-radius:10px; padding:0; flex:none; }
 .today-row .today-row-icon.highlighted { color:var(--on-acc); }

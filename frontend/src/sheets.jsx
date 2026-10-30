@@ -1421,10 +1421,12 @@ export function ZoomCalendar({ S: st, onDay, initialLevel = 'week', initialAncho
   const [level, setLevel] = useState(initialLevel)
   const [anchor, setAnchor] = useState(() => initialAnchor ? new Date(initialAnchor) : new Date())
   const [selected, setSelected] = useState(selectedDate || todayISO())
+  const pickerAnchor = useRef({ date: selectedDate, explicit: !!initialAnchor })
   useEffect(() => {
     if (!datePicker || !selectedDate) return
     setSelected(selectedDate)
-    setAnchor(new Date(selectedDate + 'T12:00:00'))
+    if (!pickerAnchor.current.explicit || pickerAnchor.current.date !== selectedDate) setAnchor(new Date(selectedDate + 'T12:00:00'))
+    pickerAnchor.current = { date: selectedDate, explicit: true }
   }, [datePicker, selectedDate])
   const recordedDates = useMemo(() => new Set(markedDates), [markedDates])
   const now = useLocalNow(), today = isoOf(now)

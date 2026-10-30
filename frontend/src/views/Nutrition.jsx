@@ -8,6 +8,7 @@ import { LB_PER_KG, CM_PER_IN } from '../lib/unit-conversion.js'
 import Icon from '../components/Icon.jsx'
 import { Button, Segmented, NumberField, SearchField, Row, Switch } from '../components/ui.jsx'
 import { ZoomCalendar } from '../sheets.jsx'
+import TodayWeekCalendar from '../components/TodayWeekCalendar.jsx'
 import {
   COMMON_FOODS,
   NUTRITION_GOAL_MINIMUMS,
@@ -62,17 +63,33 @@ const saveChange = action => {
   }
 }
 
+const nutritionLogDates = logs => Object.entries(logs || {}).filter(([, log]) =>
+  log && typeof log === 'object' && ((Array.isArray(log.items) && log.items.length > 0) || Number(log.waterMl) > 0)
+).map(([date]) => date)
+
+function NutritionCalendarSheet({ start, selectedDate, onSelect }) {
+  const S = useStore(s => s.S)
+  const markedDates = useMemo(() => nutritionLogDates(S.nutrition?.logs), [S.nutrition?.logs])
+  return <>
+    <h3>{t('Nutrition calendar')}</h3>
+    <ZoomCalendar S={S} datePicker selectedDate={selectedDate} onSelectDate={onSelect}
+      initialAnchor={start} levels={['week', 'month', 'months']} markedDates={markedDates} />
+  </>
+}
+
 export default function Nutrition() {
   const S = useStore(s => s.S)
-  const today = isoOf(useLocalNow())
+  const now = useLocalNow(), today = isoOf(now)
   const [selectedDate, setDateIso] = useState(null)
+  const [weekOffset, setWeekOffset] = useState(0)
   const dateIso = selectedDate || today
   const daily = getDailyNutrition(S, dateIso)
   const { goals, totals } = daily
   const isToday = dateIso === today
-  const loggedDates = useMemo(() => Object.entries(S.nutrition?.logs || {}).filter(([, log]) =>
-    log && typeof log === 'object' && ((Array.isArray(log.items) && log.items.length > 0) || Number(log.waterMl) > 0)
-  ).map(([date]) => date), [S.nutrition?.logs])
+  const loggedDates = useMemo(() => new Set(nutritionLogDates(S.nutrition?.logs)), [S.nutrition?.logs])
+  const selectDate = iso => { setDateIso(iso === today ? null : iso); setWeekOffset(0) }
+  const openCalendar = start => useUI.getState().openSheet(close => <NutritionCalendarSheet start={start} selectedDate={dateIso}
+    onSelect={iso => { selectDate(iso); close() }} />)
 
   const remaining = goals.calories - totals.calories
   const prevIso = shiftIso(dateIso, -1)
@@ -105,18 +122,20 @@ export default function Nutrition() {
         <button className="iconbtn" onClick={openGoals} aria-label={t('Nutrition goals')}><Icon name="gear" /></button>
       </div>
 
-      <section className="card nutrition-calendar" id="nutrition-calendar" aria-label={t('Calendar view')}>
-      <div className="nutri-date">
-        <button className="iconbtn" onClick={() => setDateIso(shiftIso(dateIso, -1))} aria-label={t('Previous day')}><Icon name="chevronLeft" /></button>
-        <button type="button" onClick={() => setDateIso(null)} disabled={isToday} aria-label={isToday ? undefined : t('Back to today')}>
-          <b>{isToday ? t('Today') : fmtDate(dateIso, true)}</b>
-          {isToday ? <small>{fmtDate(dateIso, true, true)}</small> : <small>{t('Tap to return to today')}</small>}
-        </button>
-        <button className="iconbtn" onClick={() => setDateIso(shiftIso(dateIso, 1))} aria-label={t('Next day')}><Icon name="chevronRight" /></button>
-      </div>
-        <ZoomCalendar S={S} datePicker selectedDate={dateIso} onSelectDate={iso => setDateIso(iso === today ? null : iso)}
-          initialAnchor={new Date(dateIso + 'T12:00:00')} levels={['week', 'month', 'months']} markedDates={loggedDates} />
-      </section>
+      <TodayWeekCalendar className="nutrition-calendar" id="nutrition-calendar" aria-label={t('Calendar view')} today={now}
+        anchor={new Date(dateIso + 'T12:00:00')} selectedDate={dateIso} selectable weekOffset={weekOffset} onWeekOffsetChange={setWeekOffset}
+        onExpand={openCalendar} onDay={selectDate} getDayState={(_day, iso) => ({ recorded: loggedDates.has(iso),
+          dotClassName: loggedDates.has(iso) ? 'done' : '', ariaLabel: `${fmtDate(iso, true)}${loggedDates.has(iso) ? ', ' + t('Nutrition') : ''}` })}>
+        <div className="today-row nutrition-day-summary">
+          <span className="lrow-i today-row-icon highlighted" style={{ background: 'var(--acc)' }}><Icon name="fork" /></span>
+          <button type="button" className="today-row-main" onClick={() => openAddFood('breakfast')}>
+            <div className="today-row-copy"><div className="lbl2">{isToday ? t('Today') : fmtDate(dateIso, true)}</div>
+              <div className="ttl">{fmtNum(totals.calories)} / {fmtNum(goals.calories)} kcal</div></div>
+            <span className="tag acc">{t('Add food')}</span>
+          </button>
+        </div>
+        {!isToday && <button type="button" className="nutrition-back-today" onClick={() => selectDate(today)}>{t('Back to today')}</button>}
+      </TodayWeekCalendar>
 
       {!daily.items.length && prevCount > 0 && (
         <button type="button" className="nutri-copy" onClick={copyPrevious}>
