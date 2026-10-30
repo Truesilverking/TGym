@@ -16,6 +16,17 @@ import static org.junit.Assert.*;
 @RunWith(AndroidJUnit4.class)
 public class WorkoutNotificationTest {
     private Context context;
+    @Test public void notificationTapUsesExplicitViewIntent() {
+        Context target=InstrumentationRegistry.getInstrumentation().getTargetContext();
+        Intent intent=WorkoutNotificationService.workoutIntent(target);
+        assertEquals(Intent.ACTION_VIEW,intent.getAction());
+        assertEquals("tgym://workout",intent.getDataString());
+        assertNotNull(intent.getComponent());
+        assertEquals(target.getPackageName(),intent.getComponent().getPackageName());
+        assertEquals(MainActivity.class.getName(),intent.getComponent().getClassName());
+        assertEquals(Intent.FLAG_ACTIVITY_SINGLE_TOP|Intent.FLAG_ACTIVITY_CLEAR_TOP,
+            intent.getFlags()&(Intent.FLAG_ACTIVITY_SINGLE_TOP|Intent.FLAG_ACTIVITY_CLEAR_TOP));
+    }
     private void shell(String command) throws Exception {
         try(android.os.ParcelFileDescriptor.AutoCloseInputStream stream=new android.os.ParcelFileDescriptor.AutoCloseInputStream(InstrumentationRegistry.getInstrumentation().getUiAutomation().executeShellCommand(command))) {
             byte[] buffer=new byte[1024]; while(stream.read(buffer)!=-1) {}
@@ -81,6 +92,7 @@ public class WorkoutNotificationTest {
                 for(android.widget.RemoteViews remote:new android.widget.RemoteViews[]{resumed.getNotification().contentView,resumed.getNotification().bigContentView}) {
                     View view=remote.apply(context,new FrameLayout(context));
                     assertEquals(View.VISIBLE,view.findViewById(R.id.rest_row).getVisibility());
+                    assertEquals("ENTRENO",((android.widget.TextView)view.findViewById(R.id.workout_label)).getText().toString());
                     assertEquals("SERIE 3",((android.widget.TextView)view.findViewById(R.id.set_label)).getText().toString());
                     android.widget.Chronometer clock=view.findViewById(R.id.workout_clock), rest=view.findViewById(R.id.rest_clock);
                     assertTrue(rest.isCountDown());
@@ -94,7 +106,7 @@ public class WorkoutNotificationTest {
             // WebView sends no more updates. An old completion field has no effect.
             long cutoff=System.currentTimeMillis()+300;
             long effectiveDuration=paused.getLong("elapsedMs")+cutoff-paused.getLong("observedAt");
-            paused.put("autoPauseAt",cutoff).put("autoFinishAt",cutoff).put("pauseLabel","Workout paused after inactivity");
+            paused.put("autoPauseAt",cutoff).put("autoFinishAt",cutoff).put("pauseLabel","Pausado por inactividad");
             context.startService(new Intent(context,WorkoutNotificationService.class).putExtra("state",paused.toString()));
             SystemClock.sleep(800);
             assertNotNull("Inactivity keeps the session notification visible",notification());
@@ -105,9 +117,36 @@ public class WorkoutNotificationTest {
             assertEquals(effectiveDuration,idle.getLong("elapsedMs"));
             StatusBarNotification inactive=notification();
             InstrumentationRegistry.getInstrumentation().runOnMainSync(()->{
-                View view=inactive.getNotification().bigContentView.apply(context,new FrameLayout(context));
-                assertEquals(View.GONE,view.findViewById(R.id.workout_clock).getVisibility());
-                assertEquals(View.VISIBLE,view.findViewById(R.id.workout_duration).getVisibility());
+                for(android.widget.RemoteViews remote:new android.widget.RemoteViews[]{inactive.getNotification().contentView,inactive.getNotification().bigContentView}) {
+                    View view=remote.apply(context,new FrameLayout(context));
+                    assertEquals("Pausado por inactividad",((android.widget.TextView)view.findViewById(R.id.workout_label)).getText().toString());
+                    assertEquals("SERIE 3",((android.widget.TextView)view.findViewById(R.id.set_label)).getText().toString());
+                    assertEquals(View.GONE,view.findViewById(R.id.workout_clock).getVisibility());
+                    assertEquals(View.VISIBLE,view.findViewById(R.id.workout_duration).getVisibility());
+                    assertEquals("An independent rest timer keeps running during the workout pause",View.VISIBLE,view.findViewById(R.id.rest_row).getVisibility());
+                }
+            });
+            assertEquals("DESCANSO",inactive.getNotification().extras.getString(android.app.Notification.EXTRA_TITLE));
+            assertTrue(inactive.getNotification().extras.getCharSequence(android.app.Notification.EXTRA_TEXT).toString().contains("Pausado por inactividad"));
+            assertEquals("Rendering a paused label never replays a completed rest",restDeadline,context.getSharedPreferences(SoundPreferences.PREFS,0).getLong("lastRest",0));
+
+            // Once the independent rest is canceled, the same compact/expanded
+            // notification title and visible label identify the frozen workout.
+            idle.put("restEndsAt",0);
+            context.startService(new Intent(context,WorkoutNotificationService.class).putExtra("state",idle.toString()));
+            SystemClock.sleep(400);
+            StatusBarNotification pausedWithoutRest=notification();
+            assertEquals("Pausado por inactividad",pausedWithoutRest.getNotification().extras.getString(android.app.Notification.EXTRA_TITLE));
+            assertEquals(1,java.util.Arrays.stream(((NotificationManager)context.getSystemService(Context.NOTIFICATION_SERVICE)).getActiveNotifications()).filter(n->n.getId()==3100).count());
+            InstrumentationRegistry.getInstrumentation().runOnMainSync(()->{
+                for(android.widget.RemoteViews remote:new android.widget.RemoteViews[]{pausedWithoutRest.getNotification().contentView,pausedWithoutRest.getNotification().bigContentView}) {
+                    View view=remote.apply(context,new FrameLayout(context));
+                    assertEquals("Pausado por inactividad",((android.widget.TextView)view.findViewById(R.id.workout_label)).getText().toString());
+                    assertEquals("SERIE 3",((android.widget.TextView)view.findViewById(R.id.set_label)).getText().toString());
+                    assertEquals(View.GONE,view.findViewById(R.id.rest_row).getVisibility());
+                    assertEquals(View.GONE,view.findViewById(R.id.workout_clock).getVisibility());
+                    assertEquals(View.VISIBLE,view.findViewById(R.id.workout_duration).getVisibility());
+                }
             });
 
         } finally { context.stopService(service); }

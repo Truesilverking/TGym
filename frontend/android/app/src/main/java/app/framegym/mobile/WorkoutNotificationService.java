@@ -1,6 +1,7 @@
 package app.framegym.mobile;
 
 import android.app.*;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ServiceInfo;
 import android.net.Uri;
@@ -45,10 +46,22 @@ public class WorkoutNotificationService extends Service {
         long seconds=Math.max(0,millis/1000);
         return seconds>=3600?String.format(Locale.ROOT,"%02d:%02d:%02d",seconds/3600,(seconds%3600)/60,seconds%60):String.format(Locale.ROOT,"%02d:%02d",seconds/60,seconds%60);
     }
+    private String workoutLabel() {
+        if(state.optBoolean("paused") && "inactivity".equals(state.optString("pauseReason"))) {
+            String paused=state.optString("pauseLabel","");
+            return paused.trim().isEmpty()?"Workout paused":paused;
+        }
+        return state.optString("workoutLabel","Workout");
+    }
+    static Intent workoutIntent(Context context) {
+        // Capacitor emits appUrlOpen for warm starts only for ACTION_VIEW.
+        return new Intent(context,MainActivity.class).setAction(Intent.ACTION_VIEW)
+            .setData(Uri.parse("tgym://workout")).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP|Intent.FLAG_ACTIVITY_CLEAR_TOP);
+    }
     private RemoteViews timerView(int layout, long elapsed, long rest) {
         RemoteViews content=new RemoteViews(getPackageName(),layout);
         content.setInt(R.id.accent_rail,"setBackgroundColor",notificationColor());
-        content.setTextViewText(R.id.workout_label,state.optString("workoutLabel","Workout"));
+        content.setTextViewText(R.id.workout_label,workoutLabel());
         content.setTextViewText(R.id.set_label,state.optString("setLabel",""));
         boolean resting=rest>0;
         int size=layout==R.layout.workout_notification_expanded ? 30 : 22;
@@ -87,13 +100,13 @@ public class WorkoutNotificationService extends Service {
             NotificationChannel channel=new NotificationChannel(CHANNEL,"TGym · Workout",NotificationManager.IMPORTANCE_LOW);
             channel.setSound(null,null);channel.enableVibration(false);manager.createNotificationChannel(channel);
         }
-        Intent open=new Intent(this,MainActivity.class).setData(Uri.parse("tgym://workout")).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP|Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        Intent open=workoutIntent(this);
         PendingIntent tap=PendingIntent.getActivity(this,3100,open,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
         long rest=state.optLong("restEndsAt")-now;
         RemoteViews content=timerView(R.layout.workout_notification,elapsed,rest);
         Notification notice=new NotificationCompat.Builder(this,CHANNEL)
-            .setSmallIcon(R.drawable.ic_workout_notification).setContentTitle(state.optString(rest>0?"restLabel":"workoutLabel","WORKOUT"))
-            .setContentText((rest>0?duration(rest)+" · ":"")+state.optString("workoutLabel","WORKOUT")+" "+duration(elapsed)+" · "+("inactivity".equals(state.optString("pauseReason"))?state.optString("pauseLabel","Workout paused"):state.optString("setLabel","")))
+            .setSmallIcon(R.drawable.ic_workout_notification).setContentTitle(rest>0?state.optString("restLabel","REST"):workoutLabel())
+            .setContentText((rest>0?duration(rest)+" · ":"")+workoutLabel()+" "+duration(elapsed)+" · "+state.optString("setLabel",""))
             .setCustomContentView(content)
             .setCustomBigContentView(timerView(R.layout.workout_notification_expanded,elapsed,rest))
             .setColor(notificationColor()).setStyle(new NotificationCompat.DecoratedCustomViewStyle())
