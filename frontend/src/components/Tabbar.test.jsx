@@ -16,7 +16,7 @@ it('keeps the lifted navigation target mounted while workout activity is saved d
  const capture=()=>useStore.getState().update(s=>{s.active.lastActivityAt=Date.now()})
  document.addEventListener('pointerdown',capture,true)
  try {
-  act(()=>root.render(<MemoryRouter initialEntries={['/workout']}><TabBar/><Probe/></MemoryRouter>))
+  act(()=>root.render(<MemoryRouter initialEntries={['/nutrition']}><TabBar/><Probe/></MemoryRouter>))
   const toggle=box.querySelector('#navigation-dock-toggle');act(()=>toggle.click())
   const home=box.querySelector('.navigation-dock-tab');act(()=>home.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,button:0,pointerId:1})))
   expect(home.isConnected).toBe(true);act(()=>home.click())

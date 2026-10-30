@@ -32,8 +32,8 @@ const preserved=()=>{expect(useStore.getState().S).toEqual(before);expect(localS
 const pointer=(type,x,y,target=nav())=>act(()=>target.dispatchEvent(new PointerEvent(type,{bubbles:true,cancelable:true,pointerId:1,button:0,isPrimary:true,clientX:x,clientY:y})))
 const drag=async(from,to,duration=250)=>{await pointer('pointerdown',200,from,handle());await pointer('pointermove',200,to);clock+=duration;await pointer('pointerup',200,to)}
 
-it('starts with only the fixed workout action and lift handle available, without tab chevrons or menus',async()=>{
- await mount('/workout')
+it('starts on main pages with only the fixed workout action and lift handle available, without tab chevrons or menus',async()=>{
+ await mount('/home')
  expect(handle().getAttribute('aria-label')).toBe('Open navigation');expect(handle().getAttribute('aria-expanded')).toBe('false')
  expect(handle().dataset.tour).toBe('navigation');expect(nav().hasAttribute('inert')).toBe(false)
  const slots=[...host.querySelectorAll('.navigation-dock-slot')]
@@ -46,7 +46,7 @@ it('starts with only the fixed workout action and lift handle available, without
 
 it.each([['Today','/home'],['Routine','/plan'],['Nutrition','/nutrition'],['Stats','/stats']])('lifts then navigates directly to %s, closes and preserves all stored data',async(label,path)=>{
  const writes=vi.spyOn(localStorage,'setItem'),update=vi.spyOn(useStore.getState(),'update')
- await mount('/workout');await click(handle())
+ await mount('/home');await click(handle())
  expect(handle().getAttribute('aria-label')).toBe('Close navigation');expect(handle().getAttribute('aria-expanded')).toBe('true')
  expect(tab(label).tabIndex).toBe(0);expect(tab(label).closest('[inert]')).toBeNull()
  expect(host.querySelector('.navigation-dock-backdrop')).not.toBeNull()
@@ -98,7 +98,7 @@ it('keeps Resume direct and fixed, closing an open rail without rewriting the ac
  const writes=vi.spyOn(localStorage,'setItem');await mount('/nutrition');await click(handle())
  const fixed=host.querySelector('.start');expect(fixed.parentElement.children[2]).toBe(fixed)
  expect(fixed.hasAttribute('aria-haspopup')).toBe(false);await click(fixed)
- expect(current()).toBe('/workout');expect(handle().getAttribute('aria-expanded')).toBe('false');expect(start).not.toHaveBeenCalled();expect(writes).not.toHaveBeenCalled();preserved()
+ expect(current()).toBe('/workout');expect(nav()).toBeNull();expect(handle()).toBeNull();expect(host.querySelector('.navigation-dock-backdrop')).toBeNull();expect(start).not.toHaveBeenCalled();expect(writes).not.toHaveBeenCalled();preserved()
 })
 
 it('preserves the planned Start callback and hides the whole dock during onboarding',async()=>{
@@ -128,14 +128,14 @@ it('closes its transient surface on a browser popstate without adding a history 
  await act(()=>window.dispatchEvent(new PopStateEvent('popstate')))
  expect(handle().getAttribute('aria-expanded')).toBe('false');expect(push).not.toHaveBeenCalled();preserved()
 })
-it.each([true,false])('removes the full dock in Settings and restores it collapsed on return (active=%s)',async active=>{
+it.each([['/settings',true],['/settings',false],['/workout',true],['/workout',false]])('removes the full dock in %s and restores it collapsed on return (active=%s)',async(path,active)=>{
  if(!active){before={...before,active:null};raw=JSON.stringify(before);useStore.setState({S:structuredClone(before)});localStorage.setItem('gym_state_v1',raw)}
- function Links(){const go=useNavigate();return <><button data-settings onClick={()=>go('/settings')}>Settings</button><button data-home onClick={()=>go('/home')}>Back</button><Route/></>}
+ function Links(){const go=useNavigate();return <><button data-settings onClick={()=>go(path)}>Open page</button><button data-home onClick={()=>go('/home')}>Back</button><Route/></>}
  await act(()=>root.render(<MemoryRouter initialEntries={['/home']}><Links/><TabBar onStart={start}/></MemoryRouter>))
  expect(host.querySelector('.start').textContent).toBe(active?'Resume':'Start')
  await click(handle());expect(host.querySelector('.navigation-dock-backdrop')).not.toBeNull()
  await click(host.querySelector('[data-settings]'))
- expect(current()).toBe('/settings');expect(nav()).toBeNull();expect(host.querySelector('.start')).toBeNull();expect(host.querySelector('.navigation-dock-backdrop')).toBeNull()
+ expect(current()).toBe(path);expect(nav()).toBeNull();expect(host.querySelector('.start')).toBeNull();expect(host.querySelector('.navigation-dock-backdrop')).toBeNull()
  const goBack=vi.fn(),handler=makeBackHandler({getSheets:()=>[],closeSheet:vi.fn(),toast:vi.fn(),goBack,exit:vi.fn()})
  expect(handler({canGoBack:true})).toBe('history');expect(goBack).toHaveBeenCalledOnce()
  await click(host.querySelector('[data-home]'))

@@ -10,6 +10,8 @@ import { useUI } from '../store/useUI.js'
 import { registerNavigationBack } from '../lib/back.js'
 import './NavigationDock.css'
 
+const DOCK_PAGES = new Set(['/home','/plan','/library','/nutrition','/stats','/body','/records','/history','/progress'])
+
 export default function TabBar({ onStart }) {
   const nav = useNavigate()
   const loc = useLocation()
@@ -20,7 +22,8 @@ export default function TabBar({ onStart }) {
   const [open,setOpen]=useState(false),[progress,setProgress]=useState(null)
   const dock=useRef(null),toggle=useRef(null),backdrop=useRef(null),gesture=useRef(null),suppressClick=useRef(false)
   const covered=useUI(s=>s.sheets.length>0||!!s.appTourRequest||!!s.appTourWorkoutPreview)
-  const available=!!(user||isGuest)&&!onboarding&&!/^\/settings(?:\/|$)/.test(loc.pathname)
+  const page=loc.pathname.replace(/\/+$/,'')||'/home'
+  const available=!!(user||isGuest)&&!onboarding&&DOCK_PAGES.has(page)
   const close=restoreFocus=>{gesture.current=null;setProgress(null);setOpen(false);if(restoreFocus||document.activeElement?.closest('.navigation-dock-slot'))toggle.current?.focus({preventScroll:true})}
   useEffect(()=>{close(false)},[loc.pathname,loc.search,available,covered])
   useEffect(()=>{
@@ -47,7 +50,7 @@ export default function TabBar({ onStart }) {
     surface?.addEventListener('wheel',block,{passive:false})
     return()=>{document.removeEventListener('keydown',key);surface?.removeEventListener('wheel',block)}
   },[open,available])
-  // Settings and first-run setup own their full-screen navigation.
+  // Workout, Settings and editors own their full-screen navigation.
   if (!available) return null
   const cur = loc.pathname.split('/')[1] || 'home'
   // Each module owns its sub-screens: Exercises live under Plan, History/Report under Progress.
