@@ -200,6 +200,7 @@ public class SoundPreferencesTest {
             context.stopService(new Intent(context,WorkoutNotificationService.class));SystemClock.sleep(250);
             long now=System.currentTimeMillis(),deadline=now+1500;
             context.getSharedPreferences(SoundPreferences.PREFS,0).edit().remove("lastRest").commit();
+            // A legacy cold-alarm payload deliberately has no accentColor.
             JSONObject state=new JSONObject().put("active",true).put("paused",false).put("observedAt",now).put("elapsedMs",60000)
                 .put("workoutLabel","WORKOUT").put("restLabel","REST").put("setLabel","SET 2")
                 .put("restSignalAt",deadline).put("restEndsAt",deadline);
@@ -209,6 +210,10 @@ public class SoundPreferencesTest {
             for(int wait=0;wait<70&&playbackField("player")==null;wait++)SystemClock.sleep(100);
             assertNotNull("A native alarm can play with the WebView closed",playbackField("player"));
             assertNotNull("The foreground timer owns transient focus",playbackField("focusManager"));
+            android.service.notification.StatusBarNotification foreground=java.util.Arrays.stream(context.getSystemService(NotificationManager.class).getActiveNotifications())
+                .filter(item->item.getId()==3100).findFirst().orElse(null);
+            assertNotNull("Missing theme color still starts the foreground notification",foreground);
+            assertEquals(androidx.core.app.NotificationCompat.COLOR_DEFAULT,foreground.getNotification().color);
             assertEquals(deadline,context.getSharedPreferences(SoundPreferences.PREFS,0).getLong("lastRest",0));
             Object playing=playbackField("player");
             context.startService(new Intent(context,WorkoutNotificationService.class).putExtra("state",state.toString()));

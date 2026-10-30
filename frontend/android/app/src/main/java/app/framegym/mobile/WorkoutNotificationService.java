@@ -15,7 +15,13 @@ import java.util.Locale;
 /** Native chronometers render seconds; only phase boundaries/minute labels update here. */
 public class WorkoutNotificationService extends Service {
     private int notificationColor() {
-        try { return android.graphics.Color.parseColor(state.optString("accentColor")); }
+        return notificationColor(state.optString("accentColor",""));
+    }
+    static int notificationColor(String accent) {
+        // Legacy/cold alarm payloads have no theme color. Color.parseColor
+        // reads character zero before validating its input on Android.
+        if(accent==null || accent.trim().isEmpty())return NotificationCompat.COLOR_DEFAULT;
+        try { return android.graphics.Color.parseColor(accent); }
         catch (IllegalArgumentException e) { return NotificationCompat.COLOR_DEFAULT; }
     }
     private static final String CHANNEL="tgym_workout_live";

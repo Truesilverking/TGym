@@ -16,6 +16,13 @@ import static org.junit.Assert.*;
 @RunWith(AndroidJUnit4.class)
 public class WorkoutNotificationTest {
     private Context context;
+    @Test public void notificationColorDefaultsForMissingBlankAndMalformedAccents() {
+        for(String accent:new String[]{null,""," ","\t\r\n","not-a-color","#","#12","#gggggg","rgba(1,2,3,0.5)"})
+            assertEquals("Missing/invalid colors must not prevent foreground startup",androidx.core.app.NotificationCompat.COLOR_DEFAULT,WorkoutNotificationService.notificationColor(accent));
+        assertEquals(0xFFBF5AF2,WorkoutNotificationService.notificationColor("#BF5AF2"));
+        assertEquals(0x80336699,WorkoutNotificationService.notificationColor("#80336699"));
+        assertEquals(android.graphics.Color.RED,WorkoutNotificationService.notificationColor("red"));
+    }
     @Test public void notificationTapUsesExplicitViewIntent() {
         Context target=InstrumentationRegistry.getInstrumentation().getTargetContext();
         Intent intent=WorkoutNotificationService.workoutIntent(target);
