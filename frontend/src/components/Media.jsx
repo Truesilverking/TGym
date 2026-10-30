@@ -124,7 +124,7 @@ export default function Media({ ex, id, compact, minimizable }) {
   const customAnimation = animatedCustomImage(ex)
   const [requestedPlayback, setRequestedPlayback] = useState(null)
   const playing = requestedPlayback ?? !reduced
-  const poster = usePoster(customAnimation ? ex.img : (playing&&!bundled ? gifSrc(ex) : null), ex.id)
+  const poster = usePoster(customAnimation ? ex.img : (playing&&ex.gif&&!bundled ? gifSrc(ex) : null), ex.id)
   useEffect(() => setRequestedPlayback(null), [ex.id, reduced])
   const S = useStore(s => s.S)
   const gifSize = S.gifSize

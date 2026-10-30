@@ -20,6 +20,24 @@ afterEach(() => { act(() => root.unmount()); host.remove(); vi.restoreAllMocks()
 const mount = () => act(() => root.render(<Media ex={exercise} minimizable />))
 const src = () => host.querySelector('img').getAttribute('src')
 
+it.each([
+ ['a JPEG-only custom exercise',{id:'synthetic-front-plank',custom:true,n:'Front Plank',bp:'waist',img:'data:image/jpeg;base64,c3ludGhldGljLWpwZWc='}],
+ ['an unmatched custom exercise without media',{id:'synthetic-unmatched',custom:true,n:'Unmatched custom exercise',bp:'waist'}],
+])('does not request a GIF poster for %s',(_,ex)=>{
+ const constructed=vi.fn(),sources=[],before=structuredClone(useStore.getState().S),original=structuredClone(ex)
+ const raw=JSON.stringify(before);localStorage.setItem('gym_state_v1',raw)
+ vi.stubGlobal('Image',class {
+  constructor(){constructed()}
+  set src(value){sources.push(value);this.onerror?.()}
+ })
+ act(()=>root.render(<Media ex={ex}/>))
+ expect(constructed).not.toHaveBeenCalled();expect(sources).toEqual([])
+ expect(host.querySelector('.media-playback')).toBeNull()
+ if(ex.img)expect(src()).toBe(ex.img)
+ else expect(host.childElementCount).toBe(0)
+ expect(useStore.getState().S).toEqual(before);expect(localStorage.getItem('gym_state_v1')).toBe(raw);expect(ex).toEqual(original)
+})
+
 it('shows a bundled custom exercise GIF and still thumbnail without writing artwork into the profile',()=>{
  const ex={id:'kept-custom',custom:true,n:'Walking',bp:'cardio'},before=structuredClone(useStore.getState().S)
  const raw=JSON.stringify(before);localStorage.setItem('gym_state_v1',raw)
