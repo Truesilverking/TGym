@@ -4,6 +4,8 @@ This candidate includes pending `Dev` correction `b8720be` and the Android weigh
 
 Weight readouts use whole kg/lb across training, body measurements, goals, charts, history, calculators and visual exports. Focusing an editable value exposes its original precision. Calculations, saved records, JSON backups and editable Excel exchanges retain their precise numbers; opening, cancelling or confirming an unchanged editor does not round stored data.
 
+Legacy backups may contain numeric strings such as `"42.75"`. Shared weight entry now recognizes these values for presentation, ruler drafts and increments while leaving the original saved record untouched until an explicit edit. Empty or invalid values remain distinct from zero.
+
 The review also fixed secondary-pointer release cancelling an active ruler drag, legacy `start:null/0` excluding dated workouts from plateau/volume calculations, and repeated or absent chart-axis labels for sub-unit weight ranges.
 
 Compiled WebKit checks reproduced an existing media-cache error in both 1.15.102 and the initial candidate: a no-cors animation's opaque response could be reused for a CORS poster request. The worker now reuses an opaque media response only for compatible no-cors requests, preserving existing caches and using the normal network/error fallback otherwise. The regression fails before the correction and all 17 worker tests pass afterward.

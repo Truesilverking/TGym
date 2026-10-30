@@ -8,10 +8,13 @@ import { useUI } from '../store/useUI.js'
 import './WeightField.css'
 
 const finite = value => typeof value === 'number' && Number.isFinite(value)
+// Backups and additive migrations retain legacy numeric strings. Interpret
+// them locally without rewriting the caller's value merely by opening a field.
+const weightNumber = value => finite(value) ? value : typeof value === 'string' && value.trim() !== '' && Number.isFinite(Number(value)) ? Number(value) : null
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value))
 
 function WeightEditor({ snapshot, current, close }) {
-  const [draft, setDraft] = useState(snapshot.value)
+  const [draft, setDraft] = useState(() => weightNumber(snapshot.value) ?? snapshot.value)
   const [valid, setValid] = useState(false)
   const [error, setError] = useState(false)
   const picker = useRef(null), confirmed = useRef(false)
@@ -44,6 +47,7 @@ export default function WeightField({ value, onChange, unit = 'kg', min = 0, max
   showLabel = false, className = '', displayValue, ...inputProps }) {
   const generatedId = useId()
   const fieldId = id || generatedId
+  const numericValue = weightNumber(value)
   const open = useRef(null)
   const current = useRef(null)
   current.current = { value, onChange, unit, min, max, step, precision, nullable, disabled, contextKey }
@@ -66,7 +70,7 @@ export default function WeightField({ value, onChange, unit = 'kg', min = 0, max
     if (disabled) return
     const increment = finite(step) && step > 0 ? step : .1
     // Remove arithmetic noise without imposing a loading grid on manual input.
-    const next = Number(((finite(value) ? value : 0) + direction * increment).toPrecision(15))
+    const next = Number(((numericValue ?? 0) + direction * increment).toPrecision(15))
     onChange(clamp(next, min, max))
   }
   const name = inputProps['aria-label'] || label || t('Weight')
@@ -75,7 +79,7 @@ export default function WeightField({ value, onChange, unit = 'kg', min = 0, max
     <div className={'stp weight-field ' + className} data-nodrag>
       <button type="button" disabled={disabled} onClick={() => adjust(-1)} aria-label={t('Decrease')}><Icon name="minus"/></button>
       <span className="val">
-        <NumberField {...inputProps} id={fieldId} value={value} displayValue={displayValue ?? (finite(value) ? fmtWeight(value) : '')} nullable={nullable}
+        <NumberField {...inputProps} id={fieldId} value={value} displayValue={displayValue ?? (numericValue !== null ? fmtWeight(numericValue) : '')} nullable={nullable}
           decimal retainInvalid disabled={disabled} aria-label={name} validation={{ min, max }}
           onChange={next => { if (!disabled) onChange(next) }}/>
         {unit && <i>{unit}</i>}

@@ -144,6 +144,52 @@ it.each(['en','es'])('preserves an exact existing %s load while inline and ruler
   expect(changed).toHaveBeenCalledExactlyOnceWith(42.750000123)
 })
 
+it.each(['en','es'])('opens an accepted legacy numeric string in %s without saving on focus, blur or cancel', async lang => {
+  await setLang(lang); await mount({ initial:'42.75', step:.25 })
+  expect(inline().value).toBe('43')
+  await act(() => inline().focus()); expect(inline().value).toBe('42.75')
+  await act(() => inline().blur()); expect(inline().value).toBe('43')
+  expect(changed).not.toHaveBeenCalled()
+  await open(); expect(input().value).toBe('43'); expect(action('Done').disabled).toBe(false)
+  await act(() => input().focus()); expect(input().value).toBe(lang === 'es' ? '42,75' : '42.75')
+  await act(() => input().blur()); await act(() => action('Cancel').click())
+  expect(changed).not.toHaveBeenCalled(); expect(inline().value).toBe('43')
+  await open(); await act(() => action('Done').click())
+  expect(changed).toHaveBeenCalledExactlyOnceWith(42.75)
+  expect(localStorage.getItem('gym_state_v1')).toBeNull()
+})
+
+it.each([[1,43],[-1,42.5]])('adjusts a legacy numeric string from its exact load in direction %s', async (direction,expected) => {
+  await mount({ initial:'42.75', step:.25 })
+  const name = t(direction > 0 ? 'Increase' : 'Decrease')
+  await act(() => host.querySelector(`.weight-field button[aria-label="${name}"]`).click())
+  expect(changed).toHaveBeenCalledExactlyOnceWith(expected)
+})
+
+it('keeps a grouped large numeric string precise while focusing and canceling its ruler', async () => {
+  await mount({ initial:'1234.750000123' })
+  expect(inline().value).toBe('1,235')
+  await act(() => inline().focus()); expect(inline().value).toBe('1234.750000123')
+  await act(() => inline().blur()); expect(inline().value).toBe('1,235')
+  await open(); expect(input().value).toBe('1235')
+  await act(() => input().focus()); expect(input().value).toBe('1234.750000123')
+  await act(() => action('Cancel').click()); expect(changed).not.toHaveBeenCalled()
+})
+
+it.each([null,'','   ','invalid','Infinity'])('does not turn blank or invalid legacy value %j into a displayed or savable zero', async initial => {
+  await mount({ initial, nullable:true })
+  expect(inline().value).toBe('')
+  await act(() => { inline().focus(); inline().blur() }); expect(changed).not.toHaveBeenCalled()
+  await open(); expect(action('Done').disabled).toBe(true)
+  await act(() => action('Cancel').click()); expect(changed).not.toHaveBeenCalled()
+})
+
+it('retains zero as a valid numeric string rather than an empty optional value', async () => {
+  await mount({ initial:'0', nullable:true, min:0 }); expect(inline().value).toBe('0')
+  await open(); expect(input().value).toBe('0'); expect(action('Done').disabled).toBe(false)
+  await act(() => action('Done').click()); expect(changed).toHaveBeenCalledExactlyOnceWith(0)
+})
+
 it('retains labeled inline controls, generated label association and precise increments', async () => {
   await mount({ initial:.000001, step:.000001, showLabel:true })
   expect(host.querySelector('label').htmlFor).toBe(inline().id)
