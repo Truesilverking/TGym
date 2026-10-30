@@ -49,12 +49,38 @@ public class SoundPreferencesTest {
         return out.array();
     }
     private Object playbackField(String name) throws Exception {
-        java.lang.reflect.Field field=SoundPreferences.class.getDeclaredField(name);field.setAccessible(true);return field.get(null);
+        synchronized(SoundPreferences.class) {
+            java.lang.reflect.Field field=SoundPreferences.class.getDeclaredField(name);field.setAccessible(true);return field.get(null);
+        }
+    }
+    private Object[] playbackSnapshot() throws Exception {
+        synchronized(SoundPreferences.class) {
+            return new Object[]{playbackField("player"),playbackField("focusManager"),playbackField("focusRequest"),playbackField("focusListener")};
+        }
     }
     private void awaitPlaybackReleased() throws Exception {
-        for(int wait=0;wait<60&&playbackField("player")!=null;wait++)SystemClock.sleep(100);
-        assertNull("Finished/failed clips release MediaPlayer",playbackField("player"));
-        assertNull("Finished/failed clips release their audio-focus lease",playbackField("focusManager"));
+        long deadline=SystemClock.elapsedRealtime()+6000;
+        Object[] snapshot;
+        do {
+            snapshot=playbackSnapshot();
+            if(java.util.Arrays.stream(snapshot).allMatch(java.util.Objects::isNull))break;
+            // Sleep outside the production monitor so completion can finish.
+            SystemClock.sleep(100);
+        }while(SystemClock.elapsedRealtime()<deadline);
+        snapshot=playbackSnapshot();
+        assertNull("Finished/failed clips release MediaPlayer",snapshot[0]);
+        assertNull("Finished/failed clips release their audio-focus lease",snapshot[1]);
+        assertNull("Finished/failed clips release their focus request",snapshot[2]);
+        assertNull("Finished/failed clips release their focus listener",snapshot[3]);
+    }
+    private android.service.notification.StatusBarNotification awaitForegroundNotice() {
+        long deadline=SystemClock.elapsedRealtime()+3000;
+        do {
+            for(android.service.notification.StatusBarNotification item:context.getSystemService(NotificationManager.class).getActiveNotifications())
+                if(item.getId()==3100)return item;
+            SystemClock.sleep(100);
+        }while(SystemClock.elapsedRealtime()<deadline);
+        return null;
     }
     private void shell(String command) throws Exception {
         try(android.os.ParcelFileDescriptor.AutoCloseInputStream stream=new android.os.ParcelFileDescriptor.AutoCloseInputStream(
@@ -210,16 +236,23 @@ public class SoundPreferencesTest {
             for(int wait=0;wait<70&&playbackField("player")==null;wait++)SystemClock.sleep(100);
             assertNotNull("A native alarm can play with the WebView closed",playbackField("player"));
             assertNotNull("The foreground timer owns transient focus",playbackField("focusManager"));
-            android.service.notification.StatusBarNotification foreground=java.util.Arrays.stream(context.getSystemService(NotificationManager.class).getActiveNotifications())
-                .filter(item->item.getId()==3100).findFirst().orElse(null);
-            assertNotNull("Missing theme color still starts the foreground notification",foreground);
-            assertEquals(androidx.core.app.NotificationCompat.COLOR_DEFAULT,foreground.getNotification().color);
             assertEquals(deadline,context.getSharedPreferences(SoundPreferences.PREFS,0).getLong("lastRest",0));
             Object playing=playbackField("player");
+            synchronized(SoundPreferences.class) {
+                assertNotNull("The clip is alive before testing duplicate delivery",playing);
+                assertSame(playing,playbackField("player"));
+                assertTrue(((android.media.MediaPlayer)playing).isPlaying());
+            }
             context.startService(new Intent(context,WorkoutNotificationService.class).putExtra("state",state.toString()));
             SystemClock.sleep(100);
             assertSame("Duplicate payload/receiver refresh cannot restart the alert",playing,playbackField("player"));
             awaitPlaybackReleased();
+            // Android posts FGS notifications asynchronously. Observe the notice
+            // after the live-clip dedup assertions, without extending that clip.
+            android.service.notification.StatusBarNotification foreground=awaitForegroundNotice();
+            assertNotNull("Missing theme color still starts the foreground notification",foreground);
+            assertEquals(androidx.core.app.NotificationCompat.COLOR_DEFAULT,foreground.getNotification().color);
+            assertTrue((foreground.getNotification().flags&android.app.Notification.FLAG_FOREGROUND_SERVICE)!=0);
         }finally{
             context.stopService(new Intent(context,WorkoutNotificationService.class));WorkoutTimerAlarms.cancel(context);
             // Like POST_NOTIFICATIONS above, this grant belongs only to the
