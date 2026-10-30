@@ -2,10 +2,10 @@ import {it,expect,vi} from 'vitest'
 import {readFileSync} from 'node:fs'
 import vm from 'node:vm'
 const source=readFileSync(new URL('../../public/sw.js',import.meta.url),'utf8').replaceAll('__TGYM_CACHE__','tgym-app-1.15.25-test').replace("['__TGYM_PRECACHE__']",JSON.stringify(['index.html','assets/new.js'])).replace("['__TGYM_MEDIA__']",JSON.stringify(['img/','gif/']))
-function worker({offline=false,failInstall=false,failWrite=false,oldChunk=false,failRead=false,base='https://app.test/',mediaHit=false}={}) {
+function worker({offline=false,failInstall=false,failWrite=false,oldChunk=false,failRead=false,base='https://app.test/',mediaHit=false,mediaType}={}) {
  const handlers={}, data=new Map([['index.html',new Response('offline shell')]])
  const cache={match:async key=>{if(failRead)throw Error('denied');return data.get(typeof key==='string'?key:key.url)},put:vi.fn(async(key,value)=>{if(failWrite)throw Error('quota');data.set(typeof key==='string'?key:key.url,value.clone())})}
- const mediaCache={match:async()=>mediaHit?new Response('saved image'):undefined,put:vi.fn(async()=>{}),keys:async()=>Array.from({length:43},(_,i)=>'image'+i),delete:vi.fn(async()=>true)}
+ const mediaCache={match:async()=>{if(!mediaHit)return;const response=new Response('saved image');if(mediaType)Object.defineProperty(response,'type',{value:mediaType});return response},put:vi.fn(async()=>{}),keys:async()=>Array.from({length:43},(_,i)=>'image'+i),delete:vi.fn(async()=>true)}
  const caches={keys:async()=>['tgym-1.15.18-old','tgym-app-1.15.24-old','tgym-app-1.15.25-test','tgym-user-data','unrelated'],delete:vi.fn(),open:async key=>key==='tgym-exercise-media-v1'?mediaCache:key==='tgym-app-1.15.24-old'&&oldChunk?{match:async()=>new Response('old chunk')}:cache}
  const self={location:{origin:new URL(base).origin,href:base+'sw.js'},addEventListener:(name,fn)=>{const previous=handlers[name];handlers[name]=previous?e=>{previous(e);fn(e)}:fn},clients:{claim:vi.fn()},skipWaiting:vi.fn()}
  const fetch=vi.fn(()=>offline||failInstall?Promise.reject(Error('offline')):Promise.resolve(new Response('network')))
@@ -68,6 +68,29 @@ it('reuses viewed exercise images offline and bounds the optional media cache',a
   w.handlers.fetch({request:{method:'GET',url:'https://app.test/img/bench.jpg',destination:'image'},respondWith:p=>response=p,waitUntil:p=>refresh=p})
   expect(await (await response).text()).toBe('saved image');await refresh
   expect(w.mediaCache.delete).toHaveBeenCalledTimes(offline?0:3)
+ }
+})
+
+it.each(['cors','same-origin'])('does not serve an opaque media cache entry to a %s image request',async mode=>{
+ for(const offline of [false,true]){
+  const w=worker({offline,mediaHit:true,mediaType:'opaque'});let response
+  w.handlers.fetch({request:{method:'GET',url:'https://app.test/gif/bench.gif',destination:'image',mode},respondWith:p=>response=p,waitUntil:vi.fn()})
+  const result=await response
+  if(offline)expect(result.type).toBe('error')
+  else expect(await result.text()).toBe('network')
+  expect(w.fetch).toHaveBeenCalledOnce()
+  expect(w.mediaCache.put).toHaveBeenCalledTimes(offline?0:1)
+  expect(w.caches.delete).not.toHaveBeenCalled()
+ }
+})
+
+it('retains opaque cached animations for compatible no-cors image requests online and offline',async()=>{
+ for(const offline of [false,true]){
+  const w=worker({offline,mediaHit:true,mediaType:'opaque'});let response,refresh
+  w.handlers.fetch({request:{method:'GET',url:'https://app.test/gif/bench.gif',destination:'image',mode:'no-cors'},respondWith:p=>response=p,waitUntil:p=>refresh=p})
+  const result=await response
+  expect(result.type).toBe('opaque');expect(await result.text()).toBe('saved image');await refresh
+  expect(w.fetch).toHaveBeenCalledOnce();expect(w.caches.delete).not.toHaveBeenCalled()
  }
 })
 

@@ -72,6 +72,9 @@ self.addEventListener('fetch',e=>{
   e.respondWith((async()=>{
    let cache,hit
    try {cache=await caches.open(MEDIA_CACHE);hit=await cache.match(e.request)}catch{}
+   // A poster's CORS request can share a URL with a no-cors animation. Opaque
+   // cached responses are usable only for no-cors requests, including fallback.
+   if(hit?.type==='opaque'&&e.request.mode!=='no-cors')hit=null
    const refresh=(async()=>{
     try {const response=await fetch(e.request)
      if(cache&&(response.ok||response.type==='opaque'))try {

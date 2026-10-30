@@ -6,6 +6,8 @@ Weight readouts use whole kg/lb across training, body measurements, goals, chart
 
 The review also fixed secondary-pointer release cancelling an active ruler drag, legacy `start:null/0` excluding dated workouts from plateau/volume calculations, and repeated or absent chart-axis labels for sub-unit weight ranges.
 
+Compiled WebKit checks reproduced an existing media-cache error in both 1.15.102 and the initial candidate: a no-cors animation's opaque response could be reused for a CORS poster request. The worker now reuses an opaque media response only for compatible no-cors requests, preserving existing caches and using the normal network/error fallback otherwise. The regression fails before the correction and all 17 worker tests pass afterward.
+
 Local verification on 2026-10-30: frontend 2,729 tests in 242 files, API 16, MCP 38, catalogue 6, Node-loadability, locale/source-string/version checks and fatigue probes pass. The integrated source was reviewed independently. Earlier incomplete test runs are retained privately; the final frontend run passes without failures.
 
 Compiled Android, Pixel QA, mobile WebKit, offline/update and exact-source CI results will be recorded before publication. Safari/WebKit automation is not physical iPhone acceptance or a native iOS build. No finite audit guarantees that every possible error has been eliminated.
