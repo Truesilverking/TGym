@@ -1,0 +1,31 @@
+{
+  "original": true,
+  "externalMediaInputs": false,
+  "asset": "nordic-hold.gif",
+  "dimensions": [
+    512,
+    512
+  ],
+  "frames": 17,
+  "authoredFrames": 36,
+  "frameDurationMs": 80,
+  "durationMs": 2880,
+  "gifBytes": 155054,
+  "renderer": "render_custom_exercises.py + original primitives in render_stepmill.py; 3x antialiasing",
+  "movement": "Nordic hamstring hold",
+  "reference": {
+    "url": "https://www.orthopt.org/uploads/OP_v26no2_FINAL_Web.pdf",
+    "usedFor": "Primary clinical protocol: secured feet and straight upper body; this candidate holds a fixed lean for time."
+  },
+  "reviewStatus": "Candidate only: contact-sheet and loop review required before assignment",
+  "productionAssigned": false,
+  "physicalExerciseValidation": false,
+  "firstFrameRig": {
+    "isometric": true,
+    "bodyLeanFromVerticalDegrees": 35,
+    "kneesHipsShouldersCollinear": true,
+    "ankles": "fixed under padded support",
+    "jointExcursionPx": 0,
+    "notReverseNordic": true
+  }
+}

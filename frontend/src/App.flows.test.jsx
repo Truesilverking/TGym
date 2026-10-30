@@ -206,7 +206,7 @@ it('starts scheduled work, navigates away, resumes, cancels early finish, then s
 it('cancels bulk routine deletion, then deletes and undoes without changing history or schedule', async () => {
   const data = { ...structuredClone(DEF), ...buildDemoState(), lang: 'en', hasCompletedOnboarding: true, hasCompletedAppTour: true }
   mirror.value = structuredClone(data)
-  await mount(); await click('Routine')
+  await mount(); await click('Routine'); await click('Week & routines')
   const before = structuredClone(useStore.getState().S)
   await click('Delete all routines'); await click('Cancel')
   expect(useStore.getState().S.routines).toEqual(before.routines)

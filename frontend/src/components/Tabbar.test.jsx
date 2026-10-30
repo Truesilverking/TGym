@@ -5,6 +5,7 @@ import {MemoryRouter,useLocation} from 'react-router-dom'
 import {it,expect,vi} from 'vitest'
 import Tabbar from './TabBar.jsx'
 import {useStore,DEF} from '../store/useStore.js'
+import {useUI} from '../store/useUI.js'
 vi.mock('../lib/api.js',()=>({api:vi.fn(async()=>({}))}))
 globalThis.IS_REACT_ACT_ENVIRONMENT=true
 it('keeps navigation buttons mounted when workout activity is saved during pointer capture',()=>{
@@ -16,6 +17,11 @@ it('keeps navigation buttons mounted when workout activity is saved during point
  try {
   act(()=>root.render(<MemoryRouter initialEntries={['/workout']}><Tabbar/><Probe/></MemoryRouter>))
   const home=box.querySelector('button');act(()=>home.dispatchEvent(new Event('pointerdown',{bubbles:true})))
-  expect(home.isConnected).toBe(true);act(()=>home.click());expect(box.querySelector('output').textContent).toBe('/home')
- } finally {document.removeEventListener('pointerdown',capture,true);act(()=>root.unmount());box.remove();localStorage.clear()}
+  expect(home.isConnected).toBe(true);act(()=>home.click());expect(home.getAttribute('aria-expanded')).toBe('true')
+  const sheet=useUI.getState().sheets.at(-1);const menu=document.createElement('div');box.append(menu);const menuRoot=createRoot(menu)
+  act(()=>menuRoot.render(sheet.render(()=>useUI.getState().closeSheet(sheet.id))))
+  act(()=>[...menu.querySelectorAll('button')].find(node=>node.textContent==='Training').click())
+  expect(box.querySelector('output').textContent).toBe('/home');expect(home.getAttribute('aria-expanded')).toBe('false')
+  act(()=>menuRoot.unmount())
+ } finally {document.removeEventListener('pointerdown',capture,true);act(()=>root.unmount());useUI.getState().closeAll();box.remove();localStorage.clear()}
 })

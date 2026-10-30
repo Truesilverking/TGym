@@ -10,6 +10,7 @@ import org.json.JSONObject;
 public class WorkoutNotificationTestActivity extends Activity {
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
+        if(getIntent().getBooleanExtra("audioFocusOnly",false))return;
         try {
             long now=System.currentTimeMillis();
             JSONObject payload=new JSONObject().put("active",true).put("name","QA Workout")

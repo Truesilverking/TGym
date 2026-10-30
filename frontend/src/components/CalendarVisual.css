@@ -39,6 +39,7 @@
 .zoomcal .zoomcal-title>b { font-size:18px; font-weight:700; white-space:normal; overflow:visible; text-overflow:clip; line-height:1.3; overflow-wrap:anywhere; }
 .zoomcal[data-level="months"] .zoomcal-title>b { font-size:28px; letter-spacing:-.04em; }
 .zoomcal .zoomcal-period-active { display:flex; align-items:center; justify-content:space-between; gap:14px; padding:12px 14px; margin-bottom:10px; border-radius:12px; background:var(--surface-2); }
+.zoomcal:not(.streak-calendar) .zoomcal-period-active { justify-content:flex-end; background:transparent; padding:0 2px; }
 .zoomcal .zoomcal-period-active>div { min-width:0; }
 .zoomcal .zoomcal-period-active b { font-size:13px; color:var(--label); }
 .zoomcal .zoomcal-period-active p { margin:4px 0 0; max-width:40ch; font-size:11px; line-height:1.45; color:var(--label-2); }
@@ -82,6 +83,13 @@
 .zoomcal.zoomcal .zoomcal-legend .zoomcal-today-key { box-shadow:inset 0 0 0 1px var(--label); }
 .zoomcal.zoomcal .zoomcal-legend i.zoomcal-future-key { border-style:dashed; }
 .calendar-export .zoomcal-day { max-width:48px; }
+.nutrition-calendar .nutri-date { margin-bottom:14px; }
+.nutrition-calendar>.zoomcal { border:0; padding:0; border-radius:0; background:transparent; }
+.zoomcal.date-picker .calendar-date { --calendar-fill:var(--surface-2); --calendar-ink:var(--label); --calendar-border:var(--sep); }
+.zoomcal.date-picker .calendar-date.selected { --calendar-fill:var(--acc); --calendar-ink:var(--on-acc); --calendar-border:var(--acc); }
+.zoomcal.date-picker .calendar-date[data-recorded="true"]::before { content:""; position:absolute; left:50%; bottom:4px; width:4px; height:4px; border-radius:50%; background:var(--calendar-ink); transform:translateX(-50%); }
+.zoomcal.date-picker .zoomcal-picker-today { display:flex; justify-content:center; margin-top:12px; }
+.consistency-active-label { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
 @container (max-width:430px) {
   .zoomcal .zoomcal-periods.months { gap:10px 7px; }
   .zoomcal .zoomcal-periods>button { padding:6px; gap:6px; }

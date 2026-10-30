@@ -1,0 +1,266 @@
+{
+  "original": true,
+  "externalMediaInputs": false,
+  "containsPrivateProfileData": false,
+  "productionAssigned": false,
+  "assetCount": 13,
+  "totalGifBytes": 5270935,
+  "totalPosterBytes": 352170,
+  "assets": [
+    {
+      "key": "cross-body-lat-pull-around",
+      "gif": "cross-body-lat-pull-around.gif",
+      "poster": "cross-body-lat-pull-around-poster.png",
+      "dimensions": [
+        512,
+        512
+      ],
+      "decodedFrames": 36,
+      "authoredFrames": 36,
+      "loop": 0,
+      "durationMs": 2880,
+      "gifBytes": 643933,
+      "posterBytes": 28889,
+      "gifSha256": "05735a03d4113d688aa926ae8c67ed743b02b2be7f524fd788c7ab913fee35c8",
+      "posterSha256": "63f2d29ee2114ed166b920915b4e2601f5d2a91aa25698791e5b5eaf586285c5",
+      "provenanceFile": "cross-body-lat-pull-around-provenance.json"
+    },
+    {
+      "key": "plate-pinch-hold",
+      "gif": "plate-pinch-hold.gif",
+      "poster": "plate-pinch-hold-poster.png",
+      "dimensions": [
+        512,
+        512
+      ],
+      "decodedFrames": 12,
+      "authoredFrames": 36,
+      "loop": 0,
+      "durationMs": 2880,
+      "gifBytes": 198832,
+      "posterBytes": 35470,
+      "gifSha256": "7a333a74215e2492c554cd8a84181df4ba7a3d5f21106ac3b61c5f8578ede036",
+      "posterSha256": "704fd32442b8477b9f5ff1cdbce8e7e1245b46685954eb29c2a8af4f56768a99",
+      "provenanceFile": "plate-pinch-hold-provenance.json"
+    },
+    {
+      "key": "bayesian-cable-curl",
+      "gif": "bayesian-cable-curl.gif",
+      "poster": "bayesian-cable-curl-poster.png",
+      "dimensions": [
+        512,
+        512
+      ],
+      "decodedFrames": 36,
+      "authoredFrames": 36,
+      "loop": 0,
+      "durationMs": 2880,
+      "gifBytes": 614785,
+      "posterBytes": 30264,
+      "gifSha256": "a362e365546a44e8a15192c6ba0fcc70d080a08eb20f656522ccd3986dd4c7fd",
+      "posterSha256": "12c4d4912d1458c56e5a3e606aeee77dfc65f968ffda76eea5ce0c508552c281",
+      "provenanceFile": "bayesian-cable-curl-provenance.json"
+    },
+    {
+      "key": "spanish-squat-hold",
+      "gif": "spanish-squat-hold.gif",
+      "poster": "spanish-squat-hold-poster.png",
+      "dimensions": [
+        512,
+        512
+      ],
+      "decodedFrames": 12,
+      "authoredFrames": 36,
+      "loop": 0,
+      "durationMs": 2880,
+      "gifBytes": 127070,
+      "posterBytes": 20046,
+      "gifSha256": "6ac4814337483f69ab72a94250e3e3815b9290c435a58c1aa96ce1f4057503b0",
+      "posterSha256": "b97bdb7450a9797f9dd92263c951605c41f3ea95cc108a33b1afaa5e010a5f5f",
+      "provenanceFile": "spanish-squat-hold-provenance.json"
+    },
+    {
+      "key": "nordic-hold",
+      "gif": "nordic-hold.gif",
+      "poster": "nordic-hold-poster.png",
+      "dimensions": [
+        512,
+        512
+      ],
+      "decodedFrames": 17,
+      "authoredFrames": 36,
+      "loop": 0,
+      "durationMs": 2880,
+      "gifBytes": 155054,
+      "posterBytes": 21673,
+      "gifSha256": "c059b296bdb47140b4ead39764aabbfdbb0f04863ff9f83f5bf58534815588f3",
+      "posterSha256": "867cffd042eafc2226d641eb9e0156da86191132a53e2d1bf9b43071d2f21be7",
+      "provenanceFile": "nordic-hold-provenance.json"
+    },
+    {
+      "key": "dead-hang",
+      "gif": "dead-hang.gif",
+      "poster": "dead-hang-poster.png",
+      "dimensions": [
+        512,
+        512
+      ],
+      "decodedFrames": 12,
+      "authoredFrames": 36,
+      "loop": 0,
+      "durationMs": 2880,
+      "gifBytes": 184394,
+      "posterBytes": 27231,
+      "gifSha256": "6820cdaea8f1a17ab387b115513397df6cbfe3efaab816499429146afe6bd1f6",
+      "posterSha256": "54d89e2d9040dff94affba0cf1645c0368f96e22c128cd8b82be82c2bb7bc937",
+      "provenanceFile": "dead-hang-provenance.json"
+    },
+    {
+      "key": "captains-chair-knee-raise",
+      "gif": "captains-chair-knee-raise.gif",
+      "poster": "captains-chair-knee-raise-poster.png",
+      "dimensions": [
+        512,
+        512
+      ],
+      "decodedFrames": 36,
+      "authoredFrames": 36,
+      "loop": 0,
+      "durationMs": 2880,
+      "gifBytes": 434091,
+      "posterBytes": 18666,
+      "gifSha256": "1f7e2f5dbd47b9e5ffde877b08f7d4b2d8218f7a55dac460656343c8e4af1be6",
+      "posterSha256": "f0f4efa588e5aaa1a99ae07e59b989a92e159e6b9b8dff690883c4e868219f79",
+      "provenanceFile": "captains-chair-knee-raise-provenance.json"
+    },
+    {
+      "key": "suitcase-carry",
+      "gif": "suitcase-carry.gif",
+      "poster": "suitcase-carry-poster.png",
+      "dimensions": [
+        512,
+        512
+      ],
+      "decodedFrames": 36,
+      "authoredFrames": 36,
+      "loop": 0,
+      "durationMs": 2160,
+      "gifBytes": 366511,
+      "posterBytes": 20082,
+      "gifSha256": "cc9c9b9bd90a484ec6ff1f6ddfad6164b8f6b90aab8f08208772ed66157d57ff",
+      "posterSha256": "33acc0cb411300cd9e328a316606b569f186c621df13fd900abdab35e0a32729",
+      "provenanceFile": "suitcase-carry-provenance.json"
+    },
+    {
+      "key": "walking-flat-ground",
+      "gif": "walking-flat-ground.gif",
+      "poster": "walking-flat-ground-poster.png",
+      "dimensions": [
+        512,
+        512
+      ],
+      "decodedFrames": 36,
+      "authoredFrames": 36,
+      "loop": 0,
+      "durationMs": 2160,
+      "gifBytes": 337426,
+      "posterBytes": 19855,
+      "gifSha256": "728b167171249de14b6a8ff157a19ee95f66f43136279a40584beaa41cf7cd27",
+      "posterSha256": "6c7c04b924ba2ce575a546ff5405573744448dcb38802194947051fd9849de29",
+      "provenanceFile": "walking-flat-ground-provenance.json"
+    },
+    {
+      "key": "standing-bent-knee-calf-raise",
+      "gif": "standing-bent-knee-calf-raise.gif",
+      "poster": "standing-bent-knee-calf-raise-poster.png",
+      "dimensions": [
+        512,
+        512
+      ],
+      "decodedFrames": 36,
+      "authoredFrames": 36,
+      "loop": 0,
+      "durationMs": 2880,
+      "gifBytes": 396643,
+      "posterBytes": 23256,
+      "gifSha256": "b3a331e31fdadd3d88b7d9077dae10ff49e3200104685bb049b087c7d0daa43b",
+      "posterSha256": "7a54ea7f29359891bab0bc0c4ced3518a58769d5d394cfedd7f37fbf028fff64",
+      "provenanceFile": "standing-bent-knee-calf-raise-provenance.json"
+    },
+    {
+      "key": "machine-hip-thrust",
+      "gif": "machine-hip-thrust.gif",
+      "poster": "machine-hip-thrust-poster.png",
+      "dimensions": [
+        512,
+        512
+      ],
+      "decodedFrames": 36,
+      "authoredFrames": 36,
+      "loop": 0,
+      "durationMs": 2880,
+      "gifBytes": 481216,
+      "posterBytes": 30619,
+      "gifSha256": "8dc4bf693956a13a22efa036da32a21c2ef7d2858e19dc89c9e6a50bcff34ae1",
+      "posterSha256": "607ec69c76e9ab4b5af8e8c40fa5e06f9c43f7b8494629a2a1752bb18ec3da1d",
+      "provenanceFile": "machine-hip-thrust-provenance.json"
+    },
+    {
+      "key": "overhead-cable-triceps-ez-bar",
+      "gif": "overhead-cable-triceps-ez-bar.gif",
+      "poster": "overhead-cable-triceps-ez-bar-poster.png",
+      "dimensions": [
+        512,
+        512
+      ],
+      "decodedFrames": 36,
+      "authoredFrames": 36,
+      "loop": 0,
+      "durationMs": 2880,
+      "gifBytes": 648771,
+      "posterBytes": 33033,
+      "gifSha256": "5894eda7c57f3a9fd927cda0e5803248f134a4991dc58e21264df54a61e97f33",
+      "posterSha256": "0636762e90d13c829f97e023769a60bca76ba38165e14d4e1724a5a42cb1f25e",
+      "provenanceFile": "overhead-cable-triceps-ez-bar-provenance.json"
+    },
+    {
+      "key": "stepmill-continuous-walk",
+      "gif": "stepmill-continuous-walk.gif",
+      "poster": "stepmill-continuous-walk-poster.png",
+      "dimensions": [
+        512,
+        512
+      ],
+      "decodedFrames": 36,
+      "authoredFrames": 36,
+      "loop": 0,
+      "durationMs": 2160,
+      "gifBytes": 682209,
+      "posterBytes": 43086,
+      "gifSha256": "8175e908b054571c51a9a16c52c8301383afd34043e17146ea921a95507672bb",
+      "posterSha256": "6106bdd39f122ef46262e45ffc53a85c29ec77f962b9776accb7b3647c1f4b4d",
+      "provenanceFile": "stepmill-continuous-walk-provenance.json"
+    }
+  ],
+  "geometryChecks": {
+    "holdsHaveNoRepetitionExcursion": true,
+    "deadHangElbowsDegrees": 180,
+    "bayesianElbowInternalRangeDegrees": [
+      24.929587750175358,
+      138.92958775017536
+    ],
+    "bayesianArmLengthsConstant": true,
+    "calfUnilateral": true,
+    "calfFixedForefoot": [
+      328,
+      443
+    ],
+    "calfKneeFlexionDegrees": 43.01839228780091,
+    "calfShoeMaxPlanePenetrationPx": 0,
+    "hipThrustFixedShoulderAndFeet": true,
+    "hipThrustTorsoLengthPx": 111,
+    "walkingStanceWorldVelocityErrorPxPerCycle": 2.4110562435453176e-09,
+    "walkingMinimumSwingSoleClearancePx": 0.0
+  },
+  "reviewLimit": "Mathematical and visual checks only; not a clinical or physical-device exercise validation."
+}

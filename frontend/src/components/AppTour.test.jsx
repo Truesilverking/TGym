@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import React,{act} from 'react'
 import {createRoot} from 'react-dom/client'
-import {MemoryRouter} from 'react-router-dom'
+import {MemoryRouter,useLocation} from 'react-router-dom'
 import {beforeEach,afterEach,it,expect,vi} from 'vitest'
 import AppTour,{replayAppTour,TOUR_STEPS,visibleTourTarget,tourHighlightRect,tourViewport} from './AppTour.jsx'
 import {useStore,DEF} from '../store/useStore.js'
@@ -41,7 +41,7 @@ it('never selects a hidden section when the same target exists in a visible head
 })
 
 it('reveals the same target again when a route scroll reset moves it outside the viewport',async()=>{
- const target=document.createElement('div');target.dataset.tour='calendar';let top=8
+ const target=document.createElement('div');target.dataset.tour=TOUR_STEPS[0][1];let top=8
  target.getBoundingClientRect=()=>({top,bottom:top+200,left:18,right:360,width:342,height:200})
  target.scrollIntoView=vi.fn(()=>{top=8});document.body.append(target)
  await render();expect(host.querySelector('.tour-focus')).not.toBeNull()
@@ -52,6 +52,38 @@ it('reveals the same target again when a route scroll reset moves it outside the
  expect(host.querySelector('.tour-focus')).not.toBeNull()
  expect(parseFloat(host.querySelector('.tour-focus').style.top)).toBeLessThan(20)
  target.remove()
+})
+
+it('ignores retained inert panes while allowing the tour-blocked app and tab bar to be highlighted',()=>{
+ const app=document.createElement('main');app.id='app';app.inert=true
+ const hidden=document.createElement('section');hidden.inert=true;hidden.dataset.appPane='stats'
+ const stale=document.createElement('button'),visible=document.createElement('button')
+ stale.dataset.tour='stats-actions';visible.dataset.tour='stats-actions';hidden.append(stale);app.append(hidden,visible);host.append(app)
+ for(const node of [stale,visible])node.getBoundingClientRect=()=>({width:44,height:44,top:10,left:10,right:54,bottom:54})
+ expect(visibleTourTarget('stats-actions')).toBe(visible)
+ visible.inert=true;expect(visibleTourTarget('stats-actions')).toBeNull()
+ const bar=document.createElement('nav');bar.id='tabbar';bar.inert=true;bar.dataset.tour='navigation';bar.getBoundingClientRect=visible.getBoundingClientRect;host.append(bar)
+ expect(visibleTourTarget('navigation')).toBe(bar)
+})
+
+it('explains swipe/dropdown navigation and opens the visible analytics route for Stats actions',()=>{
+ expect(TOUR_STEPS[0][1]).toBe('navigation')
+ expect(TOUR_STEPS[0][3]).toContain('bottom menu')
+ for(const step of TOUR_STEPS.filter(step=>['stats-view','stats-actions'].includes(step[1])))expect(step[0]).toBe('/stats?section=history')
+ expect(TOUR_STEPS.find(step=>step[1]==='stats-view')[3]).toContain('open a section or change its order')
+})
+
+it('returns to the exact Stats section and anchor after replay without changing the active workout',async()=>{
+ const active={id:'keep-active',start:1000,entries:[{id:'0025',sets:[{w:42.75,r:8,done:false}]}]}
+ useStore.setState({S:{...useStore.getState().S,hasCompletedAppTour:true,active}})
+ replayAppTour();const before=structuredClone(useStore.getState().S)
+ function Route(){const location=useLocation();return <output data-route>{location.pathname+location.search+location.hash}</output>}
+ await act(()=>root.render(<MemoryRouter initialEntries={['/stats?section=exercise#exercise-detail']}><Route/><AppTour/></MemoryRouter>))
+ expect(host.querySelector('[data-route]').textContent).toBe('/home')
+ await click('Next');await click('Next');await click('Skip')
+ expect(host.querySelector('[data-route]').textContent).toBe('/stats?section=exercise#exercise-detail')
+ expect(host.querySelector('[role=dialog]')).toBeNull();expect(useUI.getState().appTourWorkoutPreview).toBe(false)
+ expect(useStore.getState().S).toEqual(before);expect(localStorage.getItem('gym_state_v1')).toBeNull()
 })
 
 it.each([[360,740,280],[1024,768,230],[740,360,220]])('keeps visible targets outside the tour panel at %i × %i', (width,height,panelHeight)=>{

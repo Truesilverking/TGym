@@ -17,7 +17,8 @@ public class WorkoutTimerReceiver extends BroadcastReceiver {
             if(raw==null)return;
             JSONObject state=new JSONObject(raw);
             if(!state.optBoolean("active")||WorkoutTimerAlarms.deadline(state,event)!=at||System.currentTimeMillis()<at)return;
-            WorkoutTimerAlarms.completeDue(context,state,System.currentTimeMillis());
+            // The service establishes foreground status before claiming/playing
+            // the deadline, so a cold alarm can obtain audio focus on Android 15.
             Intent refresh=new Intent(context,WorkoutNotificationService.class).setAction(context.getPackageName()+".TIMER_REFRESH");
             if(Build.VERSION.SDK_INT>=26)context.startForegroundService(refresh);else context.startService(refresh);
         }catch(Exception error){android.util.Log.w("TGymWorkoutTimer","Timer refresh unavailable",error);}

@@ -10,6 +10,7 @@ import { ACCENTS, todayISO } from '../lib/format.js'
 import { effortOf } from '../lib/history.js'
 import { api, webauthnOK, passkeyLogin, passkeyRegister, IS_ANDROID } from '../lib/api.js'
 import { pushSupported, enablePush, disablePush, sendTestPush } from '../lib/push.js'
+import { browserNotificationsSupported, requestTimerNotificationPermission, sendBrowserTestNotification } from '../lib/browser-notifications.js'
 import { wakeLockSupported } from '../lib/wakelock.js'
 import { t, LANGS, INSTR_LANGS, exerciseNameModeOf } from '../lib/i18n.js'
 import { DEMO, REPO, STANDALONE } from '../lib/demo.js'
@@ -29,7 +30,6 @@ import { APP_REPOSITORY, ORIGINAL_OPENGYM_REPOSITORY } from '../lib/app-meta.js'
 import { ReminderStatus } from '../components/ReminderPanel.jsx'
 import MeasurementReminders from '../components/MeasurementReminders.jsx'
 import WorkoutReminderSettings from '../components/WorkoutReminderSettings.jsx'
-import {InAppReminderSettings} from '../components/InAppReminders.jsx'
 import DeloadSettings from '../components/DeloadSettings.jsx'
 import { openLocalProfile } from '../components/LocalProfile.jsx'
 
@@ -338,11 +338,11 @@ export default function Settings() {
     <DeloadSettings S={S} update={update} toast={toast} reminderStatus={MOBILE && S.deload?.on && S.deload?.notifications !== false ? <ReminderStatus kind="deload" enabled /> : null} />
 
     <Section data-tour="reminders" title={t('Reminders')} className="settings-reminders">
-      <InAppReminderSettings/>
       <MeasurementReminders settingsOnly />
       {(MOBILE || !user) && <WorkoutReminderSettings />}
     </Section>
     {user && !MOBILE && <PushCard S={S} update={update} toast={toast} />}
+    {!user && !MOBILE && <BrowserAlerts S={S} toast={toast}/>}
 
     <Section title={t('Help')}><Row className="tour-replay" icon="sparkles" title={t('Replay App Tour')} accessory="chevron" onClick={replayAppTour} /></Section>
     <div data-tour="health"><Section title={t('Health')}>
@@ -479,6 +479,31 @@ function effortHelpSheet() {
   </>)
 }
 
+function BrowserAlerts({S,toast}) {
+  const supported=browserNotificationsSupported(),[permission,setPermission]=useState(()=>supported?Notification.permission:'unsupported')
+  const [busy,setBusy]=useState(false),pending=useRef(false)
+  useEffect(()=>{if(!supported)return;const refresh=()=>setPermission(Notification.permission);document.addEventListener('visibilitychange',refresh);return()=>document.removeEventListener('visibilitychange',refresh)},[supported])
+  const act=async test=>{
+    if(pending.current)return
+    pending.current=true;setBusy(true)
+    try{
+      const granted=test?permission==='granted':await requestTimerNotificationPermission()
+      setPermission(Notification.permission)
+      if(!granted){toast(t('Enable notifications in your device settings.'));return}
+      if(test){if(!await sendBrowserTestNotification(S))toast(t('Test failed'))}
+      else toast(t('Notifications on'))
+    }finally{pending.current=false;setBusy(false)}
+  }
+  return <Section title={t('Notifications')} footer={t('Browser timer alerts work while TGym is running. Reminders while TGym is closed require Push notifications through a connected server.')}>
+    <Row icon="bell" title={t(permission==='granted'?'Notifications on':permission==='unsupported'?'Not supported in this browser.':'Notifications')} subtitle={permission==='denied'?t('Enable notifications in your device settings.'):undefined}/>
+    <div className="row" style={{padding:'0 16px 12px',gap:10,flexWrap:'wrap'}}>
+      {permission==='default'&&<Button size="sm" disabled={busy} onClick={()=>act(false)}>{t('Enable notifications')}</Button>}
+      {permission==='granted'&&<Button size="sm" icon="bell" disabled={busy} onClick={()=>act(true)}>{t('Send test notification')}</Button>}
+    </div>
+    <p className="sect-f">{t('On iPhone, add TGym to the Home Screen before enabling notifications.')}</p>
+  </Section>
+}
+
 function PushCard({ S, update, toast }) {
   const [on, setOn] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -501,12 +526,15 @@ function PushCard({ S, update, toast }) {
     pending.current = false; setBusy(false)
   }
   const test = async () => {
+    if (pending.current) return
+    pending.current=true;setBusy(true)
     try { await sendTestPush(); toast(t('Test sent — should arrive any second')) }
     catch (e) { toast(e.message || t('Test failed')) }
+    finally {pending.current=false;setBusy(false)}
   }
 
   if (!supported) return (
-    <Section title={t('Notifications')}>
+    <Section title={t('Notifications')} footer={t('On iPhone, add TGym to the Home Screen before enabling notifications.')}>
       <Row icon="bellSlash" iconTint="var(--grey)" title={t('Not supported in this browser.')} />
     </Section>
   )
@@ -524,7 +552,7 @@ function PushCard({ S, update, toast }) {
       </Row>
     </Section>
     {on && <WorkoutReminderSettings serverReady /> }
-    {on && <div style={{ marginTop: -12, marginBottom: 22 }}><Button size="sm" icon="bell" onClick={test}>{t('Send test notification')}</Button></div>}
+    {on && <div style={{ marginTop: -12, marginBottom: 22 }}><Button size="sm" icon="bell" disabled={busy} onClick={test}>{t('Send test notification')}</Button></div>}
   </>
 }
 

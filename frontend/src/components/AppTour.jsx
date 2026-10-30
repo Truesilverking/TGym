@@ -7,7 +7,7 @@ import { Button } from './ui.jsx'
 import './AppTour.css'
 
 export const TOUR_STEPS = [
-  ['/home','calendar','Your training at a glance','Review your week and next routine; navigate with the bottom tabs.','Training'],
+  ['/home','navigation','Your training at a glance','Swipe between sections. Open a bottom menu to jump directly; the center button stays fixed.','Training'],
   ['/home','start','Start or resume','Start planned or freestyle training. Active sessions remain available here.','Training'],
   ['/workout','sets','Log each set','Record load, reps, time, cardio and effort; distinguish warm-up, top and back-off sets.','Training'],
   ['/workout','supersets','Pair and recover','Pair exercises, rest, substitute, pause or finish. This preview saves nothing.','Training'],
@@ -16,8 +16,8 @@ export const TOUR_STEPS = [
   ['/plan','routine-transfer','Take your routines with you','Transfer selected routines using JSON, Excel or PDF; review before importing.','Planning'],
   ['/home','streak','Explore your streak calendar','Week opens first. Switch to Month or Year, export, or expand recent workouts.','Tracking'],
   ['/home','consistency','Review consistency and session times','Times shows three recent sessions; Show more reveals the rest.','Tracking'],
-  ['/stats','stats-view','Choose your Stats view','Sections appear in the order you select them.','Tracking'],
-  ['/stats','stats-actions','Review and export your records','Open History, InBody or reports; compare weight, measurements, muscles and routine duration.','Tracking'],
+  ['/stats?section=history','stats-view','Choose your Stats view','Swipe through Stats. Use this arrow to open a section or change its order.','Tracking'],
+  ['/stats?section=history','stats-actions','Review and export your records','Open History, InBody or reports; compare weight, measurements, muscles and routine duration.','Tracking'],
   ['/progress','report','Explore your progress','Compare periods, routines and exercises; export chosen sections as PDF.','Tracking'],
   ['/library','exercises','Find and personalize exercises','Search names, muscles or equipment; inspect instructions and GIFs, edit aliases or create exercises.','Exercises'],
   ['/settings','profile','Your local profile','Edit name, photo and personal measurements; everything stays available locally.','Settings / Profile'],
@@ -32,6 +32,9 @@ export function visibleTourTarget(key) {
   return [...document.querySelectorAll(`[data-tour="${key}"]`)].find(node => {
     if (node.closest('[hidden], [aria-hidden="true"]')) return false
     for (let el=node; el; el=el.parentElement) {
+      // The tour itself makes the whole app/tab bar inert. Other inert
+      // ancestors identify retained, inactive panes and must not be spotlighted.
+      if ((el.inert || el.hasAttribute('inert')) && el.id!=='app' && el.id!=='tabbar') return false
       const style=getComputedStyle(el)
       if (style.display==='none' || style.visibility==='hidden' || style.opacity==='0' || style.contentVisibility==='hidden') return false
     }
@@ -56,7 +59,7 @@ export function tourHighlightRect(bounds,width,height,panelHeight,{left=0,top=0,
 }
 export function replayAppTour() { useUI.setState({ appTourRequest: Date.now() }) }
 export default function AppTour() {
-  const nav = useNavigate(), location = useLocation(), originalPath = useRef(location.pathname)
+  const nav = useNavigate(), location = useLocation(), currentPath=location.pathname+location.search+location.hash, originalPath = useRef(currentPath)
   const S = useStore(s => s.S), requested = useUI(s => s.appTourRequest)
   const sheets = useUI(s => s.sheets.length)
   const [step, setStep] = useState(0), [rect, setRect] = useState(null), [error, setError] = useState(''), [busy, setBusy] = useState(false)
@@ -66,7 +69,7 @@ export default function AppTour() {
   const [finishing, setFinishing] = useState(false), [returning,setReturning] = useState(false)
   const active = finishing || !!requested || (S.hasCompletedOnboarding && !S.hasCompletedAppTour)
   useEffect(() => { if (requested) {
-    originalPath.current = location.pathname; originalScroll.current = window.scrollY
+    originalPath.current = currentPath; originalScroll.current = window.scrollY
     originalFocus.current = document.activeElement?.closest?.('.tour-replay') ? '.tour-replay' : null
     setStep(0);setError('')
   } }, [requested])
@@ -76,10 +79,10 @@ export default function AppTour() {
   useEffect(()=>()=>{cancelAnimationFrame(returnFrame.current);useUI.setState({appTourWorkoutPreview:false})},[])
   useEffect(() => {
     if (!active || sheets || returning) return
-    if (location.pathname!==TOUR_STEPS[step][0]) nav(TOUR_STEPS[step][0], { replace:true })
-  }, [active, step, sheets, returning, nav, location.pathname])
+    if (currentPath!==TOUR_STEPS[step][0]) nav(TOUR_STEPS[step][0], { replace:true })
+  }, [active, step, sheets, returning, nav, currentPath])
   useEffect(()=>{
-    if(!returning || location.pathname!==originalPath.current)return
+    if(!returning || currentPath!==originalPath.current)return
     // Release the preview only after the return page has mounted. If the user
     // began on Workout, its real session can now resume behind the closed tour.
     useUI.setState({appTourRequest:null,appTourWorkoutPreview:false})
@@ -91,7 +94,7 @@ export default function AppTour() {
       window.scrollTo({top:originalScroll.current,behavior:'instant'})
       if(originalFocus.current)document.querySelector(originalFocus.current)?.focus({preventScroll:true})
     })
-  },[returning,location.pathname])
+  },[returning,currentPath])
   useEffect(() => {
     if (!active || sheets) return
     let target, frame=0, committed=false
@@ -101,7 +104,7 @@ export default function AppTour() {
       if(!committed)return
       const nextViewport=tourViewport()
       setViewport(previous=>Object.keys(nextViewport).every(key=>previous[key]===nextViewport[key])?previous:nextViewport)
-      if(location.pathname!==TOUR_STEPS[step][0])return
+      if(currentPath!==TOUR_STEPS[step][0])return
       const nextTarget=visibleTourTarget(TOUR_STEPS[step][1])
       const rootStyle=getComputedStyle(document.documentElement)
       const insets={...nextViewport,insetTop:Math.max(18,parseFloat(rootStyle.getPropertyValue('--sat'))||0),insetBottom:Math.max(18,parseFloat(rootStyle.getPropertyValue('--sab'))||0)}
@@ -128,12 +131,12 @@ export default function AppTour() {
       if(!dialog.current?.contains(document.activeElement) || document.activeElement?.disabled)dialog.current?.querySelector('[data-tour-action="next"]')?.focus({preventScroll:true})
     })
     resize?.observe(dialog.current)
-    const observer=new MutationObserver(schedule);const app=document.getElementById('app');if(app)observer.observe(app,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden','aria-hidden','class','style']})
+    const observer=new MutationObserver(schedule);const app=document.getElementById('app');if(app)observer.observe(app,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden','aria-hidden','inert','class','style']})
     const reposition=()=>{target=null;schedule()}
     window.addEventListener('resize', reposition); document.addEventListener('scroll', schedule, true)
     window.visualViewport?.addEventListener('resize',reposition);window.visualViewport?.addEventListener('scroll',schedule)
     return () => { observer.disconnect();resize?.disconnect();cancelAnimationFrame(frame);window.removeEventListener('resize', reposition);document.removeEventListener('scroll', schedule, true);window.visualViewport?.removeEventListener('resize',reposition);window.visualViewport?.removeEventListener('scroll',schedule) }
-  }, [active, step, location.pathname, sheets])
+  }, [active, step, currentPath, sheets])
   useEffect(()=>{
     if (!active || sheets) return
     const before = document.activeElement
@@ -150,7 +153,7 @@ export default function AppTour() {
     return () => { layer?.removeEventListener('wheel',preventBackgroundScroll);layer?.removeEventListener('touchmove',preventBackgroundScroll);blocked.forEach((el,i) => { el.inert = original[i] }); if (before?.isConnected) before.focus?.({preventScroll:true}) }
   },[active,sheets])
   if (!active || sheets) return null
-  const highlight=rect?.target===TOUR_STEPS[step][1] && location.pathname===TOUR_STEPS[step][0] ? rect : null
+  const highlight=rect?.target===TOUR_STEPS[step][1] && currentPath===TOUR_STEPS[step][0] ? rect : null
   const finish = async () => {
     if(finishingRequest.current || returning)return
     finishingRequest.current=true
@@ -191,7 +194,7 @@ export default function AppTour() {
       <h2 id="tour-title">{t(TOUR_STEPS[step][2])}</h2><p id="tour-copy">{t(TOUR_STEPS[step][3])}{TOUR_STEPS[step][1]==='stats-view'&&<> {t('Drag or use arrow keys to move this control.')}</>}</p>
       <progress value={step + 1} max={TOUR_STEPS.length} aria-label={t('App tour')} />
       {error && <p role="alert">{error}</p>}
-      {missing && location.pathname===TOUR_STEPS[step][0] && <p className="tour-unavailable" role="status">{t('This control is not available here. You can continue the tour.')}</p>}
+      {missing && currentPath===TOUR_STEPS[step][0] && <p className="tour-unavailable" role="status">{t('This control is not available here. You can continue the tour.')}</p>}
       </div>
       <div className="tour-actions"><Button disabled={busy||returning} onClick={finish}>{t('Skip')}</Button><Button disabled={busy||returning||step === 0} onClick={() => setStep(s => s - 1)}>{t('Back')}</Button><Button data-tour-action="next" variant="primary" disabled={busy||returning} onClick={() => step === TOUR_STEPS.length - 1 ? finish() : setStep(s => s + 1)}>{t(step === TOUR_STEPS.length - 1 ? 'Finish' : 'Next')}</Button></div>
     </section>

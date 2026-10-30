@@ -1,7 +1,8 @@
-import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { buildProgressReport, PROGRESS_PERIODS } from '../lib/progress-report.js'
+import { createStatsSnapshotSelector } from '../lib/stats-snapshot.js'
 import { t, exerciseNameFor } from '../lib/i18n.js'
 import { exerciseNameFor as reportExerciseNameFor } from '../lib/i18n-core.js'
 import { fmtNum, fmtWeight, fmtDate, todayISO } from '../lib/format.js'
@@ -54,38 +55,56 @@ function Routine({routine:r,unit}) {
  </Fold>
 }
 export default function ProgressReport() {
-  const S=useStore(s=>s.S),nav=useNavigate(),[period,setPeriod]=useState('all'),[from,setFrom]=useState(S.trainingStartDate||todayISO()),[to,setTo]=useState(todayISO()),[error,setError]=useState('')
+  const snapshot=useMemo(createStatsSnapshotSelector,[])
+  const S=useStore(s=>snapshot(s.S)),nav=useNavigate(),[period,setPeriod]=useState('all'),[from,setFrom]=useState(S.trainingStartDate||todayISO()),[to,setTo]=useState(todayISO()),[error,setError]=useState('')
   const today=todayISO(),report=useMemo(()=>buildProgressReport(S,{period,from,to,now:new Date()}),[S,period,from,to,today])
   const q=report.summary
   const [section,setSection]=useState('overview'),dashboard=useState({})
   const [bodySelection,setBodySelection]=useState({}),[exportOpen,setExportOpen]=useState(false),[exportSections,setExportSections]=useState(PROGRESS_SECTIONS.map(s=>s[0]))
   const dialog=useRef(null)
-  useEffect(()=>{if(exportOpen)dialog.current?.showModal();else dialog.current?.close()},[exportOpen])
+  useLayoutEffect(()=>{
+    const node=dialog.current
+    if(exportOpen){if(!node?.open)node?.showModal()}else node?.close()
+    // Activity retains this DOM: release the modal top layer while hidden.
+    return()=>node?.close()
+  },[exportOpen])
   const selected=PROGRESS_SECTIONS.find(s=>s[0]===section)
-  const [busy,setBusy]=useState(false),[file,setFile]=useState(null),exporting=useRef(false),currentReport=useRef(report),mounted=useRef(true)
+  const [busy,setBusy]=useState(false),[file,setFile]=useState(null),[fileUrl,setFileUrl]=useState(null),exporting=useRef(false),currentReport=useRef(report),mounted=useRef(true)
   currentReport.current=report
-  useEffect(()=>{mounted.current=true;return()=>{mounted.current=false}},[])
-  useEffect(()=>setBodySelection({}),[report])
-  useEffect(()=>{setFile(null);setError('')},[report,bodySelection])
-  useEffect(()=>()=>{if(file?.url)URL.revokeObjectURL(file.url)},[file])
+  useLayoutEffect(()=>{mounted.current=true;return()=>{mounted.current=false}},[])
+  const exportInputs=useRef({report,bodySelection})
+  useEffect(()=>{
+    const previous=exportInputs.current
+    if(previous.report===report&&previous.bodySelection===bodySelection)return
+    exportInputs.current={report,bodySelection}
+    if(previous.report!==report)setBodySelection({})
+    setFile(null);setError('')
+  },[report,bodySelection])
+  useLayoutEffect(()=>{
+    if(!file){setFileUrl(null);return}
+    const url=URL.createObjectURL(file.blob)
+    setFileUrl(url)
+    // Retain the Blob, then create a fresh URL when Activity reveals it again.
+    return()=>URL.revokeObjectURL(url)
+  },[file])
   const exportReport=async()=>{
     if(exporting.current)return
     exporting.current=true;setBusy(true);setError('');setExportOpen(false)
-    try{const result=await buildProgressFile(report,{t,name:(exercise,context)=>reportExerciseNameFor(exercise,S,context),formatNumber:fmtNum,sections:exportSections,bodySelection});if(mounted.current&&currentReport.current===report){const ready={...result,url:URL.createObjectURL(result.blob)};setFile(ready);try{await saveProgressFile(ready)}catch(e){if(e?.name!=='AbortError'&&e?.message!=='Share canceled')setError(t('Could not export. Try again.'))}}}
+    try{const result=await buildProgressFile(report,{t,name:(exercise,context)=>reportExerciseNameFor(exercise,S,context),formatNumber:fmtNum,sections:exportSections,bodySelection});if(mounted.current&&currentReport.current===report){setFile(result);try{await saveProgressFile(result)}catch(e){if(e?.name!=='AbortError'&&e?.message!=='Share canceled')setError(t('Could not export. Try again.'))}}}
     catch{setError(t('Could not export. Try again.'))}
     finally{exporting.current=false;setBusy(false)}
   }
   const download=async()=>{
     if(exporting.current)return
     exporting.current=true;setBusy(true);setError('')
-    try{await saveProgressFile(file)}catch(e){if(e?.name!=='AbortError'&&e?.message!=='Share canceled')setError(t('Could not export. Try again.'))}
+    try{await saveProgressFile({...file,url:fileUrl})}catch(e){if(e?.name!=='AbortError'&&e?.message!=='Share canceled')setError(t('Could not export. Try again.'))}
     finally{exporting.current=false;setBusy(false)}
   }
   return <DashboardContext.Provider value={dashboard}><div className="progress-report">
     <div className="hdr"><div><h1 data-tour="report">{t('Progress Report')}</h1><p className="sub">{t('Baseline → Current → Change → Trend')}</p></div><Button size="sm" onClick={()=>nav('/stats')}>{t('Back')}</Button></div>
 <ModuleSwitch items={PROGRESS_VIEWS} current="/progress" />
     <div className="card progress-controls"><label>{t('Period')}<select className="input" disabled={busy} value={period} onChange={e=>setPeriod(e.target.value)}>{PROGRESS_PERIODS.map(([v,l])=><option key={v} value={v}>{t(l)}</option>)}</select></label><label>{t('Section')}<select className="input" value={section} onChange={e=>setSection(e.target.value)}>{PROGRESS_SECTIONS.map(([id,title])=><option key={id} value={id}>{t(title)}</option>)}</select></label>{period==='custom'&&<><label>{t('From')}<input className="input" type="date" disabled={busy} value={from} max={to} onChange={e=>setFrom(e.target.value)}/></label><label>{t('To')}<input className="input" type="date" disabled={busy} value={to} min={from} max={today} onChange={e=>setTo(e.target.value)}/></label></>}<Button variant="primary" icon="download" disabled={busy||!!report.range.error} onClick={()=>setExportOpen(true)}>{t(busy?'Working…':'Export Progress Report')} · PDF</Button></div>
-    {file&&<section className="card progress-file" aria-label={t('Export Progress Report')}><p role="status"><b>{file.name}</b></p><div className="progress-actions"><Button variant="primary" icon="download" disabled={busy} onClick={download}>{t(MOBILE?'Share / save':'Download')}</Button>{!MOBILE&&<a className="btn" href={file.url} target="_blank" rel="noopener noreferrer">{t('Open')}</a>}</div></section>}
+    {file&&<section className="card progress-file" aria-label={t('Export Progress Report')}><p role="status"><b>{file.name}</b></p><div className="progress-actions"><Button variant="primary" icon="download" disabled={busy} onClick={download}>{t(MOBILE?'Share / save':'Download')}</Button>{!MOBILE&&<a className="btn" href={fileUrl||undefined} target="_blank" rel="noopener noreferrer">{t('Open')}</a>}</div></section>}
     {(error||report.range.error)&&<p role="alert">{error||t(report.range.error)}</p>}
     {q&&<>
       <PathContext.Provider value={section}><section className="card progress-panel" aria-label={t(selected[1])}><h2>{t(selected[1])}</h2><p className="dim">{t(selected[2])}</p>

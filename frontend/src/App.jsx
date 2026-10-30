@@ -16,22 +16,15 @@ import { useWakeLock } from './lib/wakelock.js'
 import { startFlow, openMeasurementEntry } from './sheets.jsx'
 import Icon from './components/Icon.jsx'
 import TabBar from './components/TabBar.jsx'
+import ModuleDeck from './components/ModuleDeck.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
 import Modals from './components/Modals.jsx'
 import Toast from './components/Toast.jsx'
 import RestTimer from './components/RestTimer.jsx'
 import Login from './views/Login.jsx'
 import MobileOnboarding from './views/MobileOnboarding.jsx'
-import Home from './views/Home.jsx'
-import Plan from './views/Plan.jsx'
 import RoutineEdit from './views/RoutineEdit.jsx'
 import Workout from './views/Workout.jsx'
-import Stats from './views/Stats.jsx'
-import ProgressReport from './views/ProgressReport.jsx'
-import Records from './views/Records.jsx'
-import History from './views/History.jsx'
-import Library from './views/Library.jsx'
-import Nutrition from './views/Nutrition.jsx'
 import Settings from './views/Settings.jsx'
 import Admin from './views/Admin.jsx'
 import AppLock from './components/AppLock.jsx'
@@ -186,6 +179,7 @@ function Shell() {
           else navigate('/home')
           return
         }
+        if (extra?.type === 'deload') { navigate('/home'); return }
         if (extra?.type !== 'measurement') return
         if (!disposed) openMeasurementEntry(extra.metrics?.[0] || 'weight')
       })
@@ -193,6 +187,16 @@ function Shell() {
     }).catch(() => {})
     return () => { disposed = true; void listener?.remove() }
   }, [ready, storageError])
+  useEffect(()=>{
+    if(!ready||!navigator.serviceWorker)return
+    const open=event=>{
+      if(event.data?.type!=='TGYM_NOTIFICATION_NAVIGATE'||!['/home','/workout','/body'].includes(event.data.route))return
+      try{if(!event.source?.scriptURL||new URL(event.source.scriptURL).origin!==location.origin)return}catch{return}
+      nativeNavigate.current(event.data.route==='/workout'&&!useStore.getState().S.active?'/home':event.data.route)
+    }
+    navigator.serviceWorker.addEventListener('message',open)
+    return()=>navigator.serviceWorker.removeEventListener('message',open)
+  },[ready])
   useEffect(() => {
     if (!MOBILE || !ready) return
     const sync = () => { if (document.visibilityState !== 'hidden') void syncReminder(useStore.getState().S) }
@@ -203,7 +207,7 @@ function Shell() {
   }, [ready])
   useEffect(() => { setNav(navigate) }, [navigate])
   // every tab/route change starts at the top of the page
-  useEffect(() => { window.scrollTo(0, 0) }, [loc.pathname])
+  useEffect(() => { window.scrollTo(0, 0) }, [loc.pathname,loc.search])
   // bound to the workout, not to the route — checking Stats mid-session keeps the screen on
   useWakeLock(ready && !storageError && !!S.active && S.keepAwake !== false)
 
@@ -250,25 +254,28 @@ function Shell() {
         <OfflineStatus />
         {storageWarning && <aside className="offline-status" role="alert">{t(storageWarning==='primary'?'Could not save changes. Try again.':'Local backup is unavailable. Export your data as a precaution.')}</aside>}
         {/* Reset route errors/animation without restarting offline readiness. */}
-        <div className="vfade" key={loc.pathname}>
-        <ErrorBoundary>
+        <div className="vfade">
+        <ErrorBoundary resetKey={loc.pathname+loc.search} allowDiscardWorkout={loc.pathname==='/workout'}>
           {!authed ? <Login /> : needsMobileOnboarding ? <MobileOnboarding /> : (
+            <>
+            <ModuleDeck key={user?.id||'local-profile'}/>
             <Routes>
-              <Route path="/home" element={<Home />} />
-              <Route path="/plan" element={<Plan />} />
+              <Route path="/home" element={<></>} />
+              <Route path="/plan" element={<></>} />
               <Route path="/plan/r/:id" element={<RoutineEdit />} />
               <Route path="/workout" element={<Workout />} />
-              <Route path="/stats" element={<Stats />} />
-              <Route path="/progress" element={<ProgressReport />} />
-              <Route path="/body" element={<Stats focus="body" />} />
-              <Route path="/records" element={<Records />} />
-              <Route path="/history" element={<History />} />
-              <Route path="/library" element={<Library />} />
-              <Route path="/nutrition" element={<Nutrition />} />
+              <Route path="/stats" element={<></>} />
+              <Route path="/progress" element={<></>} />
+              <Route path="/body" element={<></>} />
+              <Route path="/records" element={<></>} />
+              <Route path="/history" element={<></>} />
+              <Route path="/library" element={<></>} />
+              <Route path="/nutrition" element={<></>} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/admin" element={user?.admin ? <Admin /> : <Navigate to="/home" replace />} />
               <Route path="*" element={<Navigate to="/home" replace />} />
             </Routes>
+            </>
           )}
         </ErrorBoundary>
         </div>

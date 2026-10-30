@@ -26,6 +26,99 @@ it('persists notification mute across worker recreation and applies it to push',
  expect(second.self.registration.showNotification).toHaveBeenCalledWith('Alert',expect.objectContaining({silent:true}))
 })
 
+function notificationWorker(prefs={},windows=[],store=new Map()) {
+ const handlers={},self={location:{origin:'https://app.test',href:'https://app.test/TGym/sw.js'},
+  clients:{matchAll:vi.fn(async()=>windows),openWindow:vi.fn(async()=>{})},registration:{showNotification:vi.fn(async()=>{})},
+  addEventListener:(name,fn)=>{const previous=handlers[name];handlers[name]=previous?e=>{previous(e);fn(e)}:fn}}
+ vm.runInNewContext(source,{self,caches:{open:async()=>({match:async key=>key==='./audio-preferences'?new Response(JSON.stringify(prefs)):store.get(key),put:async(key,value)=>store.set(key,value)})},Response,URL,console,Date})
+ return{handlers,self}
+}
+const pushNotice=async(w,data)=>{let done;w.handlers.push({data:{json:()=>data},waitUntil:p=>done=p});await done;return w.self.registration.showNotification.mock.calls.at(-1)}
+
+it('uses independent push mute and timer policy with persistent scoped metadata',async()=>{
+ const w=notificationWorker({notificationSilent:true,restSilent:false,vibration:true})
+ const [title,options]=await pushNotice(w,{title:'Rest finished',tag:'rest-timer',timestamp:123})
+ expect(title).toBe('Rest finished');expect(options).toMatchObject({silent:false,renotify:true,timestamp:123,vibrate:[180,80,180],badge:'https://app.test/TGym/notification-badge.svg',data:{route:'/workout',url:'https://app.test/TGym/#/workout'}})
+ const muted=notificationWorker({notificationSilent:true});expect((await pushNotice(muted,{title:'Reminder',tag:'day-reminder'}))[1].silent).toBe(true)
+ const work=notificationWorker({workSilent:true});expect((await pushNotice(work,{tag:'work-timer'}))[1].silent).toBe(true)
+})
+it('leaves visible-app timer sound to its foreground player and never combines silent with vibration',async()=>{
+ const w=notificationWorker({},[{visibilityState:'visible'}])
+ const [,options]=await pushNotice(w,{tag:'work-timer'})
+ expect(options.silent).toBe(true);expect(options).not.toHaveProperty('vibrate')
+})
+const workerMessage=async(w,type,notification)=>{
+ let done;const port={postMessage:vi.fn()}
+ w.handlers.message({data:{type,notification},ports:[port],waitUntil:p=>done=p});await done;return port
+}
+it('serializes local and server timer notices, survives recreation, and alerts the next real occurrence',async()=>{
+ const store=new Map(),w=notificationWorker({},[],store),notice={title:'Done',tag:'work-timer',timestamp:1000}
+ let push;const local=workerMessage(w,'TGYM_TIMER_NOTICE',notice)
+ w.handlers.push({data:{json:()=>notice},waitUntil:p=>push=p})
+ const port=await local;await push
+ expect(port.postMessage).toHaveBeenCalledExactlyOnceWith({shown:true});expect(w.self.registration.showNotification).toHaveBeenCalledTimes(2)
+ expect(w.self.registration.showNotification.mock.calls.filter(([,options])=>!options.silent)).toHaveLength(1)
+ const next=notificationWorker({},[],store)
+ expect((await pushNotice(next,notice))[1]).toMatchObject({silent:true,renotify:false})
+ await pushNotice(next,{...notice,timestamp:2000})
+ expect(next.self.registration.showNotification).toHaveBeenLastCalledWith('Done',expect.objectContaining({silent:false,renotify:true,timestamp:2000}))
+ expect((await pushNotice(next,{...notice,timestamp:1500}))[1]).toMatchObject({silent:true,timestamp:2000})
+ expect(next.self.registration.showNotification.mock.calls.filter(([,options])=>!options.silent)).toHaveLength(1)
+})
+it('claims a foreground cue before a late push and never lets work cancellation policy suppress rest',async()=>{
+ const w=notificationWorker()
+ await workerMessage(w,'TGYM_TIMER_HANDLED',{tag:'work-timer',timestamp:1000})
+ expect((await pushNotice(w,{tag:'work-timer',timestamp:1000}))[1].silent).toBe(true)
+ expect((await pushNotice(w,{tag:'rest-timer',timestamp:1000}))[1].silent).toBe(false)
+})
+it('acknowledges a failed local OS notice without claiming it and can retry a later valid delivery',async()=>{
+ const w=notificationWorker();w.self.registration.showNotification.mockRejectedValueOnce(Error('unavailable'))
+ const notice={tag:'rest-timer',timestamp:1000},port=await workerMessage(w,'TGYM_TIMER_NOTICE',notice)
+ expect(port.postMessage).toHaveBeenCalledExactlyOnceWith({shown:false})
+ await pushNotice(w,notice);expect(w.self.registration.showNotification).toHaveBeenCalledTimes(2)
+})
+it('recognizes a direct page fallback already displayed during a worker handoff',async()=>{
+ const w=notificationWorker();w.self.registration.getNotifications=vi.fn(async()=>[{timestamp:1000}])
+ const port=await workerMessage(w,'TGYM_TIMER_NOTICE',{tag:'rest-timer',timestamp:1000})
+ expect(port.postMessage).toHaveBeenCalledExactlyOnceWith({shown:true})
+ expect(w.self.registration.showNotification).not.toHaveBeenCalled()
+ expect(w.self.registration.getNotifications).toHaveBeenCalledExactlyOnceWith({tag:'rest-timer'})
+})
+it('keeps a newer tagged notice intact and silent when a stale push arrives, satisfying userVisibleOnly',async()=>{
+ const w=notificationWorker();w.self.registration.getNotifications=vi.fn(async()=>[{timestamp:2000,title:'Newer timer',body:'Current result',data:{url:'https://app.test/TGym/#/workout'}}])
+ const [title,options]=await pushNotice(w,{tag:'rest-timer',timestamp:1000,title:'Old timer'})
+ expect(title).toBe('Newer timer');expect(options).toMatchObject({body:'Current result',timestamp:2000,silent:true,renotify:false})
+ expect(options).not.toHaveProperty('vibrate')
+})
+it('retains a usable push notice when optional notification reads or saved audio metadata fail',async()=>{
+ const w=notificationWorker(null)
+ w.self.registration.getNotifications=vi.fn(async()=>{throw Error('unsupported')})
+ w.self.clients.matchAll.mockRejectedValueOnce(Error('unavailable'))
+ expect((await pushNotice(w,{tag:'work-timer',timestamp:1000,title:'Done'}))[0]).toBe('Done')
+})
+it('handles malformed push data without rejecting the worker event or trusting external routes',async()=>{
+ const w=notificationWorker();let done
+ w.handlers.push({data:{json:()=>{throw Error('malformed')}},waitUntil:p=>done=p});await done
+ expect(w.self.registration.showNotification).toHaveBeenCalledWith('TGym',expect.objectContaining({body:'',data:{route:'/home',url:'https://app.test/TGym/#/home'}}))
+ const evil=notificationWorker();const [,options]=await pushNotice(evil,{tag:'rest-timer',url:'https://outside.test/#/body',title:'x'.repeat(500),body:'y'.repeat(1000)})
+ expect(options.body.length).toBe(700);expect(evil.self.registration.showNotification.mock.calls[0][0].length).toBe(150)
+ expect(options.data.url).toBe('https://app.test/TGym/#/workout')
+})
+it('opens the corresponding workout in an existing app client without focusing sibling apps',async()=>{
+ const sibling={url:'https://app.test/another/',focus:vi.fn()},app={url:'https://app.test/TGym/#/stats',focus:vi.fn(async()=>{}),navigate:vi.fn(async()=>app)}
+ const w=notificationWorker({},[sibling,app]);let done;const close=vi.fn()
+ w.handlers.notificationclick({notification:{tag:'rest-timer',data:{url:'https://app.test/TGym/#/workout'},close},waitUntil:p=>done=p});await done
+ expect(close).toHaveBeenCalledOnce();expect(app.navigate).toHaveBeenCalledExactlyOnceWith('https://app.test/TGym/#/workout');expect(app.focus).toHaveBeenCalledOnce()
+ expect(sibling.focus).not.toHaveBeenCalled();expect(w.self.clients.openWindow).not.toHaveBeenCalled()
+})
+it('retains an explicit validated route when a client needs the message fallback, or opens a new scoped window',async()=>{
+ const app={url:'https://app.test/TGym/',focus:vi.fn(async()=>{}),postMessage:vi.fn()};const w=notificationWorker({},[app]);let done
+ w.handlers.notificationclick({notification:{tag:'tgym',data:{url:'https://app.test/TGym/#/body'},close:vi.fn()},waitUntil:p=>done=p});await done
+ expect(app.postMessage).toHaveBeenCalledExactlyOnceWith({type:'TGYM_NOTIFICATION_NAVIGATE',route:'/body'})
+ const fresh=notificationWorker();fresh.handlers.notificationclick({notification:{tag:'work-timer',close:vi.fn()},waitUntil:p=>done=p});await done
+ expect(fresh.self.clients.openWindow).toHaveBeenCalledExactlyOnceWith('https://app.test/TGym/#/workout')
+})
+
 it('serves the installed root shell even online, without mixing new network HTML',async()=>{
  const w=worker();let response
  w.handlers.fetch({request:{method:'GET',url:'https://app.test/?launch=home',mode:'navigate'},respondWith:p=>response=p})

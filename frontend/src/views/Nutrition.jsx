@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { t } from '../lib/i18n.js'
@@ -7,6 +7,7 @@ import { useLocalNow } from '../lib/use-local-now.js'
 import { LB_PER_KG, CM_PER_IN } from '../lib/unit-conversion.js'
 import Icon from '../components/Icon.jsx'
 import { Button, Segmented, NumberField, SearchField, Row, Switch } from '../components/ui.jsx'
+import { ZoomCalendar } from '../sheets.jsx'
 import {
   COMMON_FOODS,
   NUTRITION_GOAL_MINIMUMS,
@@ -69,6 +70,9 @@ export default function Nutrition() {
   const daily = getDailyNutrition(S, dateIso)
   const { goals, totals } = daily
   const isToday = dateIso === today
+  const loggedDates = useMemo(() => Object.entries(S.nutrition?.logs || {}).filter(([, log]) =>
+    log && typeof log === 'object' && ((Array.isArray(log.items) && log.items.length > 0) || Number(log.waterMl) > 0)
+  ).map(([date]) => date), [S.nutrition?.logs])
 
   const remaining = goals.calories - totals.calories
   const prevIso = shiftIso(dateIso, -1)
@@ -91,7 +95,7 @@ export default function Nutrition() {
   const openAddFood = meal => useUI.getState().openSheet(close => <AddFoodSheet close={close} dateIso={dateIso} initialMeal={meal} />)
 
   return (
-    <div className="narrow">
+    <div className="narrow" id="nutrition-top">
       <div className="hdr hdr-centered">
         <span className="hdr-slot" aria-hidden="true" />
         <div className="hdr-center">
@@ -101,7 +105,8 @@ export default function Nutrition() {
         <button className="iconbtn" onClick={openGoals} aria-label={t('Nutrition goals')}><Icon name="gear" /></button>
       </div>
 
-      <div className="card nutri-date">
+      <section className="card nutrition-calendar" id="nutrition-calendar" aria-label={t('Calendar view')}>
+      <div className="nutri-date">
         <button className="iconbtn" onClick={() => setDateIso(shiftIso(dateIso, -1))} aria-label={t('Previous day')}><Icon name="chevronLeft" /></button>
         <button type="button" onClick={() => setDateIso(null)} disabled={isToday} aria-label={isToday ? undefined : t('Back to today')}>
           <b>{isToday ? t('Today') : fmtDate(dateIso, true)}</b>
@@ -109,6 +114,9 @@ export default function Nutrition() {
         </button>
         <button className="iconbtn" onClick={() => setDateIso(shiftIso(dateIso, 1))} aria-label={t('Next day')}><Icon name="chevronRight" /></button>
       </div>
+        <ZoomCalendar S={S} datePicker selectedDate={dateIso} onSelectDate={iso => setDateIso(iso === today ? null : iso)}
+          initialAnchor={new Date(dateIso + 'T12:00:00')} levels={['week', 'month', 'months']} markedDates={loggedDates} />
+      </section>
 
       {!daily.items.length && prevCount > 0 && (
         <button type="button" className="nutri-copy" onClick={copyPrevious}>
@@ -116,7 +124,7 @@ export default function Nutrition() {
         </button>
       )}
 
-      <section className="card plate" aria-label={t('Daily calories')}>
+      <section className="card plate" id="nutrition-calories" aria-label={t('Daily calories')}>
         <div className="nutri-head">
           <div>
             <div className="lbl2">{t('Daily calories')}</div>
@@ -129,7 +137,7 @@ export default function Nutrition() {
         </div>
         <div className="nutri-meter" aria-hidden="true"><i style={{ width: pct(totals.calories, goals.calories) + '%' }} /></div>
 
-        <div className="nutri-macros">
+        <div className="nutri-macros" id="nutrition-macros">
           {macros.map(m => (
             <div key={m.key} className="nutri-macro" style={{ '--meter': m.color }}>
               <div className="lbl2">{t(m.label)}</div>
@@ -142,7 +150,7 @@ export default function Nutrition() {
 
       </section>
 
-      <section className="card" aria-label={t('Hydration')} style={{ '--meter': 'var(--blue)' }}>
+      <section className="card" id="nutrition-water" aria-label={t('Hydration')} style={{ '--meter': 'var(--blue)' }}>
         <div className="nutri-water-top">
           <div>
             <div className="lbl2">{t('Hydration')}</div>
@@ -162,7 +170,7 @@ export default function Nutrition() {
         const items = daily.items.filter(it => it.meal === meal.key)
         const mealTotals = nutritionTotals(items), kcal = mealTotals.calories, protein = fmtNum(mealTotals.protein)
         return (
-          <section key={meal.key} className="card nutri-meal" aria-label={t(meal.label)}>
+          <section key={meal.key} className="card nutri-meal" id={`nutrition-${meal.key}`} aria-label={t(meal.label)}>
             <div className="nutri-meal-head">
               <div style={{ minWidth: 0 }}>
                 <h2><Icon name={meal.icon} />{t(meal.label)}</h2>

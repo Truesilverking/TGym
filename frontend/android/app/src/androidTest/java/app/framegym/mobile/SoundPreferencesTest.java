@@ -1,10 +1,14 @@
 package app.framegym.mobile;
 
 import android.app.NotificationManager;
+import android.app.NotificationChannel;
 import android.content.Context;
+import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
+import android.os.SystemClock;
 import android.util.Base64;
+import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 import org.json.JSONObject;
@@ -28,14 +32,195 @@ public class SoundPreferencesTest {
         return out.array();
     }
     private JSONObject settings(short sample) throws Exception {
-        JSONObject clip = new JSONObject().put("id", "custom_test").put("data", Base64.encodeToString(wav(sample), Base64.NO_WRAP));
+        return settings(wav(sample));
+    }
+    private JSONObject settings(byte[] data) throws Exception {
+        JSONObject clip = new JSONObject().put("id", "custom_test").put("data", Base64.encodeToString(data, Base64.NO_WRAP));
         return new JSONObject().put("enabled", true).put("vibration", true)
             .put("sounds", new JSONObject().put("rest", clip).put("notification", clip));
     }
+    private byte[] tone(int millis) {
+        int samples=16000*millis/1000;
+        ByteBuffer out=ByteBuffer.allocate(44+samples*2).order(ByteOrder.LITTLE_ENDIAN);
+        out.put("RIFF".getBytes(StandardCharsets.US_ASCII)).putInt(36+samples*2).put("WAVEfmt ".getBytes(StandardCharsets.US_ASCII));
+        out.putInt(16).putShort((short)1).putShort((short)1).putInt(16000).putInt(32000).putShort((short)2).putShort((short)16);
+        out.put("data".getBytes(StandardCharsets.US_ASCII)).putInt(samples*2);
+        for(int i=0;i<samples;i++)out.putShort((short)(Math.sin(2*Math.PI*660*i/16000)*2000));
+        return out.array();
+    }
+    private Object playbackField(String name) throws Exception {
+        java.lang.reflect.Field field=SoundPreferences.class.getDeclaredField(name);field.setAccessible(true);return field.get(null);
+    }
+    private void awaitPlaybackReleased() throws Exception {
+        for(int wait=0;wait<60&&playbackField("player")!=null;wait++)SystemClock.sleep(100);
+        assertNull("Finished/failed clips release MediaPlayer",playbackField("player"));
+        assertNull("Finished/failed clips release their audio-focus lease",playbackField("focusManager"));
+    }
+    private void shell(String command) throws Exception {
+        try(android.os.ParcelFileDescriptor.AutoCloseInputStream stream=new android.os.ParcelFileDescriptor.AutoCloseInputStream(
+            InstrumentationRegistry.getInstrumentation().getUiAutomation().executeShellCommand(command))){
+            byte[] buffer=new byte[1024];while(stream.read(buffer)!=-1){}
+        }
+    }
     @After public void reset() throws Exception {
+        context.stopService(new Intent(context,WorkoutNotificationService.class));
         SoundPreferences.stop();
+        // This class runs only against the disposable instrumentation target.
+        // Product pruning deliberately preserves OS-customized channels/assets.
+        if(Build.VERSION.SDK_INT>=26){
+            NotificationManager manager=context.getSystemService(NotificationManager.class);
+            for(NotificationChannel channel:manager.getNotificationChannels())if(channel.getId().startsWith("tgym_sound_"))manager.deleteNotificationChannel(channel.getId());
+        }
         SoundPreferences.prune(context, SoundPreferences.configure(context, new JSONObject()).getJSONObject("channels"));
         context.getSharedPreferences(SoundPreferences.PREFS, 0).edit().clear().commit();
+    }
+
+    private String channelId(byte[] data,boolean vibration) throws Exception {
+        StringBuilder hash=new StringBuilder();
+        for(byte value:java.security.MessageDigest.getInstance("SHA-256").digest(data))hash.append(String.format(java.util.Locale.ROOT,"%02x",value&255));
+        return "tgym_sound_"+hash.substring(0,24)+(vibration?"_v":"_n");
+    }
+    private String existingChannel(byte[] data,int importance,Uri sound,boolean vibration) throws Exception {
+        String id=channelId(data,true);
+        NotificationChannel channel=new NotificationChannel(id,"OS channel fixture",importance);
+        channel.setSound(sound,SoundPreferences.attributes());channel.enableVibration(vibration);
+        if(vibration)channel.setVibrationPattern(new long[]{0,200,100,200});
+        context.getSystemService(NotificationManager.class).createNotificationChannel(channel);return id;
+    }
+
+    @Test public void aNewAudioHashCannotResurrectABlockedAndroidChannel() throws Exception {
+        if(Build.VERSION.SDK_INT<26)return;
+        byte[] first=wav((short)7211),second=wav((short)7212);
+        String blocked=existingChannel(first,NotificationManager.IMPORTANCE_NONE,null,true);
+        SoundPreferences.configure(context,settings(first));
+        JSONObject legacy=SoundPreferences.config(context);legacy.remove("channelIds");
+        context.getSharedPreferences(SoundPreferences.PREFS,0).edit().putString("config",legacy.toString()).commit();
+        assertTrue(new java.io.File(new java.io.File(context.getFilesDir(),"sounds"),legacy.getJSONObject("files").getString("notification")).delete());
+        JSONObject migrated=SoundPreferences.configure(context,settings(second).put("vibration",false)).getJSONObject("channels");
+        for(String kind:new String[]{"audible","muted","silent"})assertEquals(blocked,migrated.getString(kind));
+        assertEquals(NotificationManager.IMPORTANCE_NONE,context.getSystemService(NotificationManager.class).getNotificationChannel(migrated.getString("audible")).getImportance());
+        assertEquals(blocked,SoundPreferences.fallbackChannels(context,true).getJSONObject("channels").getString("audible"));
+        SoundPreferences.prune(context,migrated);
+        assertNotNull("Blocked OS channel remains available for the owner to change",context.getSystemService(NotificationManager.class).getNotificationChannel(blocked));
+    }
+
+    @Test public void aSilentOSChoiceSurvivesReturningToAnExistingAudibleHash() throws Exception {
+        if(Build.VERSION.SDK_INT<26)return;
+        byte[] first=wav((short)7311),second=wav((short)7312);
+        String silent=existingChannel(first,NotificationManager.IMPORTANCE_HIGH,null,true);
+        SoundPreferences.configure(context,settings(second));
+        SoundPreferences.configure(context,settings(first));
+        JSONObject migrated=SoundPreferences.configure(context,settings(second)).getJSONObject("channels");
+        NotificationChannel actual=context.getSystemService(NotificationManager.class).getNotificationChannel(migrated.getString("audible"));
+        assertNull("An immutable existing target cannot turn sound back on",actual.getSound());
+        assertEquals("Reuse the owner's silent channel rather than creating a bypass ID",silent,actual.getId());
+        SoundPreferences.prune(context,migrated);
+        assertNotNull(context.getSystemService(NotificationManager.class).getNotificationChannel(silent));
+    }
+
+    @Test public void userSoundVibrationAndItsReferencedWavSurvivePresetMigrationAndPruning() throws Exception {
+        if(Build.VERSION.SDK_INT<26)return;
+        SoundPreferences.configure(context,settings(wav((short)7410)));
+        JSONObject previous=SoundPreferences.config(context);
+        Uri selected=SoundPreferences.soundUri(context,previous,"notification");
+        String selectedFile=previous.getJSONObject("files").getString("notification");
+        byte[] first=wav((short)7411),second=wav((short)7412);
+        existingChannel(first,NotificationManager.IMPORTANCE_HIGH,selected,false);
+        SoundPreferences.configure(context,settings(first));
+        JSONObject migrated=SoundPreferences.configure(context,settings(second)).getJSONObject("channels");
+        NotificationChannel actual=context.getSystemService(NotificationManager.class).getNotificationChannel(migrated.getString("audible"));
+        assertEquals(selected,actual.getSound());assertFalse("OS-disabled vibration remains disabled",actual.shouldVibrate());
+        SoundPreferences.prune(context,migrated);
+        assertTrue("A WAV referenced by a kept/customized channel must not be pruned",new java.io.File(new java.io.File(context.getFilesDir(),"sounds"),selectedFile).isFile());
+        try(java.io.InputStream sound=context.getContentResolver().openInputStream(selected)){assertTrue(sound.read()!=-1);}
+    }
+
+    @Test public void anOSRingtoneUriIsReusedWithoutGrantingAnotherProvidersUri() throws Exception {
+        if(Build.VERSION.SDK_INT<26)return;
+        byte[] first=wav((short)7511),second=wav((short)7512);
+        Uri ringtone=android.provider.Settings.System.DEFAULT_NOTIFICATION_URI;
+        String selected=existingChannel(first,NotificationManager.IMPORTANCE_HIGH,ringtone,true);
+        SoundPreferences.configure(context,settings(first));
+        JSONObject migrated=SoundPreferences.configure(context,settings(second)).getJSONObject("channels");
+        assertEquals(selected,migrated.getString("audible"));
+        assertEquals(ringtone,context.getSystemService(NotificationManager.class).getNotificationChannel(selected).getSound());
+        SoundPreferences.prune(context,migrated);
+        assertNotNull(context.getSystemService(NotificationManager.class).getNotificationChannel(selected));
+    }
+
+    @Test public void liftingABlockedAliasRestoresSeparateMutedAndQuietChannels() throws Exception {
+        if(Build.VERSION.SDK_INT<26)return;
+        JSONObject first=SoundPreferences.configure(context,settings(wav((short)7611))).getJSONObject("channels");
+        JSONObject original=SoundPreferences.config(context),second=SoundPreferences.configure(context,settings(wav((short)7612))).getJSONObject("channels");
+        JSONObject pending=SoundPreferences.config(context);
+        String unblocked=first.getString("audible");
+        // This is the persisted state immediately after the owner unblocks a
+        // formerly blocked channel; altering OS importance from app code is forbidden.
+        pending.put("channelIds",new JSONObject().put("audible",unblocked).put("muted",unblocked).put("silent",unblocked))
+            .put("channelDefaults",original.getJSONObject("channelDefaults")).put("enabled",false);
+        context.getSharedPreferences(SoundPreferences.PREFS,0).edit().putString("config",pending.toString()).commit();
+        JSONObject refreshed=SoundPreferences.channels(context);
+        assertEquals(second.getString("audible"),refreshed.getString("audible"));
+        assertNotEquals(refreshed.getString("audible"),refreshed.getString("muted"));
+        NotificationManager manager=context.getSystemService(NotificationManager.class);
+        assertNull(manager.getNotificationChannel(refreshed.getString("muted")).getSound());
+        assertNull(manager.getNotificationChannel(refreshed.getString("silent")).getSound());
+        assertEquals(refreshed.getString("muted"),SoundPreferences.notificationChannel(context,System.currentTimeMillis()));
+    }
+
+    @Test public void transientFocusIsReleasedOnCompletionStopAndDecoderFailure() throws Exception {
+        Intent host=new Intent(context,WorkoutNotificationTestActivity.class).putExtra("audioFocusOnly",true);
+        try(ActivityScenario<WorkoutNotificationTestActivity> scenario=ActivityScenario.launch(host)){
+            SoundPreferences.configure(context,settings(tone(800)).put("vibration",false));
+            assertTrue("A foreground preview obtains transient focus",SoundPreferences.play(context,"notification",true,0));
+            assertNotNull(playbackField("focusManager"));
+            assertTrue(((android.media.MediaPlayer)playbackField("player")).isPlaying());
+            awaitPlaybackReleased();
+            assertTrue(SoundPreferences.play(context,"notification",true,0));
+            SoundPreferences.stop();awaitPlaybackReleased();
+            String filename=SoundPreferences.config(context).getJSONObject("files").getString("notification");
+            try(java.io.FileOutputStream broken=new java.io.FileOutputStream(new java.io.File(new java.io.File(context.getFilesDir(),"sounds"),filename))){
+                broken.write(new byte[]{1,2,3,4});
+            }
+            assertFalse("Decoder failure must not leave music ducked",SoundPreferences.play(context,"notification",true,0));
+            awaitPlaybackReleased();
+        }
+    }
+
+    @Test public void aColdBackgroundDeadlineStartsForegroundBeforeRequestingFocus() throws Exception {
+        android.app.AlarmManager alarms=context.getSystemService(android.app.AlarmManager.class);
+        boolean exactBefore=Build.VERSION.SDK_INT<31||alarms.canScheduleExactAlarms();
+        try{
+            shell("pm grant "+context.getPackageName()+" android.permission.POST_NOTIFICATIONS");
+            if(Build.VERSION.SDK_INT>=31&&!exactBefore)shell("appops set "+context.getPackageName()+" SCHEDULE_EXACT_ALARM allow");
+            try(ActivityScenario<WorkoutNotificationTestActivity> scenario=ActivityScenario.launch(
+                new Intent(context,WorkoutNotificationTestActivity.class).putExtra("audioFocusOnly",true))){
+                SoundPreferences.configure(context,settings(tone(3000)).put("vibration",false));
+            }
+            context.stopService(new Intent(context,WorkoutNotificationService.class));SystemClock.sleep(250);
+            long now=System.currentTimeMillis(),deadline=now+1500;
+            context.getSharedPreferences(SoundPreferences.PREFS,0).edit().remove("lastRest").commit();
+            JSONObject state=new JSONObject().put("active",true).put("paused",false).put("observedAt",now).put("elapsedMs",60000)
+                .put("workoutLabel","WORKOUT").put("restLabel","REST").put("setLabel","SET 2")
+                .put("restSignalAt",deadline).put("restEndsAt",deadline);
+            context.getSharedPreferences(WorkoutTimerAlarms.PREFS,0).edit().putString("state",state.toString()).commit();
+            WorkoutTimerAlarms.sync(context,state);
+            shell("input keyevent KEYCODE_HOME");
+            for(int wait=0;wait<70&&playbackField("player")==null;wait++)SystemClock.sleep(100);
+            assertNotNull("A native alarm can play with the WebView closed",playbackField("player"));
+            assertNotNull("The foreground timer owns transient focus",playbackField("focusManager"));
+            assertEquals(deadline,context.getSharedPreferences(SoundPreferences.PREFS,0).getLong("lastRest",0));
+            Object playing=playbackField("player");
+            context.startService(new Intent(context,WorkoutNotificationService.class).putExtra("state",state.toString()));
+            SystemClock.sleep(100);
+            assertSame("Duplicate payload/receiver refresh cannot restart the alert",playing,playbackField("player"));
+            awaitPlaybackReleased();
+        }finally{
+            context.stopService(new Intent(context,WorkoutNotificationService.class));WorkoutTimerAlarms.cancel(context);
+            // Like POST_NOTIFICATIONS above, this grant belongs only to the
+            // disposable instrumentation target. Revoking exact-alarm access
+            // here would stop the app (and its test runner) on Android 12+.
+        }
     }
 
     @Test public void importedWaveAndChannelRemainReadableFromPersistedConfig() throws Exception {

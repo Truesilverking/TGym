@@ -2,61 +2,24 @@ import { emitRestStart, emitRestEnd, clearSpotifreeRest } from '../lib/spotifree
 import { create } from 'zustand'
 import { uid } from '../lib/format.js'
 import { playAppSound, vibrate } from '../lib/sound.js'
-import { api } from '../lib/api.js'
+import { createTimerPushClient } from '../lib/server-timer-push.js'
 import { t } from '../lib/i18n.js'
 import { useStore } from './useStore.js'
 import { resumeWorkoutClock, recordWorkoutActivity } from '../lib/workout-time.js'
 import {syncWorkoutNotification} from '../lib/workout-notification.js'
+import { notifyTimerFinished, requestTimerNotificationPermission } from '../lib/browser-notifications.js'
 
-// Fire-and-forget: lets the server push a "rest over" alert if this tab gets suspended
-// before the local timer completes. No-ops for guests / offline.
-const pushRestTimer = sec => { if (useStore.getState().user) api('/api/push/rest-timer', { method: 'POST', body: JSON.stringify({ seconds: sec }) }).catch(() => {}) }
-const cancelPushRestTimer = () => { if (useStore.getState().user) api('/api/push/rest-timer/cancel', { method: 'POST', body: '{}' }).catch(() => {}) }
+// Optional server alerts require the existing authenticated push subscription.
+// Static/guest/native timers make no server requests and retain local deadlines.
+const pushTimer = createTimerPushClient(()=>useStore.getState().user)
+const pushRestTimer = (sec, endsAt) => { void pushTimer('rest',sec,endsAt) }
+const cancelPushRestTimer = () => { void pushTimer('rest') }
 const timerNumber = value => { try { return Number(value) } catch { return NaN } }
 
-const notificationsSupported = () => typeof window !== 'undefined' && 'Notification' in window
-let requestRestNotificationPermissionP = null
-
-const requestRestNotificationPermission = async () => {
-  if (!notificationsSupported()) return false
-  if (Notification.permission === 'granted') return true
-  if (Notification.permission === 'denied') return false
-  if (!requestRestNotificationPermissionP) {
-    requestRestNotificationPermissionP = Notification.requestPermission()
-      .then(perm => perm === 'granted')
-      .catch(() => false)
-      .finally(() => {
-        requestRestNotificationPermissionP = null
-      })
-  }
-  return requestRestNotificationPermissionP
-}
-const quietNow = () => {
-  const r = useStore.getState().S.reminder || {}
-  if (!r.quietOn) return false
-  const now = new Date(), cur = now.getHours() * 60 + now.getMinutes()
-  const mins = x => { const [h, m] = String(x || '').split(':').map(Number); return h * 60 + m }
-  const start = mins(r.quietStart || '22:00'), end = mins(r.quietEnd || '07:00')
-  return start <= end ? cur >= start && cur < end : cur >= start || cur < end
-}
-
-const maybeRestNotification = async () => {
-  if (quietNow()) return
-  if (!notificationsSupported()) return
-  if (!document.hidden && document.visibilityState !== 'hidden') return
-  if (Notification.permission !== 'granted' && !(await requestRestNotificationPermission())) return
-  try {
-    // Android Chrome forbids the Notification constructor (Illegal constructor) - the
-    // service-worker registration path is the one that actually pops there.
-    const reg = await navigator.serviceWorker?.getRegistration?.()
-    if (reg?.showNotification) {
-      await reg.showNotification(t('Rest over — next set!'), { body: useStore.getState().S.active?.name || t('Return to your workout'), tag:'rest-timer', silent: true })
-      return
-    }
-    new Notification(t('Rest over — next set!'), { body: useStore.getState().S.active?.name || t('Return to your workout'), tag:'rest-timer', silent: true })
-  } catch {
-    // Intentionally ignore: notification APIs vary by browser and policy in edge cases.
-  }
+const signalTimerFinished = (prefs, event, occurrence) => {
+  const notice = notifyTimerFinished(prefs, event, occurrence)
+  if (notice === false) { void playAppSound(prefs, event, { occurrence }); return }
+  void Promise.resolve(notice).then(shown => { if (!shown) return playAppSound(prefs, event, { occurrence }) })
 }
 
 // Persist deadlines, not ticking seconds. This optional field is backward compatible.
@@ -124,9 +87,9 @@ export const useUI = create((set, get) => ({
     const timer = { left: sec, total, endsAt, exerciseName: exName }
     saveRest(timer)
     set({ timer })
-    void syncWorkoutNotification(useStore.getState().S.active,timer)
-    requestRestNotificationPermission()
-    pushRestTimer(sec)
+    void syncWorkoutNotification(useStore.getState().S.active,timer,{interactive:!restored})
+    if (!restored) void requestTimerNotificationPermission()
+    pushRestTimer(sec,endsAt)
     emitRestStart(sec, endsAt, timer.total, exName)
     timerTick = () => {
       const tm = get().timer
@@ -135,8 +98,8 @@ export const useUI = create((set, get) => ({
       if (left === tm.left) return
       const prefs = useStore.getState().S
       if (left <= 0) {
-        void playAppSound(prefs, 'rest', { occurrence: tm.endsAt })
-        maybeRestNotification(); get().toast(t('Rest over — next set!')); get().stopRest(); return
+        signalTimerFinished(prefs, 'rest', tm.endsAt)
+        get().toast(t('Rest over — next set!')); get().stopRest(); return
       }
       if (left <= 3) void playAppSound(prefs, 'countdown')
       set({ timer: { ...tm, left } })
@@ -157,7 +120,7 @@ export const useUI = create((set, get) => ({
     set({ timer: { ...tm, left, total: tm.total + sec, endsAt: tm.endsAt + sec * 1000 } })
     saveRest(get().timer)
     void syncWorkoutNotification(useStore.getState().S.active,get().timer)
-    pushRestTimer(left)
+    pushRestTimer(left,tm.endsAt+sec*1000)
     emitRestStart(left, tm.endsAt + sec * 1000, tm.total + sec, tm.exerciseName || '')
   },
   stopRest(announceEnd = true) {
@@ -180,8 +143,8 @@ export const useUI = create((set, get) => ({
   /* ---- work timer (issue #16) ----
      Times the set itself, not the recovery after it. Kept separate from the rest timer on
      purpose: the two mean opposite things, they must never run together, and a work set is
-     something you are watching — so it gets no server push (that endpoint says "rest over",
-     and a plank does not need a notification you are staring at anyway).
+     something you are watching. A connected, opted-in PWA can also receive a distinct
+     work-timer push if its page is suspended; this never completes a set on the server.
      `onDone(elapsedSec, { timedOut })` is called both at zero and on an early
      finish; the elapsed time is what actually gets logged, so stopping at 0:38 of a 0:45
      hold records 0:38 rather than crediting the full target. A natural finish already
@@ -198,7 +161,9 @@ export const useUI = create((set, get) => ({
     // The optional reader keeps exercise presentation live when names/preferences change.
     // It is ephemeral UI state; the timer deadline and completion callback stay untouched.
     set({ work: { left: total, total, endsAt, label, getLabel } })
-    void syncWorkoutNotification(useStore.getState().S.active,null)
+    void pushTimer('work',total,endsAt)
+    void syncWorkoutNotification(useStore.getState().S.active,null,{interactive:userInitiated})
+    if (userInitiated) void requestTimerNotificationPermission()
     workTick = () => {
       const wk = get().work
       if (!wk) return
@@ -207,7 +172,7 @@ export const useUI = create((set, get) => ({
       if (left === wk.left) return
       const prefs = useStore.getState().S
       if (left <= 0) {
-        void playAppSound(prefs, 'work', {occurrence:wk.endsAt})
+        signalTimerFinished(prefs, 'work', wk.endsAt)
         const done = workDone
         get().stopWork()
         if (done) done(wk.total, { timedOut: true, completedAt: wk.endsAt })
@@ -233,6 +198,7 @@ export const useUI = create((set, get) => ({
   },
   // Abandon without logging anything.
   stopWork() {
+    if (get().work) void pushTimer('work')
     if (get().work) useStore.getState().update(s=>{ if(s.active) { s.active.lastWorkEndedAt=Math.min(Date.now(),get().work.endsAt); delete s.active.workEndsAt } })
     if (workInt) clearInterval(workInt); workInt = null
     if (workTick) document.removeEventListener('visibilitychange', workTick); workTick = null

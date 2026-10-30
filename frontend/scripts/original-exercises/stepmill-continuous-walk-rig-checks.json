@@ -1,0 +1,974 @@
+[
+  {
+    "frame": 0,
+    "legs": [
+      {
+        "near": false,
+        "stance": true,
+        "phase": 0.5,
+        "sole": [
+          225.60000000000002,
+          376.6
+        ],
+        "kneeAngleDegrees": 126.98071783653972,
+        "treadContactErrorPx": 2.842170943040401e-14
+      },
+      {
+        "near": true,
+        "stance": true,
+        "phase": 0.0,
+        "sole": [
+          282.4,
+          351.4
+        ],
+        "kneeAngleDegrees": 93.6303588909134,
+        "treadContactErrorPx": 0.0
+      }
+    ]
+  },
+  {
+    "frame": 1,
+    "legs": [
+      {
+        "near": false,
+        "stance": true,
+        "phase": 0.5277777777777778,
+        "sole": [
+          223.15555555555557,
+          378.2666666666667
+        ],
+        "kneeAngleDegrees": 130.96756172245765,
+        "treadContactErrorPx": 2.842170943040401e-14
+      },
+      {
+        "near": true,
+        "stance": true,
+        "phase": 0.027777777777777776,
+        "sole": [
+          279.9555555555555,
+          353.06666666666666
+        ],
+        "kneeAngleDegrees": 94.61734966702316,
+        "treadContactErrorPx": 0.0
+      }
+    ]
+  },
+  {
+    "frame": 2,
+    "legs": [
+      {
+        "near": false,
+        "stance": true,
+        "phase": 0.5555555555555556,
+        "sole": [
+          220.71111111111114,
+          379.93333333333334
+        ],
+        "kneeAngleDegrees": 135.66011884458226,
+        "treadContactErrorPx": 2.842170943040401e-14
+      },
+      {
+        "near": true,
+        "stance": true,
+        "phase": 0.05555555555555555,
+        "sole": [
+          277.51111111111106,
+          354.7333333333333
+        ],
+        "kneeAngleDegrees": 95.87541849749694,
+        "treadContactErrorPx": 5.684341886080802e-14
+      }
+    ]
+  },
+  {
+    "frame": 3,
+    "legs": [
+      {
+        "near": false,
+        "stance": true,
+        "phase": 0.5833333333333334,
+        "sole": [
+          218.26666666666668,
+          381.6
+        ],
+        "kneeAngleDegrees": 141.2381826561858,
+        "treadContactErrorPx": 2.842170943040401e-14
+      },
+      {
+        "near": true,
+        "stance": true,
+        "phase": 0.08333333333333333,
+        "sole": [
+          275.06666666666666,
+          356.4
+        ],
+        "kneeAngleDegrees": 97.38569980857399,
+        "treadContactErrorPx": 0.0
+      }
+    ]
+  },
+  {
+    "frame": 4,
+    "legs": [
+      {
+        "near": false,
+        "stance": true,
+        "phase": 0.6111111111111112,
+        "sole": [
+          215.82222222222225,
+          383.2666666666667
+        ],
+        "kneeAngleDegrees": 148.0342777459196,
+        "treadContactErrorPx": 2.842170943040401e-14
+      },
+      {
+        "near": true,
+        "stance": true,
+        "phase": 0.1111111111111111,
+        "sole": [
+          272.6222222222222,
+          358.06666666666666
+        ],
+        "kneeAngleDegrees": 99.11185214770097,
+        "treadContactErrorPx": 0.0
+      }
+    ]
+  },
+  {
+    "frame": 5,
+    "legs": [
+      {
+        "near": false,
+        "stance": false,
+        "phase": 0.6388888888888888,
+        "sole": [
+          214.00846476278704,
+          378.3049619969617
+        ],
+        "kneeAngleDegrees": 137.44875034066587,
+        "treadContactErrorPx": null
+      },
+      {
+        "near": true,
+        "stance": true,
+        "phase": 0.1388888888888889,
+        "sole": [
+          270.17777777777775,
+          359.7333333333333
+        ],
+        "kneeAngleDegrees": 101.00359936858332,
+        "treadContactErrorPx": 0.0
+      }
+    ]
+  },
+  {
+    "frame": 6,
+    "legs": [
+      {
+        "near": false,
+        "stance": false,
+        "phase": 0.6666666666666666,
+        "sole": [
+          214.5888926687294,
+          358.2837532595194
+        ],
+        "kneeAngleDegrees": 104.84292177274443,
+        "treadContactErrorPx": null
+      },
+      {
+        "near": true,
+        "stance": true,
+        "phase": 0.16666666666666666,
+        "sole": [
+          267.7333333333333,
+          361.4
+        ],
+        "kneeAngleDegrees": 103.00208203734638,
+        "treadContactErrorPx": 5.684341886080802e-14
+      }
+    ]
+  },
+  {
+    "frame": 7,
+    "legs": [
+      {
+        "near": false,
+        "stance": false,
+        "phase": 0.6944444444444444,
+        "sole": [
+          217.29773075576213,
+          337.92515765555686
+        ],
+        "kneeAngleDegrees": 80.66299999563175,
+        "treadContactErrorPx": null
+      },
+      {
+        "near": true,
+        "stance": true,
+        "phase": 0.19444444444444445,
+        "sole": [
+          265.2888888888889,
+          363.06666666666666
+        ],
+        "kneeAngleDegrees": 105.04664283261499,
+        "treadContactErrorPx": 0.0
+      }
+    ]
+  },
+  {
+    "frame": 8,
+    "legs": [
+      {
+        "near": false,
+        "stance": false,
+        "phase": 0.7222222222222222,
+        "sole": [
+          221.72249643065058,
+          323.5777556983672
+        ],
+        "kneeAngleDegrees": 65.34592751490908,
+        "treadContactErrorPx": null
+      },
+      {
+        "near": true,
+        "stance": true,
+        "phase": 0.2222222222222222,
+        "sole": [
+          262.84444444444443,
+          364.7333333333333
+        ],
+        "kneeAngleDegrees": 107.08245811258666,
+        "treadContactErrorPx": 0.0
+      }
+    ]
+  },
+  {
+    "frame": 9,
+    "legs": [
+      {
+        "near": false,
+        "stance": false,
+        "phase": 0.75,
+        "sole": [
+          227.4507071001604,
+          316.2705615774225
+        ],
+        "kneeAngleDegrees": 57.20857295171116,
+        "treadContactErrorPx": null
+      },
+      {
+        "near": true,
+        "stance": true,
+        "phase": 0.25,
+        "sole": [
+          260.4,
+          366.4
+        ],
+        "kneeAngleDegrees": 109.06819328563208,
+        "treadContactErrorPx": 0.0
+      }
+    ]
+  },
+  {
+    "frame": 10,
+    "legs": [
+      {
+        "near": false,
+        "stance": false,
+        "phase": 0.7777777777777778,
+        "sole": [
+          234.0698801710568,
+          314.7245969141026
+        ],
+        "kneeAngleDegrees": 54.62986893481696,
+        "treadContactErrorPx": null
+      },
+      {
+        "near": true,
+        "stance": true,
+        "phase": 0.2777777777777778,
+        "sole": [
+          257.9555555555555,
+          368.06666666666666
+        ],
+        "kneeAngleDegrees": 110.98266194104922,
+        "treadContactErrorPx": 0.0
+      }
+    ]
+  },
+  {
+    "frame": 11,
+    "legs": [
+      {
+        "near": false,
+        "stance": false,
+        "phase": 0.8055555555555556,
+        "sole": [
+          241.1675330501053,
+          317.0092721395222
+        ],
+        "kneeAngleDegrees": 56.11551481964663,
+        "treadContactErrorPx": null
+      },
+      {
+        "near": true,
+        "stance": true,
+        "phase": 0.3055555555555556,
+        "sole": [
+          255.5111111111111,
+          369.7333333333333
+        ],
+        "kneeAngleDegrees": 112.82942267859367,
+        "treadContactErrorPx": 2.842170943040401e-14
+      }
+    ]
+  },
+  {
+    "frame": 12,
+    "legs": [
+      {
+        "near": false,
+        "stance": false,
+        "phase": 0.8333333333333333,
+        "sole": [
+          248.3311831440713,
+          321.3597258123168
+        ],
+        "kneeAngleDegrees": 60.21886144978476,
+        "treadContactErrorPx": null
+      },
+      {
+        "near": true,
+        "stance": true,
+        "phase": 0.3333333333333333,
+        "sole": [
+          253.06666666666663,
+          371.4
+        ],
+        "kneeAngleDegrees": 114.6384723980737,
+        "treadContactErrorPx": 2.842170943040401e-14
+      }
+    ]
+  },
+  {
+    "frame": 13,
+    "legs": [
+      {
+        "near": false,
+        "stance": false,
+        "phase": 0.8611111111111112,
+        "sole": [
+          255.14834785972033,
+          326.4925794997342
+        ],
+        "kneeAngleDegrees": 65.6889508773212,
+        "treadContactErrorPx": null
+      },
+      {
+        "near": true,
+        "stance": true,
+        "phase": 0.3611111111111111,
+        "sole": [
+          250.6222222222222,
+          373.06666666666666
+        ],
+        "kneeAngleDegrees": 116.46472165155912,
+        "treadContactErrorPx": 2.842170943040401e-14
+      }
+    ]
+  },
+  {
+    "frame": 14,
+    "legs": [
+      {
+        "near": false,
+        "stance": false,
+        "phase": 0.8888888888888888,
+        "sole": [
+          261.20654460381775,
+          331.63651307067107
+        ],
+        "kneeAngleDegrees": 71.60534422086432,
+        "treadContactErrorPx": null
+      },
+      {
+        "near": true,
+        "stance": true,
+        "phase": 0.3888888888888889,
+        "sole": [
+          248.17777777777775,
+          374.7333333333333
+        ],
+        "kneeAngleDegrees": 118.3836475641092,
+        "treadContactErrorPx": 2.842170943040401e-14
+      }
+    ]
+  },
+  {
+    "frame": 15,
+    "legs": [
+      {
+        "near": false,
+        "stance": false,
+        "phase": 0.9166666666666667,
+        "sole": [
+          266.09329078312896,
+          336.41304962688343
+        ],
+        "kneeAngleDegrees": 77.34579575664415,
+        "treadContactErrorPx": null
+      },
+      {
+        "near": true,
+        "stance": true,
+        "phase": 0.4166666666666667,
+        "sole": [
+          245.7333333333333,
+          376.4
+        ],
+        "kneeAngleDegrees": 120.48518758068042,
+        "treadContactErrorPx": 2.842170943040401e-14
+      }
+    ]
+  },
+  {
+    "frame": 16,
+    "legs": [
+      {
+        "near": false,
+        "stance": false,
+        "phase": 0.9444444444444444,
+        "sole": [
+          269.3961038044195,
+          340.6495041424797
+        ],
+        "kneeAngleDegrees": 82.44713733607652,
+        "treadContactErrorPx": null
+      },
+      {
+        "near": true,
+        "stance": true,
+        "phase": 0.4444444444444444,
+        "sole": [
+          243.28888888888886,
+          378.06666666666666
+        ],
+        "kneeAngleDegrees": 122.867372166277,
+        "treadContactErrorPx": 2.842170943040401e-14
+      }
+    ]
+  },
+  {
+    "frame": 17,
+    "legs": [
+      {
+        "near": false,
+        "stance": false,
+        "phase": 0.9722222222222222,
+        "sole": [
+          270.7025010744547,
+          344.1714329053496
+        ],
+        "kneeAngleDegrees": 86.43307925896977,
+        "treadContactErrorPx": null
+      },
+      {
+        "near": true,
+        "stance": true,
+        "phase": 0.4722222222222222,
+        "sole": [
+          240.84444444444443,
+          379.7333333333333
+        ],
+        "kneeAngleDegrees": 125.63137820971369,
+        "treadContactErrorPx": 2.842170943040401e-14
+      }
+    ]
+  },
+  {
+    "frame": 18,
+    "legs": [
+      {
+        "near": false,
+        "stance": true,
+        "phase": 0.0,
+        "sole": [
+          269.6,
+          346.6
+        ],
+        "kneeAngleDegrees": 88.64884992041158,
+        "treadContactErrorPx": 0.0
+      },
+      {
+        "near": true,
+        "stance": true,
+        "phase": 0.5,
+        "sole": [
+          238.39999999999998,
+          381.4
+        ],
+        "kneeAngleDegrees": 128.8798317727887,
+        "treadContactErrorPx": 2.842170943040401e-14
+      }
+    ]
+  },
+  {
+    "frame": 19,
+    "legs": [
+      {
+        "near": false,
+        "stance": true,
+        "phase": 0.02777777777777768,
+        "sole": [
+          267.15555555555557,
+          348.2666666666667
+        ],
+        "kneeAngleDegrees": 89.82522343289945,
+        "treadContactErrorPx": 0.0
+      },
+      {
+        "near": true,
+        "stance": true,
+        "phase": 0.5277777777777778,
+        "sole": [
+          235.95555555555552,
+          383.06666666666666
+        ],
+        "kneeAngleDegrees": 132.72080738772885,
+        "treadContactErrorPx": 2.842170943040401e-14
+      }
+    ]
+  },
+  {
+    "frame": 20,
+    "legs": [
+      {
+        "near": false,
+        "stance": true,
+        "phase": 0.05555555555555558,
+        "sole": [
+          264.7111111111111,
+          349.93333333333334
+        ],
+        "kneeAngleDegrees": 91.26697869805596,
+        "treadContactErrorPx": 0.0
+      },
+      {
+        "near": true,
+        "stance": true,
+        "phase": 0.5555555555555556,
+        "sole": [
+          233.5111111111111,
+          384.7333333333333
+        ],
+        "kneeAngleDegrees": 137.28227330946808,
+        "treadContactErrorPx": 2.842170943040401e-14
+      }
+    ]
+  },
+  {
+    "frame": 21,
+    "legs": [
+      {
+        "near": false,
+        "stance": true,
+        "phase": 0.08333333333333348,
+        "sole": [
+          262.26666666666665,
+          351.6
+        ],
+        "kneeAngleDegrees": 92.95479733444165,
+        "treadContactErrorPx": 0.0
+      },
+      {
+        "near": true,
+        "stance": true,
+        "phase": 0.5833333333333334,
+        "sole": [
+          231.06666666666663,
+          386.4
+        ],
+        "kneeAngleDegrees": 142.74972206281777,
+        "treadContactErrorPx": 2.842170943040401e-14
+      }
+    ]
+  },
+  {
+    "frame": 22,
+    "legs": [
+      {
+        "near": false,
+        "stance": true,
+        "phase": 0.11111111111111116,
+        "sole": [
+          259.82222222222225,
+          353.2666666666667
+        ],
+        "kneeAngleDegrees": 94.85242436610635,
+        "treadContactErrorPx": 0.0
+      },
+      {
+        "near": true,
+        "stance": true,
+        "phase": 0.6111111111111112,
+        "sole": [
+          228.6222222222222,
+          388.06666666666666
+        ],
+        "kneeAngleDegrees": 149.47204352280298,
+        "treadContactErrorPx": 2.842170943040401e-14
+      }
+    ]
+  },
+  {
+    "frame": 23,
+    "legs": [
+      {
+        "near": false,
+        "stance": true,
+        "phase": 0.13888888888888884,
+        "sole": [
+          257.3777777777778,
+          354.93333333333334
+        ],
+        "kneeAngleDegrees": 96.91032129844028,
+        "treadContactErrorPx": 0.0
+      },
+      {
+        "near": true,
+        "stance": false,
+        "phase": 0.6388888888888888,
+        "sole": [
+          226.80846476278697,
+          383.10496199696166
+        ],
+        "kneeAngleDegrees": 138.1589598846144,
+        "treadContactErrorPx": null
+      }
+    ]
+  },
+  {
+    "frame": 24,
+    "legs": [
+      {
+        "near": false,
+        "stance": true,
+        "phase": 0.16666666666666652,
+        "sole": [
+          254.93333333333337,
+          356.6
+        ],
+        "kneeAngleDegrees": 99.07102658424218,
+        "treadContactErrorPx": 2.842170943040401e-14
+      },
+      {
+        "near": true,
+        "stance": false,
+        "phase": 0.6666666666666666,
+        "sole": [
+          227.38889266872934,
+          363.0837532595193
+        ],
+        "kneeAngleDegrees": 104.95283162740256,
+        "treadContactErrorPx": null
+      }
+    ]
+  },
+  {
+    "frame": 25,
+    "legs": [
+      {
+        "near": false,
+        "stance": true,
+        "phase": 0.19444444444444442,
+        "sole": [
+          252.4888888888889,
+          358.2666666666667
+        ],
+        "kneeAngleDegrees": 101.27581399703877,
+        "treadContactErrorPx": 2.842170943040401e-14
+      },
+      {
+        "near": true,
+        "stance": false,
+        "phase": 0.6944444444444444,
+        "sole": [
+          230.09773075576211,
+          342.7251576555568
+        ],
+        "kneeAngleDegrees": 80.588364206246,
+        "treadContactErrorPx": null
+      }
+    ]
+  },
+  {
+    "frame": 26,
+    "legs": [
+      {
+        "near": false,
+        "stance": true,
+        "phase": 0.22222222222222232,
+        "sole": [
+          250.04444444444445,
+          359.93333333333334
+        ],
+        "kneeAngleDegrees": 103.47205778160279,
+        "treadContactErrorPx": 0.0
+      },
+      {
+        "near": true,
+        "stance": false,
+        "phase": 0.7222222222222222,
+        "sole": [
+          234.52249643065056,
+          328.3777556983672
+        ],
+        "kneeAngleDegrees": 65.3849279300365,
+        "treadContactErrorPx": null
+      }
+    ]
+  },
+  {
+    "frame": 27,
+    "legs": [
+      {
+        "near": false,
+        "stance": true,
+        "phase": 0.25,
+        "sole": [
+          247.60000000000002,
+          361.6
+        ],
+        "kneeAngleDegrees": 105.62051726179442,
+        "treadContactErrorPx": 2.842170943040401e-14
+      },
+      {
+        "near": true,
+        "stance": false,
+        "phase": 0.75,
+        "sole": [
+          240.25070710016035,
+          321.07056157742244
+        ],
+        "kneeAngleDegrees": 57.70266757608017,
+        "treadContactErrorPx": null
+      }
+    ]
+  },
+  {
+    "frame": 28,
+    "legs": [
+      {
+        "near": false,
+        "stance": true,
+        "phase": 0.2777777777777777,
+        "sole": [
+          245.1555555555556,
+          363.2666666666667
+        ],
+        "kneeAngleDegrees": 107.70159439787533,
+        "treadContactErrorPx": 5.684341886080802e-14
+      },
+      {
+        "near": true,
+        "stance": false,
+        "phase": 0.7777777777777778,
+        "sole": [
+          246.86988017105676,
+          319.5245969141025
+        ],
+        "kneeAngleDegrees": 55.85064034937781,
+        "treadContactErrorPx": null
+      }
+    ]
+  },
+  {
+    "frame": 29,
+    "legs": [
+      {
+        "near": false,
+        "stance": true,
+        "phase": 0.3055555555555556,
+        "sole": [
+          242.71111111111114,
+          364.93333333333334
+        ],
+        "kneeAngleDegrees": 109.71959545133949,
+        "treadContactErrorPx": 2.842170943040401e-14
+      },
+      {
+        "near": true,
+        "stance": false,
+        "phase": 0.8055555555555556,
+        "sole": [
+          253.9675330501053,
+          321.80927213952225
+        ],
+        "kneeAngleDegrees": 58.15652248265852,
+        "treadContactErrorPx": null
+      }
+    ]
+  },
+  {
+    "frame": 30,
+    "legs": [
+      {
+        "near": false,
+        "stance": true,
+        "phase": 0.3333333333333335,
+        "sole": [
+          240.26666666666668,
+          366.6
+        ],
+        "kneeAngleDegrees": 111.70424487241576,
+        "treadContactErrorPx": 2.842170943040401e-14
+      },
+      {
+        "near": true,
+        "stance": false,
+        "phase": 0.8333333333333334,
+        "sole": [
+          261.1311831440713,
+          326.15972581231676
+        ],
+        "kneeAngleDegrees": 63.03119346030333,
+        "treadContactErrorPx": null
+      }
+    ]
+  },
+  {
+    "frame": 31,
+    "legs": [
+      {
+        "near": false,
+        "stance": true,
+        "phase": 0.36111111111111116,
+        "sole": [
+          237.82222222222225,
+          368.2666666666667
+        ],
+        "kneeAngleDegrees": 113.70918180394565,
+        "treadContactErrorPx": 2.842170943040401e-14
+      },
+      {
+        "near": true,
+        "stance": false,
+        "phase": 0.8611111111111112,
+        "sole": [
+          267.9483478597203,
+          331.29257949973413
+        ],
+        "kneeAngleDegrees": 69.17325466722143,
+        "treadContactErrorPx": null
+      }
+    ]
+  },
+  {
+    "frame": 32,
+    "legs": [
+      {
+        "near": false,
+        "stance": true,
+        "phase": 0.38888888888888884,
+        "sole": [
+          235.3777777777778,
+          369.93333333333334
+        ],
+        "kneeAngleDegrees": 115.80781482160755,
+        "treadContactErrorPx": 2.842170943040401e-14
+      },
+      {
+        "near": true,
+        "stance": false,
+        "phase": 0.8888888888888888,
+        "sole": [
+          274.0065446038177,
+          336.436513070671
+        ],
+        "kneeAngleDegrees": 75.65861752260683,
+        "treadContactErrorPx": null
+      }
+    ]
+  },
+  {
+    "frame": 33,
+    "legs": [
+      {
+        "near": false,
+        "stance": true,
+        "phase": 0.4166666666666665,
+        "sole": [
+          232.93333333333337,
+          371.6
+        ],
+        "kneeAngleDegrees": 118.08752434117125,
+        "treadContactErrorPx": 2.842170943040401e-14
+      },
+      {
+        "near": true,
+        "stance": false,
+        "phase": 0.9166666666666666,
+        "sole": [
+          278.8932907831289,
+          341.2130496268834
+        ],
+        "kneeAngleDegrees": 81.86309744369224,
+        "treadContactErrorPx": null
+      }
+    ]
+  },
+  {
+    "frame": 34,
+    "legs": [
+      {
+        "near": false,
+        "stance": true,
+        "phase": 0.4444444444444444,
+        "sole": [
+          230.4888888888889,
+          373.2666666666667
+        ],
+        "kneeAngleDegrees": 120.64361635631975,
+        "treadContactErrorPx": 2.842170943040401e-14
+      },
+      {
+        "near": true,
+        "stance": false,
+        "phase": 0.9444444444444444,
+        "sole": [
+          282.19610380441947,
+          345.44950414247967
+        ],
+        "kneeAngleDegrees": 87.30496738125011,
+        "treadContactErrorPx": null
+      }
+    ]
+  },
+  {
+    "frame": 35,
+    "legs": [
+      {
+        "near": false,
+        "stance": true,
+        "phase": 0.4722222222222223,
+        "sole": [
+          228.04444444444445,
+          374.93333333333334
+        ],
+        "kneeAngleDegrees": 123.57462453488175,
+        "treadContactErrorPx": 0.0
+      },
+      {
+        "near": true,
+        "stance": false,
+        "phase": 0.9722222222222222,
+        "sole": [
+          283.50250107445464,
+          348.97143290534956
+        ],
+        "kneeAngleDegrees": 91.46695934448621,
+        "treadContactErrorPx": null
+      }
+    ]
+  }
+]

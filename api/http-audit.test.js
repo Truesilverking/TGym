@@ -91,6 +91,25 @@ test('HTTP invalid top-level state cannot overwrite an existing saved profile', 
   }
 });
 
+test('HTTP timer push endpoints require authentication, validate durations and preserve saved workout data', async () => {
+  const before = (await request('/api/data', { identity: 'audit-user' })).data.state;
+  for (const kind of ['rest', 'work']) {
+    const route = `/api/push/${kind}-timer`;
+    assert.equal((await request(route, {method:'POST',body:{seconds:60}})).status,401);
+    assert.equal((await request(route+'/cancel', {method:'POST'})).status,401);
+    for (const body of [null,[],false,'invalid'])
+      assert.equal((await request(route, {method:'POST',identity:'audit-user',body})).status,400);
+    for (const seconds of [null, false, [], {}, '', 0, -1, 3601, 'invalid'])
+      assert.equal((await request(route, {method:'POST',identity:'audit-user',body:{seconds}})).status,400);
+    for (const endsAt of [null,'invalid',Date.now()-1000,Date.now()+3601000])
+      assert.equal((await request(route, {method:'POST',identity:'audit-user',body:{seconds:60,endsAt}})).status,400);
+    assert.equal((await request(route, {method:'POST',identity:'audit-user',body:{seconds:60}})).status,200);
+    assert.equal((await request(route+'/cancel', {method:'POST',identity:'audit-user'})).status,200);
+    assert.equal((await request(route+'/cancel', {method:'POST',identity:'audit-user'})).status,200);
+  }
+  assert.deepEqual((await request('/api/data', {identity:'audit-user'})).data.state,before);
+});
+
 test('HTTP pairing codes are single-use and sign-out everywhere revokes the old session', async () => {
   const paired = await request('/api/pair/create', { method: 'POST', identity: 'audit-user' });
   assert.equal(paired.status, 200);

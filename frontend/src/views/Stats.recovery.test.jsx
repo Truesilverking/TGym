@@ -1,5 +1,6 @@
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
+import { MemoryRouter, useNavigate } from 'react-router-dom'
 import { Window } from 'happy-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MUSCLES, levelsOf } from '../lib/muscles.js'
@@ -15,6 +16,7 @@ const HOUR = 3600000
 const BASE_NOW = Date.UTC(2026, 0, 22, 12)
 
 const mocks = vi.hoisted(() => ({
+  section: 'muscles',
   maps: [],
   mapMounts: 0,
   S: {
@@ -26,7 +28,6 @@ const mocks = vi.hoisted(() => ({
 vi.mock('../store/useStore.js', () => ({
   useStore: selector => selector({ S: mocks.S }),
 }))
-vi.mock('react-router-dom', () => ({ useNavigate: () => () => {} }))
 vi.mock('../sheets.jsx', () => ({
   bwSheet: () => {}, goalSheet: () => {}, measurementsSheet: () => {}, heightSheet: () => {}, sessionTimingSheet: () => {}, inBodySheet: () => {}, confirmSheet: () => {}, workoutDetailSheet: () => {},
   WorkoutRow: () => React.createElement('div'), bwDeltaColor: () => 'inherit',
@@ -111,6 +112,7 @@ function allSubfullWorkout(now = BASE_NOW) {
 }
 
 function resetFixture(workouts = lifecycleWorkouts()) {
+  mocks.section = 'muscles'
   mocks.S.unit = 'kg'
   mocks.S.bodyweight = []
   mocks.S.workouts = workouts
@@ -140,8 +142,10 @@ function installDom() {
 
 async function mountStats() {
   installDom()
-  await act(async () => { root.render(React.createElement(Stats)) })
+  function RouterProbe(){mocks.navigate=useNavigate();return null}
+  await act(async () => { root.render(<MemoryRouter initialEntries={['/stats?section='+mocks.section]}><Stats/><RouterProbe/></MemoryRouter>) })
 }
+const showSection = section => act(async()=>mocks.navigate('/stats?section='+section))
 
 async function unmountStats() {
   if (!root) return
@@ -210,6 +214,7 @@ it('opens the existing multi-report selector from one circular download control 
 })
 
 it('exports independently of hidden Stats sections and retains the complete profile after closing and reopening',async()=>{
+ mocks.section='bodyweight'
  mocks.S.statsSections=['bodyweight']
  mocks.S.trainingStartDate=iso(BASE_NOW-DAY)
  mocks.S.bodyweight=[{d:iso(BASE_NOW-30*DAY),w:75},{d:iso(BASE_NOW),w:80}]
@@ -258,9 +263,12 @@ it('exports independently of hidden Stats sections and retains the complete prof
 })
 
 it('forwards the current independent Stats filters when opening the PDF chooser',async()=>{
+ mocks.section='bodyweight'
  mocks.S.statsSections=['overview','duration','muscles','effort','bodyweight']
  await mountStats()
  await click(buttonWithText(container.querySelector('[data-stats-section="bodyweight"]'),'1M'))
+ await showSection('overview');await showSection('duration');await showSection('effort')
+ await showSection('muscles')
  await click(balanceRangeButton('30d'))
  await click(viewButton('Strength'))
  await click(container.querySelector('.hdr [aria-label="Export Reports"]'))
@@ -286,10 +294,12 @@ afterEach(async () => {
 describe('Stats muscle recovery view runtime', () => {
   it.each([{ side: true, reps: 16 }, { side: true, repsPerSide: true, reps: 8 }])('shows unloaded per-side records as 8 reps for %j', async cfg => {
     resetFixture([workout('side', BASE_NOW, [{ id: '0025', target: { mode: 'reps', ...cfg }, sets: [set(true, { w: 0, r: cfg.reps })] }])])
+    mocks.section='exercise'
     await mountStats()
     expect(container.textContent).toContain('8 reps')
     expect(container.textContent).not.toContain('16 reps')
     expect(container.textContent).toContain('8 / side')
+    await showSection('muscles')
     expect(mocks.S.workouts[0].entries[0].sets[0].r).toBe(cfg.reps)
   })
   it('dispatches real clicks through Balance, Fatigue, and Strength and preserves selection', async () => {

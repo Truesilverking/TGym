@@ -1,14 +1,27 @@
 // @vitest-environment happy-dom
 import {beforeEach,afterEach,it,expect,vi} from 'vitest'
-const calls=vi.hoisted(()=>({sync:vi.fn(async()=>true),play:vi.fn(async()=>true)}))
+const calls=vi.hoisted(()=>({sync:vi.fn(async()=>true),play:vi.fn(async()=>true),notice:vi.fn(()=>false),permission:vi.fn(async()=>false),push:vi.fn(async()=>false)}))
 vi.mock('../lib/workout-notification.js',()=>({syncWorkoutNotification:calls.sync}))
 vi.mock('../lib/sound.js',()=>({playAppSound:calls.play,vibrate:vi.fn()}))
+vi.mock('../lib/browser-notifications.js',()=>({notifyTimerFinished:calls.notice,requestTimerNotificationPermission:calls.permission}))
+vi.mock('../lib/server-timer-push.js',()=>({createTimerPushClient:()=>calls.push}))
 import {useUI} from './useUI.js'
 import {useStore,DEF} from './useStore.js'
 beforeEach(()=>{
  vi.useFakeTimers();vi.setSystemTime(100000)
  useStore.setState({S:{...structuredClone(DEF),active:{id:'timers',start:100000,entries:[]}},user:null})
- useUI.getState().stopRest();useUI.getState().stopWork();vi.clearAllMocks()
+ useUI.getState().stopRest();useUI.getState().stopWork();vi.clearAllMocks();calls.notice.mockReturnValue(false)
+})
+it('lets an external timer notice own its sound while completing the timed set immediately',async()=>{
+ let finish;calls.notice.mockReturnValue(new Promise(resolve=>{finish=resolve}))
+ const done=vi.fn();useUI.getState().startWork(1,'Hold',done);vi.advanceTimersByTime(1000)
+ expect(done).toHaveBeenCalledExactlyOnceWith(1,{timedOut:true,completedAt:101000});expect(useUI.getState().work).toBeNull()
+ expect(calls.play).not.toHaveBeenCalled();finish(true);await Promise.resolve();expect(calls.play).not.toHaveBeenCalled()
+})
+it('falls back to the selected cue after an unavailable browser notice without changing its deadline',async()=>{
+ calls.notice.mockResolvedValue(false);useUI.getState().startRest(1);vi.advanceTimersByTime(1000)
+ expect(useUI.getState().timer).toBeNull();await Promise.resolve()
+ expect(calls.play).toHaveBeenCalledExactlyOnceWith(expect.anything(),'rest',{occurrence:101000})
 })
 afterEach(()=>{useUI.getState().stopRest();useUI.getState().stopWork();vi.useRealTimers()})
 it('sends rest start/edit/cancel to native immediately and uses the same deadline for sound deduplication',()=>{
@@ -30,4 +43,20 @@ it('sends work deadlines immediately and never sounds before the authoritative d
  expect(calls.play).toHaveBeenCalledWith(expect.anything(),'work',{occurrence:110000})
  expect(done).toHaveBeenCalledOnce();expect(done).toHaveBeenCalledWith(10,{timedOut:true,completedAt:110000})
  expect(calls.sync.mock.calls.at(-1)[0].workEndsAt).toBeUndefined();expect(useStore.getState().S.workouts).toEqual([])
+})
+it('schedules distinct server work alerts and cancels them once without delaying the timed-set result',()=>{
+ const done=vi.fn();calls.push.mockReturnValue(new Promise(()=>{}))
+ useUI.getState().startWork(30,'Hold',done)
+ expect(calls.push).toHaveBeenCalledWith('work',30,130000)
+ vi.advanceTimersByTime(10000);useUI.getState().finishWorkEarly();useUI.getState().stopWork()
+ expect(calls.push.mock.calls.filter(([kind,seconds])=>kind==='work'&&seconds===undefined)).toHaveLength(1)
+ expect(done).toHaveBeenCalledExactlyOnceWith(10,{timedOut:false})
+ expect(useStore.getState().S.active.workEndsAt).toBeUndefined();expect(useStore.getState().S.workouts).toEqual([])
+})
+it('retains the actual deadline when a suspended work timer resumes late, independently of server delivery',()=>{
+ const done=vi.fn();useUI.getState().startWork(10,'Hold',done)
+ vi.setSystemTime(500000);document.dispatchEvent(new Event('visibilitychange'))
+ expect(done).toHaveBeenCalledExactlyOnceWith(10,{timedOut:true,completedAt:110000})
+ expect(useStore.getState().S.active.lastWorkEndedAt).toBe(110000)
+ expect(calls.push).toHaveBeenLastCalledWith('work')
 })

@@ -1,0 +1,29 @@
+{
+  "original": true,
+  "externalMediaInputs": false,
+  "asset": "plate-pinch-hold.gif",
+  "dimensions": [
+    512,
+    512
+  ],
+  "frames": 12,
+  "authoredFrames": 36,
+  "frameDurationMs": 80,
+  "durationMs": 2880,
+  "gifBytes": 198832,
+  "renderer": "render_custom_exercises.py + original primitives in render_stepmill.py; 3x antialiasing",
+  "movement": "Plate pinch hold",
+  "reference": {
+    "url": "https://www.davidhorne-gripmaster.com/gripfeats.html",
+    "usedFor": "Primary grip-sport demonstration; smooth plate faces opposed by fingers and thumb."
+  },
+  "reviewStatus": "Candidate only: contact-sheet and loop review required before assignment",
+  "productionAssigned": false,
+  "physicalExerciseValidation": false,
+  "firstFrameRig": {
+    "isometric": true,
+    "grip": "thumb opposing fingers on smooth plate faces, top rim",
+    "plateTranslationPx": 0,
+    "notHandleOrCentreHoleGrip": true
+  }
+}

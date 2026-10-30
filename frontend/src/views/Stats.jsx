@@ -1,5 +1,5 @@
-import StatsSections from '../components/StatsSections.jsx'
 import ProgressBody from '../components/ProgressBody.jsx'
+import StatsSections from '../components/StatsSections.jsx'
 import { bodyRecords,measurementInUnit } from '../lib/body-report.js'
 import { removeBodyRecord } from '../lib/body-records.js'
 import { HybridSummary } from '../components/Activities.jsx'
@@ -11,8 +11,9 @@ import { createStatsSnapshotSelector } from '../lib/stats-snapshot.js'
 import ConsistencyCard from '../components/ConsistencyCard.jsx'
 import CalendarExport from '../components/CalendarExport.jsx'
 import ModuleSwitch, { PROGRESS_VIEWS } from '../components/ModuleSwitch.jsx'
-import { Children, cloneElement, memo, useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Activity, Children, cloneElement, memo, useEffect, useMemo, useRef, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { activeStatsPage } from '../lib/navigation-model.js'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { EXIDX } from '../lib/exercises.js'
@@ -306,13 +307,13 @@ function StatsLayout({ order, children }) {
   const mounted = useRef(new Set())
   const sections = Children.toArray(children).flatMap(child => child.props?.className === 'cols' ? Children.toArray(child.props.children) : [child])
   const byId = new Map(sections.filter(child => child.props?.['data-stats-section']).map(child => [child.props['data-stats-section'], child]))
-  return <div className="stats-section-layout">{order.map(id => {
+  return <div className="stats-section-layout slide-layout">{order.map(id => {
     const section = byId.get(id)
     if (!section) return null
     if (!section.props.hidden) mounted.current.add(id)
     // Unselected sections should not mount charts/maps that cannot be seen.
     // Once opened, retain them so hiding/reordering never resets card filters.
-    return mounted.current.has(id) ? cloneElement(section, { key:id }) : <div key={id} data-stats-section={id} hidden />
+    return mounted.current.has(id) ? <Activity key={id} mode={section.props.hidden?'hidden':'visible'}>{cloneElement(section, { key:id })}</Activity> : <div key={id} data-stats-section={id} hidden />
   })}</div>
 }
 
@@ -321,17 +322,19 @@ const BODY_SECTIONS = ['bodyweight', 'measurements', 'bmi']
 
 // Stats = the analytics hub: all charts, progress and history live here. `focus="body"`
 // renders the same cards as the Body screen: weight, measurements, BMI and InBody.
-function Stats({ focus = null }) {
+function Stats({ focus = null, standaloneControl = true }) {
   useLang()
   const body = focus === 'body'
   const nav = useNavigate()
+  const location = useLocation()
   const snapshot = useMemo(createStatsSnapshotSelector, [])
   const rawState = useStore(s => snapshot(s.S))
   const S = useMemo(() => statisticsState(rawState), [rawState])
   const update = useStore(s => s.update)
   const selectedSections = body ? BODY_SECTIONS : statsSelectionOrder(rawState.statsSections, rawState.statsSectionOrder)
+  const activeSection = body ? 'bodyweight' : activeStatsPage(rawState,location)
   const sectionOrder = normalizeStatsSectionOrder(selectedSections)
-  const sectionProps = id => ({ 'data-stats-section': id, hidden: !selectedSections.includes(id) })
+  const sectionProps = id => ({ 'data-stats-section': id, hidden: id !== activeSection })
   const [range, setRange] = useState(90)
   const [exId, setExId] = useState(null)
   const [exMetric, setExMetric] = useState('top')
@@ -340,7 +343,10 @@ function Stats({ focus = null }) {
   const measurementRows=useMemo(()=>bodyRecords(S,{start:'0001-01-01',end:todayISO()}),[S])
   // Preference updates clone the profile; retain comparison dates while records stay the same.
   const measurementDataKey=useMemo(()=>JSON.stringify(measurementRows),[measurementRows])
-  useEffect(()=>setBodySelection({}),[measurementDataKey])
+  const previousMeasurementData=useRef(measurementDataKey)
+  useEffect(()=>{
+    if(previousMeasurementData.current!==measurementDataKey){previousMeasurementData.current=measurementDataKey;setBodySelection({})}
+  },[measurementDataKey])
   const localNow = useLocalNow()
   const now = localNow.getTime()
   const kind = displayScale(S)
@@ -467,7 +473,7 @@ function Stats({ focus = null }) {
       s.statsSections = [...current,'exercise']
       s.statsSectionOrder = [...s.statsSections]
     })
-    requestAnimationFrame(() => document.querySelector('[data-stats-section="exercise"]')?.scrollIntoView({behavior:S.reduceMotion?'auto':'smooth',block:'start'}))
+    nav('/stats?section=exercise')
   }
 
   return <>
@@ -479,7 +485,7 @@ function Stats({ focus = null }) {
       <span className="lrow-i"><Icon name="person" /></span>
       <span style={{ flex: 1, minWidth: 0 }}><span className="card-title">{t('InBody history')}</span><span className="small muted" style={{ display: 'block', marginTop: 2 }}>{t('Body composition results by date')}</span></span>
       <Icon name="chevronRight" className="chev" />
-    </button> : <StatsSections />}
+    </button> : standaloneControl ? <StatsSections activeId={activeSection}/> : null}
 
     <StatsLayout order={sectionOrder}>
 

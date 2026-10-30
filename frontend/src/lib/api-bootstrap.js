@@ -3,7 +3,7 @@ import { convertMeasurementState, convertWeightState } from './unit-conversion.j
 
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b)
 const object = value => value && typeof value === 'object' && !Array.isArray(value)
-const preferences = new Set(['unit','measurementUnit','restSec','restPauseSec','restAdvanced','sound','vibration','reduceMotion','keepAwake','lang','sounds','soundVolume','soundMuted','notificationSoundOn','enableSpotifreeSync','theme','accent','body','targetW','measurementReminders','reminder','inAppReminderMode','inAppReminderDismissed','streakCalendarShowProfile','effort','strictReps','backoffRepsMode','exerciseNameMode','statsSections','statsSectionOrder','statsControlPosition','profile','deload','autoBackup','gifSize','cloudSync','activeEquipId','equipFilterOn','hasCompletedOnboarding','hasCompletedAppTour','healthConnection'])
+const preferences = new Set(['unit','measurementUnit','restSec','restPauseSec','restAdvanced','sound','vibration','reduceMotion','keepAwake','lang','sounds','soundVolume','soundMuted','notificationSoundOn','enableSpotifreeSync','theme','accent','body','targetW','measurementReminders','reminder','inAppReminderMode','inAppReminderDismissed','streakCalendarShowProfile','effort','strictReps','backoffRepsMode','exerciseNameMode','statsSections','statsSectionOrder','statsPageOrder','statsControlPosition','profile','deload','autoBackup','gifSize','cloudSync','activeEquipId','equipFilterOn','hasCompletedOnboarding','hasCompletedAppTour','healthConnection'])
 const ambiguous = () => new Error('Local data changed. Please synchronize again.')
 
 // Only the edits made to an empty API profile are rebased. The remote profile is

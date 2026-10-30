@@ -20,6 +20,8 @@ export const PROGRESS_VIEWS = [
 // views stay renderable on their own (tests, previews) and navigation goes through the
 // app-registered navigate in lib/nav.js.
 export default function ModuleSwitch({ items = PLAN_VIEWS, current, label }) {
+  // Module and Stats navigation now live in the swipe deck and bottom menus.
+  if (items === PLAN_VIEWS || items === PROGRESS_VIEWS) return null
   const name = label || t(items === PROGRESS_VIEWS ? 'Progress sections' : 'Plan sections')
   return (
     <nav className={'module-switch' + (items.length > 3 ? ' many' : '')} aria-label={name}>

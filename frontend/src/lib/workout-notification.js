@@ -17,7 +17,7 @@ export function workoutNotificationState(active, rest, now=Date.now()) {
   const setNumber=index < 0 ? 0 : rows.slice(0,index+1).filter(s=>isWarmupRow(s)===isWarmupRow(rows[index])).length
   const es=getLang()==='es'
   return {active:true,paused,observedAt:now,
-    elapsedMs:workoutElapsedMs(active,now),workoutLabel:es?'ENTRENO':t('Workout').toUpperCase(),restLabel:es?'DESCANSO':t('Rest').toUpperCase(),
+    elapsedMs:workoutElapsedMs(active,now),workoutLabel:paused?t('Paused').toUpperCase():es?'ENTRENO':t('Workout').toUpperCase(),restLabel:es?'DESCANSO':t('Rest').toUpperCase(),
     setNumber,setLabel:setNumber ? `${es?'SERIE':t('Set').toUpperCase()} ${setNumber}` : '',
     restEndsAt:rest?.endsAt > now ? rest.endsAt : 0,
     restSignalAt:Number.isFinite(rest?.endsAt)?rest.endsAt:0,
@@ -28,19 +28,32 @@ export function workoutNotificationState(active, rest, now=Date.now()) {
 }
 let queue=Promise.resolve()
 let permissionRequested=false
+let permissionIntent=false
+let permissionPending=null
+function requestWorkoutPermission() {
+  if(permissionPending)return
+  permissionPending=(async()=>{
+    const {LocalNotifications}=await import('@capacitor/local-notifications')
+    const permission=await LocalNotifications.checkPermissions()
+    if(!permissionIntent||document.visibilityState==='hidden')return
+    if(permission.display==='prompt'||permission.display==='prompt-with-rationale')await LocalNotifications.requestPermissions()
+    permissionRequested=true;permissionIntent=false
+  })().catch(()=>{permissionIntent=false}).finally(()=>{permissionPending=null})
+}
 let revision=0
-export function syncWorkoutNotification(active,rest) {
+export function syncWorkoutNotification(active,rest,{interactive=false}={}) {
   if (!Capacitor.isNativePlatform() || Capacitor.getPlatform()!=='android') return Promise.resolve(false)
   const ticket=++revision
   const state=workoutNotificationState(active,rest)
+  if(!state.active)permissionIntent=false
+  else if(interactive&&document.visibilityState!=='hidden')permissionIntent=true
   state.accentColor=getComputedStyle(document.documentElement).getPropertyValue('--acc').trim()
   queue=queue.catch(()=>false).then(async()=>{
     if(ticket!==revision) return false
-    if(state.active && !permissionRequested && document.visibilityState!=='hidden') {
-      permissionRequested=true
-      const {LocalNotifications}=await import('@capacitor/local-notifications')
-      const permission=await LocalNotifications.checkPermissions()
-      if(permission.display==='prompt' || permission.display==='prompt-with-rationale') await LocalNotifications.requestPermissions()
+    if(state.active && permissionIntent && !permissionRequested && document.visibilityState!=='hidden') {
+      // Permission UI must not delay the foreground service or its exact alarm.
+      // Android permits starting that service before notification permission.
+      requestWorkoutPermission()
     }
     return ticket===revision ? native.sync(state) : false
   }).catch(()=>false)

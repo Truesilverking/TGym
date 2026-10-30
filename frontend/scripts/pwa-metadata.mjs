@@ -13,7 +13,7 @@ export const pwaMetadata = version => {
   const files=path=>readdirSync(`${dir}/${path}`,{withFileTypes:true}).flatMap(f=>f.isDirectory()?files(`${path}/${f.name}`):[`${path}/${f.name}`])
   const assets = existsSync(`${dir}/assets`) ? files('assets').sort() : []
   const commit=process.env.GITHUB_SHA || 'local'
-  const shell=['index.html','manifest.json','icon-180.png','icon-192.png','icon-512.png','about.html','privacy.html',...assets]
+  const shell=['index.html','manifest.json','icon-180.png','icon-192.png','icon-512.png','notification-badge.svg','about.html','privacy.html',...assets]
   const template=readFileSync(`${dir}/sw.js`,'utf8')
   const hash=createHash('sha256').update(template).update(JSON.stringify(mediaBases))
   for(const path of shell)hash.update(path).update(readFileSync(`${dir}/${path}`))

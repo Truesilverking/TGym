@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, useNavigate } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useStore, DEF } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
@@ -12,6 +12,7 @@ import Stats from './Stats.jsx'
 import BodyMap from '../components/BodyMap.jsx'
 import {migrateState} from '../lib/state-migrations.js'
 import {sessionTiming} from '../lib/workout-time.js'
+import {setNav} from '../lib/nav.js'
 
 vi.mock('../sheets.jsx', () => ({
   bwSheet: () => {}, goalSheet: () => {}, measurementsSheet: () => {}, heightSheet: () => {},
@@ -44,7 +45,16 @@ function state() {
 }
 
 async function renderStats(show = true) {
-  await act(async () => { root.render(<MemoryRouter>{show && <Stats />}<TestSheets /></MemoryRouter>) })
+  await act(async () => { root.render(<MemoryRouter initialEntries={['/stats']}><NavigationBridge />{show && <Stats />}<TestSheets /></MemoryRouter>) })
+}
+
+function NavigationBridge() {
+  const navigate = useNavigate()
+  React.useLayoutEffect(() => {
+    setNav(navigate)
+    return () => setNav(() => {})
+  }, [navigate])
+  return null
 }
 
 function TestSheets() {
@@ -88,6 +98,13 @@ async function openSections() {
   if (sectionsTrigger().getAttribute('aria-expanded') !== 'true') await click(sectionsTrigger())
 }
 
+async function jump(id) {
+  await openSections()
+  await click(sectionsMenu().querySelector(`[data-stats-option="${id}"] .stats-section-jump`))
+  expect(sectionsMenu()).toBeNull()
+  expect(visibleSections()).toEqual([id])
+}
+
 function button(scope, text) {
   return [...scope.querySelectorAll('button')].find(node => node.textContent.trim() === text)
 }
@@ -121,7 +138,7 @@ describe('configurable Stats sections', () => {
     useStore.setState({ S })
     await renderStats()
 
-    expect(visibleSections()).toEqual(['history', 'consistency'])
+    expect(visibleSections()).toEqual(['history'])
     await openSections()
     expect(checkbox('history').getAttribute('aria-checked')).toBe('true')
     expect(checkbox('consistency').getAttribute('aria-checked')).toBe('true')
@@ -143,7 +160,7 @@ describe('configurable Stats sections', () => {
     expect(host.querySelector('.stats-sections-label')).toBeNull()
     expect(sectionsTrigger().textContent).toBe('')
     expect(host.querySelector('.stats-order-actions')).toBeNull()
-    expect(visibleSections()).toEqual(['history', 'consistency'])
+    expect(visibleSections()).toEqual(['history'])
   })
 
   it('opens all section choices in a labeled desktop popover', async () => {
@@ -165,12 +182,16 @@ describe('configurable Stats sections', () => {
     expect(section('muscles').children).toHaveLength(0)
     expect(section('measurements').children).toHaveLength(0)
     await toggle('muscles')
+    expect(visibleSections()).toEqual(['history'])
+    expect(section('muscles').children).toHaveLength(0)
+    await jump('muscles')
     expect(section('muscles').children.length).toBeGreaterThan(0)
     await click(button(section('muscles'),'Strength'))
     await toggle('muscles')
     expect(section('muscles').hidden).toBe(true)
     expect(button(section('muscles'),'Strength').getAttribute('aria-pressed')).toBe('true')
     await toggle('muscles')
+    await jump('muscles')
     expect(button(section('muscles'),'Strength').getAttribute('aria-pressed')).toBe('true')
   })
 
@@ -180,6 +201,7 @@ describe('configurable Stats sections', () => {
     S.active=sessionTiming({id:'active',start:NOW-60000,lastUserInteractionAt:NOW-1000,entries:[]},NOW)
     useStore.setState({S:migrateState(S)})
     await renderStats()
+    await jump('muscles')
     const calls=BodyMap.mock.calls.length
     await act(async()=>{
       vi.advanceTimersByTime(10)
@@ -235,8 +257,11 @@ describe('configurable Stats sections', () => {
     await toggle('overview')
     await toggle('duration')
 
-    expect(visibleSections()).toEqual(['history', 'consistency', 'bmi', 'exercise', 'overview', 'duration'])
-    for (const id of visibleSections()) expect(host.querySelectorAll(`[data-stats-section="${id}"]`)).toHaveLength(1)
+    const selected = ['history', 'consistency', 'bmi', 'exercise', 'overview', 'duration']
+    expect(visibleSections()).toEqual(['history'])
+    expect(useStore.getState().S.statsSections).toEqual(selected)
+    expect(useStore.getState().S.statsSectionOrder).toEqual(selected)
+    for (const id of selected) expect(host.querySelectorAll(`[data-stats-section="${id}"]`)).toHaveLength(1)
     expect(visibleSections()).not.toContain('bodyweight')
   })
 
@@ -325,7 +350,7 @@ describe('configurable Stats sections', () => {
     await act(async () => { host.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerType: 'touch' })) })
     expect(sectionsMenu()).toBeNull()
     expect(sectionsTrigger().getAttribute('aria-expanded')).toBe('false')
-    expect(visibleSections()).toEqual(['history', 'consistency'])
+    expect(visibleSections()).toEqual(['history'])
   })
 
   it('dismisses the desktop popover when keyboard focus moves outside without stealing focus', async () => {
@@ -346,26 +371,29 @@ describe('configurable Stats sections', () => {
     await toggle('bodyweight')
     await toggle('history')
     await toggle('history')
-    expect(visibleSections()).toEqual(['consistency', 'bodyweight', 'history'])
+    expect(visibleSections()).toEqual(['consistency'])
     expect(button(sectionsMenu(), 'Edit order')).toBeUndefined()
     expect(button(sectionsMenu(), 'Save')).toBeUndefined()
     expect(button(sectionsMenu(), 'Cancel')).toBeUndefined()
-    expect(host.querySelector('.stats-order-actions')).toBeNull()
-    expect([...sectionsMenu().querySelectorAll('.stats-selection-position')].map(node => node.textContent)).toEqual(['3', '1', '2'])
+    expect(sectionsMenu().querySelectorAll('.stats-order-actions')).toHaveLength(STATS_SECTIONS.length + 3)
+    expect(sectionsMenu().querySelector('button[aria-label="Move Training history up"]')).not.toBeNull()
+    expect([...sectionsMenu().querySelectorAll('[data-stats-option]')]
+      .filter(node => node.querySelector('[role="checkbox"][aria-checked="true"]'))
+      .map(node => node.dataset.statsOption)).toEqual(['consistency', 'bodyweight', 'history'])
     const saved = JSON.parse(localStorage.getItem('gym_state_v1'))
     expect(saved.statsSections).toEqual(['consistency', 'bodyweight', 'history'])
     expect(saved.statsSectionOrder).toEqual(saved.statsSections)
     await renderStats(false)
     useStore.setState({ S: { ...structuredClone(DEF), ...saved } })
     await renderStats()
-    expect(visibleSections()).toEqual(['consistency', 'bodyweight', 'history'])
+    expect(visibleSections()).toEqual(['consistency'])
   })
 
   it('reads a previously saved explicit order without resetting the selection', async () => {
     const S = { ...state(), statsSections: ['history', 'bodyweight'], statsSectionOrder: ['bodyweight', 'history', 'recent'] }
     useStore.setState({ S })
     await renderStats()
-    expect(visibleSections()).toEqual(['bodyweight', 'history'])
+    expect(visibleSections()).toEqual(['bodyweight'])
     expect(useStore.getState().S).toBe(S)
     expect(localStorage.getItem('gym_state_v1')).toBeNull()
   })
@@ -377,7 +405,7 @@ describe('configurable Stats sections', () => {
     await openSections()
     expect(checkbox('recent')).toBeUndefined()
     expect(section('recent')).toBeNull()
-    expect(host.querySelector('button[aria-label="History"]')).not.toBeNull()
+    expect(sectionsMenu().querySelector('[data-stats-option="workout-history"] .stats-section-jump').textContent).toBe('History')
     expect(useStore.getState().S.workouts).toEqual(S.workouts)
   })
 
@@ -385,6 +413,7 @@ describe('configurable Stats sections', () => {
     vi.spyOn(window, 'matchMedia').mockImplementation(query => ({ matches: query === '(max-width: 639px)', media: query }))
     useStore.setState({ S: { ...state(), statsSections: ['history', 'muscles'] } })
     await renderStats()
+    await jump('muscles')
     await click(button(section('muscles'), '30d'))
     await click(button(section('muscles'), 'Strength'))
     await openSections()
@@ -395,7 +424,8 @@ describe('configurable Stats sections', () => {
     expect(sectionsMenu().querySelector('.stats-customization-options').hasAttribute('data-nodrag')).toBe(true)
     await toggle('history')
     await toggle('history')
-    expect(visibleSections()).toEqual(['muscles', 'history'])
+    expect(visibleSections()).toEqual(['muscles'])
+    expect(useStore.getState().S.statsSections).toEqual(['muscles', 'history'])
     expect(button(section('muscles'), 'Strength').getAttribute('aria-pressed')).toBe('true')
     await click(button(sectionsMenu(), 'Done'))
     expect(sectionsMenu()).toBeNull()
@@ -406,11 +436,13 @@ describe('configurable Stats sections', () => {
   it('preserves the muscle view and range while hiding and showing its section', async () => {
     useStore.setState({ S: { ...state(), statsSections: ['history', 'muscles'] } })
     await renderStats()
+    await jump('muscles')
     await click(button(section('muscles'), '30d'))
     await click(button(section('muscles'), 'Strength'))
     await toggle('muscles')
     expect(section('muscles').hidden).toBe(true)
     await toggle('muscles')
+    await jump('muscles')
     expect(button(section('muscles'), 'Strength').getAttribute('aria-pressed')).toBe('true')
     await click(button(section('muscles'), 'Muscle balance'))
     expect(button(section('muscles'), '30d').getAttribute('aria-pressed')).toBe('true')
@@ -419,12 +451,14 @@ describe('configurable Stats sections', () => {
   it('preserves the independent Routine duration period while hiding and showing its section', async () => {
     useStore.setState({ S: { ...state(), statsSections: ['history', 'duration'] } })
     await renderStats()
+    await jump('duration')
     await click(section('duration').querySelector('button.lrow-select'))
     await click(button(host.querySelector('[data-test-sheet]'), 'Last 30 days'))
     expect(section('duration').querySelector('.lrow-v').textContent).toBe('Last 30 days')
     await toggle('duration')
     expect(section('duration').hidden).toBe(true)
     await toggle('duration')
+    await jump('duration')
     expect(section('duration').querySelector('.lrow-v').textContent).toBe('Last 30 days')
   })
 
@@ -436,6 +470,7 @@ describe('configurable Stats sections', () => {
       { id: 'last', d: '2026-10-05', waist: 85 },
     ] } })
     await renderStats()
+    await jump('measurements')
     const dates = () => [...section('measurements').querySelectorAll('.body-dates select')]
     const choose = async (index, value) => act(async () => {
       dates()[index].value = value
@@ -450,6 +485,7 @@ describe('configurable Stats sections', () => {
     expect(dates().map(select => select.value)).toEqual(['1', '2'])
     await toggle('measurements')
     await toggle('bodyweight')
+    await jump('measurements')
     expect(dates().map(select => select.value)).toEqual(['1', '2'])
 
     await act(async () => { useStore.getState().update(s => { s.measurements[2].waist = 84.5 }) })

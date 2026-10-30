@@ -24,6 +24,16 @@ describe('portable sound preferences', () => {
     }
     expect(soundChoice({ sounds: { rest: 'silent' } }, 'rest').data).toBeUndefined()
   })
+  it('gives Classic alerts distinct cues with smooth endpoints and consistent headroom',()=>{
+    const cues=SOUND_EVENTS.map(({id})=>soundChoice({sounds:{[id]:'classic'}},id))
+    expect(new Set(cues.map(cue=>cue.data)).size).toBe(SOUND_EVENTS.length)
+    for(const cue of cues){
+      const bytes=soundBytes(cue.data),samples=new Int16Array(bytes.buffer,44)
+      expect(samples[0]).toBe(0);expect(samples.at(-1)).toBe(0)
+      let peak=0;for(const sample of samples)peak=Math.max(peak,Math.abs(sample)/32768)
+      expect(peak).toBeLessThan(.63);expect(peak).toBeGreaterThan(.45)
+    }
+  })
   it('recovers a custom clip, its selection and training data after backup/reload', () => {
     const clip = { id: 'custom_test', name: 'My clip', data: encodeSound(new Float32Array([.2, -.2, 0])), duration: 3 / SOUND_RATE }
     const state = { workouts: [{ id: 'w' }], routines: [], sounds: { rest: clip.id }, customSounds: [clip] }

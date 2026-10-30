@@ -1,0 +1,32 @@
+{
+  "original": true,
+  "externalMediaInputs": false,
+  "asset": "stepmill-continuous-walk.gif",
+  "movement": "Continuous upright alternating walk on a revolving stair machine, not a treadmill or stationary stairs",
+  "frames": 36,
+  "durationMs": 2160,
+  "frameDurationMs": 60,
+  "dimensions": [
+    512,
+    512
+  ],
+  "loop": true,
+  "gifBytes": 682209,
+  "renderer": "render_stepmill.py; mathematically authored limb rig and Pillow vector primitives with 3x antialiasing",
+  "stanceFootConstraint": "Planted sole center is attached to a tread translating down/back at its exact speed",
+  "maxStanceContactErrorPx": 5.684341886080802e-14,
+  "kneeAngleRangeDegrees": [
+    54.62986893481696,
+    149.47204352280298
+  ],
+  "reference": [
+    {
+      "title": "Core Health & Fitness: StepMill mechanical description",
+      "url": "https://www.corehandf.com/blogs/shop-hs/stairmaster-vs-elliptical-what-every-operator-should-know-before-building-a-cardio-floor",
+      "usedFor": "Exercise mechanism only: continuous climbing on revolving steps; no art or text copied"
+    }
+  ],
+  "reviewStatus": "Original candidate; root must inspect contact sheet and loop and confirm current exercise identity before assignment",
+  "physicalExerciseValidation": false,
+  "productionAssigned": false
+}

@@ -1,5 +1,6 @@
 import { useEffect, useState, useSyncExternalStore } from 'react'
 import { imgSrc, gifSrc } from '../lib/exercises.js'
+import { bundledExerciseMedia } from '../lib/bundled-exercise-media.js'
 import { useStore } from '../store/useStore.js'
 import { t, exerciseNameFor } from '../lib/i18n.js'
 import Icon from './Icon.jsx'
@@ -119,16 +120,17 @@ function MediaImage({src,alt='',className='',...props}) {
 // future workouts (issue #12).
 export default function Media({ ex, id, compact, minimizable }) {
   const reduced = useReducedMotion()
+  const bundled=bundledExerciseMedia(ex)
   const customAnimation = animatedCustomImage(ex)
   const [requestedPlayback, setRequestedPlayback] = useState(null)
   const playing = requestedPlayback ?? !reduced
-  const poster = usePoster(customAnimation ? ex.img : (playing ? gifSrc(ex) : null), ex.id)
+  const poster = usePoster(customAnimation ? ex.img : (playing&&!bundled ? gifSrc(ex) : null), ex.id)
   useEffect(() => setRequestedPlayback(null), [ex.id, reduced])
   const S = useStore(s => s.S)
   const gifSize = S.gifSize
   const update = useStore(s => s.update)
-  if (!ex.gif && !customAnimation) return ex.img ? <div className={'exmedia' + (compact ? ' compact' : '')}><MediaImage fetchPriority="high" width="360" height="360" decoding="async" src={imgSrc(ex)} alt={exerciseNameFor(ex)} /></div> : null
-  const source = playing ? (customAnimation ? ex.img : gifSrc(ex)) : (customAnimation ? poster : (poster || imgSrc(ex)))
+  if (!ex.gif && !bundled && !customAnimation) return ex.img ? <div className={'exmedia' + (compact ? ' compact' : '')}><MediaImage fetchPriority="high" width="360" height="360" decoding="async" src={imgSrc(ex)} alt={exerciseNameFor(ex)} /></div> : null
+  const source = playing ? (customAnimation ? ex.img : (bundled?.gif||gifSrc(ex))) : (customAnimation ? poster : (bundled?.img||poster||imgSrc(ex)))
   const mini = minimizable && gifSize === 'mini'
   const toggleSize = e => { e.stopPropagation(); update(s => { s.gifSize = mini ? 'full' : 'mini' }) }
   return (
@@ -151,6 +153,8 @@ export default function Media({ ex, id, compact, minimizable }) {
 }
 
 export function Thumb({ ex }) {
+  const bundled=bundledExerciseMedia(ex)
+  if(bundled)return <MediaImage className="thumb" width="52" height="52" loading="lazy" decoding="async" src={bundled.img} alt="" />
   if (!ex.img) return <div className="thumb thumb-x"><Icon name="dumbbell" /></div>
   if (animatedCustomImage(ex)) return <CustomThumb ex={ex} />
   return <MediaImage className="thumb" width="52" height="52" loading="lazy" decoding="async" src={imgSrc(ex)} alt="" />

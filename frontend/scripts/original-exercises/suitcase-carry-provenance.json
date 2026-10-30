@@ -1,0 +1,30 @@
+{
+  "original": true,
+  "externalMediaInputs": false,
+  "asset": "suitcase-carry.gif",
+  "dimensions": [
+    512,
+    512
+  ],
+  "frames": 36,
+  "authoredFrames": 36,
+  "frameDurationMs": 60,
+  "durationMs": 2160,
+  "gifBytes": 366511,
+  "renderer": "render_custom_exercises.py + original primitives in render_stepmill.py; 3x antialiasing",
+  "movement": "Suitcase carry",
+  "reference": {
+    "url": "https://www.acefitness.org/resources/everyone/exercise-library/358/suitcase-carry/",
+    "usedFor": "Trainer demonstration: one dumbbell at one side while walking upright."
+  },
+  "reviewStatus": "Candidate only: contact-sheet and loop review required before assignment",
+  "productionAssigned": false,
+  "physicalExerciseValidation": false,
+  "firstFrameRig": {
+    "flatGround": true,
+    "camera": "tracks walker; ground markers translate at planted-foot velocity",
+    "alternatingFootsteps": true,
+    "loads": 1,
+    "loadType": "unilateral dumbbell at side"
+  }
+}

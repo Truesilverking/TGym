@@ -42,27 +42,105 @@ self.addEventListener('message',e=>{
 })
 const AUDIO_CACHE = 'tgym-audio-preferences'
 const AUDIO_KEY = './audio-preferences'
+const notificationBase = () => new URL('./',self.location.href || self.location.origin + '/')
+function notificationRoute(data = {}) {
+ const fallback = ['rest-timer','work-timer'].includes(data.tag) || ['rest-timer','work-timer'].includes(data.type) ? '/workout' : data.type === 'measurement' ? '/body' : '/home'
+ if(typeof data.url !== 'string')return fallback
+ try {
+  const base=notificationBase(),url=new URL(data.url,base)
+  if(url.origin===base.origin&&url.pathname.startsWith(base.pathname)&&['#/home','#/workout','#/body'].includes(url.hash))return url.hash.slice(1)
+ }catch{}
+ return fallback
+}
 self.addEventListener('message',e=>{
  if(e.data?.type==='AUDIO_PREFERENCES') e.waitUntil(caches.open(AUDIO_CACHE).then(cache=>cache.put(AUDIO_KEY,new Response(JSON.stringify(e.data.settings)))))
 })
-self.addEventListener('push',e=>{
- const data=e.data?e.data.json():{}
- e.waitUntil((async()=>{
+let notificationQueue=Promise.resolve()
+const timerOccurrences=new Map()
+const timerTag = data => ['rest-timer','work-timer'].includes(data.tag)?data.tag:null
+const queueNotification = task => {notificationQueue=notificationQueue.catch(()=>{}).then(task);return notificationQueue}
+async function lastTimerOccurrence(tag) {
+ if(timerOccurrences.has(tag))return timerOccurrences.get(tag)
+ try {const response=await (await caches.open(AUDIO_CACHE)).match('./last-'+tag);const at=(await response?.json())?.at;if(Number.isFinite(at)){timerOccurrences.set(tag,at);return at}}catch{}
+ return 0
+}
+async function rememberTimerOccurrence(tag,at) {
+ if(!Number.isFinite(at)||at<=0)return
+ timerOccurrences.set(tag,at)
+ try {await (await caches.open(AUDIO_CACHE)).put('./last-'+tag,new Response(JSON.stringify({at})))}catch{}
+}
+async function showAppNotification(data,receivedPush=false) {
+  const tag=timerTag(data)
+  let at=Number.isFinite(data.timestamp)?data.timestamp:Date.now(),duplicate=false
+  const last=tag?await lastTimerOccurrence(tag):0
+  if(tag&&at<=last){if(!receivedPush)return true;duplicate=true;at=last}
+  if(tag&&self.registration.getNotifications){
+   // Also recognize a page fallback that raced a worker handoff/upgrade.
+   let existing=[]
+   try {existing=await self.registration.getNotifications({tag})}catch{}
+   const current=existing.find(notice=>notice.timestamp>=at)
+   if(current){
+    at=current.timestamp
+    if(!receivedPush){await rememberTimerOccurrence(tag,at);return true}
+    duplicate=true
+    data={...data,title:current.title,body:current.body,url:current.data?.url}
+   }
+  }
   let prefs={}
-  try { const response=await (await caches.open(AUDIO_CACHE)).match(AUDIO_KEY);if(response)prefs=await response.json() }
+  try { const response=await (await caches.open(AUDIO_CACHE)).match(AUDIO_KEY);if(response){const value=await response.json();if(value&&typeof value==='object'&&!Array.isArray(value))prefs=value} }
   catch(error){console.warn('[TGym audio] Cannot read notification preferences',error.message)}
   const minutes=(value,fallback)=>{const valid=/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value)?value:fallback;const [h,m]=valid.split(':').map(Number);return h*60+m}
   const now=new Date(),cur=now.getHours()*60+now.getMinutes(),start=minutes(prefs.quietStart,'22:00'),end=minutes(prefs.quietEnd,'07:00')
   const quiet=prefs.quietOn&&(start<=end?cur>=start&&cur<end:cur>=start||cur<end)
-  const rest=data.tag==='rest-timer'
-  const windows=rest?await self.clients.matchAll({type:'window'}):[]
-  const silent=data.silent===true||prefs.enabled===false||quiet||(rest?prefs.restSilent:prefs.notificationSilent)||windows.some(client=>client.visibilityState==='visible')
-  await self.registration.showNotification(data.title||'TGym',{body:data.body||'',icon:'icon-512.png',tag:data.tag||'tgym',silent:!!silent})
- })())
+  const timer=!!tag
+  const windows=timer?await self.clients.matchAll({type:'window'}).catch(()=>[]):[]
+  const eventSilent=timer?(data.tag==='rest-timer'?prefs.restSilent:prefs.workSilent):prefs.notificationSilent
+  // Every actual push must remain user-visible. Refresh its single tagged card
+  // silently on a duplicate, rather than triggering a generic browser notice.
+  const silent=duplicate||data.silent===true||prefs.enabled===false||quiet||eventSilent||windows.some(client=>client.visibilityState==='visible')
+  const text=(value,fallback,max)=>typeof value==='string'&&value.trim()?value.slice(0,max):fallback
+  const base=notificationBase(),route=notificationRoute(data)
+  const options={body:text(data.body,'',700),icon:new URL('icon-192.png',base).href,badge:new URL('notification-badge.svg',base).href,
+   tag:text(data.tag,'tgym',100),silent:!!silent,renotify:!silent,timestamp:at,
+   data:{route,url:new URL('./#'+route,base).href}}
+  if(!silent&&prefs.vibration!==false)options.vibrate=[180,80,180]
+  await self.registration.showNotification(text(data.title,'TGym',150),options)
+  if(tag)await rememberTimerOccurrence(tag,at)
+  return true
+}
+self.addEventListener('message',e=>{
+ if(!['TGYM_TIMER_NOTICE','TGYM_TIMER_HANDLED'].includes(e.data?.type))return
+ const data=e.data.notification,tag=data&&timerTag(data)
+ if(!tag||!Number.isFinite(data.timestamp)||data.timestamp<=0)return
+ e.waitUntil(queueNotification(async()=>{
+  if(e.data.type==='TGYM_TIMER_HANDLED'){
+   if(data.timestamp>await lastTimerOccurrence(tag))await rememberTimerOccurrence(tag,data.timestamp)
+   return
+  }
+  let shown=false
+  try {shown=await showAppNotification(data)}catch{}
+  e.ports?.[0]?.postMessage({shown})
+ }))
+})
+self.addEventListener('push',e=>{
+ let data={}
+ try {const value=e.data?.json();if(value&&typeof value==='object'&&!Array.isArray(value))data=value}catch{}
+ e.waitUntil(queueNotification(()=>showAppNotification(data,true)))
 })
 self.addEventListener('notificationclick',e=>{
  e.notification.close()
- e.waitUntil(self.clients.matchAll({type:'window'}).then(clients=>clients[0]?.focus()||self.clients.openWindow('./')))
+ e.waitUntil((async()=>{
+  const base=notificationBase(),route=notificationRoute({...e.notification.data,tag:e.notification.tag}),target=new URL('./#'+route,base)
+  const clients=await self.clients.matchAll({type:'window',includeUncontrolled:true})
+  const client=clients.find(client=>{try{const url=new URL(client.url);return url.origin===base.origin&&url.pathname.startsWith(base.pathname)}catch{return false}})
+  if(client){
+   let navigated=false
+   if(typeof client.navigate==='function')try{navigated=!!await client.navigate(target.href)}catch{}
+   if(!navigated)client.postMessage?.({type:'TGYM_NOTIFICATION_NAVIGATE',route})
+   return client.focus()
+  }
+  return self.clients.openWindow(target.href)
+ })())
 })
 // Only build assets are cache-first. APIs, update metadata and downloads remain live.
 // Navigation uses the installed shell, so fresh HTML cannot reference uncached new chunks.

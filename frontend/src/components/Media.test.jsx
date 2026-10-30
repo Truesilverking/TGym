@@ -20,6 +20,26 @@ afterEach(() => { act(() => root.unmount()); host.remove(); vi.restoreAllMocks()
 const mount = () => act(() => root.render(<Media ex={exercise} minimizable />))
 const src = () => host.querySelector('img').getAttribute('src')
 
+it('shows a bundled custom exercise GIF and still thumbnail without writing artwork into the profile',()=>{
+ const ex={id:'kept-custom',custom:true,n:'Walking',bp:'cardio'},before=structuredClone(useStore.getState().S)
+ const raw=JSON.stringify(before);localStorage.setItem('gym_state_v1',raw)
+ act(()=>root.render(<><Media ex={ex}/><Thumb ex={ex}/></>))
+ expect(host.querySelector('.exmedia img').getAttribute('src')).toContain('walking-flat-ground.gif')
+ expect(host.querySelector('img.thumb').getAttribute('src')).toContain('walking-flat-ground-poster.png')
+ act(()=>host.querySelector('[aria-label="Pause animation"]').click())
+ expect(host.querySelector('.exmedia img').getAttribute('src')).toContain('walking-flat-ground-poster.png')
+ expect(useStore.getState().S).toEqual(before);expect(localStorage.getItem('gym_state_v1')).toBe(raw)
+ expect(ex).toEqual({id:'kept-custom',custom:true,n:'Walking',bp:'cardio'})
+})
+
+it('starts bundled custom media on its supplied still poster when motion is reduced',()=>{
+ useStore.setState({S:{...useStore.getState().S,reduceMotion:true}})
+ act(()=>root.render(<Media ex={{id:'kept-custom',custom:true,n:'Nordic Hold',bp:'upper legs'}}/>))
+ expect(src()).toContain('nordic-hold-poster.png')
+ act(()=>host.querySelector('[aria-label="Play animation"]').click())
+ expect(src()).toContain('nordic-hold.gif')
+})
+
 it.each(['app', 'system'])('starts with a still image for %s reduced motion and permits explicit playback', source => {
   if (source === 'app') useStore.setState({ S: { ...useStore.getState().S, reduceMotion: true } })
   else media.matches = true

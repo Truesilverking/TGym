@@ -50,7 +50,7 @@ afterEach(async()=>{
  if(root)await act(()=>root.unmount())
  host.remove();useUI.getState().stopRest();useUI.getState().stopWork()
  useStore.setState({boot:originalBoot})
- vi.clearAllTimers();vi.useRealTimers();vi.restoreAllMocks()
+ vi.clearAllTimers();vi.useRealTimers();vi.restoreAllMocks();vi.unstubAllGlobals()
 })
 const mount=async()=>{
  await act(async()=>root.render(<App/>))
@@ -60,22 +60,22 @@ const route=async path=>act(async()=>{window.history.pushState(null,'','#'+path)
 
 it('consumes the native launch URL once and lets Home and Settings navigation remain selected',async()=>{
  await mount()
- expect(host.querySelector('h1').textContent).toBe('Workout route')
+ expect([...host.querySelectorAll('h1')].find(node=>!node.closest('[aria-hidden="true"]')).textContent).toBe('Workout route')
  expect(native.launch).toHaveBeenCalledOnce()
- await route('/home');expect(host.querySelector('h1').textContent).toBe('Home route')
- await route('/settings');expect(host.querySelector('h1').textContent).toBe('Settings route')
+ await route('/home');expect([...host.querySelectorAll('h1')].find(node=>!node.closest('[aria-hidden="true"]')).textContent).toBe('Home route')
+ await route('/settings');expect([...host.querySelectorAll('h1')].find(node=>!node.closest('[aria-hidden="true"]')).textContent).toBe('Settings route')
  expect(native.add).toHaveBeenCalledOnce();expect(native.launch).toHaveBeenCalledOnce()
 })
 
 it('keeps live notification links working after route and active-workout changes',async()=>{
  await mount();await route('/settings')
  await act(async()=>native.open({url:'tgym://workout'}))
- expect(host.querySelector('h1').textContent).toBe('Workout route')
+ expect([...host.querySelectorAll('h1')].find(node=>!node.closest('[aria-hidden="true"]')).textContent).toBe('Workout route')
  await route('/settings');await act(()=>useStore.setState({S:{...useStore.getState().S,active:null}}))
  await act(async()=>native.open({url:'tgym://workout'}))
- expect(host.querySelector('h1').textContent).toBe('Home route')
+ expect([...host.querySelectorAll('h1')].find(node=>!node.closest('[aria-hidden="true"]')).textContent).toBe('Home route')
  await route('/settings');await act(async()=>native.open({url:'tgym://unknown'}))
- expect(host.querySelector('h1').textContent).toBe('Settings route')
+ expect([...host.querySelectorAll('h1')].find(node=>!node.closest('[aria-hidden="true"]')).textContent).toBe('Settings route')
  expect(native.add).toHaveBeenCalledOnce();expect(native.launch).toHaveBeenCalledOnce()
 })
 
@@ -99,4 +99,23 @@ it('ignores a launch URL that resolves after the listener has been cleaned up',a
  await act(async()=>{resolve({url:'tgym://workout'});stale({url:'tgym://workout'})})
  expect(window.location.hash).toBe(hash)
  expect(native.remove).toHaveBeenCalledOnce()
+})
+
+it('opens same-origin worker timer actions and falls back to Today after the workout ends',async()=>{
+ const worker=new EventTarget();vi.stubGlobal('navigator',Object.create(navigator,{serviceWorker:{value:worker}}))
+ await mount();await route('/settings')
+ const message=async path=>{const event=new MessageEvent('message',{data:{type:'TGYM_NOTIFICATION_NAVIGATE',route:path}});Object.defineProperty(event,'source',{value:{scriptURL:window.location.origin+'/sw.js'}});await act(()=>worker.dispatchEvent(event))}
+ await message('/workout');expect(window.location.hash).toBe('#/workout')
+ await route('/settings');await act(()=>useStore.setState({S:{...useStore.getState().S,active:null}}))
+ await message('/workout');expect(window.location.hash).toBe('#/home')
+})
+
+it('ignores untrusted worker origins and routes and removes its message listener on unmount',async()=>{
+ const worker=new EventTarget();vi.stubGlobal('navigator',Object.create(navigator,{serviceWorker:{value:worker}}))
+ await mount();await route('/settings')
+ const message=async(route,scriptURL)=>{const event=new MessageEvent('message',{data:{type:'TGYM_NOTIFICATION_NAVIGATE',route}});Object.defineProperty(event,'source',{value:{scriptURL}});await act(()=>worker.dispatchEvent(event))}
+ await message('/workout','https://external.invalid/sw.js');await message('/admin',window.location.origin+'/sw.js')
+ expect(window.location.hash).toBe('#/settings')
+ await act(()=>root.unmount());root=null
+ await message('/home',window.location.origin+'/sw.js');expect(window.location.hash).toBe('#/settings')
 })

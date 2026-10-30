@@ -28,16 +28,16 @@ public class WorkoutNotificationService extends Service {
             String raw=intent==null?null:intent.getStringExtra("state");
             if(raw==null)raw=getSharedPreferences(CHANNEL,0).getString("state",null);
             if(raw==null){stopSelf();return START_NOT_STICKY;}
-            // JS may clear a just-finished timer before its native playback call arrives.
-            // Claim the previous deadline first; JS and the alarm share the same ledger.
-            WorkoutTimerAlarms.completeDue(this,state,System.currentTimeMillis());
+            // Keep a just-finished deadline when JS clears its visible timer. Playback
+            // waits until startForeground below, as audio focus requires it on API 35.
+            JSONObject previousSignals=state;
             state=new JSONObject(raw);
             // apply() updates SharedPreferences memory synchronously: the alarm receiver
             // sees this state before disk flush, without fsync on the Android UI thread.
             // Sound deadline claims still commit once before playback for deduplication.
             getSharedPreferences(CHANNEL,0).edit().putString("state",raw).apply();
             WorkoutTimerAlarms.sync(this,state);
-            render();
+            render(previousSignals);
             return START_STICKY;
         } catch(Exception error){android.util.Log.e("TGymWorkoutNotification","Unable to render workout notification",error);stopSelf();return START_NOT_STICKY;}
     }
@@ -68,7 +68,8 @@ public class WorkoutNotificationService extends Service {
         }
         return content;
     }
-    private void render(){
+    private void render(){render(null);}
+    private void render(JSONObject previousSignals){
         handler.removeCallbacks(refresh);
         long now=System.currentTimeMillis(), autoAt=state.optLong("autoPauseAt",0);
         if(!state.optBoolean("paused") && autoAt>0 && now>=autoAt){
@@ -89,7 +90,6 @@ public class WorkoutNotificationService extends Service {
         Intent open=new Intent(this,MainActivity.class).setData(Uri.parse("tgym://workout")).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP|Intent.FLAG_ACTIVITY_CLEAR_TOP);
         PendingIntent tap=PendingIntent.getActivity(this,3100,open,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
         long rest=state.optLong("restEndsAt")-now;
-        WorkoutTimerAlarms.completeDue(this,state,now);
         RemoteViews content=timerView(R.layout.workout_notification,elapsed,rest);
         Notification notice=new NotificationCompat.Builder(this,CHANNEL)
             .setSmallIcon(R.drawable.ic_workout_notification).setContentTitle(state.optString(rest>0?"restLabel":"workoutLabel","WORKOUT"))
@@ -103,6 +103,11 @@ public class WorkoutNotificationService extends Service {
             if(Build.VERSION.SDK_INT>=34)startForeground(ID,notice,ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
             else startForeground(ID,notice);
         }catch(RuntimeException error){android.util.Log.e("TGymWorkoutNotification","Unable to start workout notification",error);stopSelf();return;}
+        // Foreground status must precede playback, including an alarm that recreated
+        // the process while the WebView was closed. The shared ledger deduplicates
+        // the old/new payload, alarm and subsequent JS signal.
+        if(previousSignals!=null)WorkoutTimerAlarms.completeDue(this,previousSignals,now);
+        WorkoutTimerAlarms.completeDue(this,state,now);
         long delay=Long.MAX_VALUE; // Native chronometers tick; refresh only at a phase boundary.
         if(rest>0)delay=Math.min(delay,Build.VERSION.SDK_INT>=24?rest:1000);
         long work=WorkoutTimerAlarms.deadline(state,"work")-now;

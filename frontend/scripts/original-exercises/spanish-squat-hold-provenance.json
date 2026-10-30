@@ -1,0 +1,30 @@
+{
+  "original": true,
+  "externalMediaInputs": false,
+  "asset": "spanish-squat-hold.gif",
+  "dimensions": [
+    512,
+    512
+  ],
+  "frames": 12,
+  "authoredFrames": 36,
+  "frameDurationMs": 80,
+  "durationMs": 2880,
+  "gifBytes": 127070,
+  "renderer": "render_custom_exercises.py + original primitives in render_stepmill.py; 3x antialiasing",
+  "movement": "Spanish squat hold",
+  "reference": {
+    "url": "https://www.catalystathletics.com/exercise/747/Spanish-Squat/",
+    "usedFor": "Coach demonstration: anterior anchor, band behind knees, vertical shins and trunk, isometric variation."
+  },
+  "reviewStatus": "Candidate only: contact-sheet and loop review required before assignment",
+  "productionAssigned": false,
+  "physicalExerciseValidation": false,
+  "firstFrameRig": {
+    "isometric": true,
+    "kneeAngleDegrees": 90,
+    "shin": "vertical",
+    "band": "fixed in front, passes behind knees",
+    "jointExcursionPx": 0
+  }
+}

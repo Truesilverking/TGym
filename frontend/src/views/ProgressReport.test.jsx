@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import React,{act} from 'react'
+import React,{Activity,act} from 'react'
 import {createRoot} from 'react-dom/client'
 import {MemoryRouter} from 'react-router-dom'
 import {beforeEach,afterEach,it,expect,vi} from 'vitest'
@@ -134,4 +134,61 @@ it('compares exact selected records and exports the same date selection',async()
  act(()=>{const el=host.querySelector('.body-dates select');el.value='1';el.dispatchEvent(new Event('change',{bubbles:true}))})
  expect(host.querySelector('.body-detail').textContent).toContain('↑ 5 cm')
  await generate();expect(mock.build.mock.calls[0][1].bodySelection).toEqual({before:'1',after:'2'})
+})
+
+const retain=mode=>act(()=>root.render(<MemoryRouter><Activity mode={mode}><ProgressReport/></Activity></MemoryRouter>))
+it('retains the report and exact body dates across Activity hiding, with a fresh working download URL',async()=>{
+ const create=vi.spyOn(URL,'createObjectURL').mockReturnValueOnce('blob:first').mockReturnValueOnce('blob:restored')
+ const revoke=vi.spyOn(URL,'revokeObjectURL')
+ mock.S.measurements.push({d:'2026-09-24',neck:40});const before=structuredClone(mock.S)
+ retain('visible');selectSection('Body Progress')
+ act(()=>{const el=host.querySelector('.body-dates select');el.value='1';el.dispatchEvent(new Event('change',{bubbles:true}))})
+ await generate();expect(host.querySelector('.progress-file a').getAttribute('href')).toBe('blob:first')
+ retain('hidden');expect(revoke).toHaveBeenCalledWith('blob:first')
+ retain('visible')
+ expect(host.querySelectorAll('.progress-controls select')[1].value).toBe('body')
+ expect(host.querySelector('.body-dates select').value).toBe('1')
+ expect(host.querySelector('.progress-file a').getAttribute('href')).toBe('blob:restored')
+ expect(create).toHaveBeenCalledTimes(2);expect(mock.build).toHaveBeenCalledOnce()
+ await act(async()=>[...host.querySelectorAll('button')].find(b=>b.textContent==='Download').click())
+ expect(mock.save.mock.lastCall[0].url).toBe('blob:restored');expect(mock.S).toEqual(before)
+})
+
+it('releases the modal top layer while hidden and restores the selected export choices on return',()=>{
+ const close=vi.spyOn(HTMLDialogElement.prototype,'close'),show=vi.spyOn(HTMLDialogElement.prototype,'showModal')
+ retain('visible');act(()=>[...host.querySelectorAll('button')].find(b=>b.textContent.includes('Export Progress Report')).click())
+ const dialog=host.querySelector('dialog')
+ act(()=>dialog.querySelector('input').click())
+ act(()=>dialog.querySelectorAll('input')[6].click())
+ expect(dialog.open).toBe(true);expect(show).toHaveBeenCalledOnce()
+ retain('hidden');expect(dialog.open).toBe(false);expect(close).toHaveBeenCalled()
+ retain('visible');expect(dialog.open).toBe(true);expect(show).toHaveBeenCalledTimes(2)
+ expect([...dialog.querySelectorAll('input')].filter(input=>input.checked)).toHaveLength(1)
+ expect(dialog.querySelectorAll('input')[6].checked).toBe(true)
+})
+
+it('does not download a PDF whose generation finishes while its retained pane is hidden',async()=>{
+ let resolve;mock.build.mockImplementation(()=>new Promise(done=>{resolve=done}))
+ retain('visible')
+ act(()=>[...host.querySelectorAll('button')].find(b=>b.textContent.includes('Export Progress Report')).click())
+ act(()=>[...host.querySelectorAll('button')].find(b=>b.textContent.includes('Generate and download')).click())
+ retain('hidden');await act(async()=>resolve({name:'hidden.pdf',blob:new Blob(['pdf'])}))
+ expect(mock.save).not.toHaveBeenCalled()
+ retain('visible');expect(host.querySelector('.progress-file')).toBeNull();expect(host.querySelector('select').disabled).toBe(false)
+})
+
+it.each([
+ ['workout',state=>({...state,workouts:[{id:'saved',d:'2026-09-25',entries:[{id:'0025',sets:[{done:true,w:20,r:8}]}]}]})],
+ ['routine',state=>({...state,routines:[{id:'routine',name:'Changed routine',ex:[]}]})],
+ ['body data',state=>({...state,measurements:[...state.measurements,{d:'2026-09-25',neck:37}]})],
+ ['custom exercise',state=>({...state,customEx:[{id:'custom-kept',n:'Custom exercise',muscles:['chest']}]})],
+])('keeps a PDF after input-only clock writes but invalidates it after a real %s change',async(_,change)=>{
+ const create=vi.spyOn(URL,'createObjectURL').mockReturnValue('blob:kept'),revoke=vi.spyOn(URL,'revokeObjectURL')
+ mock.S={...mock.S,active:{id:'live',start:1000,entries:[],lastUserInteractionAt:1000,lastActivityAt:1000,accumulatedActiveDuration:0}}
+ mount();await generate()
+ mock.S={...mock.S,_ts:2000,active:{...mock.S.active,lastUserInteractionAt:2000,lastActivityAt:2000,accumulatedActiveDuration:1000}}
+ mount()
+ expect(host.querySelector('.progress-file a').getAttribute('href')).toBe('blob:kept');expect(create).toHaveBeenCalledOnce();expect(revoke).not.toHaveBeenCalled()
+ mock.S=change(mock.S);mount()
+ expect(host.querySelector('.progress-file')).toBeNull();expect(revoke).toHaveBeenCalledWith('blob:kept')
 })

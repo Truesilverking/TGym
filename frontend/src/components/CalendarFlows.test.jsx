@@ -67,7 +67,7 @@ it('starts the Settings starter plan today as well',()=>{
   expect(routineConsistency(useStore.getState().S).missed).toBe(0)
 })
 
-it('opens the shared calendar from Home with only Week/Month and allows schedule edits', () => {
+it('opens the shared Week/Month/Year calendar from Home and preserves schedule edits', () => {
   act(() => root.render(<MemoryRouter><Home /></MemoryRouter>))
   const expand = host.querySelector('[aria-label="Expand calendar"]')
   expect(expand).not.toBeNull()
@@ -75,7 +75,9 @@ it('opens the shared calendar from Home with only Week/Month and allows schedule
   const sheet = useUI.getState().sheets.at(-1)
   act(() => root.render(sheet.render(() => {})))
   expect(button('Week')).toBeTruthy(); expect(button('Month')).toBeTruthy()
-  expect(button('Year')).toBeUndefined()
+  expect(button('Year')).toBeTruthy()
+  act(() => button('Year').click())
+  expect(host.querySelectorAll('.zoomcal-month-card')).toHaveLength(12)
   act(() => button('Month').click())
   expect(host.querySelectorAll('.zoomcal-month .zoomcal-day')).toHaveLength(30)
   act(() => host.querySelectorAll('.zoomcal-month .zoomcal-day')[16].click())

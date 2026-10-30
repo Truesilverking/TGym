@@ -75,6 +75,39 @@ it('renders malformed optional nutrition data without an error or a profile writ
   } finally { act(() => root.unmount()); container.remove() }
 })
 
+it('selects distant nutrition dates with the shared calendar and keeps food and water logs attached to their dates', () => {
+  vi.useFakeTimers(); vi.setSystemTime(new Date('2026-09-02T12:00:00'))
+  const S = structuredClone(DEF)
+  S.nutrition.logs = {
+    '2026-09-02': { items: [{ id: 'today-food', name: 'Today meal', meal: 'breakfast', calories: 200, qty: 1 }], waterMl: 250 },
+    '2026-08-15': { items: [{ id: 'older-food', name: 'Older meal', meal: 'lunch', calories: 400, qty: 1 }], waterMl: 500 },
+  }
+  useStore.setState({ S })
+  const container = document.createElement('div'); document.body.appendChild(container)
+  const root = createRoot(container), before = structuredClone(S), writes = vi.spyOn(localStorage, 'setItem')
+  try {
+    act(() => root.render(<Nutrition />))
+    const calendar = container.querySelector('#nutrition-calendar .date-picker')
+    expect(calendar).not.toBeNull()
+    expect(calendar.querySelector('[data-status],.zoomcal-legend,.zoomcal-selection')).toBeNull()
+    act(() => [...calendar.querySelectorAll('.seg button')].find(button => button.textContent === 'Year').click())
+    act(() => calendar.querySelector('[data-month="2026-08"]').click())
+    expect(calendar.querySelector('[data-date="2026-08-15"]').dataset.recorded).toBe('true')
+    act(() => calendar.querySelector('[data-date="2026-08-15"]').click())
+    expect(container.querySelector('#nutrition-lunch').textContent).toContain('Older meal')
+    expect(container.querySelector('#nutrition-breakfast').textContent).not.toContain('Today meal')
+    expect(calendar.querySelector('.calendar-date[aria-pressed="true"]').dataset.date).toBe('2026-08-15')
+    expect(useStore.getState().S).toEqual(before)
+    expect(writes).not.toHaveBeenCalled()
+    act(() => button(container, 'Back to today').click())
+    expect(container.querySelector('#nutrition-breakfast').textContent).toContain('Today meal')
+    expect(calendar.querySelector('.calendar-date[aria-pressed="true"]').dataset.date).toBe('2026-09-02')
+    act(() => container.querySelector('[aria-label="Add 250 ml of water"]').click())
+    expect(useStore.getState().S.nutrition.logs['2026-09-02'].waterMl).toBe(500)
+    expect(useStore.getState().S.nutrition.logs['2026-08-15']).toEqual(before.nutrition.logs['2026-08-15'])
+  } finally { act(() => root.unmount()); container.remove(); writes.mockRestore() }
+})
+
 function WithSheets() {
   const sheets = useUI(s => s.sheets)
   return <><Nutrition />{sheets.map(sheet => <div key={sheet.id} role="dialog">{sheet.render(() => useUI.getState().closeSheet(sheet.id))}</div>)}</>

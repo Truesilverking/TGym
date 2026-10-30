@@ -2,10 +2,12 @@ import {useEffect,useId,useRef,useState} from 'react'
 import {useStore} from '../store/useStore.js'
 import {useUI} from '../store/useUI.js'
 import {t} from '../lib/i18n.js'
-import {STATS_VIEW_SECTIONS,statsSelectionOrder} from '../lib/stats-sections.js'
+import {statsSelectionOrder} from '../lib/stats-sections.js'
 import {syncStatsGestureExclusion} from '../lib/system-appearance.js'
 import {Button,Check} from './ui.jsx'
 import Icon from './Icon.jsx'
+import { nav } from '../lib/nav.js'
+import { STATS_PAGES, STATS_EXTRA_PAGES, statsPageOrder, statsPageTarget } from '../lib/navigation-model.js'
 import '../views/Stats.css'
 
 const SIZE=44,GAP=8
@@ -48,24 +50,43 @@ function useControlBounds(hasTimer){
  return bounds
 }
 
-function StatsCustomizationPanel({close,sheet=false}){
+export function StatsCustomizationPanel({close,sheet=false,onSelect,activeId}){
  const S=useStore(s=>s.S),update=useStore(s=>s.update),selected=statsSelectionOrder(S.statsSections,S.statsSectionOrder)
+ const [currentPage,setCurrentPage]=useState(activeId)
+ useEffect(()=>setCurrentPage(activeId),[activeId])
+ const order=statsPageOrder(S),fixed=new Set(STATS_EXTRA_PAGES.map(([id])=>id))
+ const persistPreference=mutator=>{try{update(mutator);return true}catch{useUI.getState().toast(t('Could not save changes. Try again.'));return false}}
+ const navigateTo=id=>{setCurrentPage(id);(onSelect||((id)=>nav(statsPageTarget(id))))(id)}
+ const choose=id=>{
+  if(!fixed.has(id)&&!selected.includes(id)&&!persistPreference(s=>{const next=[...statsSelectionOrder(s.statsSections,s.statsSectionOrder),id];s.statsSections=next;s.statsSectionOrder=[...next]}))return
+  close();navigateTo(id)
+ }
+ const move=(id,direction)=>persistPreference(s=>{
+  const next=statsPageOrder(s),index=next.indexOf(id),target=index+direction
+  if(index<0||target<0||target>=next.length)return
+  ;[next[index],next[target]]=[next[target],next[index]];s.statsPageOrder=next
+  const selectedNow=statsSelectionOrder(s.statsSections,s.statsSectionOrder),analytics=next.filter(id=>selectedNow.includes(id))
+  s.statsSections=analytics;s.statsSectionOrder=[...analytics]
+ })
  const toggle=id=>{
   if(selected.includes(id)&&selected.length===1)return
-  update(s=>{const current=statsSelectionOrder(s.statsSections,s.statsSectionOrder);if(current.includes(id)&&current.length===1)return;const next=current.includes(id)?current.filter(value=>value!==id):[...current,id];s.statsSections=next;s.statsSectionOrder=[...next]})
+  let next
+  if(!persistPreference(s=>{const current=statsSelectionOrder(s.statsSections,s.statsSectionOrder);if(current.includes(id)&&current.length===1)return;next=current.includes(id)?current.filter(value=>value!==id):[...current,id];s.statsSections=next;s.statsSectionOrder=[...next]}))return
+  if(id===currentPage&&next&&!next.includes(id))navigateTo(next[0])
  }
  return <div id="stats-sections-menu" className={'stats-customization-panel'+(sheet?' stats-customization-sheet':'')} role={sheet?'group':'dialog'} aria-label={t('Stats view settings')}>
-  <div className="stats-customization-heading"><div><h3>{t('Sections')}</h3><p className="small muted">{t('{0} sections selected',selected.length)}</p></div>{!sheet&&<button type="button" className="iconbtn" onClick={close} aria-label={t('Close')}><Icon name="xmark"/></button>}</div>
-  <p id="stats-sections-hint" className="small muted">{t('Sections appear in the order you select them.')} {t('Select at least one section.')}</p>
-  <div className="stats-customization-options" role="group" aria-label={t('Sections')} data-nodrag>{STATS_VIEW_SECTIONS.map(([id,label])=><div key={id} className={'stats-customization-option'+(selected.includes(id)?' selected':'')} data-stats-option={id}>
-   <Check id={'stats-section-'+id} checked={selected.includes(id)} onChange={()=>toggle(id)} size={44} aria-label={t(label)} aria-describedby="stats-sections-hint"/>
-   <label htmlFor={'stats-section-'+id}>{t(label)}</label>{selected.includes(id)&&<span className="stats-selection-position" aria-hidden="true">{selected.indexOf(id)+1}</span>}
-  </div>)}</div>
+  <div className="stats-customization-heading"><div><h3>{t('Sections')}</h3><p className="small muted">{t('{0} sections selected',selected.length+fixed.size)}</p></div>{!sheet&&<button type="button" className="iconbtn" onClick={close} aria-label={t('Close')}><Icon name="xmark"/></button>}</div>
+  <p id="stats-sections-hint" className="small muted">{t('Tap a section to open it. Use the arrows to change its order.')} {t('Select at least one section.')}</p>
+  <div className="stats-customization-options" role="group" aria-label={t('Sections')} data-nodrag>{order.map((id,index)=>{const label=STATS_PAGES.find(row=>row[0]===id)[1];return <div key={id} className={'stats-customization-option'+(selected.includes(id)||fixed.has(id)?' selected':'')} data-stats-option={id}>
+   {fixed.has(id)?<span className="stats-page-fixed" aria-hidden="true"><Icon name={id==='records'?'trophy':id==='report'?'chart':'history'}/></span>:<Check id={'stats-section-'+id} checked={selected.includes(id)} onChange={()=>toggle(id)} size={44} aria-label={t(label)} aria-describedby="stats-sections-hint"/>}
+   <button type="button" className="stats-section-jump" aria-current={currentPage===id?'page':undefined} onClick={()=>choose(id)}>{t(label)}</button>
+   <div className="stats-order-actions"><button type="button" disabled={index===0} onClick={()=>move(id,-1)} aria-label={t('Move {0} up',t(label))}><Icon name="chevronUp"/></button><button type="button" disabled={index===order.length-1} onClick={()=>move(id,1)} aria-label={t('Move {0} down',t(label))}><Icon name="chevronDown"/></button></div>
+  </div>})}</div>
   <div className="stats-customization-footer"><Button onClick={close}>{t('Done')}</Button></div>
  </div>
 }
 
-export default function StatsSections(){
+export default function StatsSections({activeId,onSelect}){
  const stored=useStore(s=>s.S.statsControlPosition),update=useStore(s=>s.update),saved=normalizeStatsControlPosition(stored)
  const hasTimer=useUI(s=>!!s.timer||!!s.work),bounds=useControlBounds(hasTimer)
  const covered=useUI(s=>s.sheets.length>0||!!s.appTourWorkoutPreview)
@@ -84,7 +105,7 @@ export default function StatsSections(){
  const toggle=()=>{
   if(open){close();return}
   const mobile=window.matchMedia('(max-width: 639px)').matches;setSheet(mobile);setOpen(true)
-  if(mobile)mobileSheet.current=useUI.getState().openSheet(sheetClose=><StatsCustomizationPanel close={sheetClose} sheet/>,{onClose:()=>{mobileSheet.current=null;setOpen(false);trigger.current?.focus({preventScroll:true})}})
+  if(mobile)mobileSheet.current=useUI.getState().openSheet(sheetClose=><StatsCustomizationPanel close={sheetClose} sheet activeId={activeId} onSelect={onSelect}/>,{onClose:()=>{mobileSheet.current=null;setOpen(false);trigger.current?.focus({preventScroll:true})}})
  }
  const release=g=>{try{trigger.current?.releasePointerCapture?.(g.id)}catch{}}
  const cancel=()=>{const g=gesture.current;if(!g)return;gesture.current=null;suppressClick.current=true;release(g);setDragging(null)}
@@ -144,6 +165,6 @@ export default function StatsSections(){
    <Icon name={(side==='right')===open?'chevronRight':'chevronLeft'}/>
   </button>
   <span id={hintId} className="stats-control-hint">{hint}</span>
-  {open&&!sheet&&<div ref={popover} className="stats-customization-popover" style={{left:popupLeft-placement.x,right:'auto',top:popupTop-placement.y,transform:'none',width,'--stats-popover-max-height':Math.max(0,bounds.bottom+SIZE-popupTop-2)+'px'}}><StatsCustomizationPanel close={close}/></div>}
+  {open&&!sheet&&<div ref={popover} className="stats-customization-popover" style={{left:popupLeft-placement.x,right:'auto',top:popupTop-placement.y,transform:'none',width,'--stats-popover-max-height':Math.max(0,bounds.bottom+SIZE-popupTop-2)+'px'}}><StatsCustomizationPanel close={close} activeId={activeId} onSelect={onSelect}/></div>}
  </div>
 }

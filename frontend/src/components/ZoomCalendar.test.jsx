@@ -30,7 +30,7 @@ describe('zoom consistency calendar', () => {
   const render = () => act(() => root.render(<ZoomCalendar S={state()} />))
   const zoomOut = () => [...host.querySelectorAll('button')].find(b => b.getAttribute('aria-label') === 'Zoom out')
 
-  it('uses the same dashed border on future dates and their legend after the CSS cascade', () => {
+  it('retains future date borders while removing Today and Future dates from the legend', () => {
     const style = document.createElement('style')
     style.textContent = calendarStyles
     document.head.appendChild(style)
@@ -39,7 +39,8 @@ describe('zoom consistency calendar', () => {
     try {
       render()
       expect(getComputedStyle(host.querySelector('.calendar-date[data-future="true"]')).borderStyle).toBe('dashed')
-      expect(getComputedStyle(host.querySelector('.zoomcal-future-key')).borderStyle).toBe('dashed')
+      expect(host.querySelector('.zoomcal-time-key,.zoomcal-future-key,.zoomcal-today-key')).toBeNull()
+      expect(host.querySelector('.calendar-date.today').getAttribute('aria-current')).toBe('date')
     } finally { style.remove() }
   })
 
@@ -50,6 +51,37 @@ describe('zoom consistency calendar', () => {
     expect(host.querySelector('.zoomcal-day.completed.deload')).not.toBeNull()
     act(()=>zoomOut().click())
     expect(host.querySelectorAll('.zoomcal-day.deload')).toHaveLength(6)
+  })
+  it.each(['week', 'month', 'months', 'years'])('shows Tracking since only while its boundary is in the visible %s period', level => {
+    const S = state(), before = JSON.stringify(S)
+    act(() => root.render(<ZoomCalendar S={S} initialLevel={level} initialAnchor={new Date('2026-09-02T12:00:00')} />))
+    expect(host.querySelector('.zoomcal-tracking-start')).not.toBeNull()
+    act(() => host.querySelector('.zoomcal-nav>[aria-label="Next"]').click())
+    expect(host.querySelector('.zoomcal-tracking-start')).toBeNull()
+    act(() => host.querySelector('.zoomcal-nav>[aria-label="Prev"]').click())
+    expect(host.querySelector('.zoomcal-tracking-start')).not.toBeNull()
+    expect(JSON.stringify(S)).toBe(before)
+  })
+  it('picks empty dates through the shared week, month and year controls without training actions or writes', () => {
+    const S = state(), before = JSON.stringify(S), onSelectDate = vi.fn(), onDay = vi.fn()
+    const writes = vi.spyOn(localStorage, 'setItem')
+    act(() => root.render(<ZoomCalendar S={S} datePicker selectedDate="2026-09-02" onSelectDate={onSelectDate} onDay={onDay}
+      markedDates={['2026-09-01']} levels={['week', 'month', 'months']} initialAnchor={new Date('2026-09-02T12:00:00')} />))
+    expect(host.querySelector('.zoomcal-day[data-date="2026-09-01"]').dataset.recorded).toBe('true')
+    expect(host.querySelector('.zoomcal-legend,.zoomcal-period-active,.zoomcal-tracking-start,.zoomcal-selection,.zoomcal-schedule-actions,.zoomcal-actions-row,.zoomcal-export-wrap')).toBeNull()
+    expect(host.querySelector('[data-status]')).toBeNull()
+    act(() => host.querySelector('.zoomcal-day[data-date="2026-09-04"]').click())
+    expect(onSelectDate).toHaveBeenLastCalledWith('2026-09-04')
+    expect(onDay).not.toHaveBeenCalled()
+    act(() => [...host.querySelectorAll('.seg button')].find(button => button.textContent === 'Year').click())
+    expect(host.querySelectorAll('.zoomcal-month-card')).toHaveLength(12)
+    act(() => host.querySelector('[data-month="2026-12"]').click())
+    expect(host.querySelector('.zoomcal').dataset.level).toBe('month')
+    act(() => host.querySelector('.zoomcal-day[data-date="2026-12-31"]').click())
+    expect(onSelectDate).toHaveBeenLastCalledWith('2026-12-31')
+    expect(writes).not.toHaveBeenCalled()
+    expect(JSON.stringify(S)).toBe(before)
+    writes.mockRestore()
   })
   it('renders seven square day buttons with routine names outside them', () => {
     render()
@@ -153,7 +185,7 @@ describe('zoom consistency calendar', () => {
     if (level === 'months' || level === 'years') {
       const firstPeriod = host.querySelector('.zoomcal-periods>button')
       expect(firstPeriod.getAttribute('data-active-days')).toBe('0')
-      expect(firstPeriod.querySelector(':scope > small').textContent).toBe('Active days')
+      expect(firstPeriod.querySelector(':scope > small')).toBeNull()
     }
     expect(JSON.stringify(S)).toBe(before)
   })
@@ -268,7 +300,8 @@ describe('unified activity calendar presentation', () => {
     expect(period).not.toBeNull()
     expect(period.getAttribute('data-active-days')).toBe('2')
     expect(calendarActivityCount(activity, period.getAttribute('data-period-start'), period.getAttribute('data-period-end'))).toBe(2)
-    expect(period.textContent).toMatch(/active days/i)
+    expect(period.textContent).toBe('2')
+    expect(period.querySelector('strong').getAttribute('aria-label')).toBe('Active days: 2')
     expect(period.querySelector('strong').textContent).toBe('2')
     expect(host.querySelector('[data-date="2026-09-02"]').getAttribute('data-status')).toBe('partial')
     expect(host.querySelector('[data-date="2026-09-02"]').getAttribute('data-active')).toBe('true')
@@ -281,7 +314,8 @@ describe('unified activity calendar presentation', () => {
     const cards = [...host.querySelectorAll('button.zoomcal-month-card')]
     expect(cards.map(card => card.getAttribute('data-month'))).toEqual(Array.from({ length: 12 }, (_, month) => `2026-${String(month + 1).padStart(2, '0')}`))
     expect(cards.map(card => Number(card.getAttribute('data-active-days')))).toEqual([0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0])
-    expect(cards[8].textContent).toMatch(/2.*active days/i)
+    expect(cards[8].querySelector('em').textContent).toBe('2')
+    expect(cards[8].textContent).not.toMatch(/active days/i)
     expect(cards[8].textContent).not.toMatch(/\d+\/\d+ completed/i)
     expect(host.querySelectorAll('.zoomcal-mini-weekday')).toHaveLength(84)
     const dates = [...host.querySelectorAll('.zoomcal-mini-month .calendar-date[data-date]')].map(cell => cell.getAttribute('data-date'))
@@ -357,7 +391,8 @@ describe('unified activity calendar presentation', () => {
     expect(host.querySelector('[data-month="2026-01"] .zoomcal-period-head b').textContent).toBe('Enero')
     expect(host.querySelector('[data-month="2026-12"] .zoomcal-period-head b').textContent).toBe('Diciembre')
     expect([...host.querySelectorAll('[data-month="2026-01"] .zoomcal-mini-weekday')].map(day => day.textContent)).toEqual(['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá', 'Do'])
-    expect(host.querySelector('.zoomcal-period-active').textContent).toMatch(/días activos/i)
+    expect(host.querySelector('.zoomcal-period-active').textContent).toBe('2')
+    expect(host.querySelector('.zoomcal-period-active strong').getAttribute('aria-label')).toBe('Días activos: 2')
     expect(host.querySelector('[data-month="2026-09"]').getAttribute('aria-label')).toMatch(/días activos/i)
   })
 

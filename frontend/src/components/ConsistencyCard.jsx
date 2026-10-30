@@ -9,7 +9,7 @@ export default function ConsistencyCard({ S, onTimes, onExport, now = new Date()
     <div className="consistency-heading insight-heading"><div><h2>{t('Consistency')}</h2><p className="muted small">{t('Last 8 weeks')}</p></div><div className="consistency-actions">{onExport && <Button className="times-action consistency-download" icon="download" aria-label={t('Consistency Report')} title={t('Consistency Report')} onClick={onExport} />}<Button className="times-action" icon="timer" onClick={onTimes}>{t('Times')}</Button></div></div>
     <div className="consistency-summary">
       <dl className="consistency-primary consistency-metrics">
-        <div><dt>{t('Active days')}</dt><dd>{stats.activeDays}</dd></div>
+        <div><dt className="consistency-active-label">{t('Active days')}</dt><dd>{stats.activeDays}</dd></div>
         <div><dt>{t('Completion')}</dt><dd>{percent == null ? '—' : percent+'%'}</dd></div>
       </dl>
       <div className="consistency-track" role={percent == null ? undefined : 'meter'} aria-label={percent == null ? undefined : t('Completion')} aria-valuemin={percent == null ? undefined : 0} aria-valuemax={percent == null ? undefined : 100} aria-valuenow={percent ?? undefined} aria-hidden={percent == null ? true : undefined}><span style={{width:`${percent ?? 0}%`}} /></div>

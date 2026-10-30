@@ -1,0 +1,40 @@
+{
+  "original": true,
+  "externalMediaInputs": false,
+  "asset": "dead-hang.gif",
+  "dimensions": [
+    512,
+    512
+  ],
+  "frames": 12,
+  "authoredFrames": 36,
+  "frameDurationMs": 80,
+  "durationMs": 2880,
+  "gifBytes": 184394,
+  "renderer": "render_custom_exercises.py + original primitives in render_stepmill.py; 3x antialiasing",
+  "movement": "Dead hang",
+  "reference": {
+    "url": "https://www.acefitness.org/continuing-education/certified/june-2025/8887/the-truth-behind-the-trends/",
+    "usedFor": "Professional organisation description: static bar hang; no pull-up repetitions."
+  },
+  "reviewStatus": "Candidate only: contact-sheet and loop review required before assignment",
+  "productionAssigned": false,
+  "physicalExerciseValidation": false,
+  "firstFrameRig": {
+    "isometric": true,
+    "handsFixed": [
+      [
+        205,
+        79
+      ],
+      [
+        306,
+        79
+      ]
+    ],
+    "elbowInternalAngleDegrees": 180,
+    "footClearancePx": 25,
+    "jointExcursionPx": 0,
+    "notPullup": true
+  }
+}

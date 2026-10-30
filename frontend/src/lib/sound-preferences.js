@@ -52,7 +52,11 @@ function presetSound(id, event) {
   if (presets.has(key)) return presets.get(key)
   const brief = event === 'set' || event === 'countdown'
   let notes
-  if (id === 'classic') notes = brief ? [[event === 'set' ? 1040 : 660, 0, .12]] : event === 'completion' ? [[880, 0, .15], [1100, .18, .15], [1320, .36, .3]] : [[880, 0, .15], [880, .25, .15], [1320, .5, .4]]
+  if (id === 'classic') notes = brief ? [[event === 'set' ? 1046.5 : 659.25, 0, event === 'set' ? .13 : .09]]
+    : event === 'completion' ? [[523.25, 0, .28], [659.25, .13, .30], [783.99, .26, .34], [1046.5, .42, .5]]
+    : event === 'work' ? [[987.77, 0, .2], [987.77, .25, .2], [659.25, .5, .36]]
+    : event === 'notification' ? [[783.99, 0, .25], [1174.66, .16, .42]]
+    : [[622.25, 0, .21], [830.61, .2, .24], [1244.51, .4, .42]]
   else if (id === 'chime') notes = brief ? [[1200, 0, .16]] : [[880, 0, .3], [1320, .18, .5]]
   else if (id === 'pulse') notes = brief ? [[750, 0, .1]] : [[660, 0, .12], [990, .2, .12], [990, .4, .18]]
   else notes = brief ? [[440, 0, .12]] : [[440, 0, .45], [660, .25, .45]]
@@ -61,10 +65,24 @@ function presetSound(id, event) {
   for (const [freq, start, dur] of notes) {
     for (let i = Math.round(start * SOUND_RATE); i < Math.min(samples.length, (start + dur) * SOUND_RATE); i++) {
       const t = i / SOUND_RATE - start
-      const env = Math.max(0, Math.min(t / .012, (dur - t) / .04, 1)) * Math.exp(-3 * t / dur)
-      samples[i] += Math.sin(2 * Math.PI * freq * t) * env * .3
+      const env = Math.max(0, Math.min(t / .009, (dur - t) / .065, 1)) * Math.exp(-2.1 * t / dur)
+      // A quiet upper partial makes a small phone speaker clearer without a
+      // harsh square wave. Chime uses inharmonic, independently decaying bells.
+      const fundamental = Math.sin(2 * Math.PI * freq * t)
+      const upper = id === 'chime'
+        ? .28 * Math.sin(2 * Math.PI * freq * 2.01 * t) * Math.exp(-4 * t / dur) + .10 * Math.sin(2 * Math.PI * freq * 3.97 * t) * Math.exp(-7 * t / dur)
+        : (id === 'soft' ? .07 : .18) * Math.sin(2 * Math.PI * freq * 2 * t) * Math.exp(-3 * t / dur)
+      samples[i] += (fundamental + upper) * env
     }
   }
+  let peak = 0
+  for (const sample of samples) peak = Math.max(peak, Math.abs(sample))
+  // Preserve headroom even when notes overlap; each preset has a deliberate,
+  // consistent level instead of clipping against the PCM limit.
+  const level = id === 'soft' ? .38 : brief ? .46 : .62
+  const scale = peak ? level / peak : 0
+  for (let i = 0; i < samples.length; i++) samples[i] *= scale
+  samples[0] = 0; samples[samples.length - 1] = 0
   const result = { id: `${id}_${event}`, name: SOUND_PRESETS.find(p => p.id === id).label, duration, data: encodeSound(samples) }
   presets.set(key, result)
   return result
