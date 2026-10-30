@@ -101,7 +101,7 @@ export default function AppLock({ children }) {
     setBusy(true); setError(''); setNotice(false)
     try {
       if (recover) {
-        const ok = await recoverWithKey(key)
+        const ok = await recoverWithKey(key, () => current(token))
         if (!current(token)) return
         if (ok) { unlock(); return }
         setVisible(false); setError('Invalid recovery key'); return
@@ -148,7 +148,7 @@ export default function AppLock({ children }) {
         </div>
         <div className="lock-feedback">
           <p id="app-unlock-error" role={error ? 'alert' : undefined} className="lock-error">{error && t(error)}</p>
-          <p id="app-unlock-hint" className="lock-hint" aria-live="polite">{busy ? t('Verifying…') : biometricBusy ? t('Waiting for biometrics…') : waiting ? t('Try again in {seconds}s').replace('{seconds}', Math.ceil((retryAt - now) / 1000)) : notice ? t('Use your PIN or try biometrics again.') : recovery ? t('Your recovery key removes the app lock.') : !error ? t('Your PIN unlocks automatically') : ''}</p>
+          <p id="app-unlock-hint" className="lock-hint" aria-live="polite">{busy ? t('Verifying…') : biometricBusy ? t('Waiting for biometrics…') : waiting ? t('Try again in {seconds}s').replace('{seconds}', Math.ceil((retryAt - now) / 1000)) : notice ? (biometricEnabled() ? t('Use your PIN or try biometrics again.') : t('Use PIN')) : recovery ? t('Your recovery key removes the app lock.') : !error ? t('Your PIN unlocks automatically') : ''}</p>
         </div>
       </div>
       {!recovery && <div className="lock-keypad" role="group" aria-label={t('PIN keypad')}>

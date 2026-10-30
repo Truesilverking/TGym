@@ -37,7 +37,7 @@ it('preserves explicit recovery verification and masks mode changes', async () =
  await render(); await click('[aria-label="Show key"]'); await click('.lock-recovery')
  expect(host.querySelector('input').type).toBe('password'); expect(host.querySelector('input').inputMode).toBe('text'); expect(host.querySelector('.lock-keypad')).toBeNull()
  await enter('abcd-1234-efgh-5678'); expect(recoverWithKey).not.toHaveBeenCalled(); await submit()
- expect(recoverWithKey).toHaveBeenCalledWith('ABCD-1234-EFGH-5678'); expect(verifyDevicePin).not.toHaveBeenCalled(); expect(host.querySelector('[role=alert]').textContent).toBe('Invalid recovery key')
+ expect(recoverWithKey).toHaveBeenCalledWith('ABCD-1234-EFGH-5678', expect.any(Function)); expect(verifyDevicePin).not.toHaveBeenCalled(); expect(host.querySelector('[role=alert]').textContent).toBe('Invalid recovery key')
  recoverWithKey.mockResolvedValueOnce(true); await submit(); expect(host.textContent).toBe('Private training data')
 })
 it('restores focus after async rejection, blocks double submits and never retries on a render', async () => {
@@ -100,4 +100,14 @@ it('keeps the cooldown visible after biometric cancellation while PIN is unavail
  expect(host.textContent).toContain('Try again in 5s')
  expect(host.textContent).not.toContain('Use your PIN or try biometrics again.')
  expect(host.querySelector('input').disabled).toBe(true)
+})
+it('withdraws permission to remove the lock when pending recovery outlives a relock', async () => {
+ vi.useFakeTimers(); vi.setSystemTime(100000); let finish
+ recoverWithKey.mockImplementationOnce((key, canApply) => new Promise(resolve => { finish = () => resolve(canApply()) }))
+ await render(); await click('.lock-recovery'); await enter('ABCD-1234-EFGH-5678'); await submit()
+ const canApply = recoverWithKey.mock.calls[0][1]
+ expect(canApply()).toBe(true)
+ await visibility(true); await act(async () => vi.advanceTimersByTime(300001)); await visibility(false)
+ expect(canApply()).toBe(false); await act(async () => finish())
+ expect(host.textContent).not.toContain('Private training data'); expect(host.querySelector('.lock-keypad')).not.toBeNull()
 })
