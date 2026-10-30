@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import React,{act} from 'react'
 import {createRoot} from 'react-dom/client'
-import {MemoryRouter,useLocation} from 'react-router-dom'
+import {MemoryRouter,useLocation,useNavigate} from 'react-router-dom'
 import {afterEach,beforeEach,expect,it,vi} from 'vitest'
 import TabBar from './TabBar.jsx'
 import {DEF,useStore} from '../store/useStore.js'
@@ -127,6 +127,20 @@ it('closes its transient surface on a browser popstate without adding a history 
  await mount('/nutrition');const push=vi.spyOn(window.history,'pushState');await click(handle())
  await act(()=>window.dispatchEvent(new PopStateEvent('popstate')))
  expect(handle().getAttribute('aria-expanded')).toBe('false');expect(push).not.toHaveBeenCalled();preserved()
+})
+it.each([true,false])('removes the full dock in Settings and restores it collapsed on return (active=%s)',async active=>{
+ if(!active){before={...before,active:null};raw=JSON.stringify(before);useStore.setState({S:structuredClone(before)});localStorage.setItem('gym_state_v1',raw)}
+ function Links(){const go=useNavigate();return <><button data-settings onClick={()=>go('/settings')}>Settings</button><button data-home onClick={()=>go('/home')}>Back</button><Route/></>}
+ await act(()=>root.render(<MemoryRouter initialEntries={['/home']}><Links/><TabBar onStart={start}/></MemoryRouter>))
+ expect(host.querySelector('.start').textContent).toBe(active?'Resume':'Start')
+ await click(handle());expect(host.querySelector('.navigation-dock-backdrop')).not.toBeNull()
+ await click(host.querySelector('[data-settings]'))
+ expect(current()).toBe('/settings');expect(nav()).toBeNull();expect(host.querySelector('.start')).toBeNull();expect(host.querySelector('.navigation-dock-backdrop')).toBeNull()
+ const goBack=vi.fn(),handler=makeBackHandler({getSheets:()=>[],closeSheet:vi.fn(),toast:vi.fn(),goBack,exit:vi.fn()})
+ expect(handler({canGoBack:true})).toBe('history');expect(goBack).toHaveBeenCalledOnce()
+ await click(host.querySelector('[data-home]'))
+ expect(current()).toBe('/home');expect(host.querySelector('.start').textContent).toBe(active?'Resume':'Start');expect(handle().getAttribute('aria-expanded')).toBe('false')
+ expect(start).not.toHaveBeenCalled();preserved()
 })
 
 it('hides the lifted rail when the app loses visibility or window focus',async()=>{

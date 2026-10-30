@@ -20,18 +20,18 @@ export default function TabBar({ onStart }) {
   const [open,setOpen]=useState(false),[progress,setProgress]=useState(null)
   const dock=useRef(null),toggle=useRef(null),backdrop=useRef(null),gesture=useRef(null),suppressClick=useRef(false)
   const covered=useUI(s=>s.sheets.length>0||!!s.appTourRequest||!!s.appTourWorkoutPreview)
-  const available=!!(user||isGuest)&&!onboarding
+  const available=!!(user||isGuest)&&!onboarding&&!/^\/settings(?:\/|$)/.test(loc.pathname)
   const close=restoreFocus=>{gesture.current=null;setProgress(null);setOpen(false);if(restoreFocus||document.activeElement?.closest('.navigation-dock-slot'))toggle.current?.focus({preventScroll:true})}
   useEffect(()=>{close(false)},[loc.pathname,loc.search,available,covered])
   useEffect(()=>{
-    if(!open)return
+    if(!open||!available)return
     const unregister=registerNavigationBack(()=>close(true)),pop=()=>close(false),hidden=()=>{if(document.visibilityState==='hidden')close(false)}
     window.addEventListener('popstate',pop)
     window.addEventListener('blur',pop);document.addEventListener('visibilitychange',hidden)
     return()=>{unregister();window.removeEventListener('popstate',pop);window.removeEventListener('blur',pop);document.removeEventListener('visibilitychange',hidden)}
-  },[open])
+  },[open,available])
   useEffect(()=>{
-    if(!open)return
+    if(!open||!available)return
     const focusable=()=>[...dock.current.querySelectorAll('button:not([disabled]):not([tabindex="-1"])')]
     const first=dock.current.querySelector('.navigation-dock-tab[aria-current="page"]')||dock.current.querySelector('.navigation-dock-tab')
     first?.focus({preventScroll:true})
@@ -46,8 +46,8 @@ export default function TabBar({ onStart }) {
     document.addEventListener('keydown',key)
     surface?.addEventListener('wheel',block,{passive:false})
     return()=>{document.removeEventListener('keydown',key);surface?.removeEventListener('wheel',block)}
-  },[open])
-  // First-run setup is a full-screen flow: the rail would offer exits into empty screens.
+  },[open,available])
+  // Settings and first-run setup own their full-screen navigation.
   if (!available) return null
   const cur = loc.pathname.split('/')[1] || 'home'
   // Each module owns its sub-screens: Exercises live under Plan, History/Report under Progress.
