@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { authenticateDeviceBiometry, biometricEnabled, deviceLockEnabled, lockConfig, recoverWithKey, verifyDevicePin } from '../lib/app-lock.js'
 import { t, useLang } from '../lib/i18n.js'
+import { observeAppVisibility } from '../lib/app-visibility.js'
 import Icon from './Icon.jsx'
 import './AppLock.css'
 
@@ -49,8 +50,8 @@ export default function AppLock({ children }) {
   useEffect(() => {
     mounted.current = true
     let hiddenAt = null
-    const onVisibility = () => {
-      if (document.hidden) {
+    const onVisibility = active => {
+      if (!active) {
         hiddenAt = Date.now()
         setValue(''); setVisible(false)
         if (deviceLockEnabled()) document.body.classList.add('framegym-private')
@@ -67,12 +68,12 @@ export default function AppLock({ children }) {
         hiddenAt = null
       }
     }
-    document.addEventListener('visibilitychange', onVisibility)
+    const stopVisibility = observeAppVisibility(onVisibility)
     return () => {
       // StrictMode replays effects on the same instance. Retain the in-flight
       // prompt across that replay; mounted still rejects real unmount results.
       mounted.current = false
-      document.removeEventListener('visibilitychange', onVisibility)
+      stopVisibility()
       document.body.classList.remove('framegym-private')
     }
   }, [])
