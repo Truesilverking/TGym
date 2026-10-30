@@ -1,7 +1,7 @@
 import { todayISO } from './lib/format.js'
 import { dailyPlan } from './lib/daily-plan.js'
 import { syncWebAudioPreferences } from './lib/web-audio-preferences.js'
-import { useEffect, useLayoutEffect, useRef } from 'react'
+import { createContext, useContext, useEffect, useLayoutEffect, useRef } from 'react'
 import { HashRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import { useStore } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
@@ -76,12 +76,64 @@ export function ThemePreferences() {
   return null
 }
 
+const WorkoutLinkContext = createContext(null)
+function createWorkoutLinkInbox() {
+  let pending = false, subscriber = null
+  const deliver = () => {
+    if (!pending || !subscriber) return
+    pending = false
+    subscriber()
+  }
+  return {
+    receive() { pending = true; deliver() },
+    subscribe(open) {
+      subscriber = open; deliver()
+      return () => { if (subscriber === open) subscriber = null }
+    },
+  }
+}
+
+// The PIN screen unmounts Shell. Keep native intents in memory until an unlocked,
+// hydrated Shell can consume them, without exposing a route or replaying old taps.
+function NativeWorkoutLinks({ children }) {
+  const inbox = useRef(createWorkoutLinkInbox()).current
+  const appPlugin = useRef(null)
+  useEffect(() => {
+    if (!MOBILE) return
+    let disposed = false, listener, liveIntent = false
+    const remove = handle => {
+      try { void Promise.resolve(handle?.remove()).catch(() => {}) } catch {}
+    }
+    const receive = event => { if (!disposed && event?.url === 'tgym://workout') inbox.receive() }
+    // Share the import through StrictMode's setup/cleanup replay. Each setup
+    // still owns its listener handle and rejects results after its own cleanup.
+    const plugin = appPlugin.current ||= import('@capacitor/app')
+    plugin.then(async ({ App }) => {
+      if (disposed) return
+      const handle = await App.addListener('appUrlOpen', event => {
+        if (disposed) return
+        liveIntent = true
+        receive(event)
+      })
+      if (disposed) { remove(handle); return }
+      listener = handle
+      const launch = await App.getLaunchUrl()
+      // Android retains the original launch URL. A newer live intent (including
+      // a retained initial event) supersedes it, even if this query resolves late.
+      if (!liveIntent) receive(launch)
+    }).catch(() => {})
+    return () => { disposed = true; remove(listener) }
+  }, [inbox])
+  return <WorkoutLinkContext.Provider value={inbox}>{children}</WorkoutLinkContext.Provider>
+}
+
 function Shell() {
   const navigate = useNavigate()
   const nativeNavigate = useRef(navigate)
   nativeNavigate.current = navigate
   const loc = useLocation()
   const { S, user, ready, storageError, storageWarning, storageDiagnostics } = useStore()
+  const workoutLinks = useContext(WorkoutLinkContext)
   const isGuest = useStore(s => s.isGuest())
   const needsMobileOnboarding = useStore(s => s.needsMobileOnboarding)
   const langV = useLang()   // re-renders the whole shell when the language (pack) changes
@@ -111,19 +163,9 @@ function Shell() {
     return ()=>document.removeEventListener('visibilitychange',refresh)
   },[ready])
   useEffect(()=>{
-    if(!MOBILE || !ready)return
-    let disposed=false,listener
-    const open=event=>{if(!disposed && event?.url==='tgym://workout')nativeNavigate.current(useStore.getState().S.active?'/workout':'/home')}
-    import('@capacitor/app').then(async({App})=>{
-      const handle=await App.addListener('appUrlOpen',open)
-      if(disposed){void handle.remove();return}
-      listener=handle
-      open(await App.getLaunchUrl())
-    }).catch(()=>{})
-    return ()=>{disposed=true;void listener?.remove()}
-    // The initial intent remains available natively after it has been consumed.
-    // Route changes must not register again and replay it over ordinary tab taps.
-  },[ready])
+    if(!MOBILE || !ready || storageError)return
+    return workoutLinks?.subscribe(()=>nativeNavigate.current(useStore.getState().S.active?'/workout':'/home'))
+  },[ready,storageError,workoutLinks])
   useEffect(()=>{
     if (!ready) return
     const check=()=>{
@@ -299,5 +341,5 @@ export default function App() {
     initBackButton().then(fn => { if (gone) fn(); else stop = fn })
     return () => { gone = true; stop?.() }
   }, [])
-  return <HashRouter><ThemePreferences /><AppLock><Shell /></AppLock></HashRouter>
+  return <HashRouter><ThemePreferences /><NativeWorkoutLinks><AppLock><Shell /></AppLock></NativeWorkoutLinks></HashRouter>
 }
