@@ -4,8 +4,8 @@
   "containsPrivateProfileData": false,
   "productionAssigned": false,
   "assetCount": 13,
-  "totalGifBytes": 5270935,
-  "totalPosterBytes": 352170,
+  "totalGifBytes": 4649821,
+  "totalPosterBytes": 453915,
   "assets": [
     {
       "key": "cross-body-lat-pull-around",
@@ -19,10 +19,10 @@
       "authoredFrames": 36,
       "loop": 0,
       "durationMs": 2880,
-      "gifBytes": 643933,
-      "posterBytes": 28889,
-      "gifSha256": "05735a03d4113d688aa926ae8c67ed743b02b2be7f524fd788c7ab913fee35c8",
-      "posterSha256": "63f2d29ee2114ed166b920915b4e2601f5d2a91aa25698791e5b5eaf586285c5",
+      "gifBytes": 398782,
+      "posterBytes": 36860,
+      "gifSha256": "ba89484a1b2596403784e8e7fe70e2ff9f4392d7917660bddd218e846f612bb2",
+      "posterSha256": "22b4868460d400168b773c65195b643a65d0e8c118719c13988ecf7b94e3da5c",
       "provenanceFile": "cross-body-lat-pull-around-provenance.json"
     },
     {
@@ -33,14 +33,14 @@
         512,
         512
       ],
-      "decodedFrames": 12,
+      "decodedFrames": 36,
       "authoredFrames": 36,
       "loop": 0,
       "durationMs": 2880,
-      "gifBytes": 198832,
-      "posterBytes": 35470,
-      "gifSha256": "7a333a74215e2492c554cd8a84181df4ba7a3d5f21106ac3b61c5f8578ede036",
-      "posterSha256": "704fd32442b8477b9f5ff1cdbce8e7e1245b46685954eb29c2a8af4f56768a99",
+      "gifBytes": 165737,
+      "posterBytes": 40119,
+      "gifSha256": "55792cc763903386df38187824c4e47cafa881fb3971b8b1e3ee26a942247212",
+      "posterSha256": "4726bc238aed5608302955c79140f011f164533aca2848608481a0ea84ac1481",
       "provenanceFile": "plate-pinch-hold-provenance.json"
     },
     {
@@ -55,10 +55,10 @@
       "authoredFrames": 36,
       "loop": 0,
       "durationMs": 2880,
-      "gifBytes": 614785,
-      "posterBytes": 30264,
-      "gifSha256": "a362e365546a44e8a15192c6ba0fcc70d080a08eb20f656522ccd3986dd4c7fd",
-      "posterSha256": "12c4d4912d1458c56e5a3e606aeee77dfc65f968ffda76eea5ce0c508552c281",
+      "gifBytes": 477457,
+      "posterBytes": 37238,
+      "gifSha256": "21a4787062db1c79667c729d17af5f3790084b668ea2723a2cbdad1149e2d451",
+      "posterSha256": "c9308f3717f4ea9e989e2cda5345ea52c6f19f478b2197bb4b3d5994a8632b9f",
       "provenanceFile": "bayesian-cable-curl-provenance.json"
     },
     {
@@ -69,14 +69,14 @@
         512,
         512
       ],
-      "decodedFrames": 12,
+      "decodedFrames": 36,
       "authoredFrames": 36,
       "loop": 0,
       "durationMs": 2880,
-      "gifBytes": 127070,
-      "posterBytes": 20046,
-      "gifSha256": "6ac4814337483f69ab72a94250e3e3815b9290c435a58c1aa96ce1f4057503b0",
-      "posterSha256": "b97bdb7450a9797f9dd92263c951605c41f3ea95cc108a33b1afaa5e010a5f5f",
+      "gifBytes": 161638,
+      "posterBytes": 30455,
+      "gifSha256": "8981be39233703ee2702253c8205e5bf957a9b896cea8c7c9af24da515484346",
+      "posterSha256": "19794beecb6875924443dfb23e4df909cae00e6210acaa6d8388316acb49b6a3",
       "provenanceFile": "spanish-squat-hold-provenance.json"
     },
     {
@@ -87,14 +87,14 @@
         512,
         512
       ],
-      "decodedFrames": 17,
+      "decodedFrames": 36,
       "authoredFrames": 36,
       "loop": 0,
       "durationMs": 2880,
-      "gifBytes": 155054,
-      "posterBytes": 21673,
-      "gifSha256": "c059b296bdb47140b4ead39764aabbfdbb0f04863ff9f83f5bf58534815588f3",
-      "posterSha256": "867cffd042eafc2226d641eb9e0156da86191132a53e2d1bf9b43071d2f21be7",
+      "gifBytes": 189799,
+      "posterBytes": 29020,
+      "gifSha256": "d428ebdf7598fb5bde529bceb56579f46ed861eb1184209d2ddb6132ee9fbef1",
+      "posterSha256": "148676c29ba46b56674d8bad6b193b3b69f12e11e46bd8dded3ac3a7e6e1e8e2",
       "provenanceFile": "nordic-hold-provenance.json"
     },
     {
@@ -105,14 +105,14 @@
         512,
         512
       ],
-      "decodedFrames": 12,
+      "decodedFrames": 36,
       "authoredFrames": 36,
       "loop": 0,
       "durationMs": 2880,
-      "gifBytes": 184394,
-      "posterBytes": 27231,
-      "gifSha256": "6820cdaea8f1a17ab387b115513397df6cbfe3efaab816499429146afe6bd1f6",
-      "posterSha256": "54d89e2d9040dff94affba0cf1645c0368f96e22c128cd8b82be82c2bb7bc937",
+      "gifBytes": 170498,
+      "posterBytes": 35475,
+      "gifSha256": "39ec00c7e325db4d19404f81716d446998580b18c78816c7365528beb935b350",
+      "posterSha256": "b1341914cfa7715250ff6f38e8f342decdda487195a1449ff2b76e4564ee30e8",
       "provenanceFile": "dead-hang-provenance.json"
     },
     {
@@ -127,10 +127,10 @@
       "authoredFrames": 36,
       "loop": 0,
       "durationMs": 2880,
-      "gifBytes": 434091,
-      "posterBytes": 18666,
-      "gifSha256": "1f7e2f5dbd47b9e5ffde877b08f7d4b2d8218f7a55dac460656343c8e4af1be6",
-      "posterSha256": "f0f4efa588e5aaa1a99ae07e59b989a92e159e6b9b8dff690883c4e868219f79",
+      "gifBytes": 215574,
+      "posterBytes": 27870,
+      "gifSha256": "788490d7d09b624d6a5b61355b4bc8d639e8a8a936730973fc100a494436be8b",
+      "posterSha256": "a8b1819d09d6024d996f61c9fd09d1cadb2338e1928d5bd6f387e2e5b2f5eaf2",
       "provenanceFile": "captains-chair-knee-raise-provenance.json"
     },
     {
@@ -145,10 +145,10 @@
       "authoredFrames": 36,
       "loop": 0,
       "durationMs": 2160,
-      "gifBytes": 366511,
-      "posterBytes": 20082,
-      "gifSha256": "cc9c9b9bd90a484ec6ff1f6ddfad6164b8f6b90aab8f08208772ed66157d57ff",
-      "posterSha256": "33acc0cb411300cd9e328a316606b569f186c621df13fd900abdab35e0a32729",
+      "gifBytes": 445846,
+      "posterBytes": 29582,
+      "gifSha256": "e9d96a94607a3242f7d17d6e547efa9561ec055e93a1299e3c385b8593b4cbd6",
+      "posterSha256": "4a744df94dfcb5f8b052f5792f7b77fbfce156afe0190c0cce8a8dee7eb09859",
       "provenanceFile": "suitcase-carry-provenance.json"
     },
     {
@@ -163,10 +163,10 @@
       "authoredFrames": 36,
       "loop": 0,
       "durationMs": 2160,
-      "gifBytes": 337426,
-      "posterBytes": 19855,
-      "gifSha256": "728b167171249de14b6a8ff157a19ee95f66f43136279a40584beaa41cf7cd27",
-      "posterSha256": "6c7c04b924ba2ce575a546ff5405573744448dcb38802194947051fd9849de29",
+      "gifBytes": 475804,
+      "posterBytes": 32444,
+      "gifSha256": "ba736ff8d38369d9475e425eb08e8167708b59276333479b0a0b21f236fd15de",
+      "posterSha256": "cb211aef3091ef36b43b107b9c6a9e53afa12b61d1cfd2fca8df4c4c1649041e",
       "provenanceFile": "walking-flat-ground-provenance.json"
     },
     {
@@ -181,10 +181,10 @@
       "authoredFrames": 36,
       "loop": 0,
       "durationMs": 2880,
-      "gifBytes": 396643,
-      "posterBytes": 23256,
-      "gifSha256": "b3a331e31fdadd3d88b7d9077dae10ff49e3200104685bb049b087c7d0daa43b",
-      "posterSha256": "7a54ea7f29359891bab0bc0c4ced3518a58769d5d394cfedd7f37fbf028fff64",
+      "gifBytes": 418231,
+      "posterBytes": 32048,
+      "gifSha256": "4660ec61e68a884678abbf38364fe0e434e320b019c50fcc22ff7c7d851b967a",
+      "posterSha256": "24838e66c7c7d7c6d49fd5c2298c040e73527836c85ddc4986a0db8527409439",
       "provenanceFile": "standing-bent-knee-calf-raise-provenance.json"
     },
     {
@@ -199,10 +199,10 @@
       "authoredFrames": 36,
       "loop": 0,
       "durationMs": 2880,
-      "gifBytes": 481216,
-      "posterBytes": 30619,
-      "gifSha256": "8dc4bf693956a13a22efa036da32a21c2ef7d2858e19dc89c9e6a50bcff34ae1",
-      "posterSha256": "607ec69c76e9ab4b5af8e8c40fa5e06f9c43f7b8494629a2a1752bb18ec3da1d",
+      "gifBytes": 470736,
+      "posterBytes": 35029,
+      "gifSha256": "1f2e5f396b938960bd778c711370e3cfa887475475f75fb0cafea4972079e134",
+      "posterSha256": "b49c5ec9b841fd9874b2522af4d5b6f53b0aacc2a6fabf6db0420a83c71af6f0",
       "provenanceFile": "machine-hip-thrust-provenance.json"
     },
     {
@@ -217,10 +217,10 @@
       "authoredFrames": 36,
       "loop": 0,
       "durationMs": 2880,
-      "gifBytes": 648771,
-      "posterBytes": 33033,
-      "gifSha256": "5894eda7c57f3a9fd927cda0e5803248f134a4991dc58e21264df54a61e97f33",
-      "posterSha256": "0636762e90d13c829f97e023769a60bca76ba38165e14d4e1724a5a42cb1f25e",
+      "gifBytes": 475178,
+      "posterBytes": 40421,
+      "gifSha256": "da8da4d4872f3580b26f51b72a56ec2b0187c2443b4383c4ce1326c6c709b149",
+      "posterSha256": "0489c31392b9ebb5179f43e81e5992740903a10067cac887f1b8a003a8b7754a",
       "provenanceFile": "overhead-cable-triceps-ez-bar-provenance.json"
     },
     {
@@ -235,13 +235,25 @@
       "authoredFrames": 36,
       "loop": 0,
       "durationMs": 2160,
-      "gifBytes": 682209,
-      "posterBytes": 43086,
-      "gifSha256": "8175e908b054571c51a9a16c52c8301383afd34043e17146ea921a95507672bb",
-      "posterSha256": "6106bdd39f122ef46262e45ffc53a85c29ec77f962b9776accb7b3647c1f4b4d",
+      "gifBytes": 584541,
+      "posterBytes": 47354,
+      "gifSha256": "4173e12fd710aa9d5d5e5b20867989eab324c862dedb725feabab263c37fc72d",
+      "posterSha256": "933f7e502f16d08b18d7588486bc173e4a5aee4e5c6f34fa80b8ff64f261628b",
       "provenanceFile": "stepmill-continuous-walk-provenance.json"
     }
   ],
+  "allKinematicRecordsDeepEqual": true,
+  "baselineRendererSourceIdenticalCanonicalLF": true,
+  "baselineSourceNormalization": "CRLF-to-LF for historical Python source guard only; GIF/PNG hashes are raw bytes",
+  "style": "original grayscale anatomy with targeted red muscles",
+  "rendererFilesSha256": {
+    "anatomical_style.py": "a6d456510c76b7f053a83f07fc5b5dc04060ef0a5492f74f9ce84d9caa624cca",
+    "generate_anatomical.py": "881c8deaffa1bded558cad59519a238882063ce9b25671b3b92fed818f9c7822",
+    "validate_anatomical.py": "0314229d0d4bb45a74859aa06ce9d7f332c89faa537c596e9b5c70bbd8a03bf4",
+    "render_custom_exercises.py": "97ce18f09b0dfdae67e42d8b2121158011697094496d77a1b48b668e18698c38",
+    "render_stepmill.py": "e094ca7164a81c378d7de92508914412d2a4fe8b07f5fada15bec9ff2296a93a",
+    "requirements-render.txt": "c95a3bd7f44132dbc3f8cc0951af3bacecb483cd089dd516b4c1c4f1ad80c8ab"
+  },
   "geometryChecks": {
     "holdsHaveNoRepetitionExcursion": true,
     "deadHangElbowsDegrees": 180,

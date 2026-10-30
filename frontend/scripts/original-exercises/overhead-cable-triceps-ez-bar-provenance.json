@@ -10,13 +10,13 @@
   "authoredFrames": 36,
   "frameDurationMs": 80,
   "durationMs": 2880,
-  "gifBytes": 648771,
-  "renderer": "render_custom_exercises.py + original primitives in render_stepmill.py; 3x antialiasing",
+  "gifBytes": 475178,
+  "renderer": "anatomical_style.py + generate_anatomical.py; original grayscale anatomy, targeted red muscle regions,3x antialiasing",
   "movement": "Overhead cable triceps: EZ bar",
   "reference": {
     "ownerConfirmedVariant": "Owner described short curved / wavy attachment and confirmed standing cable overhead extension; high pulley behind."
   },
-  "reviewStatus": "Candidate only: contact-sheet and loop review required before assignment",
+  "reviewStatus": "Approved by root and independent visual reviewer on all13 contact sheets/loops before integration; mathematical and visual validation only",
   "productionAssigned": false,
   "physicalExerciseValidation": false,
   "firstFrameRig": {
@@ -27,5 +27,15 @@
     "upperArmsFixedOverhead": true,
     "headVisibility": "far arm behind head; near arm beside profile",
     "notPushdown": true
-  }
+  },
+  "containsPrivateProfileData": false,
+  "style": "Original gray/black anatomical silhouette, volume shading, red target muscles; white background",
+  "loop": true,
+  "gifSha256": "da8da4d4872f3580b26f51b72a56ec2b0187c2443b4383c4ce1326c6c709b149",
+  "posterBytes": 40421,
+  "posterSha256": "0489c31392b9ebb5179f43e81e5992740903a10067cac887f1b8a003a8b7754a",
+  "kinematicRecordsDeepEqual": true,
+  "baselineRigSha256": "4505091b4c5fba298c3300db12afb52c5a59ed128ee21d6c280dcac6df4989f7",
+  "rigSha256": "4505091b4c5fba298c3300db12afb52c5a59ed128ee21d6c280dcac6df4989f7",
+  "referenceBitmapUsedAsInput": false
 }

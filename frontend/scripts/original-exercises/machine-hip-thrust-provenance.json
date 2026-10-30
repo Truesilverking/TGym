@@ -10,13 +10,13 @@
   "authoredFrames": 36,
   "frameDurationMs": 80,
   "durationMs": 2880,
-  "gifBytes": 481216,
-  "renderer": "render_custom_exercises.py + original primitives in render_stepmill.py; 3x antialiasing",
+  "gifBytes": 470736,
+  "renderer": "anatomical_style.py + generate_anatomical.py; original grayscale anatomy, targeted red muscle regions,3x antialiasing",
   "movement": "Machine hip thrust",
   "reference": {
     "ownerConfirmedVariant": "Owner confirmed dedicated machine. Fixed upper-back support and foot platform; hip restraint lifts with hips."
   },
-  "reviewStatus": "Candidate only: contact-sheet and loop review required before assignment",
+  "reviewStatus": "Approved by root and independent visual reviewer on all13 contact sheets/loops before integration; mathematical and visual validation only",
   "productionAssigned": false,
   "physicalExerciseValidation": false,
   "firstFrameRig": {
@@ -42,5 +42,15 @@
       ]
     ],
     "notSmithOrBarbell": true
-  }
+  },
+  "containsPrivateProfileData": false,
+  "style": "Original gray/black anatomical silhouette, volume shading, red target muscles; white background",
+  "loop": true,
+  "gifSha256": "1f2e5f396b938960bd778c711370e3cfa887475475f75fb0cafea4972079e134",
+  "posterBytes": 35029,
+  "posterSha256": "b49c5ec9b841fd9874b2522af4d5b6f53b0aacc2a6fabf6db0420a83c71af6f0",
+  "kinematicRecordsDeepEqual": true,
+  "baselineRigSha256": "5deac2908bfdc38ca68b6bfaa90d165df5094354ee5e4507eb6ca06302448dbb",
+  "rigSha256": "5deac2908bfdc38ca68b6bfaa90d165df5094354ee5e4507eb6ca06302448dbb",
+  "referenceBitmapUsedAsInput": false
 }

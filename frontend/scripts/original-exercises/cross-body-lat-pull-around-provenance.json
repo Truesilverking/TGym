@@ -10,14 +10,14 @@
   "authoredFrames": 36,
   "frameDurationMs": 80,
   "durationMs": 2880,
-  "gifBytes": 643933,
-  "renderer": "render_custom_exercises.py + original primitives in render_stepmill.py; 3x antialiasing",
+  "gifBytes": 398782,
+  "renderer": "anatomical_style.py + generate_anatomical.py; original grayscale anatomy, targeted red muscle regions,3x antialiasing",
   "movement": "Cross-body lat pull-around",
   "reference": {
     "url": "https://www.youtube.com/watch?v=4xHF_pMbEsk",
     "usedFor": "Original trainer demonstration; half-kneeling cross-body reach and elbow sweep. No video frames copied."
   },
-  "reviewStatus": "Candidate only: contact-sheet and loop review required before assignment",
+  "reviewStatus": "Approved by root and independent visual reviewer on all13 contact sheets/loops before integration; mathematical and visual validation only",
   "productionAssigned": false,
   "physicalExerciseValidation": false,
   "firstFrameRig": {
@@ -25,5 +25,15 @@
     "stance": "fixed half-kneeling",
     "workingArm": "one, across body to ipsilateral hip",
     "torsoRotationDegrees": 0
-  }
+  },
+  "containsPrivateProfileData": false,
+  "style": "Original gray/black anatomical silhouette, volume shading, red target muscles; white background",
+  "loop": true,
+  "gifSha256": "ba89484a1b2596403784e8e7fe70e2ff9f4392d7917660bddd218e846f612bb2",
+  "posterBytes": 36860,
+  "posterSha256": "22b4868460d400168b773c65195b643a65d0e8c118719c13988ecf7b94e3da5c",
+  "kinematicRecordsDeepEqual": true,
+  "baselineRigSha256": "4f5e2b09b34934afda5ec450be64754fd0fca1548f8756fdbf68e758e56e02a0",
+  "rigSha256": "4f5e2b09b34934afda5ec450be64754fd0fca1548f8756fdbf68e758e56e02a0",
+  "referenceBitmapUsedAsInput": false
 }

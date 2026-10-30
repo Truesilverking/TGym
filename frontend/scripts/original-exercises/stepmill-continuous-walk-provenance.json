@@ -11,8 +11,8 @@
     512
   ],
   "loop": true,
-  "gifBytes": 682209,
-  "renderer": "render_stepmill.py; mathematically authored limb rig and Pillow vector primitives with 3x antialiasing",
+  "gifBytes": 584541,
+  "renderer": "anatomical_style.py + generate_anatomical.py; original grayscale anatomy, targeted red muscle regions,3x antialiasing",
   "stanceFootConstraint": "Planted sole center is attached to a tread translating down/back at its exact speed",
   "maxStanceContactErrorPx": 5.684341886080802e-14,
   "kneeAngleRangeDegrees": [
@@ -26,7 +26,17 @@
       "usedFor": "Exercise mechanism only: continuous climbing on revolving steps; no art or text copied"
     }
   ],
-  "reviewStatus": "Original candidate; root must inspect contact sheet and loop and confirm current exercise identity before assignment",
+  "reviewStatus": "Approved by root and independent visual reviewer on all13 contact sheets/loops before integration; mathematical and visual validation only",
   "physicalExerciseValidation": false,
-  "productionAssigned": false
+  "productionAssigned": false,
+  "containsPrivateProfileData": false,
+  "style": "Original gray/black anatomical silhouette, volume shading, red target muscles; white background",
+  "authoredFrames": 36,
+  "gifSha256": "4173e12fd710aa9d5d5e5b20867989eab324c862dedb725feabab263c37fc72d",
+  "posterBytes": 47354,
+  "posterSha256": "933f7e502f16d08b18d7588486bc173e4a5aee4e5c6f34fa80b8ff64f261628b",
+  "kinematicRecordsDeepEqual": true,
+  "baselineRigSha256": "8537f3bec1418f9d091728b0d6564fff1b5f21a6b33a084c47b4ec58933096f2",
+  "rigSha256": "8537f3bec1418f9d091728b0d6564fff1b5f21a6b33a084c47b4ec58933096f2",
+  "referenceBitmapUsedAsInput": false
 }

@@ -6,18 +6,18 @@
     512,
     512
   ],
-  "frames": 12,
+  "frames": 36,
   "authoredFrames": 36,
   "frameDurationMs": 80,
   "durationMs": 2880,
-  "gifBytes": 198832,
-  "renderer": "render_custom_exercises.py + original primitives in render_stepmill.py; 3x antialiasing",
+  "gifBytes": 165737,
+  "renderer": "anatomical_style.py + generate_anatomical.py; original grayscale anatomy, targeted red muscle regions,3x antialiasing",
   "movement": "Plate pinch hold",
   "reference": {
     "url": "https://www.davidhorne-gripmaster.com/gripfeats.html",
     "usedFor": "Primary grip-sport demonstration; smooth plate faces opposed by fingers and thumb."
   },
-  "reviewStatus": "Candidate only: contact-sheet and loop review required before assignment",
+  "reviewStatus": "Approved by root and independent visual reviewer on all13 contact sheets/loops before integration; mathematical and visual validation only",
   "productionAssigned": false,
   "physicalExerciseValidation": false,
   "firstFrameRig": {
@@ -25,5 +25,15 @@
     "grip": "thumb opposing fingers on smooth plate faces, top rim",
     "plateTranslationPx": 0,
     "notHandleOrCentreHoleGrip": true
-  }
+  },
+  "containsPrivateProfileData": false,
+  "style": "Original gray/black anatomical silhouette, volume shading, red target muscles; white background",
+  "loop": true,
+  "gifSha256": "55792cc763903386df38187824c4e47cafa881fb3971b8b1e3ee26a942247212",
+  "posterBytes": 40119,
+  "posterSha256": "4726bc238aed5608302955c79140f011f164533aca2848608481a0ea84ac1481",
+  "kinematicRecordsDeepEqual": true,
+  "baselineRigSha256": "bf186cf54e8149179372eeef649309ee02bc3654452a75ff3cc7383ca9f61a93",
+  "rigSha256": "bf186cf54e8149179372eeef649309ee02bc3654452a75ff3cc7383ca9f61a93",
+  "referenceBitmapUsedAsInput": false
 }

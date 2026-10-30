@@ -10,14 +10,14 @@
   "authoredFrames": 36,
   "frameDurationMs": 60,
   "durationMs": 2160,
-  "gifBytes": 366511,
-  "renderer": "render_custom_exercises.py + original primitives in render_stepmill.py; 3x antialiasing",
+  "gifBytes": 445846,
+  "renderer": "anatomical_style.py + generate_anatomical.py; original grayscale anatomy, targeted red muscle regions,3x antialiasing",
   "movement": "Suitcase carry",
   "reference": {
     "url": "https://www.acefitness.org/resources/everyone/exercise-library/358/suitcase-carry/",
     "usedFor": "Trainer demonstration: one dumbbell at one side while walking upright."
   },
-  "reviewStatus": "Candidate only: contact-sheet and loop review required before assignment",
+  "reviewStatus": "Approved by root and independent visual reviewer on all13 contact sheets/loops before integration; mathematical and visual validation only",
   "productionAssigned": false,
   "physicalExerciseValidation": false,
   "firstFrameRig": {
@@ -26,5 +26,15 @@
     "alternatingFootsteps": true,
     "loads": 1,
     "loadType": "unilateral dumbbell at side"
-  }
+  },
+  "containsPrivateProfileData": false,
+  "style": "Original gray/black anatomical silhouette, volume shading, red target muscles; white background",
+  "loop": true,
+  "gifSha256": "e9d96a94607a3242f7d17d6e547efa9561ec055e93a1299e3c385b8593b4cbd6",
+  "posterBytes": 29582,
+  "posterSha256": "4a744df94dfcb5f8b052f5792f7b77fbfce156afe0190c0cce8a8dee7eb09859",
+  "kinematicRecordsDeepEqual": true,
+  "baselineRigSha256": "0c4699f565dc162955059aa8d798a96ddadf2638abdf307f556fe4c47b1b02a4",
+  "rigSha256": "0c4699f565dc162955059aa8d798a96ddadf2638abdf307f556fe4c47b1b02a4",
+  "referenceBitmapUsedAsInput": false
 }
