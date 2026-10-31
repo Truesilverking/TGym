@@ -1,38 +1,43 @@
-import { useEffect } from 'react'
+import { todayISO } from './lib/format.js'
+import { dailyPlan } from './lib/daily-plan.js'
+import { syncWebAudioPreferences } from './lib/web-audio-preferences.js'
+import { createContext, useContext, useEffect, useLayoutEffect, useRef } from 'react'
 import { HashRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import { useStore } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
+import { primeAudio, stopSound, reportSoundError } from './lib/sound.js'
+import { syncNativeSounds } from './lib/native-sound.js'
 import { bindUI } from './components/ui.jsx'
 import { ACCENTS } from './lib/format.js'
-import { setLang, useLang } from './lib/i18n.js'
+import { setLang, useLang, t, LANGS } from './lib/i18n.js'
 import { setNav } from './lib/nav.js'
 import { initBackButton } from './lib/back.js'
 import { useWakeLock } from './lib/wakelock.js'
-import { startFlow } from './sheets.jsx'
+import { startFlow, openMeasurementEntry } from './sheets.jsx'
 import Icon from './components/Icon.jsx'
 import TabBar from './components/TabBar.jsx'
+import ModuleDeck from './components/ModuleDeck.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
 import Modals from './components/Modals.jsx'
 import Toast from './components/Toast.jsx'
 import RestTimer from './components/RestTimer.jsx'
 import Login from './views/Login.jsx'
 import MobileOnboarding from './views/MobileOnboarding.jsx'
-import Home from './views/Home.jsx'
-import Plan from './views/Plan.jsx'
 import RoutineEdit from './views/RoutineEdit.jsx'
 import Workout from './views/Workout.jsx'
-import Stats from './views/Stats.jsx'
-import History from './views/History.jsx'
-import Library from './views/Library.jsx'
 import Settings from './views/Settings.jsx'
 import Admin from './views/Admin.jsx'
 import AppLock from './components/AppLock.jsx'
 import AppUpdate from './components/AppUpdate.jsx'
+import OfflineStatus from './components/OfflineStatus.jsx'
+import ProfileRecovery from './components/ProfileRecovery.jsx'
+import AppTour from './components/AppTour.jsx'
 import { backupToGoogleDrive, cloudBackupDue } from './lib/cloud-sync.js'
 import { MOBILE, syncReminder } from './lib/mobile.js'
-import { inactivityState, lastWorkoutActivity } from './lib/workout-time.js'
-import { doFinishWorkout, inactivityWarningSheet } from './sheets.jsx'
+import { workoutInactivitySheet } from './sheets.jsx'
 import { syncWorkoutNotification } from './lib/workout-notification.js'
+import { installViewportLayout } from './lib/viewport.js'
+import { syncSystemAppearance } from './lib/system-appearance.js'
 
 bindUI(useUI)   // lets the shared controls open sheets without importing the store at module scope
 
@@ -47,90 +52,15 @@ function applyPrefs(theme, accent, reduceMotion = false) {
   de.dataset.accent = ACCENTS[accent] ? accent : 'lime'
   de.dataset.reduceMotion = reduceMotion ? 'true' : 'false'
   const meta = document.querySelector('meta[name="theme-color"]')
-  if (meta) meta.content = de.dataset.theme === 'light' ? '#f2f2f7' : '#000000'
+  if (meta) meta.content = de.dataset.theme === 'light' ? '#f3f2ee' : '#0d0d0c'
+  syncSystemAppearance(de.dataset.theme)
 }
 
-function Shell() {
-  const navigate = useNavigate()
-  const loc = useLocation()
-  const { S, user, ready } = useStore()
-  const isGuest = useStore(s => s.isGuest())
-  const needsMobileOnboarding = useStore(s => s.needsMobileOnboarding)
-  const langV = useLang()   // re-renders the whole shell when the language (pack) changes
-  const restEndsAt=useUI(s=>s.timer?.endsAt)
-  useEffect(()=>{
-    if(ready) void syncWorkoutNotification(S.active,restEndsAt?{endsAt:restEndsAt}:null)
-  },[ready,S.active,restEndsAt,langV])
-  useEffect(()=>{
-    if(!MOBILE || !ready)return
-    const refresh=()=>{
-      if(document.visibilityState==='visible') void syncWorkoutNotification(useStore.getState().S.active,useUI.getState().timer)
-    }
-    document.addEventListener('visibilitychange',refresh)
-    return ()=>document.removeEventListener('visibilitychange',refresh)
-  },[ready])
-  useEffect(()=>{
-    if(!MOBILE || !ready)return
-    let disposed=false,listener
-    const open=event=>{if(!disposed && event?.url==='tgym://workout')navigate(useStore.getState().S.active?'/workout':'/home')}
-    import('@capacitor/app').then(async({App})=>{
-      const handle=await App.addListener('appUrlOpen',open)
-      if(disposed)void handle.remove();else listener=handle
-      open(await App.getLaunchUrl())
-    }).catch(()=>{})
-    return ()=>{disposed=true;void listener?.remove()}
-  },[ready,navigate])
-  useEffect(()=>{
-    if (!ready) return
-    let warning=null, warned=null
-    const check=()=>{
-      const active=useStore.getState().S.active
-      const status=inactivityState(active)
-      if (status==='finish') {
-        warning?.close(); warning=null
-        doFinishWorkout({reason:'inactivity',end:lastWorkoutActivity(active)})
-      } else if (status==='warning' && document.visibilityState!=='hidden') {
-        const key=`${active.id}:${lastWorkoutActivity(active)}`
-        if(warned!==key){warning?.close();warned=key;warning=inactivityWarningSheet()}
-      } else if(status==='none'){warning?.close();warning=null}
-    }
-    check()
-    const timer=setInterval(check,10000)
-    document.addEventListener('visibilitychange',check)
-    return ()=>{clearInterval(timer);document.removeEventListener('visibilitychange',check);warning?.close()}
-  },[ready])
-  useEffect(() => {
-    if (!MOBILE) return
-    let disposed = false, listener
-    import('@capacitor/local-notifications').then(async ({ LocalNotifications }) => {
-      const handle = await LocalNotifications.addListener('localNotificationActionPerformed', async event => {
-        const extra = event.notification?.extra
-        if (disposed) return
-        if (extra?.type === 'workout') {
-          const state = useStore.getState().S
-          if (state.active) navigate('/workout')
-          else if (state.routines.some(r=>r.id===extra.routineId) && !state.workouts.some(w=>w.d===extra.date)) startFlow(extra.routineId)
-          else navigate('/home')
-          return
-        }
-        if (extra?.type !== 'measurement') return
-        const sheets = await import('./sheets.jsx')
-        if (!disposed) sheets.openMeasurementEntry(extra.metrics?.[0] || 'weight')
-      })
-      if (disposed) void handle.remove(); else listener = handle
-    }).catch(() => {})
-    return () => { disposed = true; void listener?.remove() }
-  }, [])
-  useEffect(() => {
-    if (!MOBILE || !ready) return
-    const sync = () => { if (document.visibilityState !== 'hidden') void syncReminder(useStore.getState().S) }
-    sync()
-    document.addEventListener('visibilitychange',sync)
-    const timer = setInterval(sync,60000)
-    return () => { clearInterval(timer); document.removeEventListener('visibilitychange',sync) }
-  }, [ready])
-  useEffect(() => { setNav(navigate) }, [navigate])
-  useEffect(() => { applyPrefs(S.theme, S.accent, S.reduceMotion) }, [S.theme, S.accent, S.reduceMotion])
+export function ThemePreferences() {
+  const S = useStore(s => s.S)
+  const language = Object.hasOwn(LANGS, S.lang) ? S.lang : 'en'
+  useLayoutEffect(() => installViewportLayout(), [])
+  useLayoutEffect(() => { applyPrefs(S.theme, S.accent, S.reduceMotion) }, [S.theme, S.accent, S.reduceMotion])
   // 'system' needs to react live if the OS theme flips while the app is open, not just on
   // the next mount — a fixed 'dark'/'light' choice never re-fires this since matchMedia
   // isn't consulted for those.
@@ -141,12 +71,187 @@ function Shell() {
     mql.addEventListener('change', onChange)
     return () => mql.removeEventListener('change', onChange)
   }, [S.theme, S.accent, S.reduceMotion])
-  useEffect(() => { setLang(S.lang || 'en') }, [S.lang])
-  useEffect(() => { document.documentElement.lang = S.lang || 'en' }, [langV, S.lang])
+  useEffect(() => { setLang(language) }, [language])
+  useEffect(() => { document.documentElement.lang = language }, [language])
+  return null
+}
+
+const WorkoutLinkContext = createContext(null)
+function createWorkoutLinkInbox() {
+  let pending = false, subscriber = null
+  const deliver = () => {
+    if (!pending || !subscriber) return
+    pending = false
+    subscriber()
+  }
+  return {
+    receive() { pending = true; deliver() },
+    subscribe(open) {
+      subscriber = open; deliver()
+      return () => { if (subscriber === open) subscriber = null }
+    },
+  }
+}
+
+// The PIN screen unmounts Shell. Keep native intents in memory until an unlocked,
+// hydrated Shell can consume them, without exposing a route or replaying old taps.
+function NativeWorkoutLinks({ children }) {
+  const inbox = useRef(createWorkoutLinkInbox()).current
+  const appPlugin = useRef(null)
+  useEffect(() => {
+    if (!MOBILE) return
+    let disposed = false, listener, liveIntent = false
+    const remove = handle => {
+      try { void Promise.resolve(handle?.remove()).catch(() => {}) } catch {}
+    }
+    const receive = event => { if (!disposed && event?.url === 'tgym://workout') inbox.receive() }
+    // Share the import through StrictMode's setup/cleanup replay. Each setup
+    // still owns its listener handle and rejects results after its own cleanup.
+    const plugin = appPlugin.current ||= import('@capacitor/app')
+    plugin.then(async ({ App }) => {
+      if (disposed) return
+      const handle = await App.addListener('appUrlOpen', event => {
+        if (disposed) return
+        liveIntent = true
+        receive(event)
+      })
+      if (disposed) { remove(handle); return }
+      listener = handle
+      const launch = await App.getLaunchUrl()
+      // Android retains the original launch URL. A newer live intent (including
+      // a retained initial event) supersedes it, even if this query resolves late.
+      if (!liveIntent) receive(launch)
+    }).catch(() => {})
+    return () => { disposed = true; remove(listener) }
+  }, [inbox])
+  return <WorkoutLinkContext.Provider value={inbox}>{children}</WorkoutLinkContext.Provider>
+}
+
+function Shell() {
+  const navigate = useNavigate()
+  const nativeNavigate = useRef(navigate)
+  nativeNavigate.current = navigate
+  const loc = useLocation()
+  const { S, user, ready, storageError, storageWarning, storageDiagnostics } = useStore()
+  const workoutLinks = useContext(WorkoutLinkContext)
+  const isGuest = useStore(s => s.isGuest())
+  const needsMobileOnboarding = useStore(s => s.needsMobileOnboarding)
+  const langV = useLang()   // re-renders the whole shell when the language (pack) changes
+  useEffect(() => {
+    if (ready && !MOBILE) syncWebAudioPreferences(S)
+    if (ready) void syncNativeSounds(S).catch(error => reportSoundError('native-configure', error))
+  }, [ready, S.sound, S.soundMuted, S.soundVolume, S.notificationSoundOn, S.sounds, S.customSounds, S.vibration, S.reminder, S.accent, langV])
+  useEffect(() => {
+    const unlock = event => { if (event.isTrusted) primeAudio() }
+    // touchend/click cover mobile user activation; capture works inside nested dialogs.
+    const events = ['click', 'touchend', 'keydown']
+    events.forEach(type => document.addEventListener(type, unlock, true))
+    return () => events.forEach(type => document.removeEventListener(type, unlock, true))
+  }, [])
+  useEffect(() => { stopSound() }, [S.sound, S.soundMuted, S.soundVolume])
+  useEffect(()=>{ if(ready) useUI.getState().restoreRest() },[ready,S.active?.id])
+  const restEndsAt=useUI(s=>s.timer?.endsAt)
+  useEffect(()=>{
+    if(ready) void syncWorkoutNotification(S.active,restEndsAt?{endsAt:restEndsAt}:null)
+  },[ready,S.active,restEndsAt,langV,S.accent,S.theme])
+  useEffect(()=>{
+    if(!MOBILE || !ready)return
+    const refresh=()=>{
+      if(document.visibilityState==='visible') void syncWorkoutNotification(useStore.getState().S.active,useUI.getState().timer)
+    }
+    document.addEventListener('visibilitychange',refresh)
+    return ()=>document.removeEventListener('visibilitychange',refresh)
+  },[ready])
+  useEffect(()=>{
+    if(!MOBILE || !ready || storageError)return
+    return workoutLinks?.subscribe(()=>nativeNavigate.current(useStore.getState().S.active?'/workout':'/home'))
+  },[ready,storageError,workoutLinks])
+  useEffect(()=>{
+    if (!ready) return
+    const check=()=>{
+      if(useUI.getState().appTourRequest || useUI.getState().appTourWorkoutPreview)return
+      const active=useStore.getState().reconcileActiveClock()
+      if(active?.pauseReason==='inactivity')workoutInactivitySheet()
+    }
+    const foreground=()=>{if(document.visibilityState==='visible')check()}
+    const interact=event=>{
+      if(event.target?.closest?.('.app-tour, .tour-replay') || useUI.getState().appTourRequest || useUI.getState().appTourWorkoutPreview)return
+      if(!event.isTrusted || document.visibilityState==='hidden' || !event.target?.closest?.('#app, [role="dialog"], #tabbar'))return
+      const active=useStore.getState().S.active
+      if(!active)return
+      const reconciled=useStore.getState().reconcileActiveClock()
+      if(active.timerPausedAt == null && reconciled?.pauseReason==='inactivity'){event.preventDefault();event.stopImmediatePropagation();workoutInactivitySheet();return}
+      const quiet = event.target?.closest?.('[data-interaction-quiet-ms]')?.getAttribute('data-interaction-quiet-ms')
+      useStore.getState().recordInteraction(Date.now(), {defer:true,quietMs:quiet == null ? undefined : Number(quiet)})
+    }
+    const beforeInput=event=>{
+      if(event.target?.closest?.('.app-tour, .tour-replay') || useUI.getState().appTourRequest || useUI.getState().appTourWorkoutPreview)return
+      if(!event.isTrusted || document.visibilityState==='hidden' || !event.target?.closest?.('#app, [role="dialog"], #tabbar'))return
+      const active=useStore.getState().S.active
+      if(!active)return
+      const reconciled=useStore.getState().reconcileActiveClock()
+      if(active.timerPausedAt == null && reconciled?.pauseReason==='inactivity'){event.preventDefault();event.stopImmediatePropagation();workoutInactivitySheet()}
+    }
+    const rulerMove=event=>{
+      if((event.buttons&1) && event.isPrimary!==false && event.target?.closest?.('.bodyweight-picker-ruler'))interact(event)
+    }
+    check()
+    const events=['pointerdown','keydown','wheel']
+    events.forEach(type=>document.addEventListener(type,interact,true))
+    // Capture only repairs an overdue clock. Record input in bubble, after React's
+    // controlled onChange has read the DOM value; an earlier store write would reset it.
+    document.addEventListener('input',beforeInput,true)
+    document.addEventListener('input',interact)
+    document.addEventListener('pointermove',rulerMove,true)
+    const timer=setInterval(check,1000)
+    document.addEventListener('visibilitychange',foreground)
+    return ()=>{clearInterval(timer);events.forEach(type=>document.removeEventListener(type,interact,true));document.removeEventListener('input',beforeInput,true);document.removeEventListener('input',interact);document.removeEventListener('pointermove',rulerMove,true);document.removeEventListener('visibilitychange',foreground)}
+  },[ready])
+  useEffect(() => {
+    if (!MOBILE || !ready || storageError) return
+    let disposed = false, listener
+    import('@capacitor/local-notifications').then(async ({ LocalNotifications }) => {
+      const handle = await LocalNotifications.addListener('localNotificationActionPerformed', async event => {
+        const extra = event.notification?.extra
+        if (disposed) return
+        if (extra?.type === 'workout') {
+          const state = useStore.getState().S
+          if (state.active) navigate('/workout')
+          else if (extra.date === todayISO() && dailyPlan(state,extra.date).pending.some(item=>item.id===extra.routineId)) startFlow(extra.routineId)
+          else navigate('/home')
+          return
+        }
+        if (extra?.type === 'deload') { navigate('/home'); return }
+        if (extra?.type !== 'measurement') return
+        if (!disposed) openMeasurementEntry(extra.metrics?.[0] || 'weight')
+      })
+      if (disposed) void handle.remove(); else listener = handle
+    }).catch(() => {})
+    return () => { disposed = true; void listener?.remove() }
+  }, [ready, storageError])
+  useEffect(()=>{
+    if(!ready||!navigator.serviceWorker)return
+    const open=event=>{
+      if(event.data?.type!=='TGYM_NOTIFICATION_NAVIGATE'||!['/home','/workout','/body'].includes(event.data.route))return
+      try{if(!event.source?.scriptURL||new URL(event.source.scriptURL).origin!==location.origin)return}catch{return}
+      nativeNavigate.current(event.data.route==='/workout'&&!useStore.getState().S.active?'/home':event.data.route)
+    }
+    navigator.serviceWorker.addEventListener('message',open)
+    return()=>navigator.serviceWorker.removeEventListener('message',open)
+  },[ready])
+  useEffect(() => {
+    if (!MOBILE || !ready) return
+    const sync = () => { if (document.visibilityState !== 'hidden') void syncReminder(useStore.getState().S) }
+    sync()
+    document.addEventListener('visibilitychange',sync)
+    const timer = setInterval(sync,60000)
+    return () => { clearInterval(timer); document.removeEventListener('visibilitychange',sync) }
+  }, [ready])
+  useEffect(() => { setNav(navigate) }, [navigate])
   // every tab/route change starts at the top of the page
-  useEffect(() => { window.scrollTo(0, 0) }, [loc.pathname])
+  useEffect(() => { window.scrollTo(0, 0) }, [loc.pathname,loc.search])
   // bound to the workout, not to the route — checking Stats mid-session keeps the screen on
-  useWakeLock(!!S.active && S.keepAwake !== false)
+  useWakeLock(ready && !storageError && !!S.active && S.keepAwake !== false)
 
   // A PWA cannot wake itself while it is fully closed. Run the weekly check on launch and
   // foreground instead. Google normally renews prior consent silently; if the browser cannot,
@@ -175,10 +280,11 @@ function Shell() {
     return () => { gone = true; clearInterval(timer); window.removeEventListener('online', syncIfDue); document.removeEventListener('visibilitychange', visible) }
   }, [ready])
 
+  if (storageError) return <ProfileRecovery error={storageDiagnostics || storageError} />
   const authed = user || isGuest
-  if (!ready && !authed) return (
+  if (!ready) return (
     <div id="app">
-      <div style={{ paddingTop: '44vh', display: 'flex', justifyContent: 'center', fontSize: 34, color: 'var(--label-3)' }}>
+      <div style={{ paddingTop: '44dvh', display: 'flex', justifyContent: 'center', fontSize: 34, color: 'var(--label-3)' }}>
         <Icon name="dumbbell" />
       </div>
     </div>
@@ -186,31 +292,42 @@ function Shell() {
 
   return (
     <>
-      {/* keyed on the route: a view that throws is contained, and switching tabs
-          re-mounts the boundary, so the tab bar is always a way out */}
-      <div id="app" className="vfade" key={loc.pathname}>
-        <ErrorBoundary>
+      <div id="app">
+        <OfflineStatus />
+        {storageWarning && <aside className="offline-status" role="alert">{t(storageWarning==='primary'?'Could not save changes. Try again.':'Local backup is unavailable. Export your data as a precaution.')}</aside>}
+        {/* Reset route errors/animation without restarting offline readiness. */}
+        <div className="vfade">
+        <ErrorBoundary resetKey={loc.pathname+loc.search} allowDiscardWorkout={loc.pathname==='/workout'}>
           {!authed ? <Login /> : needsMobileOnboarding ? <MobileOnboarding /> : (
+            <>
+            <ModuleDeck key={user?.id||'local-profile'}/>
             <Routes>
-              <Route path="/home" element={<Home />} />
-              <Route path="/plan" element={<Plan />} />
+              <Route path="/home" element={<></>} />
+              <Route path="/plan" element={<></>} />
               <Route path="/plan/r/:id" element={<RoutineEdit />} />
               <Route path="/workout" element={<Workout />} />
-              <Route path="/stats" element={<Stats />} />
-              <Route path="/history" element={<History />} />
-              <Route path="/library" element={<Library />} />
+              <Route path="/stats" element={<></>} />
+              <Route path="/progress" element={<></>} />
+              <Route path="/body" element={<></>} />
+              <Route path="/records" element={<></>} />
+              <Route path="/history" element={<></>} />
+              <Route path="/library" element={<></>} />
+              <Route path="/nutrition" element={<></>} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/admin" element={user?.admin ? <Admin /> : <Navigate to="/home" replace />} />
               <Route path="*" element={<Navigate to="/home" replace />} />
             </Routes>
+            </>
           )}
         </ErrorBoundary>
+        </div>
       </div>
       <TabBar onStart={startFlow} />
       <RestTimer />
       <AppUpdate />
       <Modals />
       <Toast />
+      {ready && authed && !needsMobileOnboarding && <AppTour />}
     </>
   )
 }
@@ -224,5 +341,5 @@ export default function App() {
     initBackButton().then(fn => { if (gone) fn(); else stop = fn })
     return () => { gone = true; stop?.() }
   }, [])
-  return <HashRouter><AppLock><Shell /></AppLock></HashRouter>
+  return <HashRouter><ThemePreferences /><NativeWorkoutLinks><AppLock><Shell /></AppLock></NativeWorkoutLinks></HashRouter>
 }

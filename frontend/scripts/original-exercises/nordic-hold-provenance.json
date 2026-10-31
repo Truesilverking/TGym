@@ -1,0 +1,41 @@
+{
+  "original": true,
+  "externalMediaInputs": false,
+  "asset": "nordic-hold.gif",
+  "dimensions": [
+    512,
+    512
+  ],
+  "frames": 36,
+  "authoredFrames": 36,
+  "frameDurationMs": 80,
+  "durationMs": 2880,
+  "gifBytes": 189799,
+  "renderer": "anatomical_style.py + generate_anatomical.py; original grayscale anatomy, targeted red muscle regions,3x antialiasing",
+  "movement": "Nordic hamstring hold",
+  "reference": {
+    "url": "https://www.orthopt.org/uploads/OP_v26no2_FINAL_Web.pdf",
+    "usedFor": "Primary clinical protocol: secured feet and straight upper body; this candidate holds a fixed lean for time."
+  },
+  "reviewStatus": "Approved by root and independent visual reviewer on all13 contact sheets/loops before integration; mathematical and visual validation only",
+  "productionAssigned": false,
+  "physicalExerciseValidation": false,
+  "firstFrameRig": {
+    "isometric": true,
+    "bodyLeanFromVerticalDegrees": 35,
+    "kneesHipsShouldersCollinear": true,
+    "ankles": "fixed under padded support",
+    "jointExcursionPx": 0,
+    "notReverseNordic": true
+  },
+  "containsPrivateProfileData": false,
+  "style": "Original gray/black anatomical silhouette, volume shading, red target muscles; white background",
+  "loop": true,
+  "gifSha256": "d428ebdf7598fb5bde529bceb56579f46ed861eb1184209d2ddb6132ee9fbef1",
+  "posterBytes": 29020,
+  "posterSha256": "148676c29ba46b56674d8bad6b193b3b69f12e11e46bd8dded3ac3a7e6e1e8e2",
+  "kinematicRecordsDeepEqual": true,
+  "baselineRigSha256": "c4122f1211865b29c223b9147035c38553b8447f466a19502f26692c5579e1b5",
+  "rigSha256": "c4122f1211865b29c223b9147035c38553b8447f466a19502f26692c5579e1b5",
+  "referenceBitmapUsedAsInput": false
+}

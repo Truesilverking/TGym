@@ -1,0 +1,326 @@
+[
+  {
+    "elbowFlexionProgress": 0.0,
+    "elbowInternalAngleDegrees": 138.92958775017536,
+    "upperArmLengthPx": 58.69412236331676,
+    "forearmLengthPx": 52.99999999999997,
+    "upperArmBehindTorsoDegrees": 23.070412249824653,
+    "pulley": "low, behind the athlete",
+    "stance": "stationary split stance"
+  },
+  {
+    "elbowFlexionProgress": 0.00759612349389599,
+    "elbowInternalAngleDegrees": 138.06362967187118,
+    "upperArmLengthPx": 58.69412236331676,
+    "forearmLengthPx": 53.0,
+    "upperArmBehindTorsoDegrees": 23.070412249824653,
+    "pulley": "low, behind the athlete",
+    "stance": "stationary split stance"
+  },
+  {
+    "elbowFlexionProgress": 0.030153689607045786,
+    "elbowInternalAngleDegrees": 135.49206713497216,
+    "upperArmLengthPx": 58.69412236331676,
+    "forearmLengthPx": 53.000000000000014,
+    "upperArmBehindTorsoDegrees": 23.070412249824653,
+    "pulley": "low, behind the athlete",
+    "stance": "stationary split stance"
+  },
+  {
+    "elbowFlexionProgress": 0.06698729810778065,
+    "elbowInternalAngleDegrees": 131.29303576588833,
+    "upperArmLengthPx": 58.69412236331676,
+    "forearmLengthPx": 53.000000000000014,
+    "upperArmBehindTorsoDegrees": 23.070412249824653,
+    "pulley": "low, behind the athlete",
+    "stance": "stationary split stance"
+  },
+  {
+    "elbowFlexionProgress": 0.116977778440511,
+    "elbowInternalAngleDegrees": 125.5941210079571,
+    "upperArmLengthPx": 58.69412236331676,
+    "forearmLengthPx": 52.99999999999998,
+    "upperArmBehindTorsoDegrees": 23.070412249824653,
+    "pulley": "low, behind the athlete",
+    "stance": "stationary split stance"
+  },
+  {
+    "elbowFlexionProgress": 0.17860619515673032,
+    "elbowInternalAngleDegrees": 118.5684815023081,
+    "upperArmLengthPx": 58.69412236331676,
+    "forearmLengthPx": 52.99999999999998,
+    "upperArmBehindTorsoDegrees": 23.070412249824653,
+    "pulley": "low, behind the athlete",
+    "stance": "stationary split stance"
+  },
+  {
+    "elbowFlexionProgress": 0.24999999999999994,
+    "elbowInternalAngleDegrees": 110.42958775017539,
+    "upperArmLengthPx": 58.69412236331676,
+    "forearmLengthPx": 53.000000000000014,
+    "upperArmBehindTorsoDegrees": 23.070412249824653,
+    "pulley": "low, behind the athlete",
+    "stance": "stationary split stance"
+  },
+  {
+    "elbowFlexionProgress": 0.32898992833716556,
+    "elbowInternalAngleDegrees": 101.42473591973848,
+    "upperArmLengthPx": 58.69412236331676,
+    "forearmLengthPx": 52.999999999999986,
+    "upperArmBehindTorsoDegrees": 23.070412249824653,
+    "pulley": "low, behind the athlete",
+    "stance": "stationary split stance"
+  },
+  {
+    "elbowFlexionProgress": 0.4131759111665348,
+    "elbowInternalAngleDegrees": 91.82753387719038,
+    "upperArmLengthPx": 58.69412236331676,
+    "forearmLengthPx": 52.99999999999999,
+    "upperArmBehindTorsoDegrees": 23.070412249824653,
+    "pulley": "low, behind the athlete",
+    "stance": "stationary split stance"
+  },
+  {
+    "elbowFlexionProgress": 0.49999999999999994,
+    "elbowInternalAngleDegrees": 81.92958775017534,
+    "upperArmLengthPx": 58.69412236331676,
+    "forearmLengthPx": 53.00000000000002,
+    "upperArmBehindTorsoDegrees": 23.070412249824653,
+    "pulley": "low, behind the athlete",
+    "stance": "stationary split stance"
+  },
+  {
+    "elbowFlexionProgress": 0.5868240888334652,
+    "elbowInternalAngleDegrees": 72.03164162316033,
+    "upperArmLengthPx": 58.69412236331676,
+    "forearmLengthPx": 52.99999999999999,
+    "upperArmBehindTorsoDegrees": 23.070412249824653,
+    "pulley": "low, behind the athlete",
+    "stance": "stationary split stance"
+  },
+  {
+    "elbowFlexionProgress": 0.6710100716628343,
+    "elbowInternalAngleDegrees": 62.43443958061225,
+    "upperArmLengthPx": 58.69412236331676,
+    "forearmLengthPx": 53.00000000000001,
+    "upperArmBehindTorsoDegrees": 23.070412249824653,
+    "pulley": "low, behind the athlete",
+    "stance": "stationary split stance"
+  },
+  {
+    "elbowFlexionProgress": 0.7499999999999999,
+    "elbowInternalAngleDegrees": 53.429587750175365,
+    "upperArmLengthPx": 58.69412236331676,
+    "forearmLengthPx": 53.00000000000001,
+    "upperArmBehindTorsoDegrees": 23.070412249824653,
+    "pulley": "low, behind the athlete",
+    "stance": "stationary split stance"
+  },
+  {
+    "elbowFlexionProgress": 0.8213938048432696,
+    "elbowInternalAngleDegrees": 45.29069399804262,
+    "upperArmLengthPx": 58.69412236331676,
+    "forearmLengthPx": 52.99999999999997,
+    "upperArmBehindTorsoDegrees": 23.070412249824653,
+    "pulley": "low, behind the athlete",
+    "stance": "stationary split stance"
+  },
+  {
+    "elbowFlexionProgress": 0.883022221559489,
+    "elbowInternalAngleDegrees": 38.26505449239361,
+    "upperArmLengthPx": 58.69412236331676,
+    "forearmLengthPx": 53.00000000000001,
+    "upperArmBehindTorsoDegrees": 23.070412249824653,
+    "pulley": "low, behind the athlete",
+    "stance": "stationary split stance"
+  },
+  {
+    "elbowFlexionProgress": 0.9330127018922194,
+    "elbowInternalAngleDegrees": 32.56613973446233,
+    "upperArmLengthPx": 58.69412236331676,
+    "forearmLengthPx": 52.99999999999998,
+    "upperArmBehindTorsoDegrees": 23.070412249824653,
+    "pulley": "low, behind the athlete",
+    "stance": "stationary split stance"
+  },
+  {
+    "elbowFlexionProgress": 0.9698463103929542,
+    "elbowInternalAngleDegrees": 28.367108365378556,
+    "upperArmLengthPx": 58.69412236331676,
+    "forearmLengthPx": 52.99999999999999,
+    "upperArmBehindTorsoDegrees": 23.070412249824653,
+    "pulley": "low, behind the athlete",
+    "stance": "stationary split stance"
+  },
+  {
+    "elbowFlexionProgress": 0.9924038765061041,
+    "elbowInternalAngleDegrees": 25.795545828479472,
+    "upperArmLengthPx": 58.69412236331676,
+    "forearmLengthPx": 52.99999999999999,
+    "upperArmBehindTorsoDegrees": 23.070412249824653,
+    "pulley": "low, behind the athlete",
+    "stance": "stationary split stance"
+  },
+  {
+    "elbowFlexionProgress": 1.0,
+    "elbowInternalAngleDegrees": 24.929587750175358,
+    "upperArmLengthPx": 58.69412236331676,
+    "forearmLengthPx": 53.0,
+    "upperArmBehindTorsoDegrees": 23.070412249824653,
+    "pulley": "low, behind the athlete",
+    "stance": "stationary split stance"
+  },
+  {
+    "elbowFlexionProgress": 0.9924038765061041,
+    "elbowInternalAngleDegrees": 25.795545828479472,
+    "upperArmLengthPx": 58.69412236331676,
+    "forearmLengthPx": 52.99999999999999,
+    "upperArmBehindTorsoDegrees": 23.070412249824653,
+    "pulley": "low, behind the athlete",
+    "stance": "stationary split stance"
+  },
+  {
+    "elbowFlexionProgress": 0.9698463103929542,
+    "elbowInternalAngleDegrees": 28.367108365378556,
+    "upperArmLengthPx": 58.69412236331676,
+    "forearmLengthPx": 52.99999999999999,
+    "upperArmBehindTorsoDegrees": 23.070412249824653,
+    "pulley": "low, behind the athlete",
+    "stance": "stationary split stance"
+  },
+  {
+    "elbowFlexionProgress": 0.9330127018922193,
+    "elbowInternalAngleDegrees": 32.56613973446233,
+    "upperArmLengthPx": 58.69412236331676,
+    "forearmLengthPx": 52.99999999999998,
+    "upperArmBehindTorsoDegrees": 23.070412249824653,
+    "pulley": "low, behind the athlete",
+    "stance": "stationary split stance"
+  },
+  {
+    "elbowFlexionProgress": 0.883022221559489,
+    "elbowInternalAngleDegrees": 38.26505449239361,
+    "upperArmLengthPx": 58.69412236331676,
+    "forearmLengthPx": 53.00000000000001,
+    "upperArmBehindTorsoDegrees": 23.070412249824653,
+    "pulley": "low, behind the athlete",
+    "stance": "stationary split stance"
+  },
+  {
+    "elbowFlexionProgress": 0.8213938048432697,
+    "elbowInternalAngleDegrees": 45.29069399804259,
+    "upperArmLengthPx": 58.69412236331676,
+    "forearmLengthPx": 52.999999999999986,
+    "upperArmBehindTorsoDegrees": 23.070412249824653,
+    "pulley": "low, behind the athlete",
+    "stance": "stationary split stance"
+  },
+  {
+    "elbowFlexionProgress": 0.7500000000000002,
+    "elbowInternalAngleDegrees": 53.42958775017533,
+    "upperArmLengthPx": 58.69412236331676,
+    "forearmLengthPx": 53.000000000000014,
+    "upperArmBehindTorsoDegrees": 23.070412249824653,
+    "pulley": "low, behind the athlete",
+    "stance": "stationary split stance"
+  },
+  {
+    "elbowFlexionProgress": 0.6710100716628347,
+    "elbowInternalAngleDegrees": 62.43443958061221,
+    "upperArmLengthPx": 58.69412236331676,
+    "forearmLengthPx": 53.00000000000001,
+    "upperArmBehindTorsoDegrees": 23.070412249824653,
+    "pulley": "low, behind the athlete",
+    "stance": "stationary split stance"
+  },
+  {
+    "elbowFlexionProgress": 0.5868240888334652,
+    "elbowInternalAngleDegrees": 72.03164162316033,
+    "upperArmLengthPx": 58.69412236331676,
+    "forearmLengthPx": 52.99999999999999,
+    "upperArmBehindTorsoDegrees": 23.070412249824653,
+    "pulley": "low, behind the athlete",
+    "stance": "stationary split stance"
+  },
+  {
+    "elbowFlexionProgress": 0.5000000000000001,
+    "elbowInternalAngleDegrees": 81.92958775017534,
+    "upperArmLengthPx": 58.69412236331676,
+    "forearmLengthPx": 53.00000000000002,
+    "upperArmBehindTorsoDegrees": 23.070412249824653,
+    "pulley": "low, behind the athlete",
+    "stance": "stationary split stance"
+  },
+  {
+    "elbowFlexionProgress": 0.413175911166535,
+    "elbowInternalAngleDegrees": 91.82753387719038,
+    "upperArmLengthPx": 58.69412236331676,
+    "forearmLengthPx": 52.99999999999999,
+    "upperArmBehindTorsoDegrees": 23.070412249824653,
+    "pulley": "low, behind the athlete",
+    "stance": "stationary split stance"
+  },
+  {
+    "elbowFlexionProgress": 0.3289899283371655,
+    "elbowInternalAngleDegrees": 101.42473591973848,
+    "upperArmLengthPx": 58.69412236331676,
+    "forearmLengthPx": 52.999999999999986,
+    "upperArmBehindTorsoDegrees": 23.070412249824653,
+    "pulley": "low, behind the athlete",
+    "stance": "stationary split stance"
+  },
+  {
+    "elbowFlexionProgress": 0.24999999999999994,
+    "elbowInternalAngleDegrees": 110.42958775017539,
+    "upperArmLengthPx": 58.69412236331676,
+    "forearmLengthPx": 53.000000000000014,
+    "upperArmBehindTorsoDegrees": 23.070412249824653,
+    "pulley": "low, behind the athlete",
+    "stance": "stationary split stance"
+  },
+  {
+    "elbowFlexionProgress": 0.17860619515673037,
+    "elbowInternalAngleDegrees": 118.56848150230806,
+    "upperArmLengthPx": 58.69412236331676,
+    "forearmLengthPx": 53.000000000000014,
+    "upperArmBehindTorsoDegrees": 23.070412249824653,
+    "pulley": "low, behind the athlete",
+    "stance": "stationary split stance"
+  },
+  {
+    "elbowFlexionProgress": 0.1169777784405111,
+    "elbowInternalAngleDegrees": 125.5941210079571,
+    "upperArmLengthPx": 58.69412236331676,
+    "forearmLengthPx": 52.99999999999998,
+    "upperArmBehindTorsoDegrees": 23.070412249824653,
+    "pulley": "low, behind the athlete",
+    "stance": "stationary split stance"
+  },
+  {
+    "elbowFlexionProgress": 0.06698729810778081,
+    "elbowInternalAngleDegrees": 131.29303576588833,
+    "upperArmLengthPx": 58.69412236331676,
+    "forearmLengthPx": 53.000000000000014,
+    "upperArmBehindTorsoDegrees": 23.070412249824653,
+    "pulley": "low, behind the athlete",
+    "stance": "stationary split stance"
+  },
+  {
+    "elbowFlexionProgress": 0.030153689607045953,
+    "elbowInternalAngleDegrees": 135.49206713497207,
+    "upperArmLengthPx": 58.69412236331676,
+    "forearmLengthPx": 53.000000000000036,
+    "upperArmBehindTorsoDegrees": 23.070412249824653,
+    "pulley": "low, behind the athlete",
+    "stance": "stationary split stance"
+  },
+  {
+    "elbowFlexionProgress": 0.00759612349389599,
+    "elbowInternalAngleDegrees": 138.06362967187118,
+    "upperArmLengthPx": 58.69412236331676,
+    "forearmLengthPx": 53.0,
+    "upperArmBehindTorsoDegrees": 23.070412249824653,
+    "pulley": "low, behind the athlete",
+    "stance": "stationary split stance"
+  }
+]

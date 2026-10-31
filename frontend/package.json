@@ -1,13 +1,13 @@
 {
   "name": "tgym",
   "private": true,
-  "version": "1.15.19",
+  "version": "1.15.105",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "build:pwa": "vite build --mode standalone",
-    "build:mobile": "vite build --mode mobile && cap sync",
+    "build:mobile": "vite build --mode mobile && node scripts/check-sounds.mjs --android-fixture && cap sync",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -18,11 +18,12 @@
     "@aparajita/capacitor-biometric-auth": "9.1.2",
     "@capacitor/app": "^7.1.2",
     "@capacitor/browser": "^7.0.2",
-    "@capacitor/core": "^7.6.8",
+    "@capacitor/core": "^7.6.9",
     "@capacitor/filesystem": "^7.1.8",
     "@capacitor/local-notifications": "^7.0.7",
     "@capacitor/push-notifications": "7.0.0",
     "@capacitor/share": "^7.0.4",
+    "exceljs": "4.4.0",
     "html-to-image": "^1.11.13",
     "jspdf": "^4.2.1",
     "jsqr": "1.4.0",
@@ -33,14 +34,14 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
-    "@capacitor/android": "^7.6.8",
+    "@capacitor/android": "^7.6.9",
     "@capacitor/assets": "^3.0.5",
-    "@capacitor/cli": "^7.6.8",
-    "@capacitor/ios": "^7.6.8",
+    "@capacitor/cli": "^7.6.9",
+    "@capacitor/ios": "^7.6.9",
     "@vitejs/plugin-react": "^6.0.3",
-    "happy-dom": "^20.11.2",
+    "happy-dom": "^21.0.4",
     "linkedom": "^0.18.13",
-    "vite": "^8.1.5",
-    "vitest": "^4.1.10"
+    "vite": "^8.2.4",
+    "vitest": "^4.1.12"
   }
 }

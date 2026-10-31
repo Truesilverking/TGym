@@ -13,7 +13,9 @@ export const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', '
 export const MONTHS_LONG = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
 export function fmtDate(iso, long, withYear = false) {
+  if (!iso) return ''
   const d = new Date(iso + 'T12:00:00')
+  if (!Number.isFinite(d.getTime())) return ''
   const options = long ? { weekday: 'short', day: 'numeric', month: 'short' } : { day: 'numeric', month: 'short' }
   if (withYear) options.year = 'numeric'
   return d.toLocaleDateString(dateLocale(), options)
@@ -27,10 +29,17 @@ export const durPart = ms => (ms >= 60000 ? [fmtDur(ms)] : [])
 // Numbers follow the UI language, like the dates above — a hardcoded locale put Swiss
 // apostrophes ("7'535 kg") in front of every user, in every language.
 export const fmtNum = n => (Math.round(n * 10) / 10).toLocaleString(dateLocale())
+// Weight presentation is whole units; calculations and stored records keep their
+// original precision. Normalize negative zero when displaying small deltas.
+export const fmtWeight = n => {
+  if (n == null || n === '' || !Number.isFinite(Number(n))) return '—'
+  const number = Number(n)
+  return (Math.sign(number) * Math.round(Math.abs(number)) || 0).toLocaleString(dateLocale())
+}
 // Volume stays in the profile's unit throughout: the old shorthand turned anything over
 // 10 000 into "t", which is wrong for a pound profile and made one list mix "18.8t" with
 // "7'535 kg" — two numbers you can't compare at a glance.
-export const fmtVol = (v, unit) => fmtNum(v) + ' ' + unit
+export const fmtVol = (v, unit) => fmtWeight(v) + ' ' + unit
 // Plural forms are not automatic when the English string is the key.
 export const exCount = n => t(n === 1 ? '{0} exercise' : '{0} exercises', n)
 
@@ -47,3 +56,8 @@ export const localTZ = () => { try { return Intl.DateTimeFormat().resolvedOption
 
 export const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7)
 export const ACCENTS = { lime: '#30d158', sky: '#0a84ff', orange: '#ff9f0a', violet: '#bf5af2', pink: '#ff375f', red: '#ff453a', teal: '#40c8e0', gold: '#ffd60a' }
+export function fmtScheduledDate(iso, locale = dateLocale()) {
+  const date = new Date(iso + 'T12:00:00Z')
+  if (!Number.isFinite(date.getTime())) return ''
+  return new Intl.DateTimeFormat(locale, { weekday:'long', timeZone:'UTC' }).format(date) + ', ' + new Intl.DateTimeFormat(locale, { day:'2-digit', month:'2-digit', year:'numeric', timeZone:'UTC' }).format(date)
+}

@@ -1,10 +1,30 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-const mocks=vi.hoisted(()=>({platform:'android',listeners:{}, subscribe:vi.fn(), register:vi.fn(), removed:vi.fn()}))
-vi.mock('@capacitor/core',()=>({Capacitor:{isNativePlatform:()=>mocks.platform!=='web',getPlatform:()=>mocks.platform},registerPlugin:()=>({subscribe:mocks.subscribe})}))
+const mocks=vi.hoisted(()=>({platform:'android',listeners:{}, availability:vi.fn(), subscribe:vi.fn(), register:vi.fn(), removed:vi.fn()}))
+vi.mock('@capacitor/core',()=>({Capacitor:{isNativePlatform:()=>mocks.platform!=='web',getPlatform:()=>mocks.platform},registerPlugin:()=>({availability:mocks.availability,subscribe:mocks.subscribe})}))
 vi.mock('@capacitor/push-notifications',()=>({PushNotifications:{checkPermissions:async()=>({receive:'granted'}),addListener:async(name,fn)=>{mocks.listeners[name]=fn;return {remove:mocks.removed}},register:mocks.register}}))
 import { initializeUpdatePush } from './update-push.js'
-beforeEach(()=>{vi.clearAllMocks();mocks.platform='android'})
+beforeEach(()=>{vi.resetAllMocks();mocks.availability.mockResolvedValue({configured:true});mocks.subscribe.mockResolvedValue();mocks.platform='android'})
 describe('update push routing',()=>{
+ it('never enters native push registration without Firebase configuration',async()=>{
+  mocks.availability.mockResolvedValue({configured:false})
+  const stop=await initializeUpdatePush(vi.fn());stop()
+  expect(mocks.register).not.toHaveBeenCalled()
+  expect(mocks.subscribe).not.toHaveBeenCalled()
+  expect(mocks.removed).not.toHaveBeenCalled()
+ })
+ it('removes all listeners when registration fails and cleanup stays idempotent',async()=>{
+  mocks.register.mockRejectedValueOnce(new Error('offline'))
+  const stop=await initializeUpdatePush(vi.fn())
+  expect(mocks.removed).toHaveBeenCalledTimes(3)
+  stop(); expect(mocks.removed).toHaveBeenCalledTimes(3)
+ })
+ it('handles failed token resubscription without an unhandled rejection',async()=>{
+  const stop=await initializeUpdatePush(vi.fn())
+  mocks.subscribe.mockRejectedValueOnce(new Error('offline'))
+  mocks.listeners.registration()
+  await Promise.resolve()
+  stop()
+ })
  it.each(['web','ios'])('does not register %s installations in the Android topic',async platform=>{
   mocks.platform=platform
   await initializeUpdatePush(vi.fn())

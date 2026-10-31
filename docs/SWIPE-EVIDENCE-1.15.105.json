@@ -1,0 +1,487 @@
+{
+  "schemaVersion": 1,
+  "documentStatus": "published_exact_source_artifacts_and_public_browser_verified",
+  "publicationRecord": true,
+  "release": {
+    "version": "1.15.105",
+    "androidVersionCode": 141,
+    "runtimeSourceCommit": "1504530fd32982b51b3a0c30c93d7d993c84f9a2",
+    "sourceStatus": "committed_and_pushed_to_Dev",
+    "repositoryUrl": "https://github.com/Truesilverking/TGym",
+    "ci": {
+      "status": "passed",
+      "runs": [
+        {
+          "id": 41174226898,
+          "name": "Tests",
+          "event": "push",
+          "url": "https://github.com/Truesilverking/TGym/actions/runs/41174226898",
+          "conclusion": "success"
+        },
+        {
+          "id": 41174232145,
+          "name": "Tests",
+          "event": "pull_request",
+          "url": "https://github.com/Truesilverking/TGym/actions/runs/41174232145",
+          "conclusion": "success"
+        },
+        {
+          "id": 41174226952,
+          "name": "Validate PWA",
+          "event": "push",
+          "url": "https://github.com/Truesilverking/TGym/actions/runs/41174226952",
+          "conclusion": "success"
+        },
+        {
+          "id": 41174226939,
+          "name": "Validate Android",
+          "event": "push",
+          "url": "https://github.com/Truesilverking/TGym/actions/runs/41174226939",
+          "conclusion": "success"
+        },
+        {
+          "id": 41174227044,
+          "name": "Build signed Android candidate",
+          "event": "workflow_dispatch",
+          "url": "https://github.com/Truesilverking/TGym/actions/runs/41174227044",
+          "conclusion": "success"
+        }
+      ],
+      "androidInstrumentation": {
+        "status": "passed_report_verified",
+        "tests": 52,
+        "passed": 52,
+        "failed": 0,
+        "skipped": 0,
+        "runId": 41174226939,
+        "url": "https://github.com/Truesilverking/TGym/actions/runs/41174226939",
+        "physicalDevice": false
+      }
+    },
+    "candidate": {
+      "pass": true,
+      "version": "1.15.105",
+      "versionCode": 141,
+      "commit": "1504530fd32982b51b3a0c30c93d7d993c84f9a2",
+      "package": "app.framegym.mobile",
+      "apkSha256": "5f72b93c365f9966ac075125854941cb98cccab461cc416c0049b8c2d9d00b3b",
+      "aabSha256": "ecc3aee756c32f49ff203080465d8694e307ef1469e6b273a8e52af7e6d9b879",
+      "certificateSha256": "8ee233c984615e2b3f6f083dc0c47d148bb8956ff7caca97be0b9a0d260e6082",
+      "officialSigningContinuity": true,
+      "debuggable": false,
+      "buildMetadataExact": true,
+      "apkBuildExact": true,
+      "aabBuildExact": true,
+      "aabSignatureVerified": true,
+      "remoteDevServer": false,
+      "assetCount": 83,
+      "published": false,
+      "status": "verified_not_published",
+      "workflowRunId": 41174227044,
+      "workflowUrl": "https://github.com/Truesilverking/TGym/actions/runs/41174227044",
+      "candidateToPublicApkByteIdentityAssumed": false,
+      "releaseVsPagesApkByteIdentityRequired": true
+    },
+    "publication": {
+      "status": "published_and_public_artifacts_verified",
+      "releaseId": 429756753,
+      "releaseUrl": "https://github.com/Truesilverking/TGym/releases/tag/v1.15.105",
+      "publishedAt": "2026-10-31T06:07:52Z",
+      "pagesUrl": "https://truesilverking.github.io/TGym/",
+      "workflowRunId": 41174962029,
+      "workflowUrl": "https://github.com/Truesilverking/TGym/actions/runs/41174962029",
+      "workflowConclusion": "success",
+      "assets": [
+        {
+          "name": "checksums.txt",
+          "size": 186,
+          "url": "https://github.com/Truesilverking/TGym/releases/download/v1.15.105/checksums.txt"
+        },
+        {
+          "name": "latest.json",
+          "size": 706,
+          "url": "https://github.com/Truesilverking/TGym/releases/download/v1.15.105/latest.json"
+        },
+        {
+          "name": "TGym-Android-v1.15.105.aab",
+          "size": 11873985,
+          "url": "https://github.com/Truesilverking/TGym/releases/download/v1.15.105/TGym-Android-v1.15.105.aab"
+        },
+        {
+          "name": "TGym-Android-v1.15.105.apk",
+          "size": 13290535,
+          "url": "https://github.com/Truesilverking/TGym/releases/download/v1.15.105/TGym-Android-v1.15.105.apk"
+        }
+      ],
+      "updateTopicBroadcast": {
+        "status": "explicitly_skipped",
+        "workflowStep": 25,
+        "tagMarkerPresent": true,
+        "phoneReceiptClaim": false
+      }
+    },
+    "frontendTree": "890c305ddfb7c35c3a82a829d570f293a776f204",
+    "sourceUrl": "https://github.com/Truesilverking/TGym/commit/1504530fd32982b51b3a0c30c93d7d993c84f9a2",
+    "builds": {
+      "web": "passed",
+      "standalonePwa": "passed",
+      "capacitorMobileBuildAndSync": "passed",
+      "freshAndroidCompileAndInstrumentation": "passed_exact_source_CI",
+      "nativeJavaSourceChange": "unchanged_from_previous_release"
+    },
+    "tag": {
+      "status": "annotated_tag_pushed",
+      "name": "v1.15.105",
+      "object": "3078b2daf7c12577658198259afde2aad8dffae2",
+      "runtimeSourceCommit": "1504530fd32982b51b3a0c30c93d7d993c84f9a2",
+      "skipUpdateNotificationsMarkerPresent": true,
+      "releaseWorkflow": "success"
+    },
+    "published": true,
+    "publishedAt": "2026-10-31T06:07:52Z"
+  },
+  "problem": "Delayed serial page exits/entries and contact-wide velocity could make navigation feel hesitant or misread final intent.",
+  "behavior": {
+    "acceptedRelease": "immediate route change",
+    "entry": {
+      "maximumOffsetPx": 56,
+      "durationMs": 180,
+      "preparationFrames": 1,
+      "boundedFallbackMs": 240
+    },
+    "drag": "coalesced compositor transform, at most one scheduled frame",
+    "snapback": "bounded smooth settling",
+    "recognition": [
+      "vertical/ambiguous starts remain scrolling",
+      "recent velocity with release-pause and reversal guards",
+      "stationary hold rejection",
+      "secondary contact aborts pending or horizontal gesture",
+      "fresh deliberate contact interrupts entry or settling",
+      "No post-scroll contact cooldown; actual scrolling during a pending gesture still cancels it",
+      "Existing text selection blocks navigation only inside its selected rectangles; unrelated blank space remains available"
+    ],
+    "interactionGuards": [
+      "system edges",
+      "actual selected text rectangles",
+      "native form controls and roles",
+      "summary disclosures",
+      "charts",
+      "tappable body maps and Stats exercise rows",
+      "horizontal containers with actual overflow",
+      "native/modal dialogs"
+    ],
+    "preserved": [
+      "route order and Stats neighboring-module navigation",
+      "retained local filters",
+      "workout state and stored precision",
+      "reduced motion",
+      "single active page/effects; no cloned pages"
+    ],
+    "blankSpace": {
+      "eligibleModules": "Full available-height surface includes empty Stats/card space down to the bottom",
+      "noneligibleRoutes": [
+        "/workout",
+        "/settings",
+        "/plan/r/:id"
+      ],
+      "floatingControls": "Retain normal hit-target priority",
+      "scrollHeight": "Existing bottom clearance is counterbalanced with a negative margin; no intentional extra scroll area",
+      "layoutChanges": "Document top is remeasured on resize, relevant ancestor animation completion, parent/app/banner size changes and direct app-child insertion/removal; observer callbacks coalesce into one frame"
+    }
+  },
+  "confirmedBaselineFindings": {
+    "runtimeSourceCommit": "962e26262e1c1083900e35bd5acfe9782e774d4f",
+    "version": "1.15.104",
+    "cases": [
+      {
+        "case": "Second touch did not cancel the primary page gesture",
+        "method": "Edge trusted CDP touch",
+        "confirmed": true
+      },
+      {
+        "case": "Mouse drag on open Progress Report export-dialog heading navigated and closed the modal",
+        "method": "Edge trusted mouse drag",
+        "confirmed": true,
+        "before": {
+          "route": "/progress",
+          "dialogOpen": true
+        },
+        "after": {
+          "route": "/home",
+          "dialogOpen": false
+        },
+        "exportActionInvoked": false,
+        "touchReproductionConfirmed": false
+      }
+    ],
+    "discardedHypothesis": {
+      "case": "Library horizontal chips blocked by ancestor touch-action",
+      "observedNativeScroll": {
+        "beforePx": 0,
+        "afterPx": 264,
+        "clientWidthPx": 357,
+        "scrollWidthPx": 1065
+      },
+      "routeUnchanged": true,
+      "appBugEstablished": false
+    }
+  },
+  "checks": {
+    "swipeComponent": {
+      "status": "passed",
+      "tests": 104,
+      "sourceStage": "final_committed_source",
+      "includes": [
+        "immediate route and short entry",
+        "one-frame drag coalescing",
+        "no-frame fallback",
+        "vertical/diagonal rejection",
+        "hold/release pause/reversal",
+        "repeated gesture interruption",
+        "multitouch before and after lock",
+        "controls/roles/summary/bodymap/overflow guards",
+        "modal before/during drag and entry",
+        "pointer capture and compatibility clicks",
+        "selection/keyboard/reduced motion",
+        "stale entry callbacks after navigation",
+        "resize/blur cancellation",
+        "no profile writes"
+      ],
+      "runtimeSourceCommit": "1504530fd32982b51b3a0c30c93d7d993c84f9a2"
+    },
+    "pureRecognizer": {
+      "status": "passed",
+      "tests": 21,
+      "evidence": "coordinator-confirmed targeted run",
+      "runtimeSourceCommit": "1504530fd32982b51b3a0c30c93d7d993c84f9a2"
+    },
+    "moduleDeck": {
+      "status": "passed",
+      "tests": 6,
+      "evidence": "coordinator-confirmed targeted run",
+      "runtimeSourceCommit": "1504530fd32982b51b3a0c30c93d7d993c84f9a2"
+    },
+    "frontendFull": {
+      "status": "passed",
+      "tests": 3051,
+      "files": 256,
+      "sourceStage": "final_committed_source",
+      "runtimeSourceCommit": "1504530fd32982b51b3a0c30c93d7d993c84f9a2"
+    },
+    "api": {
+      "status": "passed",
+      "tests": 24,
+      "runtimeSourceCommit": "1504530fd32982b51b3a0c30c93d7d993c84f9a2"
+    },
+    "mcp": {
+      "status": "passed",
+      "tests": 38,
+      "plainNodeGraph": "passed",
+      "runtimeSourceCommit": "1504530fd32982b51b3a0c30c93d7d993c84f9a2"
+    },
+    "catalog": {
+      "status": "passed",
+      "tests": 6,
+      "runtimeSourceCommit": "1504530fd32982b51b3a0c30c93d7d993c84f9a2"
+    },
+    "localization": {
+      "status": "passed",
+      "synchronizedKeys": 2187,
+      "sourceStrings": 1383,
+      "runtimeSourceCommit": "1504530fd32982b51b3a0c30c93d7d993c84f9a2"
+    },
+    "targetedTotal": {
+      "status": "passed",
+      "tests": 131,
+      "runtimeSourceCommit": "1504530fd32982b51b3a0c30c93d7d993c84f9a2"
+    }
+  },
+  "browserMatrix": {
+    "status": "passed",
+    "runtimeSourceCommit": "1504530fd32982b51b3a0c30c93d7d993c84f9a2",
+    "preliminaryResults": "Raw blocked-worker and denied-media diagnostic failures remain retained separately. Final selected contexts use ready workers; normal WebKit media requests returned HTTP200 after correcting only the network harness environment. No failed raw run is relabeled as passing.",
+    "viewports": [
+      [
+        320,
+        740
+      ],
+      [
+        390,
+        844
+      ],
+      [
+        430,
+        932
+      ],
+      [
+        844,
+        390
+      ]
+    ],
+    "motion": [
+      "normal",
+      "reduced"
+    ],
+    "syntheticOnly": true,
+    "profileComparisonRequired": true,
+    "edge": {
+      "dragMethod": "trusted CDP touch",
+      "nativePanAndPointerCancelCovered": true,
+      "contexts": 5
+    },
+    "webkit": {
+      "dragMethod": "trusted mouse; labeled synthetic pointer supplements",
+      "nativeTouchDragClaim": false,
+      "physicalIPhone": false,
+      "contexts": 5,
+      "normalMediaGetStatus": 200
+    },
+    "diagnosticTimingOnly": true,
+    "physicalFrameRateClaim": false,
+    "plannedConfigurations": [
+      {
+        "viewport": [
+          320,
+          740
+        ],
+        "motion": "normal"
+      },
+      {
+        "viewport": [
+          390,
+          844
+        ],
+        "motion": "normal"
+      },
+      {
+        "viewport": [
+          430,
+          932
+        ],
+        "motion": "reduced"
+      },
+      {
+        "viewport": [
+          844,
+          390
+        ],
+        "motion": "normal"
+      }
+    ],
+    "plannedContexts": 10,
+    "contexts": 10,
+    "checks": 276,
+    "runtimeErrors": 0,
+    "entireSyntheticProfilesByteEqual": true,
+    "profileComparisons": 10,
+    "serviceWorkersActuallyReady": true,
+    "finalSourceUnchangedAcrossSelectedRuns": true
+  },
+  "physicalDevice": {
+    "pixelAccessed": false,
+    "finalTesting": "waived_by_user",
+    "originalAppInstallationClaim": false,
+    "physicalIPhoneAcceptance": false,
+    "nativeIosAcceptance": false
+  },
+  "privacy": {
+    "containsPrivateProfiles": false,
+    "containsPrivateProfileIds": false,
+    "containsPrivateScreenshots": false,
+    "containsPrivateBackupsOrChecksums": false
+  },
+  "references": {
+    "auditPath": "docs/SWIPE-AUDIT-1.15.105.md",
+    "sourceFiles": [
+      "frontend/src/components/SwipeNavigation.jsx",
+      "frontend/src/components/SwipeNavigation.css",
+      "frontend/src/components/SwipeNavigation.test.jsx",
+      "frontend/src/lib/swipe-gesture.js",
+      "frontend/src/lib/swipe-gesture.test.js",
+      "frontend/src/components/ModuleDeck.jsx",
+      "frontend/src/views/Stats.jsx"
+    ],
+    "publicReleaseLinks": [
+      "https://github.com/Truesilverking/TGym/releases/tag/v1.15.105",
+      "https://truesilverking.github.io/TGym/",
+      "https://github.com/Truesilverking/TGym/actions/runs/41174962029"
+    ],
+    "localExecutionEvidence": "Maintainer retains isolated synthetic logs and traces; ignored local paths are not public links.",
+    "ciRunLinks": [
+      "https://github.com/Truesilverking/TGym/actions/runs/41174226898",
+      "https://github.com/Truesilverking/TGym/actions/runs/41174232145",
+      "https://github.com/Truesilverking/TGym/actions/runs/41174226952",
+      "https://github.com/Truesilverking/TGym/actions/runs/41174226939",
+      "https://github.com/Truesilverking/TGym/actions/runs/41174227044"
+    ]
+  },
+  "protectedMain": {
+    "independentReviewRequired": true,
+    "bypassAuthorized": false
+  },
+  "publicArtifacts": {
+    "pass": true,
+    "recordedAt": "2026-10-31T06:09:34Z",
+    "version": "1.15.105",
+    "versionCode": 141,
+    "commit": "1504530fd32982b51b3a0c30c93d7d993c84f9a2",
+    "package": "app.framegym.mobile",
+    "apkSha256": "f923d81faa049cf52fef3cab5e3df8e0686bc61e29ff9e5c90ba4b4f1e9f31c7",
+    "releaseAndPagesApkIdentical": true,
+    "certificateSha256": "8ee233c984615e2b3f6f083dc0c47d148bb8956ff7caca97be0b9a0d260e6082",
+    "officialSigningContinuity": true,
+    "debuggable": false,
+    "aabSha256": "ecc3aee756c32f49ff203080465d8694e307ef1469e6b273a8e52af7e6d9b879",
+    "aabSignatureVerified": true,
+    "aabBuildExact": true,
+    "apkBuildExact": true,
+    "releaseChecksumsExact": true,
+    "candidateSharedRuntimeAssetsExact": 81,
+    "publicManifestAndBuildExact": true,
+    "pwaFilesChecked": 77,
+    "allReleasePagesFilesExact": true,
+    "notificationReceiptOnPhysicalPhoneVerified": false,
+    "candidateAabBytesIdentical": true,
+    "candidateApkBytesIdentical": false
+  },
+  "publicBrowser": {
+    "status": "passed",
+    "runtimeSourceCommit": "1504530fd32982b51b3a0c30c93d7d993c84f9a2",
+    "publicOrigin": "https://truesilverking.github.io/TGym/",
+    "syntheticOnly": true,
+    "physicalDevice": false,
+    "regression": {
+      "status": "passed",
+      "cases": 4,
+      "runtimeErrors": 0,
+      "engines": [
+        "Edge",
+        "Windows WebKit"
+      ],
+      "coverage": [
+        "Home/Nutrition/Stats/Settings",
+        "no current-build update reoffer",
+        "actual published512px GIF playback",
+        "Workout without dock and with real Back",
+        "manual pause and numeric precision preserved"
+      ],
+      "mainProfileComparison": "exact persisted profile",
+      "workoutProfileComparison": "protected synthetic state equal excluding only store and interaction timestamps"
+    },
+    "swipe": {
+      "status": "passed",
+      "contexts": 6,
+      "checks": 83,
+      "runtimeErrors": 0,
+      "profilesByteEqual": 6,
+      "edgeChecks": 41,
+      "webkitChecks": 42,
+      "readyServiceWorkers": true,
+      "actualStaticMediaStatus": 200
+    },
+    "offline": {
+      "edgeColdOpen": "passed",
+      "webkitColdOpen": "not_claimed_known_Windows_engine_limit"
+    }
+  }
+}

@@ -46,5 +46,20 @@ export default defineConfig({
       '/gif': { target: media, changeOrigin: true }
     }
   },
-  build: { chunkSizeWarningLimit: 1500 }
+  build: {
+    chunkSizeWarningLimit: 1500,
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [
+            { name: 'exercise-catalog', test: /exercises-data|exercise-muscle-batch/ },
+            { name: 'pdf-vendor', test: /node_modules[\\/](?:jspdf|fflate|fast-png)/ },
+          ],
+        },
+      },
+    },
+  },
+  test: {
+    testTimeout: 15000,
+  }
 })

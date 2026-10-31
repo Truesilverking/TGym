@@ -1,0 +1,45 @@
+/* Only the hex and its lift handle remain on screen when the dock is closed. */
+:root:has(#tabbar.navigation-dock){--nav-clearance:calc(var(--tabbar-height) + max(12px,var(--sab)) + 56px)}
+#tabbar.navigation-dock,:root[data-theme] #tabbar.navigation-dock{
+  position:fixed;left:max(12px,var(--sal));right:max(12px,var(--sar));bottom:max(12px,var(--sab));
+  width:auto;max-width:520px;height:calc(var(--tabbar-height) + 32px);margin:0 auto;padding:0 6px;
+  display:block;border:0;border-radius:0;background:none;box-shadow:none;transform:none;overflow:visible;
+  -webkit-backdrop-filter:none;backdrop-filter:none;pointer-events:none;touch-action:none;user-select:none;z-index:80;
+  --dock-slide:calc(var(--tabbar-height) + max(12px,var(--sab)) + 32px);
+}
+.navigation-dock-modules{position:relative;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));height:var(--tabbar-height);isolation:isolate}
+.navigation-dock-surface,.navigation-dock-slot{
+  transform:translateY(calc((1 - var(--dock-progress)) * var(--dock-slide)));
+  transition:transform var(--med) var(--ease),opacity var(--med) var(--ease),visibility 0s var(--med);
+  opacity:var(--dock-progress);visibility:hidden;pointer-events:none;
+}
+.navigation-dock-surface{
+  position:absolute;inset:0 0 auto;height:var(--tabbar-height);border:1px solid var(--panel-edge);border-radius:var(--r-xl);
+  background:color-mix(in srgb,var(--bg-el) 92%,transparent);box-shadow:var(--shadow-float);
+  -webkit-backdrop-filter:saturate(170%) blur(20px);backdrop-filter:saturate(170%) blur(20px);
+}
+.navigation-dock-slot{display:flex;min-width:0;height:100%}
+#tabbar.navigation-dock[data-open=true] .navigation-dock-surface,#tabbar.navigation-dock[data-open=true] .navigation-dock-slot,
+#tabbar.navigation-dock[data-dragging=true] .navigation-dock-surface,#tabbar.navigation-dock[data-dragging=true] .navigation-dock-slot{
+  visibility:visible;transition-delay:0s;
+}
+#tabbar.navigation-dock[data-open=true] .navigation-dock-surface,#tabbar.navigation-dock[data-open=true] .navigation-dock-slot{pointer-events:auto}
+#tabbar.navigation-dock[data-dragging=true] .navigation-dock-surface,#tabbar.navigation-dock[data-dragging=true] .navigation-dock-slot{transition:none}
+#tabbar.navigation-dock .navigation-dock-tab{width:100%;min-height:44px;justify-content:center;gap:3px}
+#tabbar.navigation-dock .navigation-dock-tab>.tab-label{display:block}
+#tabbar.navigation-dock .start{position:relative;align-self:start;min-height:70px;pointer-events:auto;z-index:2}
+#tabbar.navigation-dock button.navigation-dock-toggle{
+  position:absolute;left:50%;bottom:0;transform:translateX(-50%);width:88px;height:44px;min-height:44px;
+  margin:0;padding:0;border:0;border-radius:18px;background:none;color:var(--label-2);pointer-events:auto;
+  display:grid;place-items:center;touch-action:none;cursor:ns-resize;z-index:3;
+}
+#tabbar.navigation-dock button.navigation-dock-toggle>span{display:block;width:36px;height:4px;border-radius:99px;background:currentColor;opacity:.75}
+#tabbar.navigation-dock button.navigation-dock-toggle:active{transform:translateX(-50%);background:var(--surface-2)}
+#tabbar.navigation-dock button:focus-visible{outline:2px solid var(--acc);outline-offset:2px;border-radius:12px}
+.navigation-dock-backdrop{position:fixed;inset:0;z-index:79;background:rgb(0 0 0 / .16);touch-action:none;overscroll-behavior:contain}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.navigation-dock-surface{background:var(--bg-el)}}
+:root[data-keyboard=true] #tabbar.navigation-dock{display:none}
+@media(max-height:400px){body:has(input:focus,textarea:focus,[contenteditable=true]:focus) #tabbar.navigation-dock{display:none}}
+@media(max-width:360px){#tabbar.navigation-dock,:root[data-theme] #tabbar.navigation-dock{left:8px;right:8px;padding:0 2px}#tabbar.navigation-dock .navigation-dock-tab .icn{padding:4px 10px}}
+@media(prefers-reduced-motion:reduce){.navigation-dock-surface,.navigation-dock-slot{transition:none}}
+:root[data-reduce-motion=true] .navigation-dock-surface,:root[data-reduce-motion=true] .navigation-dock-slot{transition:none}

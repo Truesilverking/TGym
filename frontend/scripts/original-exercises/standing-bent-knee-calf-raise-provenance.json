@@ -1,0 +1,45 @@
+{
+  "original": true,
+  "externalMediaInputs": false,
+  "asset": "standing-bent-knee-calf-raise.gif",
+  "dimensions": [
+    512,
+    512
+  ],
+  "frames": 36,
+  "authoredFrames": 36,
+  "frameDurationMs": 80,
+  "durationMs": 2880,
+  "gifBytes": 418231,
+  "renderer": "anatomical_style.py + generate_anatomical.py; original grayscale anatomy, targeted red muscle regions,3x antialiasing",
+  "movement": "Standing bent-knee calf raise",
+  "reference": {
+    "ownerConfirmedVariant": "Owner confirmed standing variant. Knees stay flexed as heels lift; forefeet stay in contact."
+  },
+  "reviewStatus": "Approved by root and independent visual reviewer on all13 contact sheets/loops before integration; mathematical and visual validation only",
+  "productionAssigned": false,
+  "physicalExerciseValidation": false,
+  "firstFrameRig": {
+    "standing": true,
+    "unilateral": true,
+    "kneesRemainBent": true,
+    "kneeFlexionDegrees": 43.01839228780091,
+    "forefootFixed": [
+      328,
+      443
+    ],
+    "freeFootClear": true,
+    "heelRotationDegrees": 0.0,
+    "movement": "plantarflexion / heel raise; not tibialis toe lift"
+  },
+  "containsPrivateProfileData": false,
+  "style": "Original gray/black anatomical silhouette, volume shading, red target muscles; white background",
+  "loop": true,
+  "gifSha256": "4660ec61e68a884678abbf38364fe0e434e320b019c50fcc22ff7c7d851b967a",
+  "posterBytes": 32048,
+  "posterSha256": "24838e66c7c7d7c6d49fd5c2298c040e73527836c85ddc4986a0db8527409439",
+  "kinematicRecordsDeepEqual": true,
+  "baselineRigSha256": "b4b7ddcc253e5454d1a74e1f0cc6e4b48ce55774543e4bc02db8d15f94f206f8",
+  "rigSha256": "b4b7ddcc253e5454d1a74e1f0cc6e4b48ce55774543e4bc02db8d15f94f206f8",
+  "referenceBitmapUsedAsInput": false
+}

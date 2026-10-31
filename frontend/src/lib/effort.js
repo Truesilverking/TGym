@@ -38,7 +38,7 @@ export function displayScale(S) {
   eachDoneSet(S, s => { if (s.rir != null) rir++; else if (s.rpe != null) rpe++ })
   return rpe > rir ? 'rpe' : 'rir'
 }
-export const scaleName = kind => EFFORT[kind].hd
+export const scaleName = kind => EFFORT[kind]?.hd || ''
 
 // Every finished set in the profile, oldest first. `fn` gets the set plus the workout it
 // belongs to, which is what the windowed and per-week views need.

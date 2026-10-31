@@ -1,0 +1,42 @@
+{
+  "original": true,
+  "externalMediaInputs": false,
+  "asset": "bayesian-cable-curl.gif",
+  "dimensions": [
+    512,
+    512
+  ],
+  "frames": 36,
+  "authoredFrames": 36,
+  "frameDurationMs": 80,
+  "durationMs": 2880,
+  "gifBytes": 477457,
+  "renderer": "anatomical_style.py + generate_anatomical.py; original grayscale anatomy, targeted red muscle regions,3x antialiasing",
+  "movement": "Bayesian cable curl",
+  "reference": {
+    "url": "https://mennohenselmans.com/bayesian-curls/",
+    "usedFor": "Exercise originator: face away from low cable, elbow near side, controlled curl."
+  },
+  "reviewStatus": "Approved by root and independent visual reviewer on all13 contact sheets/loops before integration; mathematical and visual validation only",
+  "productionAssigned": false,
+  "physicalExerciseValidation": false,
+  "firstFrameRig": {
+    "elbowFlexionProgress": 0.0,
+    "elbowInternalAngleDegrees": 138.92958775017536,
+    "upperArmLengthPx": 58.69412236331676,
+    "forearmLengthPx": 52.99999999999997,
+    "upperArmBehindTorsoDegrees": 23.070412249824653,
+    "pulley": "low, behind the athlete",
+    "stance": "stationary split stance"
+  },
+  "containsPrivateProfileData": false,
+  "style": "Original gray/black anatomical silhouette, volume shading, red target muscles; white background",
+  "loop": true,
+  "gifSha256": "21a4787062db1c79667c729d17af5f3790084b668ea2723a2cbdad1149e2d451",
+  "posterBytes": 37238,
+  "posterSha256": "c9308f3717f4ea9e989e2cda5345ea52c6f19f478b2197bb4b3d5994a8632b9f",
+  "kinematicRecordsDeepEqual": true,
+  "baselineRigSha256": "76ec1b1e659afb036bed1fc3f6b48144252edcc036981cb418dfbafdb3d9491f",
+  "rigSha256": "76ec1b1e659afb036bed1fc3f6b48144252edcc036981cb418dfbafdb3d9491f",
+  "referenceBitmapUsedAsInput": false
+}

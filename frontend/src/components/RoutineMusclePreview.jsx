@@ -17,7 +17,7 @@ export default function RoutineMusclePreview({routineId,close}) {
     <BodyMap load={preview.load} body={S.body} selected={selected} onMuscle={setSelected} />
     {group('Primary muscles',preview.primary)}{group('Secondary muscles',preview.secondary)}{group('Muscles trained',preview.other)}
     {!Object.keys(preview.load).length&&<p className="muted">{t('Muscle information unavailable')}</p>}
-    {selected&&<section><h4>{t('Exercises for this muscle')} · {t(MUSCLE_NAME[selected])}</h4><ul>{(preview.exercises[selected]||[]).map(ex=><li key={ex.id}>{exerciseNameFor(ex)||ex.n||ex.id}</li>)}</ul></section>}
+    {selected&&<section><h4>{t('Exercises for this muscle')} · {t(MUSCLE_NAME[selected])}</h4><ul>{(preview.exercises[selected]||[]).map(ex=><li key={ex.id}>{exerciseNameFor(ex,{entry:routine.ex.find(e=>e.id===ex.id),routineId:routine.id})}</li>)}</ul></section>}
     <p>{t('{0} exercises',routine.ex?.length||0)}</p><Button onClick={()=>{close();nav('/plan/r/'+routine.id)}}>{t('View Routine')}</Button>
   </div>
 }

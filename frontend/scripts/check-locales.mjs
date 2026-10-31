@@ -40,7 +40,9 @@ const union = [...seen.keys()]
 let failed = false
 for (const [lang, keys] of locales) {
   const missing = union.filter(k => !keys.has(k))
-  const orphans = union.filter(k => keys.has(k) && seen.get(k) === 1)
+  // With a single shipped pack (TGym: Spanish) every key is trivially "only here";
+  // check-source-strings.mjs covers that pack against the strings the source uses.
+  const orphans = locales.size > 1 ? union.filter(k => keys.has(k) && seen.get(k) === 1) : []
   if (missing.length || orphans.length) {
     failed = true
     console.error(`\n${lang}.js: ${keys.size}/${union.length} keys`)

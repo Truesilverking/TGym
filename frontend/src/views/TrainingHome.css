@@ -1,0 +1,36 @@
+.training-header.hdr-centered { row-gap:8px; margin-bottom:12px; }
+.training-header.hdr-centered:has(.header-streak) h1 { font-size:clamp(20px,6.4vw,34px); line-height:1.15; }
+.training-header .header-streak { align-self:center; }
+.training-header.hdr-centered > .iconbtn { justify-self:end; }
+.training-header .header-streak .streak-flame { width:37px; height:40px; flex:none; }
+.training-header.hdr-centered .training-date { grid-column:1 / -1; text-align:center; margin:0; font-size:clamp(14px,3.8vw,17px); line-height:1.4; color:var(--label-2); }
+.today-row.home-next-workout { display:flex; align-items:center; gap:10px; }
+.today-row .today-row-icon { display:grid; place-items:center; line-height:1; width:44px; height:44px; border-radius:10px; padding:0; flex:none; }
+.today-row .today-row-icon.highlighted { color:var(--on-acc); }
+.today-row .today-row-icon > .icn { display:block; margin:0; width:21px; height:21px; }
+.home-next-workout .today-row-main { display:flex; align-items:center; justify-content:space-between; gap:8px; flex:1; min-width:0; min-height:44px; padding:0; text-align:left; }
+.home-next-workout .today-row-copy { flex:1; }
+.home-next-workout .today-row-main > .tag { flex:none; }
+.home-next-workout button:focus-visible { outline:2px solid var(--acc); outline-offset:3px; }
+
+/* Home pairs the recorded value with its editable goal. Stats stays independent. */
+.home-bodyweight-card .home-bodyweight-heading{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:12px;margin-bottom:18px}
+.home-bodyweight-heading-copy{display:flex;min-width:0;flex-direction:column;gap:6px}
+.home-bodyweight-card .home-bodyweight-heading-copy>h2{margin:0;font-size:20px;white-space:normal;overflow-wrap:anywhere}
+.home-bodyweight-heading>.home-bodyweight-log.btn{width:auto;min-height:44px;font-size:16px;justify-self:end}
+.home-bodyweight-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:stretch}
+.home-bodyweight-current,.home-bodyweight-target{min-width:0;text-align:center}
+.home-bodyweight-metric{display:flex;width:100%;min-width:0;flex-direction:column;align-items:stretch;transform:translateX(-4px)}
+.home-bodyweight-label{display:flex;flex-wrap:wrap;min-height:20px;justify-content:center;align-items:center;text-align:center;gap:5px;color:var(--label-2);font-size:14px;line-height:1.3;font-weight:500;overflow-wrap:anywhere}
+.home-bodyweight-card .home-bodyweight-label>.icn{width:19px;height:19px;font-size:19px;flex:none}
+.home-bodyweight-value{display:flex;justify-content:center;align-items:baseline;flex-wrap:wrap;gap:4px;margin-top:7px;font-size:clamp(30px,7.5vw,38px);line-height:1.12;font-variant-numeric:tabular-nums}
+.home-bodyweight-value>b{font-size:inherit;font-weight:650;letter-spacing:-.025em}
+.home-bodyweight-value>span{font-size:14px;font-weight:500;color:var(--label-2)}
+.home-bodyweight-goal.btn{display:block;width:100%;min-width:0;min-height:0;padding:0;text-align:center;color:var(--acc);background:transparent;border:0;border-radius:5px}
+.home-bodyweight-goal.btn>span{display:contents}
+.home-bodyweight-goal .has-goal{color:var(--yellow)}
+.home-bodyweight-change{display:flex;justify-content:center;align-items:center;gap:5px;margin-top:22px;text-align:center;font-size:15px;font-weight:500;line-height:1.35}
+.home-bodyweight-change>.icn{font-size:15px;flex:none}
+.home-bodyweight-last{display:block;color:var(--label-2);font-size:16px;line-height:1.35}
+.home-bodyweight-footer{display:flex;justify-content:flex-end;margin-top:14px;text-align:right}
+.home-bodyweight-empty{margin-top:14px}

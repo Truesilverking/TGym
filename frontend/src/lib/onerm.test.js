@@ -86,6 +86,8 @@ describe('bestSetOf', () => {
     expect(bestSetOf({ id: 'c', sets: [{ min: 20, speed: 9, done: true }] })).toBeNull()
     expect(bestSetOf({ id: 'p', sets: [{ sec: 60, w: 0, done: true }] })).toBeNull()
     expect(bestSetOf({ id: 'p', sets: [{ sec: 60, w: 20, done: true }] })).toBeNull()
+    expect(bestSetOf({ id: 'p', target: { mode: 'time' }, sets: [{ sec: 60, w: 20, r: 8, done: true }] })).toBeNull()
+    expect(bestSetOf({ id: 'c', target: { mode: 'cardio' }, sets: [{ min: 20, w: 20, r: 8, done: true }] })).toBeNull()
   })
 
   it('survives a missing or empty entry', () => {
@@ -121,6 +123,36 @@ describe('e1rmSeries / best1RM', () => {
     expect(best1RM(S, 'nope')).toBeNull()
     expect(best1RM({ workouts: [] }, 'bench')).toBeNull()
     expect(best1RM({}, 'bench')).toBeNull()
+  })
+
+  it('uses the best matching entry in each session and excludes cancelled, active and duplicate history rows', () => {
+    const completed = { id: 'logged', d: '2026-01-01', start: 1, entries: [
+      { id: 'bench', sets: [{ w: 80, r: 5, done: true }] },
+      { id: 'bench', sets: [{ w: 120, r: 1, done: true }] },
+    ] }
+    const state = { active: { id: 'live' }, workouts: [completed, completed,
+      { ...completed, id: 'cancelled', cancelled: true }, { ...completed, id: 'live' }] }
+    expect(e1rmSeries(state, 'bench')).toEqual([{ t: 1, d: '2026-01-01', y: 120, w: 120, r: 1 }])
+    expect(is1RMRecord(state, 'bench', { id: 'bench', sets: [{ w: 90, r: 5, done: true }] })).toBeNull()
+  })
+
+  it('orders imported session points by their saved date without changing stored history', () => {
+    const workouts = [S.workouts[3], S.workouts[0], S.workouts[2]]
+    const original = [...workouts]
+    expect(e1rmSeries({ workouts }, 'bench').map(p => p.d)).toEqual(['2026-01-01', '2026-01-15', '2026-01-22'])
+    expect(workouts).toEqual(original)
+  })
+
+  it('keeps exercise estimates across reused legacy IDs and date-only or timestamp-only rows', () => {
+    const history = [
+      { id: 'legacy', d: '2026-01-01', entries: [{ id: 'bench', sets: [{ w: 80, r: 5, done: true }] }] },
+      { id: 'legacy', d: '2026-01-01', entries: [{ id: 'fly', sets: [{ w: 20, r: 10, done: true }] }] },
+      { id: 'legacy', start: 1000, entries: [{ id: 'bench', sets: [{ w: 90, r: 5, done: true }] }] },
+      { id: 'legacy', start: 2000, entries: [{ id: 'bench', sets: [{ w: 100, r: 5, done: true }] }] },
+    ]
+    expect(best1RM({ workouts: history }, 'fly').est).toBe(26.7)
+    expect(e1rmSeries({ workouts: history }, 'bench')).toHaveLength(3)
+    expect(best1RM({ workouts: history }, 'bench').est).toBe(116.7)
   })
 })
 

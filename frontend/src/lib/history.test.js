@@ -1,6 +1,9 @@
+import { applyTrainingPlan } from './training-plan.js'
 import { describe, it, expect } from 'vitest'
-import { modeOf, isTimed, fmtSec, setLabel, defaultConfig, buildSets, freestyleConfig, exLine, workoutVolume, bestWeightFor, bestWeightForEntry, effortOf, stepEffort, capEffort, isBw, isPerSide, sideReps, repStep, cascadeWeight, cascadeTopBackWeight, cascadeTopBackReps, insertWarmupRow, removeRowAt, workSetsDone, pairAdjacent, unpairSuperset, supersetUnits, applyIntensifierPlan, pinnedNoteFor, exNoteFor } from './history.js'
+import { modeOf, isTimed, fmtSec, setLabel, defaultConfig, buildSets, freestyleConfig, exLine, workoutVolume, bestWeightFor, bestWeightForEntry, effortOf, stepEffort, capEffort, isBw, isPerSide, sideReps, displayReps, storedReps, displayRepConfig, repStep, cascadeWeight, cascadeTopBackWeight, cascadeTopBackReps, insertWarmupRow, removeRowAt, workSetsDone, pairAdjacent, unpairSuperset, supersetUnits, applyIntensifierPlan, pinnedNoteFor, exNoteFor } from './history.js'
 import { EXDB } from './exercises.js'
+import { effortValue, effortLabel, rirRangeLabel } from './history.js'
+import { _setLangState } from './i18n-core.js'
 
 // Real ids out of the shipped catalogue, so the body-part fallback is exercised for real.
 const CARDIO = EXDB.find(e => e.bp === 'cardio').id
@@ -55,6 +58,14 @@ describe('fmtSec', () => {
 })
 
 describe('setLabel', () => {
+  it('presents whole loads without rounding effort, speed or the source record', () => {
+    const row = { w: 62.75, r: 8, rir: 1.5 }, before = { ...row }
+    expect(setLabel(LIFT, row)).toBe('63×8 (RIR 1.5)')
+    expect(setLabel(LIFT, { sec: 90, w: 17.5 }, { mode: 'time' })).toBe('1:30 · 18')
+    expect(setLabel(CARDIO, { min: 20, speed: 7.5 })).toBe('20 min @ 7.5 km/h')
+    expect(row).toEqual(before)
+  })
+
   it('describes each mode in its own terms', () => {
     expect(setLabel(LIFT, { w: 60, r: 10 })).toBe('60×10')
     expect(setLabel(CARDIO, { min: 20, speed: 9 })).toBe('20 min @ 9 km/h')
@@ -70,7 +81,7 @@ describe('setLabel', () => {
   it('appends RIR when present, including a valid 0', () => {
     expect(setLabel(LIFT, { w: 60, r: 10, rir: 2 })).toBe('60×10 (RIR 2)')
     expect(setLabel(LIFT, { w: 60, r: 10, rir: 1.5 })).toBe('60×10 (RIR 1.5)')
-    expect(setLabel(LIFT, { w: 60, r: 10, rir: 0 })).toBe('60×10 (RIR 0)')
+    expect(setLabel(LIFT, { w: 60, r: 10, rir: 0 })).toBe('60×10 (Failure)')
   })
 
   it('says nothing about RIR on a set that never logged one', () => {
@@ -90,6 +101,31 @@ describe('setLabel', () => {
     expect(setLabel(LIFT, { w: 60, r: 10, rir: 2 })).toBe('60×10 (RIR 2)')
     // and a set that somehow carries both is described once, by the one it was logged with
     expect(setLabel(LIFT, { w: 60, r: 10, rir: 2, rpe: 8 })).toBe('60×10 (RIR 2)')
+  })
+})
+
+describe('failure display labels', () => {
+  it('distinguishes failure from unrated effort without changing persisted zero', () => {
+    const set = { w: 60, r: 10, rir: 0 }
+    expect(effortValue('rir', 0)).toBe('Failure')
+    expect(effortLabel('rir', '0')).toBe('Failure')
+    expect(effortLabel('rir', 0.5)).toBe('RIR 0.5')
+    expect(effortLabel('rpe', 10)).toBe('RPE 10')
+    expect(effortValue('rir', null)).toBe('—')
+    expect(effortValue('rir', '')).toBe('—')
+    expect(rirRangeLabel({ min: 0, max: 2 })).toBe('Failure–2')
+    expect(rirRangeLabel({ min: 0, max: 0 })).toBe('Failure')
+    expect(setLabel(LIFT, JSON.parse(JSON.stringify(set)))).toBe('60×10 (Failure)')
+    expect(set.rir).toBe(0)
+  })
+
+  it('translates failure when reading existing zero-RIR history and targets', () => {
+    _setLangState('es', { Failure: 'Fallo' })
+    try {
+      expect(setLabel(LIFT, { w: 60, r: 10, rir: 0 })).toBe('60×10 (Fallo)')
+      expect(effortValue('rir', 0)).toBe('Fallo')
+      expect(rirRangeLabel({ min: 0, max: 0 })).toBe('Fallo')
+    } finally { _setLangState('en') }
   })
 })
 
@@ -230,7 +266,7 @@ describe('logging effort across a session', () => {
   it('a set taken to failure is logged, not left blank', () => {
     const v = stepEffort('rir', null, 1)      // one + on an RIR profile
     expect(v).toBe(0)
-    expect(setLabel(LIFT, { w: 100, r: 3, rir: v })).toBe('100×3 (RIR 0)')
+    expect(setLabel(LIFT, { w: 100, r: 3, rir: v })).toBe('100×3 (Failure)')
   })
 
   it('switching the setting mid-history rewrites nothing', () => {
@@ -326,9 +362,9 @@ describe('setLabel — bodyweight', () => {
   it('spells out a belt as an addition', () => {
     expect(setLabel(BW, { w: 10, r: 8 }, { id: BW })).toBe('+10 × 8')
   })
-  it('logs a per-side set as the plain total, like every other set in the app', () => {
-    expect(setLabel(BW, { w: 0, r: 16 }, { id: BW, side: true })).toBe('16')
-    expect(setLabel(LIFT, { w: 20, r: 16 }, { id: LIFT, side: true })).toBe('20×16')
+  it('shows one-side reps for legacy totals without changing stored values', () => {
+    expect(setLabel(BW, { w: 0, r: 16 }, { id: BW, side: true })).toBe('8 / side')
+    expect(setLabel(LIFT, { w: 20, r: 16 }, { id: LIFT, side: true })).toBe('20×8 / side')
   })
   it('keeps the effort tail', () => {
     expect(setLabel(BW, { w: 0, r: 12, rir: 2 }, { id: BW })).toBe('12 (RIR 2)')
@@ -336,8 +372,8 @@ describe('setLabel — bodyweight', () => {
 })
 
 describe('exLine', () => {
-  it('shows the split where there is room for it, next to the total you log', () => {
-    expect(exLine({ id: LIFT, sets: 3, reps: 16, side: true }, 'kg')).toBe('3 × 16 · 8/side')
+  it('shows only the per-side prescription, without a doubled total', () => {
+    expect(exLine({ id: LIFT, sets: 3, reps: 16, side: true }, 'kg')).toBe('3 × 8 / side')
   })
   it('marks added weight as added', () => {
     expect(exLine({ id: BW, sets: 3, reps: 8, weight: 10 }, 'kg')).toBe('3 × 8 · +10 kg')
@@ -887,4 +923,69 @@ describe('exNoteFor', () => {
     expect(exNoteFor({ exNotes: { '0025': '   ' } }, '0025')).toBeNull()
     expect(exNoteFor({}, '0025')).toBeNull()
   })
+})
+
+it('preserves manually edited and partially completed back-off loads and reps',()=>{
+ const rows=[{role:'top',w:100,r:6},{role:'backoff',w:80,r:7,manualFields:{w:true,r:true}},{role:'backoff',w:90,r:8,leftDone:true},{role:'backoff',w:90,r:8}];
+ const cfg={setScheme:'topback',backoffPct:10,backoffRepOffset:2};
+ expect(cascadeTopBackWeight(rows,0,120,cfg,2.5).map(s=>s.w)).toEqual([120,80,90,107.5]);
+ expect(cascadeTopBackReps(rows,0,10,cfg).map(s=>s.r)).toEqual([10,7,8,12])
+})
+
+
+describe('per-side display/storage boundary', () => {
+  it.each([{side:true}, {side:true,repsPerSide:true}, {}])('round-trips the displayed count without mutating %j', cfg => {
+    const stored = cfg.side && !cfg.repsPerSide ? 16 : 8
+    expect(displayReps(stored,cfg)).toBe(8)
+    expect(storedReps(8,cfg)).toBe(stored)
+  })
+  it('retains empty, AMRAP and odd legacy counts instead of inventing a target', () => {
+    expect(displayReps(17,{side:true})).toBe(8.5)
+    expect(displayReps('AMRAP',{side:true})).toBe('AMRAP')
+    expect(exLine({sets:3,reps:'AMRAP'},'kg')).toBe('3 × AMRAP')
+    expect(storedReps(null,{side:true})).toBeNull()
+    expect(displayReps('',{side:true})).toBe('')
+    expect(displayReps(30,{side:true,mode:'time'})).toBe(30)
+  })
+  it('presents ranges and converts config semantics only when explicitly requested', () => {
+    const cfg={side:true,reps:16,repsMin:12,topRepsMax:16,backoffRepsMax:20,backoffRepOffset:4,intensifier:{type:'restpause',totalReps:24}}
+    const before=structuredClone(cfg)
+    expect(exLine(cfg,'kg')).toBe('1 × 6–8 / side')
+    expect(displayRepConfig(cfg)).toMatchObject({reps:8,repsMin:6,topRepsMax:8,backoffRepsMax:10,backoffRepOffset:2,intensifier:{totalReps:12}})
+    expect(cfg).toEqual(before)
+  })
+})
+
+
+describe('Back-off group isolation',()=>{
+ const cfg={setScheme:'topback',backoffPct:10,backoffRepOffset:2,topRepsMin:4,topRepsMax:8}
+ const seed=()=>[{role:'top',w:100,r:6},{role:'backoff',w:90,r:8},{role:'top',w:80,r:5},{role:'backoff',w:72.5,r:7}]
+ it('updates only the contiguous Top/Back-off prescription group',()=>{
+  expect(cascadeTopBackWeight(seed(),0,110,cfg).map(s=>s.w)).toEqual([110,100,80,72.5])
+  expect(cascadeTopBackReps(seed(),0,7,cfg).map(s=>s.r)).toEqual([7,9,5,7])
+  expect(cascadeTopBackWeight(seed(),1,85,cfg).map(s=>s.w)).toEqual([100,85,80,72.5])
+ })
+ it('clears automatic loads instead of turning cleared Top input into zero',()=>{
+  expect(cascadeTopBackWeight(seed(),0,null,cfg)[1].w).toBeUndefined()
+ })
+ it('protects performed Top rows even when called outside the UI',()=>{
+  const rows=seed();rows[0].done=true
+  expect(cascadeTopBackWeight(rows,0,120,cfg)).toEqual(rows)
+  expect(cascadeTopBackReps(rows,0,8,cfg)).toEqual(rows)
+ })
+ it('does not rewrite manual reps or load across JSON persistence',()=>{
+  const rows=seed();rows[1].manualFields={r:true,w:true}
+  const reopened=JSON.parse(JSON.stringify(rows))
+  expect(cascadeTopBackWeight(reopened,0,120,cfg)[1]).toEqual(rows[1])
+  expect(cascadeTopBackReps(reopened,0,8,cfg)[1]).toEqual(rows[1])
+ })
+})
+
+it('generates both target fields consistently for new and historical users without copying manual flags',()=>{
+ const cfg={id:'0025',sets:3,reps:6,setScheme:'topback',topRepsMin:4,topRepsMax:6,backoffRepOffset:2,backoffPct:10,weight:100}
+ for(const workouts of [[],[{id:'old',d:'2026-09-01',entries:[{id:cfg.id,target:cfg,sets:[{role:'top',w:100,r:5,done:true,manualFields:{r:true}},{role:'backoff',w:90,r:7,done:true}]}]}]]) {
+  const rows=applyTrainingPlan(buildSets({workouts,exWeights:{}},cfg),cfg)
+  expect(rows.map(s=>[s.w,s.r])).toEqual([[100,6],[90,8],[90,8]])
+  expect(rows.every(s=>!s.done&&!s.manualFields)).toBe(true)
+ }
 })

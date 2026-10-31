@@ -1,0 +1,140 @@
+{
+  "version": "1.15.100",
+  "versionCode": 136,
+  "runtimeCommit": "cc4d7893f402db575008e4206176921c222bd597",
+  "release": "https://github.com/Truesilverking/TGym/releases/tag/v1.15.100",
+  "workflowRuns": {
+    "tests": {
+      "id": 40210096392,
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/40210096392",
+      "conclusion": "success"
+    },
+    "pwaValidation": {
+      "id": 40210096269,
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/40210096269",
+      "conclusion": "success"
+    },
+    "androidValidation": {
+      "id": 40210096279,
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/40210096279",
+      "conclusion": "success"
+    },
+    "signedCandidate": {
+      "id": 40210096783,
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/40210096783",
+      "conclusion": "success"
+    },
+    "prTests": {
+      "id": 40210100203,
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/40210100203",
+      "conclusion": "success"
+    },
+    "release": {
+      "id": 40210721037,
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/40210721037",
+      "conclusion": "success"
+    }
+  },
+  "tests": {
+    "frontendCi": {
+      "tests": 2576,
+      "files": 223,
+      "commit": "cc4d7893f402db575008e4206176921c222bd597",
+      "runId": 40210096392
+    },
+    "frontendLocalBaseline": {
+      "tests": 2576,
+      "files": 223,
+      "commit": "8c23e8b00f2c09715f4f92914b139550bec46756",
+      "onlyFinalCssChanged": true
+    },
+    "finalTargeted": {
+      "tests": 139,
+      "files": 7
+    },
+    "api": 16,
+    "mcp": 37,
+    "catalog": 6,
+    "nodeLoadable": true,
+    "androidCi": {
+      "passed": 43,
+      "failures": 0,
+      "skipped": 0,
+      "physicalDevice": false
+    }
+  },
+  "localChecks": {
+    "webBuild": true,
+    "pwaBuild": true,
+    "mobileAssetSync": true,
+    "androidBuildAndLint": true,
+    "localeKeysets": true,
+    "sourceStrings": true,
+    "version": true,
+    "fatigue": true,
+    "frozenSourceFiles": 625,
+    "sourceTreeSha256": "9d49eef628e400e408f26ddef445e911695a57251375ef70b4ab9d69e214d5bd"
+  },
+  "browser": {
+    "compiledSyntheticCases": 6,
+    "functionalPass": true,
+    "performancePass": true,
+    "largeSyntheticProfileCase": true,
+    "inlineControlsGeometryPass": true,
+    "resourceCleanupPass": true,
+    "pageErrors": 0,
+    "caseNames": [
+      "edge390-en-workout",
+      "edge320-es-added-drop",
+      "webkit390-en-pound-hold",
+      "edge1440-en-goal-routine",
+      "webkit1440-es-goal-history",
+      "edge390-en-large-performance"
+    ],
+    "physicalDeviceValidated": false
+  },
+  "artifacts": {
+    "package": "app.framegym.mobile",
+    "apkSha256": "5774c5a5f683b835a29e577c28607d743c0d2addfcaf60f99b0b266b39a53075",
+    "aabSha256": "e14e54aa32ff4f45668de861b18110107e6fe4be304a9ac05ca7509f3833f4d8",
+    "certificateSha256": "8ee233c984615e2b3f6f083dc0c47d148bb8956ff7caca97be0b9a0d260e6082",
+    "officialSigningContinuity": true,
+    "releaseAndPagesApkIdentical": true,
+    "aabSignatureVerified": true,
+    "apkBuildMetadataExact": true,
+    "aabBuildMetadataExact": true,
+    "checksumsExact": true,
+    "candidateSharedRuntimeAssetsExact": 66,
+    "pwaFilesExact": 62,
+    "verifiedAt": "2026-10-25T16:20:54Z"
+  },
+  "notifications": {
+    "service": "FCM",
+    "releaseRunId": 40210721037,
+    "accepted": [
+      {
+        "topic": "tgym_updates",
+        "at": "2026-10-25T16:19:55.4649287Z"
+      },
+      {
+        "topic": "tgym_updates_v2",
+        "at": "2026-10-25T16:19:55.6593120Z"
+      }
+    ],
+    "acceptedOncePerTopic": true,
+    "manualResendDispatched": false,
+    "physicalReceiptVerified": false
+  },
+  "boundaries": {
+    "newPhysicalDeviceInstallationVerified": false,
+    "physicalIPhoneVerified": false,
+    "personalInstalledDesktopPwaUpdated": false,
+    "isolated99To100PwaUpgradeVerified": false,
+    "offlinePreservationRevalidatedFor100": false,
+    "physicalPushReceiptVerified": false,
+    "deviceWideFrameRateGuarantee": false,
+    "syntheticBrowserProfilesOnly": true,
+    "privateProfilesOrPhotosPublished": false,
+    "mainIndependentReviewRequired": true
+  }
+}

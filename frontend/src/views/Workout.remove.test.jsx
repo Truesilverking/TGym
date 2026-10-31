@@ -7,7 +7,7 @@ import Workout, { removeActiveExercise } from './Workout.jsx'
 import { DEF, useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 
-vi.mock('../lib/sound.js', () => ({ beep: vi.fn(), vibrate: vi.fn() }))
+vi.mock('../lib/sound.js', () => ({ playAppSound: vi.fn(), vibrate: vi.fn() }))
 vi.mock('../lib/api.js', () => ({ api: vi.fn(() => Promise.resolve({})) }))
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true
@@ -110,8 +110,8 @@ describe('remove-exercise locale coverage', () => {
   ]
   const packs = import.meta.glob('../locales/*.js', { eager: true, import: 'default' })
 
-  it('defines every new prompt in all twelve locale packs', () => {
-    expect(Object.keys(packs)).toHaveLength(12)
+  it('defines every new prompt in every shipped locale pack', () => {
+    expect(Object.keys(packs)).toHaveLength(1)   // TGym ships Spanish; English is the source
     Object.entries(packs).forEach(([path, pack]) => {
       required.forEach(key => expect(pack, `${path} is missing ${key}`).toHaveProperty(key))
     })

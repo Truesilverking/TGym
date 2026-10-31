@@ -22,6 +22,7 @@ const mocks = vi.hoisted(() => {
     startRest: state.startRest,
     stopRest: state.stopRest,
     startWork: vi.fn(),
+    stopWork: vi.fn(),
     toast: vi.fn(),
   })
   return state
@@ -123,6 +124,25 @@ afterEach(async () => {
 })
 
 describe('Workout set completion flow', () => {
+  it('labels Finish normally when only warmups remain unchecked, including a warmup-only exercise', async () => {
+    await mount([exercise('required', [false, true]), exercise('optional', [false])], 0, S => {
+      S.active.entries[0].sets[0].phase = 'warmup'
+      S.active.entries[1].sets[0].warmup = true
+    })
+    const footer = [...container.querySelectorAll('button')].find(button => button.textContent === 'Finish workout')
+    expect(footer?.textContent).toBe('Finish workout')
+    expect(container.textContent).not.toContain('Finish workout early')
+  })
+  it('keeps the early-finish exercise count limited to required working exercises', async () => {
+    await mount([exercise('complete', [false, true]), exercise('pending', [true, false]), exercise('optional', [false])], 0, S => {
+      S.active.entries[0].sets[0].phase = 'warmup'
+      S.active.entries[1].sets[0].warmup = true
+      S.active.entries[2].sets[0].phase = 'warmup'
+    })
+    expect(container.textContent).toContain('Finish workout early · 1/2 exercises')
+    expect(container.textContent).not.toContain('Finish workout early · 1/3 exercises')
+    expect(workoutCompleteSheet).not.toHaveBeenCalled()
+  })
   it('reopens the finish decision once for restored completed work, ignoring unchecked warmups', async () => {
     await mount([exercise('restored', [false, true])], 0, S => {
       S.active.entries[0].sets[0].phase = 'warmup'
@@ -148,7 +168,7 @@ describe('Workout set completion flow', () => {
     await toggleSet(0)
     expect(mocks.S.active.timerPausedAt).toBe(pausedAt)
     await act(async () => { root.render(React.createElement(Workout)) })
-    const resume = [...container.querySelectorAll('button')].find(b => b.textContent.includes('Continue workout'))
+    const resume = container.querySelector('[aria-label="Resume workout timer"]')
     expect(resume).toBeTruthy()
     await act(async () => { resume.dispatchEvent(new dom.Event('click', { bubbles: true })) })
     expect(mocks.S.active.timerPausedAt).toBeUndefined()
@@ -187,7 +207,7 @@ describe('Workout set completion flow', () => {
       exercise('superset-b', [true, true, false], { sg: group }),
       exercise('next-exercise', [false, false, false]),
     ], 1)
-    await toggleSet(5)
+    await toggleSet(0)
 
     expect(mocks.topWeightSheet).toHaveBeenCalledWith(1)
     expect(mocks.S.active.cur).toBe(1)
@@ -196,10 +216,21 @@ describe('Workout set completion flow', () => {
 })
 
 describe('Top and back-off targets', () => {
+  it('names zero effort and targets Failure while storing and stepping numeric RIR', async () => {
+    await mount([{ id: 'squat', target: { mode: 'reps', reps: 6, targetRirMin: 0, targetRirMax: 0 }, sets: [{ w: 50, r: 6, rir: 0, done: false }] }], 0, S => { S.effort = 'rir' })
+    const input = container.querySelector('.set-metric.eff input')
+    expect(input.value).toBe('Failure')
+    expect(input.getAttribute('aria-label')).toBe('RIR')
+    expect(container.querySelector('.set-metric.eff label').textContent).toContain('Failure')
+    expect(mocks.S.active.entries[0].sets[0].rir).toBe(0)
+    await act(async () => { container.querySelector('.set-metric.eff button[aria-label="Increase"]').click() })
+    expect(mocks.S.active.entries[0].sets[0].rir).toBe(0.5)
+  })
+
   it('shows the full target range even when a legacy profile has effort disabled', async () => {
-    await mount([{ id: 'squat', target: { mode: 'reps', reps: 6, targetRirMin: 1, targetRirMax: 2 }, sets: [{ w: 50, r: 6, rir: 2, done: true }] }], 0, S => { S.effort = 'none' })
-    expect(container.querySelector('.sethead .eff-sp').textContent).toContain('1–2')
-    expect(container.querySelector('.sethead .eff-sp').textContent).toContain('RIR')
+    await mount([{ id: 'squat', target: { mode: 'reps', reps: 6, targetRirMin: 1, targetRirMax: 2 }, sets: [{ w: 50, r: 6, rir: 2, done: false }] }], 0, S => { S.effort = 'none' })
+    expect(container.querySelector('.set-metric.eff label').textContent).toContain('1–2')
+    expect(container.querySelector('.set-metric.eff label').textContent).toContain('RIR')
   })
   it('aligns each rep range and RIR value below its matching column heading', async () => {
     const target = { mode: 'reps', sets: 3, repsMin: 4, reps: 6, backoffRepsMin: 6, backoffRepsMax: 8,
@@ -210,14 +241,12 @@ describe('Top and back-off targets', () => {
       { role: 'backoff', w: 90, r: 8, rir: null, done: false },
     ] }], 0, S => { S.effort = 'rir' })
 
-    const headings = [...container.querySelectorAll('.sethead > span')].map(x => x.textContent.trim())
-    expect(headings).toEqual(['', 'Weight (kg)', 'Reps', 'RIR', ''])
-    const targets = [...container.querySelectorAll('.settargets')]
-    expect(targets.map(row => row.querySelector('.phase-label').textContent.trim())).toEqual(['Top set', 'Back-off sets'])
-    expect(targets.map(row => [
-      row.querySelector('.w-sp').textContent.trim(), row.querySelector('.r-sp').textContent.trim(),
-      row.querySelector('.eff-sp').textContent.trim(),
-    ])).toEqual([['', '4-6', '1'], ['', '6-8', '3']])
+    const rows = [...container.querySelectorAll('.set-console')]
+    expect([...container.querySelectorAll('.set-phase')].map(x=>x.textContent)).toEqual(['Top set','Back-off sets'])
+    expect(rows.map(row=>[row.querySelector('.set-metric.r label').textContent,row.querySelector('.set-metric.eff label').textContent])).toEqual([['Actual reps','RIR1'],['Actual reps','RIR3'],['Actual reps','RIR3']])
+    expect(rows.map(row=>row.querySelector('.set-target strong').textContent)).toEqual(['4–6','6–8','6–8'])
+    expect(rows[0].querySelector('.set-metric.w label').textContent).toBe('Weight (kg)')
+
   })
 })
 
@@ -251,5 +280,22 @@ describe('superset flow survives an exercise being removed mid-session', () => {
     // Partner closes the round (each still has a second set), which is what starts the rest.
     await toggleSet(2)
     expect(mocks.startRest).toHaveBeenCalledWith(90)
+  })
+})
+
+describe('independent per-side confirmations',()=>{
+  it('retains 10 reps and only completes after both sides; explicit undo unlocks both sides and preserves actual values',async()=>{
+    await mount([{id:'one-arm',target:{mode:'reps',side:true,repsPerSide:true,reps:10},sets:[{w:20,r:10,done:false}]}])
+    const buttons=()=>[...container.querySelectorAll('.set-sides button')]
+    await act(async()=>buttons()[0].click())
+    expect(mocks.S.active.entries[0].sets[0]).toMatchObject({r:10,leftDone:true,rightDone:false,done:false})
+    expect(mocks.startRest).not.toHaveBeenCalled()
+    // The mocked store mutates in place; explicitly rerender to reflect the saved state.
+    await act(async()=>root.render(<Workout />))
+    await act(async()=>buttons()[1].click())
+    expect(mocks.S.active.entries[0].sets[0]).toMatchObject({r:10,leftDone:true,rightDone:true,done:true})
+    await act(async()=>root.render(<Workout />))
+    await act(async()=>container.querySelector('.set-undo').click())
+    expect(mocks.S.active.entries[0].sets[0]).toMatchObject({w:20,r:10,leftDone:false,rightDone:false,done:false})
   })
 })

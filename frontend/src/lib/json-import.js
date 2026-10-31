@@ -20,5 +20,5 @@ export function parseTGymJson(raw) {
     }
   }
 
-  throw new Error(t('not a TGym or openGym backup or plan'))
+  throw new Error(t('not a TGym backup or plan'))
 }

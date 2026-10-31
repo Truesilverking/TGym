@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState } from 'react'
-import { fmtNum, fmtDate, MONTHS, isoOf } from '../lib/format.js'
+import { fmtNum, fmtWeight, fmtDate, MONTHS, isoOf } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
 
 const W = 340   // viewBox width; the svg stretches to its container, height comes from `h`
@@ -12,7 +12,7 @@ const W = 340   // viewBox width; the svg stretches to its container, height com
 // opts: { h, unit, color, axes, goal, invert }
 //   invert flips the y axis, for a scale that counts down as it gets harder (RIR). Without it
 //   a curve of reps-in-reserve reads upside down, with the hardest sets at the floor.
-export default function LineChart({ points, h = 150, unit = '', color = 'var(--acc)', axes = true, goal = null, invert = false }) {
+export default function LineChart({ points, h = 150, unit = '', color = 'var(--acc)', axes = true, goal = null, invert = false, formatValue }) {
   const svgRef = useRef(null)
   const wrapRef = useRef(null)
   const tipRef = useRef(null)
@@ -49,10 +49,13 @@ export default function LineChart({ points, h = 150, unit = '', color = 'var(--a
   const single = points.length === 1
   const pts = single ? [points[0], points[0]] : points
   const ys = pts.map(p => p.y)
+  const weightUnit = unit === 'kg' || unit === 'lb'
+  const formatNumber = weightUnit ? fmtWeight : fmtNum
   let ymin = Math.min(...ys), ymax = Math.max(...ys)
   if (goal != null && isFinite(goal)) { ymin = Math.min(ymin, goal); ymax = Math.max(ymax, goal) }
   if (ymin === ymax) { ymin -= 1; ymax += 1 }
   const pad = (ymax - ymin) * 0.12; ymin -= pad; ymax += pad
+  if (weightUnit && axes) { ymin = Math.floor(ymin); ymax = Math.ceil(ymax) }
   const t0 = pts[0].t, t1 = pts[pts.length - 1].t || t0 + 1
   const X = t => (t1 === t0 ? (P.l + W - P.r) / 2 : P.l + (t - t0) / (t1 - t0) * (W - P.l - P.r))
   const Y = y => {
@@ -66,11 +69,14 @@ export default function LineChart({ points, h = 150, unit = '', color = 'var(--a
     const pow = Math.pow(10, Math.floor(Math.log10(raw)))
     let step = 10 * pow
     for (const m of [1, 2, 2.5, 5, 10]) if (raw <= m * pow) { step = m * pow; break }
+    // Whole-unit labels need whole-unit ticks, otherwise a small weight range
+    // repeats the same rounded label at several different heights.
+    if (weightUnit) step = Math.max(1, Math.ceil(step))
     for (let v = Math.ceil(ymin / step) * step; v <= ymax + 1e-9; v += step) {
       const y = Y(v)
       gridlines.push(<g key={'y' + v}>
         <line x1={P.l} y1={y} x2={W - P.r} y2={y} stroke="var(--sep-op)" strokeWidth="1" strokeDasharray="2 4" />
-        <text x={P.l - 5} y={y + 3.5} textAnchor="end" fontSize="9.5" fill="var(--label-2)">{fmtNum(v)}</text>
+        <text x={P.l - 5} y={y + 3.5} textAnchor="end" fontSize="9.5" fill="var(--label-2)">{formatNumber(v)}</text>
       </g>)
     }
     const d0 = new Date(t0), d1 = new Date(t1)
@@ -127,7 +133,7 @@ export default function LineChart({ points, h = 150, unit = '', color = 'var(--a
         {gridlines}
         {goal != null && isFinite(goal) && <>
           <line x1={P.l} y1={Y(goal)} x2={W - P.r} y2={Y(goal)} stroke="var(--yellow)" strokeWidth="1.6" strokeDasharray="7 4" />
-          <text x={W - P.r - 2} y={Y(goal) - 5} textAnchor="end" fontSize="9.5" fontWeight="700" fill="var(--yellow)">{fmtNum(goal)}</text>
+          <text x={W - P.r - 2} y={Y(goal) - 5} textAnchor="end" fontSize="9.5" fontWeight="700" fill="var(--yellow)">{formatNumber(goal)}</text>
         </>}
         <polygon points={`${P.l},${H - P.b} ${poly} ${X(last.t).toFixed(1)},${H - P.b}`} fill={`url(#${gid})`} />
         <polyline points={poly} fill="none" stroke={color} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
@@ -141,7 +147,7 @@ export default function LineChart({ points, h = 150, unit = '', color = 'var(--a
         </g>}
       </svg>
       {hover && <div className="ctip" ref={tipRef}>
-        {fmtDate(hover.iso, true, showYear)} · {fmtNum(hover.v)}{unit ? ' ' + unit : ''}{hover.note ? ' · ' + hover.note : ''}
+        {fmtDate(hover.iso, true, showYear)} · {formatValue ? formatValue(hover.v) : formatNumber(hover.v) + (unit ? ' ' + unit : '')}{hover.note ? ' · ' + hover.note : ''}
       </div>}
     </div>
   )

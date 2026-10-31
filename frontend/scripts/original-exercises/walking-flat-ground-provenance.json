@@ -1,0 +1,40 @@
+{
+  "original": true,
+  "externalMediaInputs": false,
+  "asset": "walking-flat-ground.gif",
+  "dimensions": [
+    512,
+    512
+  ],
+  "frames": 36,
+  "authoredFrames": 36,
+  "frameDurationMs": 60,
+  "durationMs": 2160,
+  "gifBytes": 475804,
+  "renderer": "anatomical_style.py + generate_anatomical.py; original grayscale anatomy, targeted red muscle regions,3x antialiasing",
+  "movement": "Walking on level ground",
+  "reference": {
+    "url": "https://www.ouh.nhs.uk/gait-lab/",
+    "usedFor": "Flat alternating gait, no stair machine, treadmill or incline."
+  },
+  "reviewStatus": "Approved by root and independent visual reviewer on all13 contact sheets/loops before integration; mathematical and visual validation only",
+  "productionAssigned": false,
+  "physicalExerciseValidation": false,
+  "firstFrameRig": {
+    "flatGround": true,
+    "camera": "tracks walker; ground markers translate at planted-foot velocity",
+    "alternatingFootsteps": true,
+    "loads": 0,
+    "loadType": "none"
+  },
+  "containsPrivateProfileData": false,
+  "style": "Original gray/black anatomical silhouette, volume shading, red target muscles; white background",
+  "loop": true,
+  "gifSha256": "ba736ff8d38369d9475e425eb08e8167708b59276333479b0a0b21f236fd15de",
+  "posterBytes": 32444,
+  "posterSha256": "cb211aef3091ef36b43b107b9c6a9e53afa12b61d1cfd2fca8df4c4c1649041e",
+  "kinematicRecordsDeepEqual": true,
+  "baselineRigSha256": "193e4c87a6609735c3e0d345b6ef49b6407e363b2bee2c60dff58d9254ffe83a",
+  "rigSha256": "193e4c87a6609735c3e0d345b6ef49b6407e363b2bee2c60dff58d9254ffe83a",
+  "referenceBitmapUsedAsInput": false
+}
