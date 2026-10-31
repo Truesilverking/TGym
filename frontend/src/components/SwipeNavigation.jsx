@@ -23,7 +23,7 @@ export default function SwipeNavigation({children}) {
   const frame=useRef(0),dragFrame=useRef(0),timer=useRef(0),clickTimer=useRef(0)
   const surfaceFrame=useRef(0)
   const generation=useRef(0)
-  const pointers=useRef(new Set()),lastScroll=useRef(-Infinity),ignoreClick=useRef(false),mode=useRef('idle')
+  const pointers=useRef(new Set()),ignoreClick=useRef(false),mode=useRef('idle')
   const [direction,setDirection]=useState(0),[phase,setPhase]=useState('idle')
   const covered=useUI(s=>s.sheets.length>0||!!s.appTourWorkoutPreview||!!s.appTourRequest)
   const appReduced=useStore(s=>!!s.S.reduceMotion),systemReduced=useSyncExternalStore(subscribeMotion,systemMotion,()=>false)
@@ -115,7 +115,6 @@ export default function SwipeNavigation({children}) {
     const hidden=()=>{if(document.visibilityState==='hidden')stop();else sizeSurface()}
     const scroll=()=>{
       if(mode.current==='preparing'||mode.current==='entering'||gesture.current?.state==='horizontal')return
-      lastScroll.current=performance.now()
       if(gesture.current)reset()
     }
     document.addEventListener('pointerdown',down,true)
@@ -156,11 +155,16 @@ export default function SwipeNavigation({children}) {
     if(event.button!==0||event.isPrimary===false||pointers.current.size>1)return
     ignoreClick.current=false;clearTimeout(clickTimer.current)
     if(mode.current!=='idle')reset()
-    if(blocked()||gesture.current||performance.now()-lastScroll.current<120||event.defaultPrevented)return
+    if(blocked()||gesture.current||event.defaultPrevented)return
     if(event.target.closest?.(interactive)||event.target.closest?.('[inert],[hidden],[data-app-pane][aria-hidden="true"]'))return
     if(document.activeElement?.matches?.('input,textarea,select,[contenteditable="true"]'))return
     const selection=window.getSelection?.()
-    if(selection&&!selection.isCollapsed&&selection.toString())return
+    if(selection&&!selection.isCollapsed&&selection.toString()){
+      for(let index=0;index<selection.rangeCount;index++){
+        const boxes=selection.getRangeAt(index).getClientRects?.()||[]
+        if([...boxes].some(box=>event.clientX>=box.left&&event.clientX<=box.right&&event.clientY>=box.top&&event.clientY<=box.bottom))return
+      }
+    }
     for(let node=event.target;node&&node!==region.current;node=node.parentElement){
       if(node.clientWidth>0&&node.scrollWidth>node.clientWidth+2&&/(auto|scroll)/.test(getComputedStyle(node).overflowX))return
     }

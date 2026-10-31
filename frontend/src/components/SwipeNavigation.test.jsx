@@ -128,8 +128,8 @@ it('does not exclude a container merely because overflow auto is set when its co
  Object.defineProperties(scroller,{clientWidth:{value:120},scrollWidth:{value:120}})
  await point('pointerdown',260,100,{target});await point('pointermove',80,100,{target});await point('pointerup',80,100,{target});expect(current()).toBe('/plan')
 })
-it('does not start navigation during a recent native scroll but accepts a later contact',async()=>{
- await mount('/home');await act(()=>document.dispatchEvent(new Event('scroll')));await swipe();expectUnmoved();await tick(121);await swipe();expect(current()).toBe('/plan')
+it('accepts a new deliberate contact immediately after a previous scroll without an artificial wait',async()=>{
+ await mount('/home');await act(()=>document.dispatchEvent(new Event('scroll')));await swipe();expect(current()).toBe('/plan');await settle();expect(visits).toHaveLength(2)
 })
 it('cancels a pending contact when native scrolling starts',async()=>{
  await mount('/home');await point('pointerdown',250);await act(()=>document.dispatchEvent(new Event('scroll')));await point('pointermove',80);await point('pointerup',80);expectUnmoved()
@@ -138,7 +138,11 @@ it('preserves a focused text input rather than treating another contact as navig
  await mount('/home');host.querySelector('input').focus();await swipe();expectUnmoved();expect(document.activeElement).toBe(host.querySelector('input'))
 })
 it('preserves a selected text range without starting navigation',async()=>{
- await mount('/home');const range=document.createRange();range.selectNodeContents(host.querySelector('[data-current]'));window.getSelection().addRange(range);await swipe();expectUnmoved();expect(window.getSelection().toString()).toBe('/home')
+ await mount('/home');const range=document.createRange();range.selectNodeContents(host.querySelector('[data-current]'));range.getClientRects=()=>[{left:50,right:300,top:90,bottom:120}];window.getSelection().addRange(range);await swipe();expectUnmoved();expect(window.getSelection().toString()).toBe('/home')
+})
+it('allows navigation from blank space while text in another part of the page remains selected',async()=>{
+ await mount('/home');const range=document.createRange();range.selectNodeContents(host.querySelector('[data-current]'));range.getClientRects=()=>[{left:50,right:300,top:10,bottom:40}];window.getSelection().addRange(range)
+ await swipe();expect(current()).toBe('/plan');await settle();expect(visits).toHaveLength(2)
 })
 it('does not swallow a later deliberate click after the compatibility guard expires',async()=>{
  await mount('/home');await swipe();await settle();await tick(401);await click(host.querySelector('[data-control]'));expect(clicked).toHaveBeenCalledOnce()
