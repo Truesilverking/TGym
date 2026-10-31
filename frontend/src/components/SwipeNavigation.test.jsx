@@ -49,7 +49,7 @@ beforeEach(()=>{
  vi.spyOn(window,'matchMedia').mockImplementation(()=>({get matches(){return systemReduced},addEventListener:(_,callback)=>motionListeners.add(callback),removeEventListener:(_,callback)=>motionListeners.delete(callback)}))
  clicked=vi.fn();host=document.createElement('div');document.body.append(host);root=createRoot(host)
 })
-afterEach(async()=>{await act(()=>root.unmount());host.remove();window.getSelection()?.removeAllRanges();vi.useRealTimers();vi.restoreAllMocks();vi.unstubAllGlobals()})
+afterEach(async()=>{if(root)await act(()=>root.unmount());host.remove();window.getSelection()?.removeAllRanges();vi.useRealTimers();vi.restoreAllMocks();vi.unstubAllGlobals()})
 const current=()=>host.querySelector('[data-current]').textContent
 const region=()=>host.querySelector('.swipe-navigation')
 const phase=()=>region().dataset.swipePhase
@@ -277,4 +277,57 @@ it('aborts a pending first contact when a second touch starts outside the region
 })
 it('cancels actual capture loss on the region without confusing it with child transfer',async()=>{
  await mount('/home');await point('pointerdown',250);await point('pointermove',100);await frame();await point('lostpointercapture',100);await point('pointerup',100);await settle();expectUnmoved()
+})
+
+it.each(['/workout','/settings','/plan/r/example'])('does not extend or navigate the blank region on shell-only route %s',async path=>{
+ await mount(path);expect(region().hasAttribute('data-swipe-available')).toBe(false);await swipe();await settle();expect(current()).toBe(path);expect(phase()).toBe('idle');expect(content().style.transform).toBe('')
+})
+it.each([['/home','/plan'],['/stats?section=history','/stats?section=consistency']])('accepts a deliberate gesture directly on available blank space for %s',async(path,target)=>{
+ await mount(path);expect(region().dataset.swipeAvailable).toBe('true');const y=window.innerHeight-40
+ await point('pointerdown',250,y);await point('pointermove',100,y);await point('pointerup',100,y);expect(current()).toBe(target);await settle();expect(phase()).toBe('idle')
+})
+it('removes the full-height surface marker when navigating out of the module deck',async()=>{
+ await mount('/home');expect(region().dataset.swipeAvailable).toBe('true');await act(()=>navigate('/settings'));expect(region().hasAttribute('data-swipe-available')).toBe(false)
+ await act(()=>navigate('/stats?section=history'));expect(region().dataset.swipeAvailable).toBe('true')
+})
+it('measures document top rather than scrolled viewport top and refreshes it on resize',async()=>{
+ const descriptor=Object.getOwnPropertyDescriptor(window,'scrollY');let top=34
+ Object.defineProperty(window,'scrollY',{configurable:true,value:120})
+ vi.spyOn(HTMLElement.prototype,'getBoundingClientRect').mockImplementation(function(){return{top:this.classList.contains('swipe-navigation')?top:0,width:390}})
+ try{await mount('/home');expect(region().style.getPropertyValue('--swipe-surface-top')).toBe('154px');top=54;await act(()=>window.dispatchEvent(new Event('resize')));expect(region().style.getPropertyValue('--swipe-surface-top')).toBe('174px')}
+ finally{if(descriptor)Object.defineProperty(window,'scrollY',descriptor);else delete window.scrollY}
+})
+it('refreshes measured top on parent size changes and disconnects the observer on unmount',async()=>{
+ let changed,top=28;const observer={observe:vi.fn(),disconnect:vi.fn()}
+ vi.stubGlobal('ResizeObserver',class{constructor(callback){changed=callback;return observer}})
+ vi.spyOn(HTMLElement.prototype,'getBoundingClientRect').mockImplementation(function(){return{top:this.classList.contains('swipe-navigation')?top:0,width:390}})
+ await mount('/home');expect(observer.observe).toHaveBeenCalledWith(region().parentElement);expect(region().style.getPropertyValue('--swipe-surface-top')).toBe('28px')
+ top=72;await act(()=>changed([]));expect(region().style.getPropertyValue('--swipe-surface-top')).toBe('28px');expect(frames.size).toBe(1);await frame();expect(region().style.getPropertyValue('--swipe-surface-top')).toBe('72px');const beforeDisconnect=observer.disconnect.mock.calls.length;await act(()=>root.unmount());root=null;expect(observer.disconnect).toHaveBeenCalledTimes(beforeDisconnect+1)
+})
+
+it.each(['add','remove'])('refreshes top after banner %s without requiring a parent-size change and cleans observers',async change=>{
+ host.id='app';let resized,mutated;const watched=new Set(),banner=document.createElement('aside');banner.dataset.banner=''
+ const sizeObserver={observe:vi.fn(node=>watched.add(node)),disconnect:vi.fn(()=>watched.clear())}
+ const structureObserver={observe:vi.fn(),disconnect:vi.fn()}
+ vi.stubGlobal('ResizeObserver',class{constructor(callback){resized=callback;return sizeObserver}})
+ vi.stubGlobal('MutationObserver',class{constructor(callback){mutated=callback;return structureObserver}})
+ vi.spyOn(HTMLElement.prototype,'getBoundingClientRect').mockImplementation(function(){return{top:this.classList.contains('swipe-navigation')?(banner.parentElement===host?76:28):0,width:390,height:844}})
+ await mount('/home');expect(structureObserver.observe).toHaveBeenCalledWith(host,{childList:true});expect(watched.has(host)).toBe(true);expect(watched.has(region())).toBe(true);expect(frames.size).toBe(0);expect(region().style.getPropertyValue('--swipe-surface-top')).toBe('28px')
+ if(change==='remove'){host.prepend(banner);await act(()=>mutated([{type:'childList',addedNodes:[banner],removedNodes:[]} ]));await frame();expect(region().style.getPropertyValue('--swipe-surface-top')).toBe('76px');expect(watched.has(banner)).toBe(true)}
+ const previousTop=region().style.getPropertyValue('--swipe-surface-top')
+ if(change==='add')host.prepend(banner);else banner.remove()
+ const mutation={type:'childList',addedNodes:change==='add'?[banner]:[],removedNodes:change==='remove'?[banner]:[]}
+ await act(()=>{mutated([mutation]);resized([]);mutated([mutation])})
+ expect(region().style.getPropertyValue('--swipe-surface-top')).toBe(previousTop);expect(frames.size).toBe(1);await frame();expect(region().style.getPropertyValue('--swipe-surface-top')).toBe(change==='add'?'76px':'28px');expect(watched.has(banner)).toBe(change==='add');expect(frames.size).toBe(0)
+ await act(()=>resized([]));expect(frames.size).toBe(1);await act(()=>root.unmount());root=null;expect(frames.size).toBe(0);expect(structureObserver.disconnect).toHaveBeenCalledOnce();expect(watched.size).toBe(0)
+})
+it('refreshes the empty-space surface after the parent entrance animation, ignoring child animations',async()=>{
+ let top=14
+ vi.spyOn(HTMLElement.prototype,'getBoundingClientRect').mockImplementation(function(){return{top:this.classList.contains('swipe-navigation')?top:0,width:390,height:844}})
+ await mount('/home');expect(region().style.getPropertyValue('--swipe-surface-top')).toBe('14px')
+ top=10
+ await act(()=>content().dispatchEvent(new Event('animationend',{bubbles:true})))
+ expect(region().style.getPropertyValue('--swipe-surface-top')).toBe('14px')
+ await act(()=>region().parentElement.dispatchEvent(new Event('animationend',{bubbles:true})))
+ expect(region().style.getPropertyValue('--swipe-surface-top')).toBe('10px')
 })

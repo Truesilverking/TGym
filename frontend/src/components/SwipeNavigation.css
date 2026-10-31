@@ -1,4 +1,7 @@
 .swipe-navigation{min-width:0;touch-action:pan-y pinch-zoom;overflow-x:clip}
+/* Empty space below a short page is still a navigation surface. Extend into
+   the existing bottom padding without adding scroll height or covering controls. */
+.swipe-navigation[data-swipe-available=true]{min-height:max(0px,calc(var(--available-height,100dvh) - var(--swipe-surface-top,0px)));padding-bottom:calc(var(--bottom-clearance,0px) + 20px);margin-bottom:calc(-1 * (var(--bottom-clearance,0px) + 20px))}
 .swipe-navigation-content{min-width:0;transition:none}
 .swipe-navigation[data-swipe-phase=dragging]>.swipe-navigation-content,
 .swipe-navigation[data-swipe-phase=preparing]>.swipe-navigation-content{transition:none;will-change:transform}

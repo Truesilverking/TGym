@@ -21,14 +21,22 @@ export default function SwipeNavigation({children}) {
   const location=useLocation(),navigate=useNavigate()
   const region=useRef(null),content=useRef(null),gesture=useRef(null),transition=useRef(null)
   const frame=useRef(0),dragFrame=useRef(0),timer=useRef(0),clickTimer=useRef(0)
+  const surfaceFrame=useRef(0)
   const generation=useRef(0)
   const pointers=useRef(new Set()),lastScroll=useRef(-Infinity),ignoreClick=useRef(false),mode=useRef('idle')
   const [direction,setDirection]=useState(0),[phase,setPhase]=useState('idle')
   const covered=useUI(s=>s.sheets.length>0||!!s.appTourWorkoutPreview||!!s.appTourRequest)
   const appReduced=useStore(s=>!!s.S.reduceMotion),systemReduced=useSyncExternalStore(subscribeMotion,systemMotion,()=>false)
+  const available=!!swipeTarget(useStore.getState().S,location,1)
   const current=useRef(null)
   current.current={location,covered,reduced:appReduced||systemReduced}
   const blocked=()=>current.current.covered||!!document.querySelector('dialog[open],[aria-modal="true"]')
+  const sizeSurface=()=>{
+    if(!region.current)return
+    const top=region.current.getBoundingClientRect().top
+    const value=`${Math.max(0,(Number.isFinite(top)?top:0)+window.scrollY)}px`
+    if(region.current.style.getPropertyValue('--swipe-surface-top')!==value)region.current.style.setProperty('--swipe-surface-top',value)
+  }
   const paint=(offset=0,opacity=1)=>{
     if(!content.current)return
     content.current.style.transform=offset?`translate3d(${offset}px,0,0)`:''
@@ -72,6 +80,7 @@ export default function SwipeNavigation({children}) {
   }
 
   useLayoutEffect(()=>{
+    sizeSurface()
     release();clearScheduled()
     const next=transition.current
     if(!next||location.key===next.origin||location.pathname+location.search!==next.target||blocked()||current.current.reduced){reset();return}
@@ -102,7 +111,8 @@ export default function SwipeNavigation({children}) {
     }
     const key=event=>{if(!region.current?.contains(event.target))reset()}
     const stop=()=>{pointers.current.clear();reset()}
-    const hidden=()=>{if(document.visibilityState==='hidden')stop()}
+    const resize=()=>{stop();sizeSurface()}
+    const hidden=()=>{if(document.visibilityState==='hidden')stop();else sizeSurface()}
     const scroll=()=>{
       if(mode.current==='preparing'||mode.current==='entering'||gesture.current?.state==='horizontal')return
       lastScroll.current=performance.now()
@@ -112,14 +122,33 @@ export default function SwipeNavigation({children}) {
     document.addEventListener('pointerup',up,true);document.addEventListener('pointercancel',up,true)
     document.addEventListener('keydown',key,true);document.addEventListener('scroll',scroll,{capture:true,passive:true})
     document.addEventListener('visibilitychange',hidden)
-    window.addEventListener('blur',stop);window.addEventListener('resize',stop)
+    window.addEventListener('blur',stop);window.addEventListener('resize',resize)
+    const scheduleSurface=()=>{
+      if(!surfaceFrame.current)surfaceFrame.current=requestAnimationFrame(()=>{surfaceFrame.current=0;sizeSurface()})
+    }
+    const observer=typeof ResizeObserver==='function'?new ResizeObserver(scheduleSurface):null
+    const app=region.current?.closest('#app')
+    const observeLayout=()=>{
+      observer?.disconnect()
+      const nodes=new Set([region.current?.parentElement,app,...(app?.children||[])])
+      for(const node of nodes)if(node)observer?.observe(node)
+    }
+    observeLayout()
+    // Banners before the deck can move its top without resizing the deck.
+    const structure=app&&typeof MutationObserver==='function'?new MutationObserver(()=>{observeLayout();scheduleSurface()}):null
+    structure?.observe(app,{childList:true})
+    const parent=region.current?.parentElement
+    const animationEnd=event=>{if(event.target===parent)sizeSurface()}
+    parent?.addEventListener('animationend',animationEnd)
     return()=>{
       clearScheduled();clearTimeout(clickTimer.current);transition.current=null;gesture.current=null
       document.removeEventListener('pointerdown',down,true)
       document.removeEventListener('pointerup',up,true);document.removeEventListener('pointercancel',up,true)
       document.removeEventListener('keydown',key,true);document.removeEventListener('scroll',scroll,true)
       document.removeEventListener('visibilitychange',hidden)
-      window.removeEventListener('blur',stop);window.removeEventListener('resize',stop)
+      window.removeEventListener('blur',stop);window.removeEventListener('resize',resize)
+      observer?.disconnect();structure?.disconnect();cancelAnimationFrame(surfaceFrame.current)
+      parent?.removeEventListener('animationend',animationEnd)
     }
   },[])
 
@@ -173,7 +202,7 @@ export default function SwipeNavigation({children}) {
     if(gesture.current.state==='horizontal')suppressCompatClick()
     settle()
   }
-  return <div ref={region} className="swipe-navigation" data-swipe-direction={direction>0?'next':direction<0?'previous':undefined} data-swipe-phase={phase}
+  return <div ref={region} className="swipe-navigation" data-swipe-available={available||undefined} data-swipe-direction={direction>0?'next':direction<0?'previous':undefined} data-swipe-phase={phase}
     role="region" aria-label={t('Main navigation')} aria-busy={['preparing','entering'].includes(phase)||undefined} tabIndex={-1}
     onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={cancel}
     onContextMenu={()=>{if(gesture.current)settle()}}
