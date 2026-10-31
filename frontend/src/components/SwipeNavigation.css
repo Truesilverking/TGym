@@ -1,10 +1,10 @@
 .swipe-navigation{min-width:0;touch-action:pan-y pinch-zoom;overflow-x:clip}
-.swipe-navigation-content{min-width:0;transition:transform .14s ease-out}
+.swipe-navigation-content{min-width:0;transition:none}
 .swipe-navigation[data-swipe-phase=dragging]>.swipe-navigation-content,
 .swipe-navigation[data-swipe-phase=preparing]>.swipe-navigation-content{transition:none;will-change:transform}
 .swipe-navigation[data-swipe-phase=dragging]>.swipe-navigation-content{user-select:none;-webkit-user-select:none}
-.swipe-navigation[data-swipe-phase=leaving]>.swipe-navigation-content{transition:transform .14s cubic-bezier(.2,.65,.3,1);will-change:transform}
-.swipe-navigation[data-swipe-phase=entering]>.swipe-navigation-content{transition:transform .18s cubic-bezier(.16,.7,.3,1);will-change:transform}
+.swipe-navigation[data-swipe-phase=settling]>.swipe-navigation-content{transition:transform .18s cubic-bezier(.2,.75,.25,1);will-change:transform}
+.swipe-navigation[data-swipe-phase=entering]>.swipe-navigation-content{transition:transform .18s cubic-bezier(.16,.7,.3,1),opacity .18s ease-out;will-change:transform,opacity}
 .module-page,.stats-hub-page{min-width:0}
 .stats-slide-heading{display:flex;align-items:center;justify-content:flex-end;margin:2px 4px 16px;color:var(--label-2);font-size:14px}
 .stats-slide-heading small{font-variant-numeric:tabular-nums;white-space:nowrap}
