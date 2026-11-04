@@ -1,0 +1,26 @@
+{
+  "pass": true,
+  "stage": "Private style comparison; pending user preference/full integration approval",
+  "priorSnapshot": "head-prior-v1",
+  "module": "head.mjs",
+  "sha256": "05c227715f0c686c39822e36c7afe80fbb587cf4999018874742f190f8fcef97",
+  "changes": [
+    "Mild angular jaw and brow geometry within old head bounds",
+    "Lips recede4mm; local mouth thickness reduced10percent",
+    "Eyes radius11.5mm and recessed2.5mm; lower contrast iris/sclera; eyelid aperture reduced slightly",
+    "Optional native bind-pose head paint with vertical facial landmark warp",
+    "Central face paint55percent; ear/temple projection suppressed to avoid duplicate ears/eyes; full neck anatomy paint"
+  ],
+  "comparisons": {
+    "plain": "head-v2-plain-closeup-threequarter.png",
+    "painted": "head-v2-painted-closeup-threequarter.png",
+    "fullbodyPainted": "head-v2-painted-fullbody-neutral.png"
+  },
+  "api": "await attachHead(art,{paint:true}) for painted comparison; defaultpaint:false retains refined gray PBR",
+  "license": "CC0 source mesh; optional original AI static surface, no exercise frames regenerated",
+  "limits": [
+    "No frozen core or app assets changed",
+    "Neck/clavicle base still needs continuous body envelope integration",
+    "Full thirteen animated contact review remains pending after final style selection"
+  ]
+}

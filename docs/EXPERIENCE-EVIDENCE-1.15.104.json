@@ -1,0 +1,1441 @@
+{
+  "schemaVersion": 1,
+  "documentStatus": "published_and_public_artifacts_and_browser_smoke_verified",
+  "publicationRecord": true,
+  "release": {
+    "version": "1.15.104",
+    "androidVersionCode": 140,
+    "runtimeSourceCommit": "962e26262e1c1083900e35bd5acfe9782e774d4f",
+    "repositoryUrl": "https://github.com/Truesilverking/TGym",
+    "runtimeVerification": "exact_source_CI_candidate_release_public_artifacts_and_public_browser_smoke_verified",
+    "sourcePublication": {
+      "status": "pushed_to_Dev_reported_by_maintainer",
+      "branch": "Dev",
+      "commitUrl": "https://github.com/Truesilverking/TGym/commit/962e26262e1c1083900e35bd5acfe9782e774d4f",
+      "remoteIdentityConfirmedByMaintainer": true
+    },
+    "tag": {
+      "status": "annotated_tag_pushed",
+      "name": "v1.15.104",
+      "runtimeSourceCommit": "962e26262e1c1083900e35bd5acfe9782e774d4f",
+      "tagObject": "a1e71497c29bd2180a9aefe7753035dd2cdcbac5",
+      "pushedAt": "2026-10-30T19:23:44Z",
+      "skipUpdateNotificationsMarkerPresent": true,
+      "releaseWorkflow": "success",
+      "publishedReleaseClaim": true
+    },
+    "published": true,
+    "publishedAt": "2026-10-30T19:28:09Z"
+  },
+  "localChecks": {
+    "frontend": {
+      "status": "passed",
+      "tests": 2955,
+      "files": 255,
+      "runtimeSourceCommit": "962e26262e1c1083900e35bd5acfe9782e774d4f"
+    },
+    "api": {
+      "status": "passed",
+      "tests": 24,
+      "disposableTestState": true,
+      "realSubscriptionsUsed": false,
+      "runtimeSourceCommit": "6243142e49959a57d3ed567965ed0acf2e7a8b0d"
+    },
+    "mcp": {
+      "status": "passed",
+      "tests": 38,
+      "plainNodeImportGraph": "passed",
+      "runtimeSourceCommit": "6243142e49959a57d3ed567965ed0acf2e7a8b0d"
+    },
+    "catalog": {
+      "status": "passed",
+      "tests": 6,
+      "runtimeSourceCommit": "6243142e49959a57d3ed567965ed0acf2e7a8b0d"
+    },
+    "localization": {
+      "status": "passed",
+      "synchronizedKeys": 2187,
+      "detectedSourceStringsCovered": 1383,
+      "runtimeSourceCommit": "6243142e49959a57d3ed567965ed0acf2e7a8b0d"
+    },
+    "fatigue": {
+      "status": "passed",
+      "restComparisons": 108000,
+      "historyDeletionComparisons": 14076,
+      "runtimeSourceCommit": "6243142e49959a57d3ed567965ed0acf2e7a8b0d"
+    },
+    "builds": {
+      "web": "passed",
+      "standalonePwa": "passed",
+      "capacitorMobileBuildAndSync": "passed",
+      "androidQaAssembly": "passed",
+      "androidJavaAndInstrumentationSources": "compiled",
+      "androidLint": {
+        "errors": 0,
+        "warnings": 19
+      },
+      "nativeIos": {
+        "status": "not_built",
+        "reason": "Native compilation requires macOS/Xcode; Windows Capacitor synchronization is not an iOS build"
+      },
+      "runtimeSourceCommit": "6243142e49959a57d3ed567965ed0acf2e7a8b0d"
+    },
+    "sourceScope": "Frontend is final source; other broad local results retain historical baseline provenance. Exact-source CI independently passes required suites."
+  },
+  "compiledUi": {
+    "status": "passed",
+    "runtimeSourceCommit": "6243142e49959a57d3ed567965ed0acf2e7a8b0d",
+    "combinations": 32,
+    "checks": 352,
+    "javascriptRuntimeErrorsObserved": 0,
+    "engines": {
+      "edge": {
+        "passed": 16,
+        "total": 16,
+        "gestureMethod": "CDP touch"
+      },
+      "webkit": {
+        "passed": 16,
+        "total": 16,
+        "identity": "Windows Playwright WebKit with an iPhone user agent",
+        "gestureMethod": "pointer drags",
+        "physicalIPhone": false
+      }
+    },
+    "viewports": [
+      {
+        "width": 320,
+        "height": 740
+      },
+      {
+        "width": 390,
+        "height": 844
+      },
+      {
+        "width": 430,
+        "height": 932
+      },
+      {
+        "width": 844,
+        "height": 390
+      }
+    ],
+    "themes": [
+      "light",
+      "dark"
+    ],
+    "motion": [
+      "normal",
+      "reduced"
+    ],
+    "serviceWorkerReadinessRequired": true,
+    "syntheticDataOnly": true,
+    "protectedCollectionsUnchanged": true,
+    "settings": {
+      "passedCases": 32,
+      "dockAbsent": true,
+      "startAndHandleAbsent": true,
+      "backdropAbsent": true,
+      "navigationClearancePx": 0,
+      "bottomClearancePx": 0,
+      "returnsHomeCollapsed": true
+    },
+    "coverage": [
+      "swipe sequence and direct jumps",
+      "single active Stats card, ordering and filter retention",
+      "compact Today/Nutrition calendars and Week/Month/Year sheet",
+      "integer weight presentation with precise stored values preserved",
+      "ruler gesture ownership",
+      "static display font and enlarged streak flame",
+      "notification guidance without permission requests"
+    ]
+  },
+  "appLock": {
+    "status": "passed",
+    "runtimeSourceCommit": "6243142e49959a57d3ed567965ed0acf2e7a8b0d",
+    "browserCases": {
+      "passed": 34,
+      "total": 34
+    },
+    "adversarialBiometryCases": {
+      "passed": 4,
+      "total": 4
+    },
+    "javascriptRuntimeErrorsObserved": 0,
+    "syntheticProfileUnchanged": true,
+    "credentialStorageKeyAndHashFormatPreserved": true,
+    "progressiveAttemptPolicyPreserved": true,
+    "credentialStateMigration": false,
+    "currentCredentialGuardsAdded": true,
+    "coverage": [
+      "automatic four-digit PIN entry and leading zeroes",
+      "keypad, deletion, masking, keyboard and paste",
+      "explicit recovery and invalid-key handling",
+      "persisted cooldown and available fallback methods",
+      "biometric cancellation and focus return",
+      "StrictMode operation retention",
+      "native/document visibility deduplication",
+      "stale verification and superseded credential rejection"
+    ],
+    "biometry": "mocked browser credentials; no real authenticator or enrollment",
+    "physicalBiometricAcceptance": "not_verified",
+    "limits": [
+      "Biometry mocked: no actual authenticator or enrollment",
+      "Paste simulated without OS clipboard writes",
+      "No physical iPhone/Pixel or native software keyboard",
+      "Recovery may scroll vertically in short landscape"
+    ],
+    "syntheticPreviewPath": "docs/experience-1.15.104/webkit-app-lock.png"
+  },
+  "originalMedia": {
+    "status": "passed_mathematical_and_visual_review",
+    "assets": 26,
+    "gifs": 13,
+    "posters": 13,
+    "productionVariants": 12,
+    "separateStepMillVariant": 1,
+    "dimensions": {
+      "width": 512,
+      "height": 512
+    },
+    "decodedFramesPerGif": 36,
+    "loops": "infinite",
+    "gifBytes": 4649821,
+    "posterBytes": 453915,
+    "totalBytes": 5103736,
+    "rigRecordsCompared": 468,
+    "allRigRecordsDeepEqual": true,
+    "all26ReproducedAndPromotedRawHashesMatch": true,
+    "originalRigRenderersPreserved": true,
+    "historicalSourceGuard": "canonical LF for source line endings only",
+    "assetHashNormalization": false,
+    "externalBitmapInputs": false,
+    "profileOrIdentityWrites": false,
+    "existingUploadedMediaPrecedence": true,
+    "review": "approved by maintainer and independent visual reviewer",
+    "physicalExerciseValidation": false,
+    "manifestPath": "frontend/scripts/original-exercises/original-media-final-manifest.json"
+  },
+  "pwaUpgrade": {
+    "status": "complete_with_documented_webkit_engine_limit",
+    "baseline": {
+      "version": "1.15.103",
+      "runtimeSourceCommit": "309ff599d2d13940e8e33c811b5bc2e81f44a186"
+    },
+    "target": {
+      "version": "1.15.104",
+      "runtimeSourceCommit": "6243142e49959a57d3ed567965ed0acf2e7a8b0d"
+    },
+    "method": "Normal Settings Check for updates, then Update",
+    "syntheticDataOnly": true,
+    "activationHelperInjected": false,
+    "edge": {
+      "scenarioPassed": true,
+      "normalUpdateUiPassed": true,
+      "backupCrcValid": true,
+      "completeProfileRetained": true,
+      "legacyNumericPrecisionRetained": true,
+      "noSelfUpdateReoffer": true,
+      "offlineColdOpenPassed": true
+    },
+    "webkit": {
+      "rawScenarioPassed": false,
+      "normalUpdateUiPassed": true,
+      "backupCrcValid": true,
+      "completeProfileRetained": true,
+      "legacyNumericPrecisionRetained": true,
+      "noSelfUpdateReoffer": true,
+      "javascriptRuntimeErrorsObserved": 0,
+      "offlineColdOpen": {
+        "status": "not_verifiable_in_windows_engine",
+        "rawPassed": false,
+        "error": "WebKit internal navigation error",
+        "baselineAlsoAffected": true,
+        "independentMinimalWorkerControlAlsoAffected": true,
+        "priorControlRetainedAndNotRerun": true,
+        "workerRuntimeUnchangedAfterBuildMetadataRemoved": true
+      }
+    },
+    "physicalIPhoneAcceptance": false
+  },
+  "preparedQaArtifact": {
+    "status": "historical_624_installed_and_identity_verified",
+    "runtimeSourceCommit": "6243142e49959a57d3ed567965ed0acf2e7a8b0d",
+    "fileName": "TGym-QA-v1.15.104.apk",
+    "package": "app.framegym.mobile.qa",
+    "version": "1.15.104",
+    "versionCode": 140,
+    "applicationLabel": "TGym QA",
+    "launcherLabel": "TGym QA",
+    "apkSha256": "cd0b975d4a3597b9d529e1fc57cfcdd51b71e538ceb3738c36c2a9e581b7511f",
+    "certificateSha256": "d53b550b85266358a3d803b7a9611b880488f3eb3e68ad121c63e3c04825f5cc",
+    "verifiedExactBundledAssets": 81,
+    "finalInstallation": {
+      "status": "passed",
+      "confirmed": true,
+      "installedApkMatchesPreparedArtifact": true,
+      "runtimeSourceCommit": "6243142e49959a57d3ed567965ed0acf2e7a8b0d",
+      "evidenceUrl": null
+    },
+    "finalDeviceDataPreservation": {
+      "status": "passed_for_protected_state",
+      "confirmed": true,
+      "webAndNativeCopiesEqual": true,
+      "protectedChangedPaths": [],
+      "workoutClockDeltaMs": 0
+    },
+    "freshDevicePreflightRequired": true,
+    "freshDevicePreflightCompleted": true
+  },
+  "finalGates": {
+    "ci": {
+      "status": "passed",
+      "sourceCommit": "962e26262e1c1083900e35bd5acfe9782e774d4f",
+      "workflowRuns": [
+        {
+          "id": 41114036536,
+          "name": "Tests",
+          "event": "push",
+          "url": "https://github.com/Truesilverking/TGym/actions/runs/41114036536",
+          "conclusion": "success"
+        },
+        {
+          "id": 41114044960,
+          "name": "Tests",
+          "event": "pull_request",
+          "url": "https://github.com/Truesilverking/TGym/actions/runs/41114044960",
+          "conclusion": "success"
+        },
+        {
+          "id": 41114036578,
+          "name": "Validate PWA",
+          "event": "push",
+          "url": "https://github.com/Truesilverking/TGym/actions/runs/41114036578",
+          "conclusion": "success"
+        },
+        {
+          "id": 41114036481,
+          "name": "Validate Android",
+          "event": "push",
+          "url": "https://github.com/Truesilverking/TGym/actions/runs/41114036481",
+          "conclusion": "success"
+        },
+        {
+          "id": 41114037045,
+          "name": "Build signed Android candidate",
+          "event": "workflow_dispatch",
+          "url": "https://github.com/Truesilverking/TGym/actions/runs/41114037045",
+          "conclusion": "success"
+        }
+      ],
+      "androidInstrumentation": {
+        "status": "passed_report_verified",
+        "tests": 52,
+        "passed": 52,
+        "failed": 0,
+        "skipped": 0,
+        "notExecutedOrAborted": 0,
+        "complete": true,
+        "runId": 41114036481,
+        "url": "https://github.com/Truesilverking/TGym/actions/runs/41114036481",
+        "artifactId": 13006295111,
+        "artifactDigestAndCrcVerified": true,
+        "requiredRegressionsPresentAndPassed": {
+          "SoundPreferencesTest.aColdBackgroundDeadlineStartsForegroundBeforeRequestingFocus": true,
+          "SoundPreferencesTest.transientFocusIsReleasedOnCompletionStopAndDecoderFailure": true,
+          "WorkoutNotificationTest.notificationColorDefaultsForMissingBlankAndMalformedAccents": true,
+          "WorkoutNotificationTest.notificationTapUsesExplicitViewIntent": true
+        },
+        "physicalDevice": false
+      },
+      "allRequiredRunsSucceeded": true
+    },
+    "qaPhysicalAcceptance": {
+      "status": "passed_completed_focused_checks_with_limits",
+      "package": "app.framegym.mobile.qa",
+      "runtimeSourceCommit": "6243142e49959a57d3ed567965ed0acf2e7a8b0d",
+      "installedArtifactMatchesPrepared": true,
+      "completedChecks": {
+        "settingsDockAbsent": true,
+        "anatomicalMediaPassed": true,
+        "renderedDistinctMediaFrames": 3,
+        "autoPause60SecondBoundaryCasePassed": true,
+        "visiblePausedLabelPassed": true,
+        "lockedNotificationTapThroughPinToWorkoutPassed": true,
+        "normalBackgroundPinPersistenceAndColdReopenPassed": true
+      },
+      "javascriptRuntimeErrorsObserved": 0,
+      "protectedState": {
+        "webAndNativeCopiesEqual": true,
+        "protectedChangedPaths": [],
+        "workoutClockDeltaMs": 0,
+        "manualPausedStatePreserved": true,
+        "nativePausedStateVerified": true
+      },
+      "restoredState": {
+        "temporaryPinRemoved": true,
+        "appLockRestoredAbsent": true,
+        "originalBiometricConfigurationAbsent": true,
+        "temporaryRestCleared": true,
+        "soundConfigurationUnchanged": true,
+        "stayOnWhilePluggedIn": 0,
+        "connectionsClosed": true
+      },
+      "warmDirectNotification": {
+        "status": "not_completed_safety_stop",
+        "passed": null,
+        "reason": "Foreground changed during the test; safety stop",
+        "appFailureEstablished": false
+      },
+      "immediateForceStopPersistence": {
+        "status": "raw_limitation_observed",
+        "case": "Immediate ADB force-stop after saving the temporary PIN, before lifecycle handoff",
+        "temporaryKeyPersisted": false,
+        "normalBackgroundAndColdReopenPassed": true,
+        "regressionEstablished": false
+      },
+      "allPhysicalCasesPassedClaim": false,
+      "evidenceUrl": null,
+      "scope": "historical_624_only_not_final_revision"
+    },
+    "originalPhone": {
+      "status": "not_installed_user_waived_further_device_access",
+      "package": "app.framegym.mobile",
+      "installationConfirmed": null,
+      "acceptance": null,
+      "evidenceUrl": null,
+      "publicationGateRequired": false
+    },
+    "publication": {
+      "status": "published_and_verified",
+      "runtimeSourceCommit": "962e26262e1c1083900e35bd5acfe9782e774d4f",
+      "releaseId": 429411600,
+      "releaseUrl": "https://github.com/Truesilverking/TGym/releases/tag/v1.15.104",
+      "publishedAt": "2026-10-30T19:28:09Z",
+      "releaseAssetCount": 4,
+      "officialApkUrl": "https://github.com/Truesilverking/TGym/releases/download/v1.15.104/TGym-Android-v1.15.104.apk",
+      "pagesDeploymentUrl": "https://truesilverking.github.io/TGym/",
+      "workflowRunId": 41114915021,
+      "workflowUrl": "https://github.com/Truesilverking/TGym/actions/runs/41114915021",
+      "workflowConclusion": "success",
+      "verifiedAt": "2026-10-30T19:29:20Z",
+      "updateTopicNotification": {
+        "status": "explicitly_skipped",
+        "tagMarkerPresent": true,
+        "workflowStep": 25,
+        "sendClaim": false,
+        "phoneReceiptClaim": false
+      },
+      "officialAabUrl": "https://github.com/Truesilverking/TGym/releases/download/v1.15.104/TGym-Android-v1.15.104.aab",
+      "assets": [
+        {
+          "name": "checksums.txt",
+          "size": 186,
+          "url": "https://github.com/Truesilverking/TGym/releases/download/v1.15.104/checksums.txt"
+        },
+        {
+          "name": "latest.json",
+          "size": 706,
+          "url": "https://github.com/Truesilverking/TGym/releases/download/v1.15.104/latest.json"
+        },
+        {
+          "name": "TGym-Android-v1.15.104.aab",
+          "size": 11872569,
+          "url": "https://github.com/Truesilverking/TGym/releases/download/v1.15.104/TGym-Android-v1.15.104.aab"
+        },
+        {
+          "name": "TGym-Android-v1.15.104.apk",
+          "size": 13289147,
+          "url": "https://github.com/Truesilverking/TGym/releases/download/v1.15.104/TGym-Android-v1.15.104.apk"
+        }
+      ]
+    },
+    "notificationDelivery": {
+      "status": "partially_verified_local_qa",
+      "nativeLocalNotificationAndLockedRoutePassed": true,
+      "directWarmRoute": "not_completed_safety_stop",
+      "remotePushPhysicalReceipt": "not_verified",
+      "releaseUpdateTopicSend": "skipped_explicit_tag_policy"
+    },
+    "physicalIPhone": {
+      "status": "not_performed",
+      "safariStandaloneOffline": "not_verified",
+      "nativeIosCompilation": "not_performed",
+      "zeroPhysicalErrorsClaim": false
+    },
+    "protectedMain": {
+      "status": "independent_review_required",
+      "protectionBypassAuthorized": false
+    }
+  },
+  "references": {
+    "auditPath": "docs/EXPERIENCE-AUDIT-1.15.104.md",
+    "sourceFiles": [
+      "frontend/src/components/ModuleDeck.jsx",
+      "frontend/src/components/SwipeNavigation.jsx",
+      "frontend/src/components/TodayWeekCalendar.jsx",
+      "frontend/src/components/AppLock.jsx",
+      "frontend/src/lib/app-lock.js",
+      "frontend/src/lib/app-visibility.js",
+      "frontend/src/components/Media.jsx",
+      "frontend/src/lib/browser-notifications.js",
+      "frontend/scripts/original-exercises/original-media-final-manifest.json",
+      "frontend/scripts/original-exercises/generate_anatomical.py",
+      "frontend/scripts/original-exercises/validate_anatomical.py"
+    ],
+    "ciRunLinks": {
+      "status": "final_source_run_links_recorded",
+      "urls": [
+        "https://github.com/Truesilverking/TGym/actions/runs/41114036536",
+        "https://github.com/Truesilverking/TGym/actions/runs/41114044960",
+        "https://github.com/Truesilverking/TGym/actions/runs/41114036578",
+        "https://github.com/Truesilverking/TGym/actions/runs/41114036481",
+        "https://github.com/Truesilverking/TGym/actions/runs/41114037045",
+        "https://github.com/Truesilverking/TGym/actions/runs/41114915021"
+      ]
+    },
+    "publicReleaseLinks": {
+      "status": "verified",
+      "urls": [
+        "https://github.com/Truesilverking/TGym/releases/tag/v1.15.104",
+        "https://truesilverking.github.io/TGym/",
+        "https://github.com/Truesilverking/TGym/actions/runs/41114915021",
+        "https://github.com/Truesilverking/TGym/releases/download/v1.15.104/TGym-Android-v1.15.104.apk",
+        "https://github.com/Truesilverking/TGym/releases/download/v1.15.104/TGym-Android-v1.15.104.aab"
+      ]
+    },
+    "syntheticVisualPaths": [
+      "docs/experience-1.15.104/webkit-home.png",
+      "docs/experience-1.15.104/webkit-nutrition.png",
+      "docs/experience-1.15.104/webkit-training-calendar.png",
+      "docs/experience-1.15.104/webkit-stats.png",
+      "docs/experience-1.15.104/webkit-stats-menu.png",
+      "docs/experience-1.15.104/webkit-settings.png",
+      "docs/experience-1.15.104/webkit-today-week.png",
+      "docs/experience-1.15.104/webkit-nutrition-week.png",
+      "docs/experience-1.15.104/original-exercise-preview.png",
+      "docs/experience-1.15.104/webkit-app-lock.png",
+      "docs/experience-1.15.104/webkit-workout-back.png"
+    ],
+    "localExecutionEvidence": "Retained separately by the maintainer; private profiles and ignored local logs are not published as public links",
+    "sourceFileLinks": [
+      {
+        "path": "frontend/src/components/ModuleDeck.jsx",
+        "url": "https://github.com/Truesilverking/TGym/blob/962e26262e1c1083900e35bd5acfe9782e774d4f/frontend/src/components/ModuleDeck.jsx"
+      },
+      {
+        "path": "frontend/src/components/SwipeNavigation.jsx",
+        "url": "https://github.com/Truesilverking/TGym/blob/962e26262e1c1083900e35bd5acfe9782e774d4f/frontend/src/components/SwipeNavigation.jsx"
+      },
+      {
+        "path": "frontend/src/components/TodayWeekCalendar.jsx",
+        "url": "https://github.com/Truesilverking/TGym/blob/962e26262e1c1083900e35bd5acfe9782e774d4f/frontend/src/components/TodayWeekCalendar.jsx"
+      },
+      {
+        "path": "frontend/src/components/AppLock.jsx",
+        "url": "https://github.com/Truesilverking/TGym/blob/962e26262e1c1083900e35bd5acfe9782e774d4f/frontend/src/components/AppLock.jsx"
+      },
+      {
+        "path": "frontend/src/lib/app-lock.js",
+        "url": "https://github.com/Truesilverking/TGym/blob/962e26262e1c1083900e35bd5acfe9782e774d4f/frontend/src/lib/app-lock.js"
+      },
+      {
+        "path": "frontend/src/lib/app-visibility.js",
+        "url": "https://github.com/Truesilverking/TGym/blob/962e26262e1c1083900e35bd5acfe9782e774d4f/frontend/src/lib/app-visibility.js"
+      },
+      {
+        "path": "frontend/src/components/Media.jsx",
+        "url": "https://github.com/Truesilverking/TGym/blob/962e26262e1c1083900e35bd5acfe9782e774d4f/frontend/src/components/Media.jsx"
+      },
+      {
+        "path": "frontend/src/lib/browser-notifications.js",
+        "url": "https://github.com/Truesilverking/TGym/blob/962e26262e1c1083900e35bd5acfe9782e774d4f/frontend/src/lib/browser-notifications.js"
+      },
+      {
+        "path": "frontend/scripts/original-exercises/original-media-final-manifest.json",
+        "url": "https://github.com/Truesilverking/TGym/blob/962e26262e1c1083900e35bd5acfe9782e774d4f/frontend/scripts/original-exercises/original-media-final-manifest.json"
+      },
+      {
+        "path": "frontend/scripts/original-exercises/generate_anatomical.py",
+        "url": "https://github.com/Truesilverking/TGym/blob/962e26262e1c1083900e35bd5acfe9782e774d4f/frontend/scripts/original-exercises/generate_anatomical.py"
+      },
+      {
+        "path": "frontend/scripts/original-exercises/validate_anatomical.py",
+        "url": "https://github.com/Truesilverking/TGym/blob/962e26262e1c1083900e35bd5acfe9782e774d4f/frontend/scripts/original-exercises/validate_anatomical.py"
+      }
+    ],
+    "sourceCommitUrl": "https://github.com/Truesilverking/TGym/commit/962e26262e1c1083900e35bd5acfe9782e774d4f"
+  },
+  "privacy": {
+    "containsPrivateProfileData": false,
+    "containsPrivateProfileIds": false,
+    "containsPrivateProfileCounts": false,
+    "containsPrivateProfileChecksums": false,
+    "containsPrivateScreenshots": false,
+    "checksumsInThisDocument": "Runtime commits, QA/candidate/public APK/AAB identities, signing certificates and public CI artifact identities only"
+  },
+  "publicationRecordScope": "GitHub Release and deployment, separate from source-branch publication",
+  "productionCandidate": {
+    "pass": true,
+    "version": "1.15.104",
+    "versionCode": 140,
+    "commit": "962e26262e1c1083900e35bd5acfe9782e774d4f",
+    "package": "app.framegym.mobile",
+    "apkSha256": "01e39e8f15ccb428db00b6d2490ca9447aebc91d7b4c7df8cfa85dfcd640eca6",
+    "aabSha256": "a48e7a9d61287f11f284263605216002876b55659f96e7f9c9948cf326268ca7",
+    "certificateSha256": "8ee233c984615e2b3f6f083dc0c47d148bb8956ff7caca97be0b9a0d260e6082",
+    "officialSigningContinuity": true,
+    "debuggable": false,
+    "buildMetadataExact": true,
+    "apkBuildExact": true,
+    "aabBuildExact": true,
+    "aabSignatureVerified": true,
+    "remoteDevServer": false,
+    "assetCount": 83,
+    "published": false,
+    "status": "verified_candidate_with_public_runtime_comparison",
+    "runtimeSourceCommit": "962e26262e1c1083900e35bd5acfe9782e774d4f",
+    "workflowRunId": 41114037045,
+    "workflowUrl": "https://github.com/Truesilverking/TGym/actions/runs/41114037045",
+    "candidateToFinalPublicByteIdentityAssumed": false,
+    "finalReleaseVsPagesByteIdentityRequired": true,
+    "publishedCandidateBytesClaim": false,
+    "publicRuntimeAssetsExact": 81
+  },
+  "historicalEvidenceScope": {
+    "runtimeSourceCommit": "6243142e49959a57d3ed567965ed0acf2e7a8b0d",
+    "sections": [
+      "compiledUi",
+      "appLock",
+      "pwaUpgrade",
+      "preparedQaArtifact",
+      "finalGates.qaPhysicalAcceptance",
+      "historicalCi624",
+      "historicalProductionCandidate624",
+      "historicalLocalChecks624"
+    ],
+    "note": "Earlier checks retain their original source and are not final-revision physical acceptance. Android CI on this source failed."
+  },
+  "finalRevision": {
+    "runtimeSourceCommit": "962e26262e1c1083900e35bd5acfe9782e774d4f",
+    "builds": {
+      "web": "passed",
+      "standalonePwa": "passed"
+    },
+    "changesSinceHistorical624": [
+      "Workout removes the complete dock and its reserved clearance; main screens retain Resume",
+      "Native blank/invalid accent uses a safe fallback",
+      "Flow regression uses main-screen navigation instead of the hidden workout dock",
+      "Foreground service requests immediate notification visibility while retaining LOW importance and silence",
+      "Native test reads cleanup fields under the monitor and polls for foreground visibility before asserting",
+      "Shared visible44px Back button returns Home without discarding or finishing, covering active workout, empty chooser and training-pause states; tour preview remains separate"
+    ],
+    "focusedBrowser": {
+      "status": "passed",
+      "runtimeSourceCommit": "962e26262e1c1083900e35bd5acfe9782e774d4f",
+      "cases": 24,
+      "checks": 126,
+      "runtimeErrors": 0,
+      "engines": [
+        "Edge",
+        "Windows WebKit with iPhone user agent"
+      ],
+      "viewports": [
+        [
+          320,
+          740
+        ],
+        [
+          390,
+          844
+        ],
+        [
+          844,
+          390
+        ]
+      ],
+      "coldInitialRoute": "/workout, without a prior Home visit",
+      "variants": [
+        "manual-paused active workout without rest",
+        "manual-paused active workout with restored rest",
+        "empty workout chooser",
+        "training-pause view"
+      ],
+      "coverage": [
+        "Visible Back is44px with unobstructed hit target and deterministically returns Home",
+        "Discard and Finish remain available in active workout",
+        "Workout has no dock, Start/Resume, handle or backdrop; navigation clearance is zero",
+        "Without a timer bottom clearance is zero; RestTimer owns only its visible height and has three44px targets",
+        "Home Resume returns to Workout and the real Back action returns Home again",
+        "Synthetic protected state, manual pause, rest deadline and precise load string remain intact except interaction/store timestamps"
+      ],
+      "physicalDevice": false,
+      "nativeJavaValidation": false
+    },
+    "frontendSuite": {
+      "status": "passed",
+      "runtimeSourceCommit": "962e26262e1c1083900e35bd5acfe9782e774d4f",
+      "tests": 2955,
+      "files": 255
+    },
+    "ci": {
+      "status": "passed",
+      "sourceCommit": "962e26262e1c1083900e35bd5acfe9782e774d4f",
+      "workflowRuns": [
+        {
+          "id": 41114036536,
+          "name": "Tests",
+          "event": "push",
+          "url": "https://github.com/Truesilverking/TGym/actions/runs/41114036536",
+          "conclusion": "success"
+        },
+        {
+          "id": 41114044960,
+          "name": "Tests",
+          "event": "pull_request",
+          "url": "https://github.com/Truesilverking/TGym/actions/runs/41114044960",
+          "conclusion": "success"
+        },
+        {
+          "id": 41114036578,
+          "name": "Validate PWA",
+          "event": "push",
+          "url": "https://github.com/Truesilverking/TGym/actions/runs/41114036578",
+          "conclusion": "success"
+        },
+        {
+          "id": 41114036481,
+          "name": "Validate Android",
+          "event": "push",
+          "url": "https://github.com/Truesilverking/TGym/actions/runs/41114036481",
+          "conclusion": "success"
+        },
+        {
+          "id": 41114037045,
+          "name": "Build signed Android candidate",
+          "event": "workflow_dispatch",
+          "url": "https://github.com/Truesilverking/TGym/actions/runs/41114037045",
+          "conclusion": "success"
+        }
+      ],
+      "androidInstrumentation": {
+        "status": "passed_report_verified",
+        "tests": 52,
+        "passed": 52,
+        "failed": 0,
+        "skipped": 0,
+        "notExecutedOrAborted": 0,
+        "complete": true,
+        "runId": 41114036481,
+        "url": "https://github.com/Truesilverking/TGym/actions/runs/41114036481",
+        "artifactId": 13006295111,
+        "artifactDigestAndCrcVerified": true,
+        "requiredRegressionsPresentAndPassed": {
+          "SoundPreferencesTest.aColdBackgroundDeadlineStartsForegroundBeforeRequestingFocus": true,
+          "SoundPreferencesTest.transientFocusIsReleasedOnCompletionStopAndDecoderFailure": true,
+          "WorkoutNotificationTest.notificationColorDefaultsForMissingBlankAndMalformedAccents": true,
+          "WorkoutNotificationTest.notificationTapUsesExplicitViewIntent": true
+        },
+        "physicalDevice": false
+      },
+      "allRequiredRunsSucceeded": true
+    },
+    "productionCandidate": {
+      "pass": true,
+      "version": "1.15.104",
+      "versionCode": 140,
+      "commit": "962e26262e1c1083900e35bd5acfe9782e774d4f",
+      "package": "app.framegym.mobile",
+      "apkSha256": "01e39e8f15ccb428db00b6d2490ca9447aebc91d7b4c7df8cfa85dfcd640eca6",
+      "aabSha256": "a48e7a9d61287f11f284263605216002876b55659f96e7f9c9948cf326268ca7",
+      "certificateSha256": "8ee233c984615e2b3f6f083dc0c47d148bb8956ff7caca97be0b9a0d260e6082",
+      "officialSigningContinuity": true,
+      "debuggable": false,
+      "buildMetadataExact": true,
+      "apkBuildExact": true,
+      "aabBuildExact": true,
+      "aabSignatureVerified": true,
+      "remoteDevServer": false,
+      "assetCount": 83,
+      "published": false,
+      "status": "verified_candidate_with_public_runtime_comparison",
+      "runtimeSourceCommit": "962e26262e1c1083900e35bd5acfe9782e774d4f",
+      "workflowRunId": 41114037045,
+      "workflowUrl": "https://github.com/Truesilverking/TGym/actions/runs/41114037045",
+      "candidateToFinalPublicByteIdentityAssumed": false,
+      "finalReleaseVsPagesByteIdentityRequired": true,
+      "publishedCandidateBytesClaim": false,
+      "publicRuntimeAssetsExact": 81
+    },
+    "physicalFinalRevision": {
+      "status": "not_performed_user_declined_pixel",
+      "workoutDockPhysicalAcceptance": "pending",
+      "nativeBlankAccentPhysicalAcceptance": "pending",
+      "publicationGateRequired": false,
+      "authority": "User requested publication without further Pixel access",
+      "nativeForegroundNotificationVisibilityAcceptance": "not_performed",
+      "visibleWorkoutBackAcceptance": "not_performed"
+    },
+    "originalAppUpdate": {
+      "status": "not_performed",
+      "publicationGateRequired": false
+    },
+    "syntheticVisuals": [
+      {
+        "path": "docs/experience-1.15.104/webkit-workout-back.png",
+        "runtimeSourceCommit": "962e26262e1c1083900e35bd5acfe9782e774d4f",
+        "build": "compiled web-v9-final",
+        "engine": "Windows WebKit with iPhone user agent",
+        "viewport": [
+          390,
+          844
+        ],
+        "theme": "dark",
+        "case": "Direct cold Workout with manual-paused synthetic session; Back visible, dock absent",
+        "physicalDevice": false
+      }
+    ],
+    "publicBrowser": {
+      "status": "passed",
+      "runtimeSourceCommit": "962e26262e1c1083900e35bd5acfe9782e774d4f",
+      "publicOrigin": "https://truesilverking.github.io/TGym/",
+      "cases": 4,
+      "runtimeErrors": 0,
+      "syntheticOnly": true,
+      "physicalDevice": false,
+      "main": [
+        {
+          "engine": "edge",
+          "pass": true,
+          "source": "962e26262e1c1083900e35bd5acfe9782e774d4f",
+          "physicalDevice": false,
+          "noSelfReoffer": true,
+          "actualPublishedAnatomicalGif": true,
+          "profileUnchanged": true,
+          "workerReady": true,
+          "offlineColdOpen": true,
+          "pageErrors": []
+        },
+        {
+          "engine": "webkit",
+          "pass": true,
+          "source": "962e26262e1c1083900e35bd5acfe9782e774d4f",
+          "physicalDevice": false,
+          "noSelfReoffer": true,
+          "actualPublishedAnatomicalGif": true,
+          "profileUnchanged": true,
+          "workerReady": true,
+          "offlineColdOpen": "not claimed: documented Windows WebKit engine limitation",
+          "pageErrors": []
+        }
+      ],
+      "workout": [
+        {
+          "engine": "edge",
+          "source": "962e26262e1c1083900e35bd5acfe9782e774d4f",
+          "syntheticOnly": true,
+          "physicalDevice": false,
+          "nativeJavaValidation": false,
+          "pass": true,
+          "homeResumePresent": true,
+          "workoutDockAbsent": true,
+          "workoutClearance": {
+            "nav": 0,
+            "bottom": 0
+          },
+          "protectedSyntheticStatePreserved": true,
+          "manualPausePreserved": true,
+          "preciseWeightRetained": true,
+          "realWorkoutBackReturnsHome": true,
+          "collapsedResumeRestored": true,
+          "pageErrors": []
+        },
+        {
+          "engine": "webkit",
+          "source": "962e26262e1c1083900e35bd5acfe9782e774d4f",
+          "syntheticOnly": true,
+          "physicalDevice": false,
+          "nativeJavaValidation": false,
+          "pass": true,
+          "homeResumePresent": true,
+          "workoutDockAbsent": true,
+          "workoutClearance": {
+            "nav": 0,
+            "bottom": 0
+          },
+          "protectedSyntheticStatePreserved": true,
+          "manualPausePreserved": true,
+          "preciseWeightRetained": true,
+          "realWorkoutBackReturnsHome": true,
+          "collapsedResumeRestored": true,
+          "pageErrors": []
+        }
+      ],
+      "mainProfileComparison": "exact persisted string",
+      "workoutProfileComparison": "protected synthetic state equal, excluding only store and interaction timestamps",
+      "additionalMainAssertions": [
+        "Nutrition compact calendar has seven targets",
+        "Stats omits duplicate upper section label",
+        "Settings has no dock",
+        "Published512px anatomical poster/GIF decode from the production base path",
+        "Current build is not reoffered",
+        "Ready service-worker controller"
+      ],
+      "edgeOfflineColdOpen": "passed",
+      "webkitOfflineColdOpen": "not_claimed_documented_Windows_engine_limit"
+    }
+  },
+  "historicalFinalRevisions": [
+    {
+      "runtimeSourceCommit": "1ed9e243e361d250871253d8134b10d368b34531",
+      "builds": {
+        "web": "passed",
+        "standalonePwa": "passed"
+      },
+      "changesSinceHistorical624": [
+        "Workout removes the complete dock and its reserved clearance; main screens retain Resume",
+        "Native blank/invalid accent uses a safe fallback",
+        "Flow regression uses main-screen navigation instead of the hidden workout dock"
+      ],
+      "focusedBrowser": {
+        "status": "passed",
+        "runtimeSourceCommit": "1ed9e243e361d250871253d8134b10d368b34531",
+        "cases": 12,
+        "checks": 54,
+        "runtimeErrors": 0,
+        "engines": [
+          "Edge",
+          "Windows WebKit with iPhone user agent"
+        ],
+        "viewports": [
+          [
+            320,
+            740
+          ],
+          [
+            390,
+            844
+          ],
+          [
+            844,
+            390
+          ]
+        ],
+        "variants": [
+          "manual-paused active workout without rest",
+          "manual-paused active workout with restored rest"
+        ],
+        "coverage": [
+          "Home Resume navigates to Workout",
+          "Workout has no dock, Start/Resume, handle or backdrop",
+          "Workout navigation clearance is zero; without a timer bottom clearance is zero",
+          "RestTimer is 12px above the viewport bottom and reserves only its visible height",
+          "Three timer buttons have at least44px targets with unobstructed center hit tests",
+          "Returning Home restores collapsed Resume",
+          "Synthetic protected state, manual pause and precise numeric weight string are preserved except interaction/store timestamps"
+        ],
+        "physicalDevice": false,
+        "nativeJavaValidation": false
+      },
+      "frontendSuite": {
+        "status": "passed",
+        "tests": 2952,
+        "files": 255,
+        "runtimeSourceCommit": "1ed9e243e361d250871253d8134b10d368b34531"
+      },
+      "ci": {
+        "status": "failed",
+        "sourceCommit": "1ed9e243e361d250871253d8134b10d368b34531",
+        "testCounts": {
+          "planned": 52,
+          "passed": 50,
+          "failed": 2,
+          "notExecutedOrAborted": 0
+        },
+        "runId": null,
+        "failureCases": [
+          "Foreground-service notification visibility deferred by Android OS",
+          "Reflection-based cleanup assertion read partly updated fields outside the service monitor"
+        ],
+        "fixInNextRevision": [
+          "Request immediate foreground-service visibility, retaining LOW importance and silent behavior",
+          "Read all four cleanup fields atomically and poll with an explicit three-second bound; preserve color and foreground-service assertions"
+        ]
+      },
+      "productionCandidate": {
+        "pass": true,
+        "version": "1.15.104",
+        "versionCode": 140,
+        "commit": "1ed9e243e361d250871253d8134b10d368b34531",
+        "package": "app.framegym.mobile",
+        "apkSha256": "b6f24108bc1d958d35a6f83fe9e5257a42a86836705a6bd5b7ee8f996e4be9bb",
+        "aabSha256": "1b70409bb1c490e8c7ef6c84140387aa90e7e64f70c4c9a808077d13c4d04058",
+        "certificateSha256": "8ee233c984615e2b3f6f083dc0c47d148bb8956ff7caca97be0b9a0d260e6082",
+        "officialSigningContinuity": true,
+        "debuggable": false,
+        "buildMetadataExact": true,
+        "apkBuildExact": true,
+        "aabBuildExact": true,
+        "aabSignatureVerified": true,
+        "remoteDevServer": false,
+        "assetCount": 83,
+        "published": false,
+        "status": "verified_not_published",
+        "workflowRunId": 41111937724,
+        "workflowUrl": "https://github.com/Truesilverking/TGym/actions/runs/41111937724",
+        "artifactId": 13003194118,
+        "candidateZipSha256": "bfb74bcf34633fce0b7e7613babed1f5a53638ea786fbabdfad94eacd407b3ea",
+        "candidateToFinalPublicByteIdentityAssumed": false,
+        "finalReleaseVsPagesByteIdentityRequired": true
+      },
+      "physicalFinalRevision": {
+        "status": "not_performed_user_declined_pixel",
+        "workoutDockPhysicalAcceptance": "pending",
+        "nativeBlankAccentPhysicalAcceptance": "pending",
+        "publicationGateRequired": false,
+        "authority": "User requested publication without further Pixel access"
+      },
+      "originalAppUpdate": {
+        "status": "not_performed",
+        "publicationGateRequired": false
+      },
+      "status": "superseded_after_native_ci_failure"
+    },
+    {
+      "runtimeSourceCommit": "252590b7458942e354f6304d27e06d14d2d1a892",
+      "builds": {
+        "web": "passed",
+        "standalonePwa": "passed"
+      },
+      "changesSinceHistorical624": [
+        "Workout removes the complete dock and its reserved clearance; main screens retain Resume",
+        "Native blank/invalid accent uses a safe fallback",
+        "Flow regression uses main-screen navigation instead of the hidden workout dock",
+        "Foreground service requests immediate notification visibility while retaining LOW importance and silence",
+        "Native test reads cleanup fields under the monitor and polls for foreground visibility before asserting"
+      ],
+      "focusedBrowser": {
+        "status": "passed",
+        "runtimeSourceCommit": "252590b7458942e354f6304d27e06d14d2d1a892",
+        "cases": 12,
+        "checks": 54,
+        "runtimeErrors": 0,
+        "engines": [
+          "Edge",
+          "Windows WebKit with iPhone user agent"
+        ],
+        "viewports": [
+          [
+            320,
+            740
+          ],
+          [
+            390,
+            844
+          ],
+          [
+            844,
+            390
+          ]
+        ],
+        "variants": [
+          "manual-paused active workout without rest",
+          "manual-paused active workout with restored rest"
+        ],
+        "coverage": [
+          "Home Resume navigates to Workout",
+          "Workout has no dock, Start/Resume, handle or backdrop",
+          "Workout navigation clearance is zero; without a timer bottom clearance is zero",
+          "RestTimer is 12px above the viewport bottom and reserves only its visible height",
+          "Three timer buttons have at least44px targets with unobstructed center hit tests",
+          "Returning Home restores collapsed Resume",
+          "Synthetic protected state, manual pause and precise numeric weight string are preserved except interaction/store timestamps"
+        ],
+        "physicalDevice": false,
+        "nativeJavaValidation": false
+      },
+      "frontendSuite": {
+        "status": "passed",
+        "runtimeSourceCommit": "252590b7458942e354f6304d27e06d14d2d1a892",
+        "tests": 2952,
+        "files": 255
+      },
+      "ci": {
+        "status": "passed_maintainer_confirmed_historical_source",
+        "sourceCommit": "252590b7458942e354f6304d27e06d14d2d1a892",
+        "runs": [
+          {
+            "name": "Tests push",
+            "id": 41113267827,
+            "conclusion": "success"
+          },
+          {
+            "name": "Tests PR",
+            "id": 41113279796,
+            "conclusion": "success"
+          },
+          {
+            "name": "PWA",
+            "id": 41113267814,
+            "conclusion": "success"
+          },
+          {
+            "name": "Candidate",
+            "id": 41113268253,
+            "conclusion": "success"
+          },
+          {
+            "name": "Android",
+            "id": 41113267805,
+            "status": "completed",
+            "conclusion": "success",
+            "testCounts": {
+              "planned": 52,
+              "passed": 52,
+              "failed": 0,
+              "notExecutedOrAborted": 0
+            },
+            "url": "https://github.com/Truesilverking/TGym/actions/runs/41113267805"
+          }
+        ]
+      },
+      "productionCandidate": {
+        "pass": true,
+        "version": "1.15.104",
+        "versionCode": 140,
+        "commit": "252590b7458942e354f6304d27e06d14d2d1a892",
+        "package": "app.framegym.mobile",
+        "apkSha256": "a9b7845e4b4e9f629cb2687598415720df69319453da38bf91ddc725fa1651fd",
+        "aabSha256": "33a0fec15d343f98214f915a5a21716923c6ea5d98a8deac446225db7cae72be",
+        "certificateSha256": "8ee233c984615e2b3f6f083dc0c47d148bb8956ff7caca97be0b9a0d260e6082",
+        "officialSigningContinuity": true,
+        "debuggable": false,
+        "buildMetadataExact": true,
+        "apkBuildExact": true,
+        "aabBuildExact": true,
+        "aabSignatureVerified": true,
+        "remoteDevServer": false,
+        "assetCount": 83,
+        "published": false,
+        "status": "verified_historical_not_published",
+        "workflowRunId": 41113268253,
+        "workflowUrl": "https://github.com/Truesilverking/TGym/actions/runs/41113268253"
+      },
+      "physicalFinalRevision": {
+        "status": "not_performed_user_declined_pixel",
+        "workoutDockPhysicalAcceptance": "pending",
+        "nativeBlankAccentPhysicalAcceptance": "pending",
+        "publicationGateRequired": false,
+        "authority": "User requested publication without further Pixel access",
+        "nativeForegroundNotificationVisibilityAcceptance": "not_performed"
+      },
+      "originalAppUpdate": {
+        "status": "not_performed",
+        "publicationGateRequired": false
+      },
+      "status": "superseded_to_add_visible_nondestructive_workout_exit"
+    }
+  ],
+  "historicalCi624": {
+    "status": "historical_source_failed_android_superseded",
+    "sourceCommit": "6243142e49959a57d3ed567965ed0acf2e7a8b0d",
+    "jobSnapshotObservedAt": "2026-10-30T18:52:17.113Z",
+    "remaining": [],
+    "workflowRuns": [
+      {
+        "name": "Tests",
+        "id": 41109518443,
+        "url": "https://github.com/Truesilverking/TGym/actions/runs/41109518443",
+        "status": "completed",
+        "conclusion": "success",
+        "jobs": [
+          {
+            "id": 124248006271,
+            "name": "mcp",
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "id": 124248006441,
+            "name": "catalog",
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "id": 124248006591,
+            "name": "api",
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "id": 124248006616,
+            "name": "test",
+            "status": "completed",
+            "conclusion": "success"
+          }
+        ]
+      },
+      {
+        "name": "PWA",
+        "id": 41109518450,
+        "url": "https://github.com/Truesilverking/TGym/actions/runs/41109518450",
+        "status": "completed",
+        "conclusion": "success",
+        "jobs": [
+          {
+            "id": 124248005632,
+            "name": "build",
+            "status": "completed",
+            "conclusion": "success"
+          }
+        ]
+      },
+      {
+        "name": "Android",
+        "id": 41109518478,
+        "url": "https://github.com/Truesilverking/TGym/actions/runs/41109518478",
+        "status": "completed",
+        "conclusion": "failure",
+        "jobs": [
+          {
+            "id": 124248006456,
+            "name": "android",
+            "status": "completed",
+            "conclusion": "failure"
+          }
+        ],
+        "testCounts": {
+          "passed": 34,
+          "failed": 1,
+          "notExecutedOrAborted": 16,
+          "planned": 51
+        },
+        "failure": "Cold-workout startup parsed blank accent using Color.parseColor; fixed in final revision, whose CI acceptance is pending"
+      },
+      {
+        "name": "Candidate",
+        "id": 41109526662,
+        "url": "https://github.com/Truesilverking/TGym/actions/runs/41109526662",
+        "status": "completed",
+        "conclusion": "success",
+        "jobs": [
+          {
+            "id": 124248040637,
+            "name": "candidate",
+            "status": "completed",
+            "conclusion": "success"
+          }
+        ]
+      }
+    ],
+    "pullRequestChecks": {
+      "status": "success_reported_by_maintainer",
+      "runId": null,
+      "url": null
+    },
+    "candidate": {
+      "status": "success_and_artifact_verified",
+      "runId": 41109526662,
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/41109526662",
+      "artifactId": 13004120820
+    }
+  },
+  "historicalProductionCandidate624": {
+    "status": "verified_historical_source_superseded_not_for_final_publication",
+    "runtimeSourceCommit": "6243142e49959a57d3ed567965ed0acf2e7a8b0d",
+    "workflowRunId": 41109526662,
+    "workflowUrl": "https://github.com/Truesilverking/TGym/actions/runs/41109526662",
+    "artifactId": 13004120820,
+    "package": "app.framegym.mobile",
+    "version": "1.15.104",
+    "versionCode": 140,
+    "debuggable": false,
+    "apkSha256": "446ef4aaa9d6010242d4a23ad4548c11ea28a3da1cce60d25ce15fb2c1546972",
+    "aabSha256": "107dbca16d011c831ed196da7e82eea22c802aad3e90e8106c3d045bb2594d74",
+    "certificateSha256": "8ee233c984615e2b3f6f083dc0c47d148bb8956ff7caca97be0b9a0d260e6082",
+    "signingContinuityVerified": true,
+    "buildMetadataExact": true,
+    "apkBuildExact": true,
+    "aabBuildExact": true,
+    "aabSignatureVerified": true,
+    "remoteDevServer": false,
+    "verifiedAssets": 83,
+    "assetCountIncludesDexOpt": true,
+    "published": false,
+    "byteComparisonPolicy": {
+      "candidateToFinalPublicByteIdentityAssumed": false,
+      "finalReleaseVsPagesByteIdentityRequired": true,
+      "candidateStructuralComparisons": [
+        "source/build metadata",
+        "package/version/non-debuggable state",
+        "signing continuity",
+        "bundled assets"
+      ]
+    }
+  },
+  "publicArtifacts": {
+    "pass": true,
+    "recordedAt": "2026-10-30T19:29:20Z",
+    "version": "1.15.104",
+    "versionCode": 140,
+    "commit": "962e26262e1c1083900e35bd5acfe9782e774d4f",
+    "package": "app.framegym.mobile",
+    "apkSha256": "4de52615821b696a65b5f577e32f00c5c60f8f591807c97ca4ebc0e868678569",
+    "releaseAndPagesApkIdentical": true,
+    "certificateSha256": "8ee233c984615e2b3f6f083dc0c47d148bb8956ff7caca97be0b9a0d260e6082",
+    "officialSigningContinuity": true,
+    "debuggable": false,
+    "aabSha256": "a48e7a9d61287f11f284263605216002876b55659f96e7f9c9948cf326268ca7",
+    "aabSignatureVerified": true,
+    "aabBuildExact": true,
+    "apkBuildExact": true,
+    "releaseChecksumsExact": true,
+    "candidateSharedRuntimeAssetsExact": 81,
+    "publicManifestAndBuildExact": true,
+    "pwaFilesChecked": 77,
+    "allReleasePagesFilesExact": true,
+    "notificationReceiptOnPhysicalPhoneVerified": false,
+    "releaseUrl": "https://github.com/Truesilverking/TGym/releases/tag/v1.15.104",
+    "pagesUrl": "https://truesilverking.github.io/TGym/",
+    "candidateApkBytesIdenticalClaim": false,
+    "candidateAabBytesIdentical": true,
+    "runtimeAssetsCompared": 81
+  },
+  "publicBrowser": {
+    "status": "passed",
+    "runtimeSourceCommit": "962e26262e1c1083900e35bd5acfe9782e774d4f",
+    "publicOrigin": "https://truesilverking.github.io/TGym/",
+    "cases": 4,
+    "runtimeErrors": 0,
+    "syntheticOnly": true,
+    "physicalDevice": false,
+    "main": [
+      {
+        "engine": "edge",
+        "pass": true,
+        "source": "962e26262e1c1083900e35bd5acfe9782e774d4f",
+        "physicalDevice": false,
+        "noSelfReoffer": true,
+        "actualPublishedAnatomicalGif": true,
+        "profileUnchanged": true,
+        "workerReady": true,
+        "offlineColdOpen": true,
+        "pageErrors": []
+      },
+      {
+        "engine": "webkit",
+        "pass": true,
+        "source": "962e26262e1c1083900e35bd5acfe9782e774d4f",
+        "physicalDevice": false,
+        "noSelfReoffer": true,
+        "actualPublishedAnatomicalGif": true,
+        "profileUnchanged": true,
+        "workerReady": true,
+        "offlineColdOpen": "not claimed: documented Windows WebKit engine limitation",
+        "pageErrors": []
+      }
+    ],
+    "workout": [
+      {
+        "engine": "edge",
+        "source": "962e26262e1c1083900e35bd5acfe9782e774d4f",
+        "syntheticOnly": true,
+        "physicalDevice": false,
+        "nativeJavaValidation": false,
+        "pass": true,
+        "homeResumePresent": true,
+        "workoutDockAbsent": true,
+        "workoutClearance": {
+          "nav": 0,
+          "bottom": 0
+        },
+        "protectedSyntheticStatePreserved": true,
+        "manualPausePreserved": true,
+        "preciseWeightRetained": true,
+        "realWorkoutBackReturnsHome": true,
+        "collapsedResumeRestored": true,
+        "pageErrors": []
+      },
+      {
+        "engine": "webkit",
+        "source": "962e26262e1c1083900e35bd5acfe9782e774d4f",
+        "syntheticOnly": true,
+        "physicalDevice": false,
+        "nativeJavaValidation": false,
+        "pass": true,
+        "homeResumePresent": true,
+        "workoutDockAbsent": true,
+        "workoutClearance": {
+          "nav": 0,
+          "bottom": 0
+        },
+        "protectedSyntheticStatePreserved": true,
+        "manualPausePreserved": true,
+        "preciseWeightRetained": true,
+        "realWorkoutBackReturnsHome": true,
+        "collapsedResumeRestored": true,
+        "pageErrors": []
+      }
+    ],
+    "mainProfileComparison": "exact persisted string",
+    "workoutProfileComparison": "protected synthetic state equal, excluding only store and interaction timestamps",
+    "additionalMainAssertions": [
+      "Nutrition compact calendar has seven targets",
+      "Stats omits duplicate upper section label",
+      "Settings has no dock",
+      "Published512px anatomical poster/GIF decode from the production base path",
+      "Current build is not reoffered",
+      "Ready service-worker controller"
+    ],
+    "edgeOfflineColdOpen": "passed",
+    "webkitOfflineColdOpen": "not_claimed_documented_Windows_engine_limit"
+  },
+  "historicalLocalChecks624": {
+    "frontend": {
+      "status": "passed",
+      "tests": 2950,
+      "files": 255
+    },
+    "api": {
+      "status": "passed",
+      "tests": 24,
+      "disposableTestState": true,
+      "realSubscriptionsUsed": false
+    },
+    "mcp": {
+      "status": "passed",
+      "tests": 38,
+      "plainNodeImportGraph": "passed"
+    },
+    "catalog": {
+      "status": "passed",
+      "tests": 6
+    },
+    "localization": {
+      "status": "passed",
+      "synchronizedKeys": 2187,
+      "detectedSourceStringsCovered": 1383
+    },
+    "fatigue": {
+      "status": "passed",
+      "restComparisons": 108000,
+      "historyDeletionComparisons": 14076
+    },
+    "builds": {
+      "web": "passed",
+      "standalonePwa": "passed",
+      "capacitorMobileBuildAndSync": "passed",
+      "androidQaAssembly": "passed",
+      "androidJavaAndInstrumentationSources": "compiled",
+      "androidLint": {
+        "errors": 0,
+        "warnings": 19
+      },
+      "nativeIos": {
+        "status": "not_built",
+        "reason": "Native compilation requires macOS/Xcode; Windows Capacitor synchronization is not an iOS build"
+      }
+    },
+    "runtimeSourceCommit": "6243142e49959a57d3ed567965ed0acf2e7a8b0d"
+  }
+}

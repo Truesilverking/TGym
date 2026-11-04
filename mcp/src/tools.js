@@ -1,3 +1,5 @@
+import { routineIds, dailyPlan, loggedWorkouts } from '../../frontend/src/lib/daily-plan.js'
+import { isTrainingPaused } from '../../frontend/src/lib/training-pause.js'
 /* The eight read-only tools. Each handler returns JSON; labels.js pre-substitutes any
    {0}/{1} template the lib returns so the LLM gets final text, not template strings.
    ISO dates are validated on the way in; the handlers never see 'yesterday'. */
@@ -11,12 +13,14 @@ import {
   modeOf, workoutVolume, setsDone, effectiveRoutine, effectiveRoutineId
 } from '../../frontend/src/lib/history.js'
 import { EXIDX, exOr } from '../../frontend/src/lib/exercises.js'
-import {
-  estimate1RM, best1RM, e1rmSeries, DEFAULT_FORMULA, REP_CAP
-} from '../../frontend/src/lib/onerm.js'
+import { estimate1RM, best1RM, e1rmSeries, DEFAULT_FORMULA, REP_CAP, bestSetOf } from '../../frontend/src/lib/onerm.js'
 import { loadOfWorkouts, rankOf, levelsOf } from '../../frontend/src/lib/muscles.js'
 
 /* ---------- helpers ---------- */
+
+function exName(id, S) {
+  return S?.exerciseAliases?.[id] || exOr(id).n
+}
 
 function entryView(e, S) {
   const ex = exOr(e.id)
@@ -27,7 +31,7 @@ function entryView(e, S) {
   const mode = modeOf(cfg)
   return {
     id: e.id,
-    name: ex.n,
+    name: exName(e.id, S),
     body_part: ex.bp || null,
     mode,
     target: e.target || null,
@@ -46,19 +50,14 @@ function entryView(e, S) {
 // Best estimate per exercise, mirroring the UI's PR table: every eligible set across history, biggest wins.
 function prTable(S, formula) {
   const byId = new Map()
-  for (const w of (S.workouts || [])) {
+  for (const w of loggedWorkouts(S)) {
     for (const e of (w.entries || [])) {
-      for (const s of (e.sets || [])) {
-        if (!s.done) continue
-        const est = estimate1RM(s.w, s.r, formula)
-        if (est == null) continue
-        const ex = exOr(e.id)
-        const prev = byId.get(e.id)
-        if (!prev || est > prev.est) {
-          // exId as well as exName: the consumer needs an id, not a name — exOr() treats any
-          // string as both, so passing exName where exId belongs would silently "work" wrong.
-          byId.set(e.id, { exId: e.id, exName: ex.n, bp: ex.bp || null, est, w: Number(s.w), r: Math.round(Number(s.r)), date: w.d })
-        }
+      const best = bestSetOf(e, formula)
+      if (!best) continue
+      const ex = exOr(e.id)
+      const prev = byId.get(e.id)
+      if (!prev || best.est > prev.est) {
+        byId.set(e.id, { exId: e.id, exName: exName(e.id, S), bp: ex.bp || null, est: best.est, w: best.w, r: best.r, date: w.d })
       }
     }
   }
@@ -112,7 +111,7 @@ export const getRoutine = {
         return {
           position: i + 1,
           id: cfg.id,
-          name: ex.n,
+          name: exName(cfg.id, S),
           body_part: ex.bp || null,
           mode,
           sets: cfg.sets || 1,
@@ -145,8 +144,10 @@ export const getWeekPlan = {
     const todayWd = today.getDay()
     return {
       today: isoToday,
+      today_training_paused: isTrainingPaused(S,isoToday),
       weekdays: [0, 1, 2, 3, 4, 5, 6].map(d => {
-        const rid = S.week?.[d] || null
+        const ids = routineIds(S.week?.[d])
+        const rid = ids[0] || null
         const r = rid ? (S.routines || []).find(x => x.id === rid) : null
         // Surface today's override only (not the whole dayPlan dict — usually empty, but might
         // have grown from repeated "move this day" actions).
@@ -154,12 +155,14 @@ export const getWeekPlan = {
         return {
           weekday: d,
           weekday_name: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][d],
+          routines: ids.map(id=>({id,name:(S.routines || []).find(r=>r.id===id)?.name || null})),
           routine_id: rid,
           routine_name: r?.name || null,
           routine_emoji: r?.emoji || null,
           override_for_today_or_null: overrideForToday
         }
       }),
+      today_plan: dailyPlan(S,isoToday).items.map(i=>({routine_id:i.id,name:i.routine.name,status:i.status})),
       today_routine_id: effectiveRoutineId(S, isoToday),
       today_routine_name: effectiveRoutine(S, isoToday)?.name || null
     }
@@ -179,7 +182,7 @@ export const listWorkouts = {
     const S = getState()
     if (!S) return noState()
     const lim = Math.min(Math.max(limit || 25, 1), 200)
-    const all = (S.workouts || []).slice().sort((a, b) => (b.d || '').localeCompare(a.d || ''))
+    const all = loggedWorkouts(S).slice().sort((a, b) => (b.d || '').localeCompare(a.d || ''))
     const filtered = all.filter(w => {
       if (from && w.d < from) return false
       if (to && w.d > to) return false
@@ -267,7 +270,7 @@ export const getWorkout = {
       sets_done: setsDone(w),
       sets_planned: plannedSets(w),
       duration: w.end != null && w.start != null ? friendlyDuration(workoutElapsedMs(w)) : null,
-      prs: (w.prs || []).map(id => EXIDX[id]?.n || id),
+      prs: (w.prs || []).map(id => exName(id, S)),
       entries: (w.entries || []).map(e => entryView(e, S))
     }
   }
@@ -324,11 +327,11 @@ export const estimate1rm = {
       // A null best has two very different causes: never trained, or trained only above the
       // rep cap. Without saying which, an exercise logged for years at 15 reps reads as "no
       // records for calf raise" — a confident statement about the opposite of the truth.
-      const trainedAtAll = (S.workouts || []).some(w =>
+      const trainedAtAll = loggedWorkouts(S).some(w =>
         (w.entries || []).some(e => e.id === exercise_id && (e.sets || []).some(s => s.done)))
       // w/r (not weight/reps) matches pr_table and entry-view — every set in the API surface uses the same couple.
       return {
-        exercise: { id: exercise_id, name: ex.n, body_part: ex.bp || null },
+        exercise: { id: exercise_id, name: exName(exercise_id, S), body_part: ex.bp || null },
         formula: f,
         formula_note: `Estimates use the ${f} formula. Cap at ${REP_CAP} reps applies; r=1 is treated as the measurement, not an estimate.`,
         best: best ? { est: best.est, w: best.w, r: best.r, date: best.d } : null,
@@ -361,7 +364,7 @@ export const muscleBalance = {
     const cutoff = period === 'week' ? now - 7 * 86400000
       : period === 'month' ? now - 30 * 86400000
         : Number.NEGATIVE_INFINITY
-    const workouts = (S.workouts || []).filter(w => (w.start || new Date(w.d + 'T12:00:00').getTime()) >= cutoff)
+    const workouts = loggedWorkouts(S).filter(w => (w.start || new Date(w.d + 'T12:00:00').getTime()) >= cutoff)
     const load = loadOfWorkouts(workouts)
     const { worked, missed } = rankOf(load)
     const levels = levelsOf(load)

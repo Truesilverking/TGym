@@ -1,5 +1,7 @@
+import { Capacitor } from '@capacitor/core'
 const KEY = 'framegym_device_lock_v1'
 const enc = new TextEncoder()
+const sameCredential = (a, b) => !!a && !!b && a.salt === b.salt && a.hash === b.hash && a.recoveryHash === b.recoveryHash
 
 const hex = bytes => [...new Uint8Array(bytes)].map(x => x.toString(16).padStart(2, '0')).join('')
 async function digest(pin, salt) {
@@ -27,7 +29,7 @@ export function setBiometricEnabled(enabled) {
 const b64url = bytes => btoa(String.fromCharCode(...new Uint8Array(bytes))).replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '')
 const fromB64url = text => Uint8Array.from(atob(String(text).replaceAll('-', '+').replaceAll('_', '/')), c => c.charCodeAt(0))
 async function isNativePlatform() {
-  try { const { Capacitor } = await import('@capacitor/core'); return Capacitor.isNativePlatform() } catch { return false }
+  try { return Capacitor.isNativePlatform() } catch { return false }
 }
 export async function checkDeviceBiometry() {
   try {
@@ -59,10 +61,18 @@ export async function enrollDeviceBiometry() {
     attestation: 'none',
   } })
   if (!credential?.rawId) throw new Error('Biometric enrollment was not completed')
-  localStorage.setItem(KEY, JSON.stringify({ ...cfg, webCredentialId: b64url(credential.rawId) }))
+  const latest = lockConfig()
+  if (!sameCredential(latest, cfg)) throw new Error('Device lock changed during enrollment')
+  localStorage.setItem(KEY, JSON.stringify({ ...latest, webCredentialId: b64url(credential.rawId) }))
   return true
 }
 export async function authenticateDeviceBiometry() {
+  const cfg = lockConfig()
+  const stillAllowed = () => {
+    const latest = lockConfig()
+    if (cfg ? !sameCredential(latest, cfg) || (cfg.biometric && !latest.biometric) : latest !== null) throw new Error('Device lock changed during authentication')
+    return latest
+  }
   if (await isNativePlatform()) {
     const { AndroidBiometryStrength, BiometricAuth } = await import('@aparajita/capacitor-biometric-auth')
     await BiometricAuth.authenticate({
@@ -75,9 +85,10 @@ export async function authenticateDeviceBiometry() {
       androidConfirmationRequired: false,
       androidBiometryStrength: AndroidBiometryStrength.weak,
     })
+    stillAllowed()
     return true
   }
-  const id = lockConfig()?.webCredentialId
+  const id = cfg?.webCredentialId
   if (!id) throw new Error('Biometric authentication is not configured')
   const credential = await navigator.credentials.get({ publicKey: {
     challenge: crypto.getRandomValues(new Uint8Array(32)),
@@ -86,26 +97,34 @@ export async function authenticateDeviceBiometry() {
     timeout: 60000,
   } })
   if (!credential) throw new Error('Biometric authentication was not completed')
+  if (stillAllowed()?.webCredentialId !== id) throw new Error('Biometric credential changed during authentication')
   return true
 }
 export async function verifyDevicePin(pin, now = Date.now()) {
   const cfg = lockConfig()
   if (!cfg) return { ok: true }
   if (now < (cfg.blockedUntil || 0)) return { ok: false, waitMs: cfg.blockedUntil - now }
-  if (await digest(pin, cfg.salt) === cfg.hash) {
-    localStorage.setItem(KEY, JSON.stringify({ ...cfg, attempts: 0, blockedUntil: 0 }))
+  const matches = await digest(pin, cfg.salt) === cfg.hash
+  const latest = lockConfig()
+  // Another tab or pending operation may have changed the lock while hashing.
+  // Never replace new credentials or lose an intervening attempt/preference.
+  if (!sameCredential(latest, cfg)) return { ok: false }
+  if (now < (latest.blockedUntil || 0)) return { ok: false, waitMs: latest.blockedUntil - now }
+  if (matches) {
+    localStorage.setItem(KEY, JSON.stringify({ ...latest, attempts: 0, blockedUntil: 0 }))
     return { ok: true }
   }
-  const attempts = (cfg.attempts || 0) + 1
+  const attempts = (latest.attempts || 0) + 1
   const delay = attempts < 3 ? 0 : Math.min(300000, 5000 * (2 ** (attempts - 3)))
-  localStorage.setItem(KEY, JSON.stringify({ ...cfg, attempts, blockedUntil: now + delay }))
+  localStorage.setItem(KEY, JSON.stringify({ ...latest, attempts, blockedUntil: now + delay }))
   return { ok: false, waitMs: delay }
 }
-export async function recoverWithKey(key) {
+export async function recoverWithKey(key, canApply = () => true) {
   const cfg = lockConfig()
   if (!cfg?.recoveryHash) return false
   const normalized = String(key || '').trim().toUpperCase()
   if (await digest(normalized, cfg.salt) !== cfg.recoveryHash) return false
+  if (!canApply() || !sameCredential(lockConfig(), cfg)) return false
   removeDevicePin()
   return true
 }

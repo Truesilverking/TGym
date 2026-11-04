@@ -1,0 +1,2 @@
+# Anatomical authoring inputs are content-addressed; checkout must preserve bytes.
+frontend/scripts/original-exercises/native/** -text whitespace=cr-at-eol,-blank-at-eof

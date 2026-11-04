@@ -1,0 +1,523 @@
+{
+  "version": "1.15.112",
+  "versionCode": 148,
+  "sourceCommit": "384059889cdf5d7d498f1e5f60793e7fe261e1e7",
+  "recordedAt": "2026-11-03T05:09:44.489Z",
+  "clientDate": "2026-11-03",
+  "releaseUrl": "https://github.com/Truesilverking/TGym/releases/tag/v1.15.112",
+  "layout": {
+    "centeredNameAboveProfile": true,
+    "enlargedPhotoKeptOnLeft": true,
+    "streakFlameAndNumberToPhotoRight": true,
+    "periodAndDistinctActivityTotalBetweenArrows": true,
+    "calendarSemanticsUnchanged": true
+  },
+  "frontend": {
+    "tests": 3103,
+    "files": 261,
+    "successfulCiJobLogVerified": true,
+    "run": 41580858490,
+    "job": 125735101707,
+    "logSha256": "d113417270d5f3449a10b5504977885fae68cebed9977432ad16b9c4b4efd559"
+  },
+  "api": {
+    "tests": 24,
+    "failures": 0,
+    "skipped": 0
+  },
+  "mcp": {
+    "tests": 38,
+    "files": 2,
+    "plainNodeImportGraph": true
+  },
+  "localBuilds": {
+    "web": true,
+    "mobileSync": true,
+    "androidDebug": true,
+    "androidTestApkCompiled": true,
+    "androidLint": true,
+    "actualProcessExits": {
+      "web": 0,
+      "mobile": 0,
+      "native": 0
+    },
+    "lint": {
+      "errors": 0,
+      "warnings": 22,
+      "unchangedFrom111": true,
+      "xmlSha256": "00261d5ec604d420e99e150e6841da1db77b16fe60e07d8e253f7807468a69ea"
+    }
+  },
+  "native": {
+    "run": 41580858442,
+    "artifact": 13206136708,
+    "artifactSha256": "83723485fd4c683b1c2c3bb3143a9c2cb0955f461702315a8d3c2ec960027fd8",
+    "artifactDigestMatched": true,
+    "crcValid": true,
+    "tests": 53,
+    "failures": 0,
+    "skipped": 0,
+    "duration": "1m3.17s",
+    "emulatorOnly": true
+  },
+  "compiledCalendar": {
+    "sourceCommit": "384059889cdf5d7d498f1e5f60793e7fe261e1e7",
+    "actualPublic": false,
+    "primaryContexts": 6,
+    "additionalIsolatedVariantContexts": 8,
+    "checkGroups": 30,
+    "runtimeErrors": 0,
+    "syntheticProfilesPreserved": true,
+    "newReportExports": 0,
+    "results": [
+      {
+        "context": "edge-320",
+        "engine": "edge",
+        "viewport": {
+          "width": 320,
+          "height": 740
+        },
+        "language": "en",
+        "theme": "light",
+        "longNameCovered": true,
+        "pass": true,
+        "checkGroups": 5,
+        "views": [
+          {
+            "level": "week",
+            "activeDates": 2,
+            "dateCells": 7,
+            "noHorizontalOverflow": true
+          },
+          {
+            "level": "month",
+            "activeDates": 18,
+            "dateCells": 31,
+            "noHorizontalOverflow": true
+          },
+          {
+            "level": "months",
+            "activeDates": 18,
+            "dateCells": 365,
+            "noHorizontalOverflow": true
+          }
+        ],
+        "profilePreserved": true,
+        "largeStreakFits": true,
+        "hiddenProfileFits": true
+      },
+      {
+        "context": "webkit-320",
+        "engine": "webkit",
+        "viewport": {
+          "width": 320,
+          "height": 740
+        },
+        "language": "es",
+        "theme": "dark",
+        "longNameCovered": true,
+        "pass": true,
+        "checkGroups": 5,
+        "views": [
+          {
+            "level": "week",
+            "activeDates": 2,
+            "dateCells": 7,
+            "noHorizontalOverflow": true
+          },
+          {
+            "level": "month",
+            "activeDates": 18,
+            "dateCells": 31,
+            "noHorizontalOverflow": true
+          },
+          {
+            "level": "months",
+            "activeDates": 18,
+            "dateCells": 365,
+            "noHorizontalOverflow": true
+          }
+        ],
+        "profilePreserved": true,
+        "largeStreakFits": true,
+        "hiddenProfileFits": true
+      },
+      {
+        "context": "edge-390",
+        "engine": "edge",
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "language": "es",
+        "theme": "dark",
+        "longNameCovered": false,
+        "pass": true,
+        "checkGroups": 5,
+        "views": [
+          {
+            "level": "week",
+            "activeDates": 2,
+            "dateCells": 7,
+            "noHorizontalOverflow": true
+          },
+          {
+            "level": "month",
+            "activeDates": 18,
+            "dateCells": 31,
+            "noHorizontalOverflow": true
+          },
+          {
+            "level": "months",
+            "activeDates": 18,
+            "dateCells": 365,
+            "noHorizontalOverflow": true
+          }
+        ],
+        "profilePreserved": true,
+        "largeStreakFits": true,
+        "hiddenProfileFits": true
+      },
+      {
+        "context": "webkit-390",
+        "engine": "webkit",
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "language": "en",
+        "theme": "light",
+        "longNameCovered": false,
+        "pass": true,
+        "checkGroups": 5,
+        "views": [
+          {
+            "level": "week",
+            "activeDates": 2,
+            "dateCells": 7,
+            "noHorizontalOverflow": true
+          },
+          {
+            "level": "month",
+            "activeDates": 18,
+            "dateCells": 31,
+            "noHorizontalOverflow": true
+          },
+          {
+            "level": "months",
+            "activeDates": 18,
+            "dateCells": 365,
+            "noHorizontalOverflow": true
+          }
+        ],
+        "profilePreserved": true,
+        "largeStreakFits": true,
+        "hiddenProfileFits": true
+      },
+      {
+        "context": "edge-desktop",
+        "engine": "edge",
+        "viewport": {
+          "width": 1440,
+          "height": 1000
+        },
+        "language": "en",
+        "theme": "dark",
+        "longNameCovered": false,
+        "pass": true,
+        "checkGroups": 5,
+        "views": [
+          {
+            "level": "week",
+            "activeDates": 2,
+            "dateCells": 7,
+            "noHorizontalOverflow": true
+          },
+          {
+            "level": "month",
+            "activeDates": 18,
+            "dateCells": 31,
+            "noHorizontalOverflow": true
+          },
+          {
+            "level": "months",
+            "activeDates": 18,
+            "dateCells": 365,
+            "noHorizontalOverflow": true
+          }
+        ],
+        "profilePreserved": true,
+        "largeStreakFits": true,
+        "hiddenProfileFits": true
+      },
+      {
+        "context": "webkit-desktop",
+        "engine": "webkit",
+        "viewport": {
+          "width": 1440,
+          "height": 1000
+        },
+        "language": "es",
+        "theme": "light",
+        "longNameCovered": false,
+        "pass": true,
+        "checkGroups": 5,
+        "views": [
+          {
+            "level": "week",
+            "activeDates": 2,
+            "dateCells": 7,
+            "noHorizontalOverflow": true
+          },
+          {
+            "level": "month",
+            "activeDates": 18,
+            "dateCells": 31,
+            "noHorizontalOverflow": true
+          },
+          {
+            "level": "months",
+            "activeDates": 18,
+            "dateCells": 365,
+            "noHorizontalOverflow": true
+          }
+        ],
+        "profilePreserved": true,
+        "largeStreakFits": true,
+        "hiddenProfileFits": true
+      }
+    ]
+  },
+  "publicCalendar": {
+    "sourceCommit": "384059889cdf5d7d498f1e5f60793e7fe261e1e7",
+    "actualPublic": true,
+    "primaryContexts": 2,
+    "additionalIsolatedVariantContexts": 3,
+    "checkGroups": 10,
+    "runtimeErrors": 0,
+    "syntheticProfilesPreserved": true,
+    "newReportExports": 0,
+    "results": [
+      {
+        "context": "edge-320",
+        "engine": "edge",
+        "viewport": {
+          "width": 320,
+          "height": 740
+        },
+        "language": "en",
+        "theme": "light",
+        "longNameCovered": true,
+        "pass": true,
+        "checkGroups": 5,
+        "views": [
+          {
+            "level": "week",
+            "activeDates": 2,
+            "dateCells": 7,
+            "noHorizontalOverflow": true
+          },
+          {
+            "level": "month",
+            "activeDates": 18,
+            "dateCells": 31,
+            "noHorizontalOverflow": true
+          },
+          {
+            "level": "months",
+            "activeDates": 18,
+            "dateCells": 365,
+            "noHorizontalOverflow": true
+          }
+        ],
+        "profilePreserved": true,
+        "largeStreakFits": true,
+        "hiddenProfileFits": true
+      },
+      {
+        "context": "webkit-390",
+        "engine": "webkit",
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "language": "en",
+        "theme": "light",
+        "longNameCovered": false,
+        "pass": true,
+        "checkGroups": 5,
+        "views": [
+          {
+            "level": "week",
+            "activeDates": 2,
+            "dateCells": 7,
+            "noHorizontalOverflow": true
+          },
+          {
+            "level": "month",
+            "activeDates": 18,
+            "dateCells": 31,
+            "noHorizontalOverflow": true
+          },
+          {
+            "level": "months",
+            "activeDates": 18,
+            "dateCells": 365,
+            "noHorizontalOverflow": true
+          }
+        ],
+        "profilePreserved": true,
+        "largeStreakFits": true,
+        "hiddenProfileFits": true
+      }
+    ]
+  },
+  "publicRegression": {
+    "cases": 4,
+    "checks": 23,
+    "runtimeErrors": 0,
+    "syntheticProfilesPreserved": true,
+    "results": [
+      {
+        "engine": "edge",
+        "scenario": "start",
+        "pass": true,
+        "checks": 5,
+        "offlineColdOpen": true,
+        "updaterNoSelfReoffer": false
+      },
+      {
+        "engine": "edge",
+        "scenario": "resume",
+        "pass": true,
+        "checks": 7,
+        "offlineColdOpen": false,
+        "updaterNoSelfReoffer": true
+      },
+      {
+        "engine": "webkit",
+        "scenario": "start",
+        "pass": true,
+        "checks": 4,
+        "offlineColdOpen": false,
+        "updaterNoSelfReoffer": false
+      },
+      {
+        "engine": "webkit",
+        "scenario": "resume",
+        "pass": true,
+        "checks": 7,
+        "offlineColdOpen": false,
+        "updaterNoSelfReoffer": true
+      }
+    ]
+  },
+  "ciRuns": [
+    {
+      "id": 41580858490,
+      "name": "Tests",
+      "event": "push",
+      "conclusion": "success",
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/41580858490"
+    },
+    {
+      "id": 41580865704,
+      "name": "Tests",
+      "event": "pull_request",
+      "conclusion": "success",
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/41580865704"
+    },
+    {
+      "id": 41580858574,
+      "name": "Validate PWA",
+      "event": "push",
+      "conclusion": "success",
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/41580858574"
+    },
+    {
+      "id": 41580858442,
+      "name": "Validate Android",
+      "event": "push",
+      "conclusion": "success",
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/41580858442"
+    },
+    {
+      "id": 41580908069,
+      "name": "Build signed Android candidate",
+      "event": "workflow_dispatch",
+      "conclusion": "success",
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/41580908069"
+    }
+  ],
+  "release": {
+    "id": 432299223,
+    "run": 41581548819,
+    "tagObject": "791d7b22db1f0a2d0335739614ac920c859c840b",
+    "apkSha256": "b51aa50bca5d90583026264373b8cdcaa567aadd0b30c723cde26ad0331129ca",
+    "aabSha256": "d21d05586dfa424dab554838afc6876b64851a15d2bed16ea0ffcc133819bd57",
+    "certificateSha256": "8ee233c984615e2b3f6f083dc0c47d148bb8956ff7caca97be0b9a0d260e6082",
+    "officialSigningContinuity": true,
+    "releaseAndPagesApkIdentical": true,
+    "pwaFilesChecked": 51,
+    "sharedRuntimeAssetsExact": 55,
+    "publicManifestAndBuildExact": true,
+    "allReleasePagesFilesExact": true,
+    "notificationBroadcastSkipped": true
+  },
+  "privacy": [
+    {
+      "kind": "candidate",
+      "knownForbiddenImageHashes": 92,
+      "scans": [
+        {
+          "kind": "apk",
+          "entries": 1108,
+          "forbiddenImageMatches": 0,
+          "gifFiles": 0
+        },
+        {
+          "kind": "aab",
+          "entries": 1112,
+          "forbiddenImageMatches": 0,
+          "gifFiles": 0
+        }
+      ]
+    },
+    {
+      "kind": "public",
+      "knownForbiddenImageHashes": 92,
+      "scans": [
+        {
+          "kind": "apk",
+          "entries": 1108,
+          "forbiddenImageMatches": 0,
+          "gifFiles": 0
+        },
+        {
+          "kind": "aab",
+          "entries": 1112,
+          "forbiddenImageMatches": 0,
+          "gifFiles": 0
+        },
+        {
+          "kind": "pwa",
+          "entries": 52,
+          "forbiddenImageMatches": 0,
+          "gifFiles": 0
+        }
+      ]
+    }
+  ],
+  "limits": {
+    "physicalPixelVerified": false,
+    "physicalIphoneVerified": false,
+    "phoneInstallationVerified": false,
+    "nativeIosCompiled": false,
+    "physicalFrameRateVerified": false,
+    "deviceAccessed": false,
+    "originalAppAccessed": false,
+    "reportsChanged": false,
+    "newExportRuns": 0,
+    "webkitOfflineColdOpenClaimed": false
+  }
+}

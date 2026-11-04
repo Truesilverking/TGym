@@ -1,16 +1,8 @@
-# Dependency updates, deliberately quiet.
-#
-# openGym is dependency-light on purpose: the frontend is React + Router + Zustand, and api/
-# has two runtime dependencies. A default Dependabot setup would still open a PR per package
-# per week, which on a solo project means the alerts stop being read — the opposite of what
-# this is for. So: monthly, everything in an ecosystem grouped into a single PR, and a low
-# cap on open PRs. Security advisories are unaffected by any of this; GitHub raises those
-# regardless of schedule.
-#
-# Only manifests that actually exist here are listed. Deliberately NOT covered:
-#   - gradle (frontend/android) and cocoapods (frontend/ios) — Capacitor generates those shells
-#     and pins the native versions to the @capacitor/* npm packages. Bumping them independently
-#     desyncs the two and breaks the mobile build; they follow the npm update instead.
+# Routine dependency PRs are paused to keep only main and Dev.
+# Existing security-update rules and vulnerability alerts remain unchanged.
+# Review and apply dependency updates on Dev when requested.
+# Monthly grouping and compatibility filters are retained for an explicit resumption.
+# Native Gradle/CocoaPods upgrades follow the corresponding Capacitor migration.
 version: 2
 
 updates:
@@ -19,7 +11,7 @@ updates:
     directory: /frontend
     schedule:
       interval: monthly
-    open-pull-requests-limit: 3
+    open-pull-requests-limit: 0
     groups:
       # Routine bumps arrive as one PR. Runtime and build tooling move together anyway (a Vite
       # bump usually wants its plugin bumped), and splitting them doubles the review without
@@ -47,7 +39,7 @@ updates:
     directory: /api
     schedule:
       interval: monthly
-    open-pull-requests-limit: 3
+    open-pull-requests-limit: 0
     groups:
       api:
         patterns: ['*']
@@ -63,7 +55,7 @@ updates:
     directory: /api
     schedule:
       interval: monthly
-    open-pull-requests-limit: 1
+    open-pull-requests-limit: 0
     ignore:
       # Odd-numbered Node majors are "Current", never LTS — they stop getting fixes in about
       # six months. Dependabot's first run offered 22 → 25, which for something other people
@@ -77,7 +69,7 @@ updates:
     directory: /web
     schedule:
       interval: monthly
-    open-pull-requests-limit: 1
+    open-pull-requests-limit: 0
     ignore:
       - dependency-name: node
         versions: ['25.x', '27.x', '29.x', '31.x', '33.x']
@@ -87,7 +79,7 @@ updates:
     directory: /
     schedule:
       interval: monthly
-    open-pull-requests-limit: 2
+    open-pull-requests-limit: 0
     groups:
       # These are all first-party actions/* and docker/* pinned to a major tag; they update
       # in lockstep and none of them is worth a PR of its own.

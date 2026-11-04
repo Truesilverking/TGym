@@ -48,6 +48,35 @@ function hoverAt(clientX) {
 }
 
 describe('LineChart hover date', () => {
+  it('keeps distinct whole-unit axes for a weight range smaller than one unit', () => {
+    const points = [point(2026, 1, 15, 70.1), point(2026, 2, 15, 70.4)]
+    act(() => root.render(<LineChart points={points} unit="kg"/>))
+    const labels = [...container.querySelectorAll('svg text[text-anchor="end"]')].map(node => node.textContent)
+    expect(labels).toEqual(['70', '71'])
+    expect(points.map(p => p.y)).toEqual([70.1, 70.4])
+  })
+  it('shows whole weight units while retaining fractional points and other metric precision', () => {
+    const first = point(2026, 1, 15, 70.25)
+    const last = point(2026, 2, 15, 70.75)
+    act(() => root.render(<LineChart points={[first,last]} unit="kg" goal={72.25}/>))
+    expect(hoverAt(0)).toBe(`${fmtDate(first.d, true)} · 70 kg`)
+    expect(hoverAt(340)).toBe(`${fmtDate(last.d, true)} · 71 kg`)
+    const labels = [...container.querySelectorAll('svg text[text-anchor="end"]')].map(node => node.textContent)
+    expect(labels.every(label => /^\d+$/.test(label))).toBe(true)
+    expect(first.y).toBe(70.25)
+    expect(last.y).toBe(70.75)
+    act(() => root.render(<LineChart points={[first,last]} unit="km"/>))
+    expect(hoverAt(0)).toBe(`${fmtDate(first.d, true)} · 70.3 km`)
+  })
+
+  it('uses a display formatter for effort without altering numeric chart points', () => {
+    const first = point(2026, 1, 15, 0)
+    act(() => root.render(<LineChart points={[first, point(2026, 2, 15, 2)]} unit="RIR" formatValue={v => v === 0 ? 'Failure' : `RIR ${v}`} />))
+    expect(hoverAt(0)).toBe(`${fmtDate(first.d, true)} · Failure`)
+    expect(hoverAt(340)).toBe(`${fmtDate('2026-02-15', true)} · RIR 2`)
+    expect(first.y).toBe(0)
+  })
+
   it('keeps same-year points in the compact format', () => {
     const first = point(2026, 1, 15, 70)
     renderChart([first, point(2026, 2, 15, 71)])

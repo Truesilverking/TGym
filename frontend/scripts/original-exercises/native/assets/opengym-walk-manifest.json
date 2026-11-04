@@ -1,0 +1,39 @@
+{
+  "license": {
+    "lane": "cc0",
+    "license": "CC0-1.0",
+    "source": "Walk",
+    "pack": true
+  },
+  "id": "walk",
+  "name": "Walk (Treadmill)",
+  "equipment": "None",
+  "difficulty": "Beginner",
+  "primary": [
+    "Calves",
+    "Glutes"
+  ],
+  "secondary": [
+    "Quads",
+    "Hamstrings"
+  ],
+  "steps": [
+    "Stand tall, eyes forward, shoulders back.",
+    "Step heel first and roll through to the toes.",
+    "Swing the arms naturally in opposition to the legs.",
+    "Keep the stride comfortable; the hips stay level."
+  ],
+  "glb": "assets/walk.glb",
+  "thumb": "assets/walk.png",
+  "strip": "assets/walk.strip.png",
+  "sheet": "assets/walk.sheet.png",
+  "pattern": "locomotion",
+  "motion": "mocap",
+  "camera": "front",
+  "qa": {
+    "pass": true,
+    "fails": 2,
+    "critical_fails": 0,
+    "report": "assets/walk.glb.qa.json"
+  }
+}

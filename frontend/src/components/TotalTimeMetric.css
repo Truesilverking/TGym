@@ -1,0 +1,6 @@
+.activity-metrics>.total-time-metric{display:flex;flex-direction:column;gap:6px;min-width:0;min-height:70px;text-align:left;padding:10px;background:color-mix(in srgb,var(--acc) 5%,transparent);border:1px solid var(--panel-edge);border-radius:12px;touch-action:pan-y}
+.total-time-metric small{min-width:0;overflow-wrap:anywhere}
+.total-time-metric small>span{white-space:nowrap}
+@media(max-width:360px){.total-time-metric small>span{white-space:normal}}
+.total-time-metric:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.total-time-picker .lrow[aria-pressed="true"]{color:var(--acc);background:var(--acc-soft)}

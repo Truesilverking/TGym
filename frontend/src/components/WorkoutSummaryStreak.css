@@ -1,0 +1,14 @@
+.workout-summary-streak{display:flex;align-items:center;gap:14px;text-align:left;margin:12px 0 16px;padding:14px;border:1px solid color-mix(in srgb,var(--streak-color) 42%,var(--sep));border-radius:var(--r-sm);background:linear-gradient(135deg,color-mix(in srgb,var(--streak-color) 16%,var(--surface)),color-mix(in srgb,var(--streak-color-2) 8%,var(--surface)))}
+.workout-summary-streak>.streak-flame{width:54px;height:60px;flex:none}
+.workout-summary-streak.active .streak-flame-fill{opacity:1}
+.workout-summary-streak-copy{min-width:0}
+.workout-summary-streak-heading{display:flex;align-items:baseline;flex-wrap:wrap;gap:7px;color:var(--label);font-size:14px;font-weight:600;line-height:1.2}
+.workout-summary-streak-heading>span{min-width:0;overflow-wrap:anywhere}
+.workout-summary-streak-value{font-size:30px;font-variant-numeric:tabular-nums;line-height:1}
+.workout-summary-streak p{margin:6px 0 0;color:var(--label-2);font-size:13px;line-height:1.4;overflow-wrap:anywhere}
+.workout-summary-streak.inactive{border-color:var(--sep);background:var(--surface)}
+.workout-summary-streak.inactive .workout-summary-streak-heading{color:var(--label-2)}
+@media(max-width:360px){.workout-summary-streak{gap:10px;padding:12px}.workout-summary-streak>.streak-flame{width:46px;height:52px}}
+.workout-complete-summary{min-width:0;overflow-wrap:anywhere}
+.workout-complete-summary .tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+.workout-complete-summary .tile{min-width:0}

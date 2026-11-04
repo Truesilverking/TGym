@@ -1,9 +1,10 @@
 // The persisted boundary for a finished session. Keep this pure so compatibility tests can
 // exercise the exact shape the UI writes without mounting React or mutating store state.
-import { finishWorkoutClock } from './workout-time.js'
+import { finishWorkoutClock, sessionTiming } from './workout-time.js'
+import { sessionOrigin } from './session-activity.js'
 
-export function buildCompletedWorkout(active, { end = Date.now(), prs = [], snapshotFor } = {}) {
-  const timing = finishWorkoutClock(active, end)
+export function buildCompletedWorkout(active, { end = Date.now(), prs = [], reason = 'manual', snapshotFor } = {}) {
+  const timing = sessionTiming({...finishWorkoutClock(active, end),finishReason:reason},end)
   const entries = (active?.entries || []).map(entry => {
     const completed = {
       id: entry.id,
@@ -11,7 +12,7 @@ export function buildCompletedWorkout(active, { end = Date.now(), prs = [], snap
       topW: entry.topW || null,
       target: entry.target || null,
     }
-    const snapshot = typeof snapshotFor === 'function' ? snapshotFor(entry) : null
+    const snapshot = (typeof snapshotFor === 'function' ? snapshotFor(entry) : null) || entry.muscleSnapshot
     if (snapshot && typeof snapshot === 'object' && !Array.isArray(snapshot) && Object.keys(snapshot).length) {
       completed.muscleSnapshot = { ...snapshot }
     }
@@ -24,7 +25,7 @@ export function buildCompletedWorkout(active, { end = Date.now(), prs = [], snap
       if (entry.notePin) completed.notePin = true
     }
     return completed
-  }).filter(entry => entry.sets.some(set => set.done))
+  }).filter(entry => ['inactivity','abandoned'].includes(reason) || entry.sets.some(set => set.done || set.leftDone || set.rightDone))
 
   const sessionNote = (active?.note || '').trim()
 
@@ -33,8 +34,13 @@ export function buildCompletedWorkout(active, { end = Date.now(), prs = [], snap
     d: active.d,
     start: active.start,
     end: timing.end,
+    sessionStartedAt: timing.sessionStartedAt, lastActivityAt: timing.lastActivityAt, accumulatedActiveDuration: timing.accumulatedActiveDuration,
+    sessionStatus: timing.sessionStatus, endedAt: timing.endedAt, finishReason: reason,
     ...(timing.pausedDurationMs ? { pausedDurationMs: timing.pausedDurationMs } : {}),
+    ...Object.fromEntries(['routineCompletedAt','lastMeaningfulTrainingActivityAt','lastMeaningfulWorkoutActivityAt','lastUserInteractionAt','pauseReason','durationCorrectedAt','originalTimerPausedAt','originalDurationMs'].filter(key=>timing[key]!=null).map(key=>[key,timing[key]])),
+    ...(!['inactivity','abandoned','auto_completed'].includes(reason)?{manualFinishedAt:end}:{}),
     routineId: active.routineId,
+    sessionOrigin: { ...sessionOrigin(active) },
     name: active.name,
     bw: active.bw,
     ...(active.unit ? { unit: active.unit } : {}),

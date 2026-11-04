@@ -1,0 +1,137 @@
+{
+  "format": "tgym-private-envelope/1",
+  "sourceModelSha256": "789867cd7f3ab8362f29632d1b424eb0f31193fca3a05318ac830a03b2115eb1",
+  "targetModelSha256": "ce9859de013c2ee9713dbe3158275208b57be1b4ff31957eca87195b991c0ab1",
+  "vertices": 14960,
+  "triangles": 29648,
+  "bones": [
+    "pelvis",
+    "spine_01",
+    "spine_02",
+    "spine_03",
+    "clavicleL",
+    "scapulaL",
+    "upperarmL",
+    "forearmL",
+    "forearm_twistL",
+    "handL",
+    "index_01L",
+    "index_02L",
+    "index_03L",
+    "middle_01L",
+    "middle_02L",
+    "middle_03L",
+    "pinky_01L",
+    "pinky_02L",
+    "pinky_03L",
+    "ring_01L",
+    "ring_02L",
+    "ring_03L",
+    "thumb_01L",
+    "thumb_02L",
+    "thumb_03L",
+    "clavicleR",
+    "scapulaR",
+    "upperarmR",
+    "forearmR",
+    "forearm_twistR",
+    "handR",
+    "index_01R",
+    "index_02R",
+    "index_03R",
+    "middle_01R",
+    "middle_02R",
+    "middle_03R",
+    "pinky_01R",
+    "pinky_02R",
+    "pinky_03R",
+    "ring_01R",
+    "ring_02R",
+    "ring_03R",
+    "thumb_01R",
+    "thumb_02R",
+    "thumb_03R",
+    "neck",
+    "head",
+    "thighL",
+    "shinL",
+    "footL",
+    "toesL",
+    "thighR",
+    "shinR",
+    "footR",
+    "toesR"
+  ],
+  "attributes": {
+    "position": {
+      "offset": 0,
+      "length": 44880,
+      "itemSize": 3,
+      "dtype": "<f4"
+    },
+    "normal": {
+      "offset": 179520,
+      "length": 44880,
+      "itemSize": 3,
+      "dtype": "<f4"
+    },
+    "skinIndex": {
+      "offset": 359040,
+      "length": 59840,
+      "itemSize": 4,
+      "dtype": "<u2"
+    },
+    "skinWeight": {
+      "offset": 478720,
+      "length": 59840,
+      "itemSize": 4,
+      "dtype": "<f4"
+    },
+    "partId": {
+      "offset": 718080,
+      "length": 14960,
+      "itemSize": 1,
+      "dtype": "<u2"
+    },
+    "fiber": {
+      "offset": 748000,
+      "length": 44880,
+      "itemSize": 3,
+      "dtype": "<f4"
+    },
+    "tendon": {
+      "offset": 927520,
+      "length": 14960,
+      "itemSize": 1,
+      "dtype": "<f4"
+    },
+    "nearestNative": {
+      "offset": 987360,
+      "length": 14960,
+      "itemSize": 1,
+      "dtype": "<u4"
+    },
+    "index": {
+      "offset": 1047200,
+      "length": 88944,
+      "itemSize": 1,
+      "dtype": "<u4"
+    }
+  },
+  "binarySha256": "785ca9f4b5da05beca774fde4c3de387ffbbd3b58ebaa0dd83488f8164a2c612",
+  "restSpace": "Heatsy bind-rest world metres, Y-up, faces+Z",
+  "skinWeights": "CC0 source segment weights remapped to unchanged 56 target bones, averaged at welded seams",
+  "bulkMetres": [
+    0.002000000000000001,
+    0.03500000000000002
+  ],
+  "nearestNativeDistanceMetres": {
+    "median": 0.00981603156348193,
+    "p95": 0.03083961946573186
+  },
+  "limitations": [
+    "New surface has no hand/foot/head replacement; native contact-zone meshes and separate CC0 head must remain.",
+    "Source-to-target surface adaptation is a prototype, not visual/collision acceptance.",
+    "Original 56-bone skeleton and validated exercise motion are not changed."
+  ]
+}

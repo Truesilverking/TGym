@@ -1,0 +1,21 @@
+{
+  "status": "frozen-private-prototype-for-style-sample",
+  "approvedForApp": false,
+  "scope": "surface-only; original skeleton and poses unchanged",
+  "files": {
+    "envelope.mjs": "21b164af126e043935505b69f931aaddb523197db34eaa580067a6fa438080f6",
+    "envelope.mesh.bin": "785ca9f4b5da05beca774fde4c3de387ffbbd3b58ebaa0dd83488f8164a2c612",
+    "envelope.mesh.json": "bec10e9d983312fa21c786eacadb102f8302656ce4fb356d8feb4c849c646885",
+    "prepare-envelope.py": "bf0354584c98dd94fc55feb9dd6b56df721a7f15ec8d9d5752cb72be30898332"
+  },
+  "source": {
+    "url": "https://assiamahs.github.io/opengym3d/assets/walk.glb",
+    "manifest": "https://assiamahs.github.io/opengym3d/exercises.json",
+    "license": "CC0-1.0 per primary publisher manifest entry walk",
+    "sha256": "789867cd7f3ab8362f29632d1b424eb0f31193fca3a05318ac830a03b2115eb1",
+    "used": "Bind-rest surface only; source animation and thumbnails not included in app/output",
+    "underlyingCoreLicense": "https://www.makehumancommunity.org/about/license.html"
+  },
+  "derived": "CC BY-SA 4.0, geometry adaptation and semantic labels from Heatsy/ZAnatomy-derived model; source/model notice must remain",
+  "previewProof": "preview/proof.json"
+}

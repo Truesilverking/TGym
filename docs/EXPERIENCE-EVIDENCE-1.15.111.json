@@ -1,0 +1,4660 @@
+{
+  "version": "1.15.111",
+  "versionCode": 147,
+  "sourceCommit": "d664d461bf5139d75991d7a1fe421bde77f1c78a",
+  "clientDate": "2026-11-03",
+  "recordedAt": "2026-11-03T04:19:58.144Z",
+  "release": {
+    "url": "https://github.com/Truesilverking/TGym/releases/tag/v1.15.111",
+    "id": 432271955,
+    "run": 41576683020,
+    "updateBroadcastSuppressed": true
+  },
+  "localChecks": {
+    "frontend": {
+      "tests": 3103,
+      "files": 261
+    },
+    "api": {
+      "tests": 24,
+      "failures": 0
+    },
+    "mcp": {
+      "tests": 38,
+      "files": 2
+    },
+    "nodeLoadable": true,
+    "logSha256": {
+      "frontend": "38f3053ce90d45235bf67e2ce1aa6a5f67d2c0687a33c9b5854313b21de77f49",
+      "api": "cb19095923a99ef68bea13d6114092e17008b6d020df5e1dedc8affa4dc42dfa",
+      "mcp": "8c37e8784b6e86a870888923a541e10dc0416958ed35821171e27183ed11f2e9",
+      "nodeLoadable": "99d91ee0c1657b0a33e310837b1d0dc054adfd9928b6ad5ade255ffe35737308"
+    }
+  },
+  "localBuilds": {
+    "pass": true,
+    "source": "d664d461bf5139d75991d7a1fe421bde77f1c78a",
+    "version": "1.15.111",
+    "androidVersionCode": 147,
+    "web": true,
+    "mobileSync": true,
+    "androidAssembleDebug": true,
+    "androidAssembleDebugAndroidTest": true,
+    "androidLintDebug": true,
+    "actualProcessExits": {
+      "web": 0,
+      "mobile": 0,
+      "native": 0
+    },
+    "trackedTreeClean": true,
+    "phoneAccessed": false,
+    "instrumentationExecuted": false,
+    "lint": {
+      "errors": 0,
+      "warnings": 22,
+      "reportSha256": "00261d5ec604d420e99e150e6841da1db77b16fe60e07d8e253f7807468a69ea",
+      "advisoryCounts": {
+        "MissingFirebaseInstanceTokenRefresh": 1,
+        "GradleDependency": 5,
+        "DisableBaselineAlignment": 2,
+        "UnusedResources": 8,
+        "IconDipSize": 2,
+        "IconDuplicatesConfig": 2,
+        "IconLocation": 1,
+        "SmallSp": 1
+      }
+    }
+  },
+  "sourceCiRuns": [
+    {
+      "id": 41573741490,
+      "name": "Tests",
+      "event": "push",
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/41573741490",
+      "conclusion": "success"
+    },
+    {
+      "id": 41573749181,
+      "name": "Tests",
+      "event": "pull_request",
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/41573749181",
+      "conclusion": "success"
+    },
+    {
+      "id": 41573741482,
+      "name": "Validate PWA",
+      "event": "push",
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/41573741482",
+      "conclusion": "success"
+    },
+    {
+      "id": 41573741471,
+      "name": "Validate Android",
+      "event": "push",
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/41573741471",
+      "conclusion": "success"
+    },
+    {
+      "id": 41573772282,
+      "name": "Build signed Android candidate",
+      "event": "workflow_dispatch",
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/41573772282",
+      "conclusion": "success"
+    }
+  ],
+  "native": {
+    "run": 41573741471,
+    "reportFormat": "Gradle connected Android HTML",
+    "artifactSha256": "8488ba6326d6ef303cb6410f14d8ea8d0d78bb296ca309557b9dbf50b9d850d1",
+    "tests": 53,
+    "failures": 0,
+    "skipped": 0,
+    "duration": "48.483s",
+    "requiredRegressionsPresentAndPassed": {
+      "SoundPreferencesTest.aColdBackgroundDeadlineStartsForegroundBeforeRequestingFocus": true,
+      "SoundPreferencesTest.transientFocusIsReleasedOnCompletionStopAndDecoderFailure": true,
+      "WorkoutNotificationTest.notificationColorDefaultsForMissingBlankAndMalformedAccents": true,
+      "WorkoutNotificationTest.notificationTapUsesExplicitViewIntent": true,
+      "WorkoutNotificationTest.timerCardsKeepStatusAndLongSetLabelsAboveTheirClockRows": true
+    },
+    "scope": "Downloaded CI HTML from emulator instrumentation, separate from physical phone results."
+  },
+  "compiledBrowser": {
+    "calendar": {
+      "sourceCommit": "d664d461bf5139d75991d7a1fe421bde77f1c78a",
+      "pass": true,
+      "cases": 6,
+      "checks": 30,
+      "exports": 48,
+      "runtimeErrors": 0,
+      "syntheticOnly": true,
+      "recordsPreserved": true,
+      "actualPublic": false,
+      "results": [
+        {
+          "name": "edge-320",
+          "engine": "edge",
+          "viewport": {
+            "width": 320,
+            "height": 740
+          },
+          "lang": "en",
+          "theme": "light",
+          "longName": true,
+          "pass": true,
+          "checks": [
+            "closed default key, native keyboard disclosure, labeled legend, three period views, distinct activity counts, square dates, larger responsive annual grid, no overflow",
+            "all twelve months, leap day, previous/next period, cross-year week with complete accessible dates",
+            "saved profile show/hide and reload, transient reveal controls, key resets closed on reopen, long chosen name wraps",
+            "actual UI PNG and PDF exports, downloaded bytes match preview, embedded raster avatar verified at decoded pixel, 2x PNG quality",
+            "generic calendar keeps visible legend"
+          ],
+          "views": [
+            {
+              "label": "Week",
+              "level": "week",
+              "accessible": "Calendar view: Week, 19 Oct 2026 – 25 Oct 2026",
+              "count": 2,
+              "cells": 7,
+              "geometry": {
+                "overflow": false,
+                "width": 320,
+                "card": {
+                  "x": 19,
+                  "y": 135,
+                  "width": 282,
+                  "height": 549.1875,
+                  "top": 135,
+                  "right": 301,
+                  "bottom": 684.1875,
+                  "left": 19
+                },
+                "heading": {
+                  "x": 38,
+                  "y": 154,
+                  "width": 244,
+                  "height": 79.171875,
+                  "top": 154,
+                  "right": 282,
+                  "bottom": 233.171875,
+                  "left": 38
+                },
+                "name": {
+                  "x": 117.1875,
+                  "y": 154,
+                  "width": 164.8125,
+                  "height": 79.171875,
+                  "top": 154,
+                  "right": 282,
+                  "bottom": 233.171875,
+                  "left": 117.1875
+                },
+                "counter": {
+                  "x": 38,
+                  "y": 167.578125,
+                  "width": 69.1875,
+                  "height": 52,
+                  "top": 167.578125,
+                  "right": 107.1875,
+                  "bottom": 219.578125,
+                  "left": 38
+                },
+                "nav": {
+                  "x": 38,
+                  "y": 249.171875,
+                  "width": 244,
+                  "height": 160,
+                  "top": 249.171875,
+                  "right": 282,
+                  "bottom": 409.171875,
+                  "left": 38
+                },
+                "avatar": {
+                  "x": 38,
+                  "y": 249.171875,
+                  "width": 112,
+                  "height": 112,
+                  "top": 249.171875,
+                  "right": 150,
+                  "bottom": 361.171875,
+                  "left": 38
+                },
+                "picker": {
+                  "x": 155,
+                  "y": 283.171875,
+                  "width": 110.4375,
+                  "height": 44,
+                  "top": 283.171875,
+                  "right": 265.4375,
+                  "bottom": 327.171875,
+                  "left": 155
+                },
+                "chevron": {
+                  "x": 231.265625,
+                  "y": 297.171875,
+                  "width": 16,
+                  "height": 16,
+                  "top": 297.171875,
+                  "right": 247.265625,
+                  "bottom": 313.171875,
+                  "left": 231.265625
+                },
+                "active": {
+                  "x": 270.4375,
+                  "y": 294.171875,
+                  "width": 11.5625,
+                  "height": 22,
+                  "top": 294.171875,
+                  "right": 282,
+                  "bottom": 316.171875,
+                  "left": 270.4375
+                },
+                "nameFont": 22,
+                "columns": null,
+                "cellWidth": 29.703125,
+                "flameInk": 35.6979180375735,
+                "flameBox": {
+                  "x": 38,
+                  "y": 167.578125,
+                  "width": 46,
+                  "height": 52,
+                  "top": 167.578125,
+                  "right": 84,
+                  "bottom": 219.578125,
+                  "left": 38
+                },
+                "flameSvg": {
+                  "x": 32.25,
+                  "y": 161.078125,
+                  "width": 57.5,
+                  "height": 65,
+                  "top": 161.078125,
+                  "right": 89.75,
+                  "bottom": 226.078125,
+                  "left": 32.25
+                },
+                "numberInk": 32,
+                "squareError": 0
+              },
+              "opened": null
+            },
+            {
+              "label": "Month",
+              "level": "month",
+              "accessible": "Calendar view: Month, October 2026",
+              "count": 18,
+              "cells": 31,
+              "geometry": {
+                "overflow": false,
+                "width": 320,
+                "card": {
+                  "x": 19,
+                  "y": 135,
+                  "width": 282,
+                  "height": 677.0625,
+                  "top": 135,
+                  "right": 301,
+                  "bottom": 812.0625,
+                  "left": 19
+                },
+                "heading": {
+                  "x": 38,
+                  "y": 154,
+                  "width": 244,
+                  "height": 79.171875,
+                  "top": 154,
+                  "right": 282,
+                  "bottom": 233.171875,
+                  "left": 38
+                },
+                "name": {
+                  "x": 117.1875,
+                  "y": 154,
+                  "width": 164.8125,
+                  "height": 79.171875,
+                  "top": 154,
+                  "right": 282,
+                  "bottom": 233.171875,
+                  "left": 117.1875
+                },
+                "counter": {
+                  "x": 38,
+                  "y": 167.578125,
+                  "width": 69.1875,
+                  "height": 52,
+                  "top": 167.578125,
+                  "right": 107.1875,
+                  "bottom": 219.578125,
+                  "left": 38
+                },
+                "nav": {
+                  "x": 38,
+                  "y": 249.171875,
+                  "width": 244,
+                  "height": 160,
+                  "top": 249.171875,
+                  "right": 282,
+                  "bottom": 409.171875,
+                  "left": 38
+                },
+                "avatar": {
+                  "x": 38,
+                  "y": 249.171875,
+                  "width": 112,
+                  "height": 112,
+                  "top": 249.171875,
+                  "right": 150,
+                  "bottom": 361.171875,
+                  "left": 38
+                },
+                "picker": {
+                  "x": 155,
+                  "y": 283.171875,
+                  "width": 98.890625,
+                  "height": 44,
+                  "top": 283.171875,
+                  "right": 253.890625,
+                  "bottom": 327.171875,
+                  "left": 155
+                },
+                "chevron": {
+                  "x": 213.09375,
+                  "y": 297.171875,
+                  "width": 16,
+                  "height": 16,
+                  "top": 297.171875,
+                  "right": 229.09375,
+                  "bottom": 313.171875,
+                  "left": 213.09375
+                },
+                "active": {
+                  "x": 258.890625,
+                  "y": 294.171875,
+                  "width": 23.109375,
+                  "height": 22,
+                  "top": 294.171875,
+                  "right": 282,
+                  "bottom": 316.171875,
+                  "left": 258.890625
+                },
+                "nameFont": 22,
+                "columns": null,
+                "cellWidth": 29.71875,
+                "flameInk": 35.6979180375735,
+                "flameBox": {
+                  "x": 38,
+                  "y": 167.578125,
+                  "width": 46,
+                  "height": 52,
+                  "top": 167.578125,
+                  "right": 84,
+                  "bottom": 219.578125,
+                  "left": 38
+                },
+                "flameSvg": {
+                  "x": 32.25,
+                  "y": 161.078125,
+                  "width": 57.5,
+                  "height": 65,
+                  "top": 161.078125,
+                  "right": 89.75,
+                  "bottom": 226.078125,
+                  "left": 32.25
+                },
+                "numberInk": 32,
+                "squareError": 0
+              }
+            },
+            {
+              "label": "Year",
+              "level": "months",
+              "accessible": "Calendar view: Year, 2026",
+              "count": 18,
+              "cells": 365,
+              "geometry": {
+                "overflow": false,
+                "width": 320,
+                "card": {
+                  "x": 19,
+                  "y": 135,
+                  "width": 282,
+                  "height": 1237.421875,
+                  "top": 135,
+                  "right": 301,
+                  "bottom": 1372.421875,
+                  "left": 19
+                },
+                "heading": {
+                  "x": 38,
+                  "y": 154,
+                  "width": 244,
+                  "height": 79.171875,
+                  "top": 154,
+                  "right": 282,
+                  "bottom": 233.171875,
+                  "left": 38
+                },
+                "name": {
+                  "x": 117.1875,
+                  "y": 154,
+                  "width": 164.8125,
+                  "height": 79.171875,
+                  "top": 154,
+                  "right": 282,
+                  "bottom": 233.171875,
+                  "left": 117.1875
+                },
+                "counter": {
+                  "x": 38,
+                  "y": 167.578125,
+                  "width": 69.1875,
+                  "height": 52,
+                  "top": 167.578125,
+                  "right": 107.1875,
+                  "bottom": 219.578125,
+                  "left": 38
+                },
+                "nav": {
+                  "x": 38,
+                  "y": 249.171875,
+                  "width": 244,
+                  "height": 160,
+                  "top": 249.171875,
+                  "right": 282,
+                  "bottom": 409.171875,
+                  "left": 38
+                },
+                "avatar": {
+                  "x": 38,
+                  "y": 249.171875,
+                  "width": 112,
+                  "height": 112,
+                  "top": 249.171875,
+                  "right": 150,
+                  "bottom": 361.171875,
+                  "left": 38
+                },
+                "picker": {
+                  "x": 155,
+                  "y": 281.578125,
+                  "width": 96.78125,
+                  "height": 47.1875,
+                  "top": 281.578125,
+                  "right": 251.78125,
+                  "bottom": 328.765625,
+                  "left": 155
+                },
+                "chevron": {
+                  "x": 225.21875,
+                  "y": 297.171875,
+                  "width": 16,
+                  "height": 16,
+                  "top": 297.171875,
+                  "right": 241.21875,
+                  "bottom": 313.171875,
+                  "left": 225.21875
+                },
+                "active": {
+                  "x": 256.78125,
+                  "y": 293.171875,
+                  "width": 25.21875,
+                  "height": 24,
+                  "top": 293.171875,
+                  "right": 282,
+                  "bottom": 317.171875,
+                  "left": 256.78125
+                },
+                "nameFont": 22,
+                "columns": 2,
+                "cellWidth": 14.703125,
+                "flameInk": 35.6979180375735,
+                "flameBox": {
+                  "x": 38,
+                  "y": 167.578125,
+                  "width": 46,
+                  "height": 52,
+                  "top": 167.578125,
+                  "right": 84,
+                  "bottom": 219.578125,
+                  "left": 38
+                },
+                "flameSvg": {
+                  "x": 32.25,
+                  "y": 161.078125,
+                  "width": 57.5,
+                  "height": 65,
+                  "top": 161.078125,
+                  "right": 89.75,
+                  "bottom": 226.078125,
+                  "left": 32.25
+                },
+                "numberInk": 32,
+                "squareError": 0
+              },
+              "opened": null
+            }
+          ],
+          "crossYear": "Calendar view: Week, 30 Dec 2024 – 5 Jan 2025",
+          "files": [
+            {
+              "period": "this-week",
+              "format": "png",
+              "bytes": 393327,
+              "sha256": "92215fd8f2983dd3ab3812abecc652d5705c53ec84cc644e1e55e5a42f40f0b5",
+              "previewEqualsDownload": true,
+              "width": 2000,
+              "height": 1834,
+              "avatarPixel": [
+                242,
+                200,
+                160,
+                255
+              ]
+            },
+            {
+              "period": "this-week",
+              "format": "pdf",
+              "bytes": 264275,
+              "sha256": "48b3155a7560bc46057b7b9943796de916063f8aca5c48eadb0b59082ac93176",
+              "previewEqualsDownload": true
+            },
+            {
+              "period": "this-month",
+              "format": "png",
+              "bytes": 488727,
+              "sha256": "2a01f3e3cfac365692c5dd0c296cff946824927ce3aa42642a56d7cb1e715054",
+              "previewEqualsDownload": true,
+              "width": 2000,
+              "height": 2846,
+              "avatarPixel": [
+                242,
+                200,
+                160,
+                255
+              ]
+            },
+            {
+              "period": "this-month",
+              "format": "pdf",
+              "bytes": 327768,
+              "sha256": "3a62ec6c5c23e4e34fb097b6bfbaa3dcda17dc0b7aa5587554caf28960c544de",
+              "previewEqualsDownload": true
+            },
+            {
+              "period": "year",
+              "format": "png",
+              "bytes": 1108493,
+              "sha256": "fa6067099095e6b926d7145baca6eb7b5561a56bb00b33da569debe50154d300",
+              "previewEqualsDownload": true,
+              "width": 2000,
+              "height": 3978,
+              "avatarPixel": [
+                242,
+                200,
+                160,
+                255
+              ]
+            },
+            {
+              "period": "year",
+              "format": "pdf",
+              "bytes": 814700,
+              "sha256": "9e283b6a5731aaf9d481a3756736545f4b0522642dfbc9ac47dbf59bcc2385e3",
+              "previewEqualsDownload": true
+            },
+            {
+              "period": "full",
+              "format": "pdf",
+              "bytes": 814700,
+              "sha256": "74d291da88081f4e149df2a15d7716522f6ecd9f1f2c9af0adda92a052c116ab",
+              "previewEqualsDownload": true
+            },
+            {
+              "period": "years",
+              "format": "pdf",
+              "bytes": 814700,
+              "sha256": "a36908955b9c735e6611bbdf72d9f265d00eb0f8c5db6a9f4b6f6a737ed30684",
+              "previewEqualsDownload": true
+            }
+          ],
+          "recordsPreserved": true
+        },
+        {
+          "name": "webkit-320",
+          "engine": "webkit",
+          "viewport": {
+            "width": 320,
+            "height": 740
+          },
+          "lang": "es",
+          "theme": "dark",
+          "longName": true,
+          "pass": true,
+          "checks": [
+            "closed default key, native keyboard disclosure, labeled legend, three period views, distinct activity counts, square dates, larger responsive annual grid, no overflow",
+            "all twelve months, leap day, previous/next period, cross-year week with complete accessible dates",
+            "saved profile show/hide and reload, transient reveal controls, key resets closed on reopen, long chosen name wraps",
+            "actual UI PNG and PDF exports, downloaded bytes match preview, embedded raster avatar verified at decoded pixel, 2x PNG quality",
+            "generic calendar keeps visible legend"
+          ],
+          "views": [
+            {
+              "label": "Week",
+              "level": "week",
+              "accessible": "Vista del calendario: Semana, 19 oct 2026 – 25 oct 2026",
+              "count": 2,
+              "cells": 7,
+              "geometry": {
+                "overflow": false,
+                "width": 320,
+                "card": {
+                  "x": 19,
+                  "y": 135,
+                  "width": 282,
+                  "height": 549.203125,
+                  "top": 135,
+                  "right": 301,
+                  "bottom": 684.203125,
+                  "left": 19
+                },
+                "heading": {
+                  "x": 38,
+                  "y": 154,
+                  "width": 244,
+                  "height": 79.1875,
+                  "top": 154,
+                  "right": 282,
+                  "bottom": 233.1875,
+                  "left": 38
+                },
+                "name": {
+                  "x": 117.1875,
+                  "y": 154,
+                  "width": 164.8125,
+                  "height": 79.1875,
+                  "top": 154,
+                  "right": 282,
+                  "bottom": 233.1875,
+                  "left": 117.1875
+                },
+                "counter": {
+                  "x": 38,
+                  "y": 167.59375,
+                  "width": 69.1875,
+                  "height": 52,
+                  "top": 167.59375,
+                  "right": 107.1875,
+                  "bottom": 219.59375,
+                  "left": 38
+                },
+                "nav": {
+                  "x": 38,
+                  "y": 249.1875,
+                  "width": 244,
+                  "height": 160,
+                  "top": 249.1875,
+                  "right": 282,
+                  "bottom": 409.1875,
+                  "left": 38
+                },
+                "avatar": {
+                  "x": 38,
+                  "y": 249.1875,
+                  "width": 112,
+                  "height": 112,
+                  "top": 249.1875,
+                  "right": 150,
+                  "bottom": 361.1875,
+                  "left": 38
+                },
+                "picker": {
+                  "x": 155,
+                  "y": 283.1875,
+                  "width": 110.765625,
+                  "height": 44,
+                  "top": 283.1875,
+                  "right": 265.765625,
+                  "bottom": 327.1875,
+                  "left": 155
+                },
+                "chevron": {
+                  "x": 230.234375,
+                  "y": 297.1875,
+                  "width": 16,
+                  "height": 16,
+                  "top": 297.1875,
+                  "right": 246.234375,
+                  "bottom": 313.1875,
+                  "left": 230.234375
+                },
+                "active": {
+                  "x": 270.765625,
+                  "y": 294.1875,
+                  "width": 11.234375,
+                  "height": 22,
+                  "top": 294.1875,
+                  "right": 282,
+                  "bottom": 316.1875,
+                  "left": 270.765625
+                },
+                "nameFont": 22,
+                "columns": null,
+                "cellWidth": 29.703125,
+                "flameInk": 35.6979180375735,
+                "flameBox": {
+                  "x": 38,
+                  "y": 167.59375,
+                  "width": 46,
+                  "height": 52,
+                  "top": 167.59375,
+                  "right": 84,
+                  "bottom": 219.59375,
+                  "left": 38
+                },
+                "flameSvg": {
+                  "x": 32.25,
+                  "y": 161.09375,
+                  "width": 57.5,
+                  "height": 65,
+                  "top": 161.09375,
+                  "right": 89.75,
+                  "bottom": 226.09375,
+                  "left": 32.25
+                },
+                "numberInk": 32,
+                "squareError": 0
+              },
+              "opened": null
+            },
+            {
+              "label": "Month",
+              "level": "month",
+              "accessible": "Vista del calendario: Mes, Octubre 2026",
+              "count": 18,
+              "cells": 31,
+              "geometry": {
+                "overflow": false,
+                "width": 320,
+                "card": {
+                  "x": 19,
+                  "y": 135,
+                  "width": 282,
+                  "height": 677.078125,
+                  "top": 135,
+                  "right": 301,
+                  "bottom": 812.078125,
+                  "left": 19
+                },
+                "heading": {
+                  "x": 38,
+                  "y": 154,
+                  "width": 244,
+                  "height": 79.1875,
+                  "top": 154,
+                  "right": 282,
+                  "bottom": 233.1875,
+                  "left": 38
+                },
+                "name": {
+                  "x": 117.1875,
+                  "y": 154,
+                  "width": 164.8125,
+                  "height": 79.1875,
+                  "top": 154,
+                  "right": 282,
+                  "bottom": 233.1875,
+                  "left": 117.1875
+                },
+                "counter": {
+                  "x": 38,
+                  "y": 167.59375,
+                  "width": 69.1875,
+                  "height": 52,
+                  "top": 167.59375,
+                  "right": 107.1875,
+                  "bottom": 219.59375,
+                  "left": 38
+                },
+                "nav": {
+                  "x": 38,
+                  "y": 249.1875,
+                  "width": 244,
+                  "height": 160,
+                  "top": 249.1875,
+                  "right": 282,
+                  "bottom": 409.1875,
+                  "left": 38
+                },
+                "avatar": {
+                  "x": 38,
+                  "y": 249.1875,
+                  "width": 112,
+                  "height": 112,
+                  "top": 249.1875,
+                  "right": 150,
+                  "bottom": 361.1875,
+                  "left": 38
+                },
+                "picker": {
+                  "x": 155,
+                  "y": 283.1875,
+                  "width": 100.25,
+                  "height": 44,
+                  "top": 283.1875,
+                  "right": 255.25,
+                  "bottom": 327.1875,
+                  "left": 155
+                },
+                "chevron": {
+                  "x": 212.953125,
+                  "y": 297.1875,
+                  "width": 16,
+                  "height": 16,
+                  "top": 297.1875,
+                  "right": 228.953125,
+                  "bottom": 313.1875,
+                  "left": 212.953125
+                },
+                "active": {
+                  "x": 260.25,
+                  "y": 294.1875,
+                  "width": 21.75,
+                  "height": 22,
+                  "top": 294.1875,
+                  "right": 282,
+                  "bottom": 316.1875,
+                  "left": 260.25
+                },
+                "nameFont": 22,
+                "columns": null,
+                "cellWidth": 29.71875,
+                "flameInk": 35.6979180375735,
+                "flameBox": {
+                  "x": 38,
+                  "y": 167.59375,
+                  "width": 46,
+                  "height": 52,
+                  "top": 167.59375,
+                  "right": 84,
+                  "bottom": 219.59375,
+                  "left": 38
+                },
+                "flameSvg": {
+                  "x": 32.25,
+                  "y": 161.09375,
+                  "width": 57.5,
+                  "height": 65,
+                  "top": 161.09375,
+                  "right": 89.75,
+                  "bottom": 226.09375,
+                  "left": 32.25
+                },
+                "numberInk": 32,
+                "squareError": 0
+              }
+            },
+            {
+              "label": "Year",
+              "level": "months",
+              "accessible": "Vista del calendario: Año, 2026",
+              "count": 18,
+              "cells": 365,
+              "geometry": {
+                "overflow": false,
+                "width": 320,
+                "card": {
+                  "x": 19,
+                  "y": 135,
+                  "width": 282,
+                  "height": 1237.4375,
+                  "top": 135,
+                  "right": 301,
+                  "bottom": 1372.4375,
+                  "left": 19
+                },
+                "heading": {
+                  "x": 38,
+                  "y": 154,
+                  "width": 244,
+                  "height": 79.1875,
+                  "top": 154,
+                  "right": 282,
+                  "bottom": 233.1875,
+                  "left": 38
+                },
+                "name": {
+                  "x": 117.1875,
+                  "y": 154,
+                  "width": 164.8125,
+                  "height": 79.1875,
+                  "top": 154,
+                  "right": 282,
+                  "bottom": 233.1875,
+                  "left": 117.1875
+                },
+                "counter": {
+                  "x": 38,
+                  "y": 167.59375,
+                  "width": 69.1875,
+                  "height": 52,
+                  "top": 167.59375,
+                  "right": 107.1875,
+                  "bottom": 219.59375,
+                  "left": 38
+                },
+                "nav": {
+                  "x": 38,
+                  "y": 249.1875,
+                  "width": 244,
+                  "height": 160,
+                  "top": 249.1875,
+                  "right": 282,
+                  "bottom": 409.1875,
+                  "left": 38
+                },
+                "avatar": {
+                  "x": 38,
+                  "y": 249.1875,
+                  "width": 112,
+                  "height": 112,
+                  "top": 249.1875,
+                  "right": 150,
+                  "bottom": 361.1875,
+                  "left": 38
+                },
+                "picker": {
+                  "x": 155,
+                  "y": 281.59375,
+                  "width": 98.28125,
+                  "height": 47.1875,
+                  "top": 281.59375,
+                  "right": 253.28125,
+                  "bottom": 328.78125,
+                  "left": 155
+                },
+                "chevron": {
+                  "x": 224.34375,
+                  "y": 297.1875,
+                  "width": 16,
+                  "height": 16,
+                  "top": 297.1875,
+                  "right": 240.34375,
+                  "bottom": 313.1875,
+                  "left": 224.34375
+                },
+                "active": {
+                  "x": 258.28125,
+                  "y": 293.1875,
+                  "width": 23.71875,
+                  "height": 24,
+                  "top": 293.1875,
+                  "right": 282,
+                  "bottom": 317.1875,
+                  "left": 258.28125
+                },
+                "nameFont": 22,
+                "columns": 2,
+                "cellWidth": 14.703125,
+                "flameInk": 35.6979180375735,
+                "flameBox": {
+                  "x": 38,
+                  "y": 167.59375,
+                  "width": 46,
+                  "height": 52,
+                  "top": 167.59375,
+                  "right": 84,
+                  "bottom": 219.59375,
+                  "left": 38
+                },
+                "flameSvg": {
+                  "x": 32.25,
+                  "y": 161.09375,
+                  "width": 57.5,
+                  "height": 65,
+                  "top": 161.09375,
+                  "right": 89.75,
+                  "bottom": 226.09375,
+                  "left": 32.25
+                },
+                "numberInk": 32,
+                "squareError": 0
+              },
+              "opened": null
+            }
+          ],
+          "crossYear": "Vista del calendario: Semana, 30 dic 2024 – 5 ene 2025",
+          "files": [
+            {
+              "period": "this-week",
+              "format": "png",
+              "bytes": 173089,
+              "sha256": "95f0027aa0570371f30b7ed85789b25eab54beb277d80f848ff9aeaac4b3b50c",
+              "previewEqualsDownload": true,
+              "width": 2000,
+              "height": 1834,
+              "avatarPixel": [
+                242,
+                200,
+                160,
+                255
+              ]
+            },
+            {
+              "period": "this-week",
+              "format": "pdf",
+              "bytes": 208078,
+              "sha256": "d152f15ee04be529c9150d098cfbc25ee37b06056e424a65721b9955e94b2ca5",
+              "previewEqualsDownload": true
+            },
+            {
+              "period": "this-month",
+              "format": "png",
+              "bytes": 211637,
+              "sha256": "3098d23e6a9f5b752ffeeaac2a1006b3be17742a1e9c74d8631119f72dba48b4",
+              "previewEqualsDownload": true,
+              "width": 2000,
+              "height": 2846,
+              "avatarPixel": [
+                242,
+                200,
+                160,
+                255
+              ]
+            },
+            {
+              "period": "this-month",
+              "format": "pdf",
+              "bytes": 260825,
+              "sha256": "c8fdaa71df60e2308f5c8d5e39f15da4a3b50df12d197ed6bc23a30f594afaef",
+              "previewEqualsDownload": true
+            },
+            {
+              "period": "year",
+              "format": "png",
+              "bytes": 506485,
+              "sha256": "2ee529ec12d31c08501bdc336ab5c2aabac99eb75ace94a634436c9687c357cd",
+              "previewEqualsDownload": true,
+              "width": 2000,
+              "height": 3978,
+              "avatarPixel": [
+                242,
+                200,
+                160,
+                255
+              ]
+            },
+            {
+              "period": "year",
+              "format": "pdf",
+              "bytes": 636880,
+              "sha256": "bf1a7fb24eef87ea7cf4324820c8a8d63418bce2d8e8aa9bbbc2302108af8bdf",
+              "previewEqualsDownload": true
+            },
+            {
+              "period": "full",
+              "format": "pdf",
+              "bytes": 636880,
+              "sha256": "bcd6f10ae99a19fa4403adfe6d835afc854c2f3f04fa8bc24102f6957219f2f9",
+              "previewEqualsDownload": true
+            },
+            {
+              "period": "years",
+              "format": "pdf",
+              "bytes": 636880,
+              "sha256": "78cb2f352c3d466bd22c8f2cbe6480b9b99555553167ba064c8fb02562fa4df5",
+              "previewEqualsDownload": true
+            }
+          ],
+          "recordsPreserved": true
+        },
+        {
+          "name": "edge-390",
+          "engine": "edge",
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "lang": "es",
+          "theme": "dark",
+          "longName": false,
+          "pass": true,
+          "checks": [
+            "closed default key, native keyboard disclosure, labeled legend, three period views, distinct activity counts, square dates, larger responsive annual grid, no overflow",
+            "all twelve months, leap day, previous/next period, cross-year week with complete accessible dates",
+            "saved profile show/hide and reload, transient reveal controls, key resets closed on reopen, long chosen name wraps",
+            "actual UI PNG and PDF exports, downloaded bytes match preview, embedded raster avatar verified at decoded pixel, 2x PNG quality",
+            "generic calendar keeps visible legend"
+          ],
+          "views": [
+            {
+              "label": "Week",
+              "level": "week",
+              "accessible": "Vista del calendario: Semana, 19 oct 2026 – 25 oct 2026",
+              "count": 2,
+              "cells": 7,
+              "geometry": {
+                "overflow": false,
+                "width": 390,
+                "card": {
+                  "x": 19,
+                  "y": 145.40625,
+                  "width": 352,
+                  "height": 560.171875,
+                  "top": 145.40625,
+                  "right": 371,
+                  "bottom": 705.578125,
+                  "left": 19
+                },
+                "heading": {
+                  "x": 38,
+                  "y": 164.40625,
+                  "width": 314,
+                  "height": 56.15625,
+                  "top": 164.40625,
+                  "right": 352,
+                  "bottom": 220.5625,
+                  "left": 38
+                },
+                "name": {
+                  "x": 130.1875,
+                  "y": 164.40625,
+                  "width": 221.8125,
+                  "height": 56.15625,
+                  "top": 164.40625,
+                  "right": 352,
+                  "bottom": 220.5625,
+                  "left": 130.1875
+                },
+                "counter": {
+                  "x": 38,
+                  "y": 166.484375,
+                  "width": 72.1875,
+                  "height": 52,
+                  "top": 166.484375,
+                  "right": 110.1875,
+                  "bottom": 218.484375,
+                  "left": 38
+                },
+                "nav": {
+                  "x": 38,
+                  "y": 244.5625,
+                  "width": 314,
+                  "height": 176,
+                  "top": 244.5625,
+                  "right": 352,
+                  "bottom": 420.5625,
+                  "left": 38
+                },
+                "avatar": {
+                  "x": 38,
+                  "y": 244.5625,
+                  "width": 128,
+                  "height": 128,
+                  "top": 244.5625,
+                  "right": 166,
+                  "bottom": 372.5625,
+                  "left": 38
+                },
+                "picker": {
+                  "x": 172,
+                  "y": 286.15625,
+                  "width": 149.390625,
+                  "height": 44.796875,
+                  "top": 286.15625,
+                  "right": 321.390625,
+                  "bottom": 330.953125,
+                  "left": 172
+                },
+                "chevron": {
+                  "x": 273.15625,
+                  "y": 300.546875,
+                  "width": 16,
+                  "height": 16,
+                  "top": 300.546875,
+                  "right": 289.15625,
+                  "bottom": 316.546875,
+                  "left": 273.15625
+                },
+                "active": {
+                  "x": 327.390625,
+                  "y": 290.5625,
+                  "width": 24.609375,
+                  "height": 36,
+                  "top": 290.5625,
+                  "right": 352,
+                  "bottom": 326.5625,
+                  "left": 327.390625
+                },
+                "nameFont": 23.4,
+                "columns": null,
+                "cellWidth": 39.703125,
+                "flameInk": 35.6979180375735,
+                "flameBox": {
+                  "x": 38,
+                  "y": 166.484375,
+                  "width": 46,
+                  "height": 52,
+                  "top": 166.484375,
+                  "right": 84,
+                  "bottom": 218.484375,
+                  "left": 38
+                },
+                "flameSvg": {
+                  "x": 32.25,
+                  "y": 159.984375,
+                  "width": 57.5,
+                  "height": 65,
+                  "top": 159.984375,
+                  "right": 89.75,
+                  "bottom": 224.984375,
+                  "left": 32.25
+                },
+                "numberInk": 32,
+                "squareError": 0
+              },
+              "opened": null
+            },
+            {
+              "label": "Month",
+              "level": "month",
+              "accessible": "Vista del calendario: Mes, Octubre 2026",
+              "count": 18,
+              "cells": 31,
+              "geometry": {
+                "overflow": false,
+                "width": 390,
+                "card": {
+                  "x": 19,
+                  "y": 145.40625,
+                  "width": 352,
+                  "height": 728.046875,
+                  "top": 145.40625,
+                  "right": 371,
+                  "bottom": 873.453125,
+                  "left": 19
+                },
+                "heading": {
+                  "x": 38,
+                  "y": 164.40625,
+                  "width": 314,
+                  "height": 56.15625,
+                  "top": 164.40625,
+                  "right": 352,
+                  "bottom": 220.5625,
+                  "left": 38
+                },
+                "name": {
+                  "x": 130.1875,
+                  "y": 164.40625,
+                  "width": 221.8125,
+                  "height": 56.15625,
+                  "top": 164.40625,
+                  "right": 352,
+                  "bottom": 220.5625,
+                  "left": 130.1875
+                },
+                "counter": {
+                  "x": 38,
+                  "y": 166.484375,
+                  "width": 72.1875,
+                  "height": 52,
+                  "top": 166.484375,
+                  "right": 110.1875,
+                  "bottom": 218.484375,
+                  "left": 38
+                },
+                "nav": {
+                  "x": 38,
+                  "y": 244.5625,
+                  "width": 314,
+                  "height": 176,
+                  "top": 244.5625,
+                  "right": 352,
+                  "bottom": 420.5625,
+                  "left": 38
+                },
+                "avatar": {
+                  "x": 38,
+                  "y": 244.5625,
+                  "width": 128,
+                  "height": 128,
+                  "top": 244.5625,
+                  "right": 166,
+                  "bottom": 372.5625,
+                  "left": 38
+                },
+                "picker": {
+                  "x": 172,
+                  "y": 286.5625,
+                  "width": 136.78125,
+                  "height": 44,
+                  "top": 286.5625,
+                  "right": 308.78125,
+                  "bottom": 330.5625,
+                  "left": 172
+                },
+                "chevron": {
+                  "x": 276.046875,
+                  "y": 300.5625,
+                  "width": 16,
+                  "height": 16,
+                  "top": 300.5625,
+                  "right": 292.046875,
+                  "bottom": 316.5625,
+                  "left": 276.046875
+                },
+                "active": {
+                  "x": 314.78125,
+                  "y": 290.5625,
+                  "width": 37.21875,
+                  "height": 36,
+                  "top": 290.5625,
+                  "right": 352,
+                  "bottom": 326.5625,
+                  "left": 314.78125
+                },
+                "nameFont": 23.4,
+                "columns": null,
+                "cellWidth": 39.71875,
+                "flameInk": 35.6979180375735,
+                "flameBox": {
+                  "x": 38,
+                  "y": 166.484375,
+                  "width": 46,
+                  "height": 52,
+                  "top": 166.484375,
+                  "right": 84,
+                  "bottom": 218.484375,
+                  "left": 38
+                },
+                "flameSvg": {
+                  "x": 32.25,
+                  "y": 159.984375,
+                  "width": 57.5,
+                  "height": 65,
+                  "top": 159.984375,
+                  "right": 89.75,
+                  "bottom": 224.984375,
+                  "left": 32.25
+                },
+                "numberInk": 32,
+                "squareError": 0
+              }
+            },
+            {
+              "label": "Year",
+              "level": "months",
+              "accessible": "Vista del calendario: Año, 2026",
+              "count": 18,
+              "cells": 365,
+              "geometry": {
+                "overflow": false,
+                "width": 390,
+                "card": {
+                  "x": 19,
+                  "y": 145.40625,
+                  "width": 352,
+                  "height": 1403.40625,
+                  "top": 145.40625,
+                  "right": 371,
+                  "bottom": 1548.8125,
+                  "left": 19
+                },
+                "heading": {
+                  "x": 38,
+                  "y": 164.40625,
+                  "width": 314,
+                  "height": 56.15625,
+                  "top": 164.40625,
+                  "right": 352,
+                  "bottom": 220.5625,
+                  "left": 38
+                },
+                "name": {
+                  "x": 130.1875,
+                  "y": 164.40625,
+                  "width": 221.8125,
+                  "height": 56.15625,
+                  "top": 164.40625,
+                  "right": 352,
+                  "bottom": 220.5625,
+                  "left": 130.1875
+                },
+                "counter": {
+                  "x": 38,
+                  "y": 166.484375,
+                  "width": 72.1875,
+                  "height": 52,
+                  "top": 166.484375,
+                  "right": 110.1875,
+                  "bottom": 218.484375,
+                  "left": 38
+                },
+                "nav": {
+                  "x": 38,
+                  "y": 244.5625,
+                  "width": 314,
+                  "height": 176,
+                  "top": 244.5625,
+                  "right": 352,
+                  "bottom": 420.5625,
+                  "left": 38
+                },
+                "avatar": {
+                  "x": 38,
+                  "y": 244.5625,
+                  "width": 128,
+                  "height": 128,
+                  "top": 244.5625,
+                  "right": 166,
+                  "bottom": 372.5625,
+                  "left": 38
+                },
+                "picker": {
+                  "x": 172,
+                  "y": 283.765625,
+                  "width": 132.578125,
+                  "height": 49.59375,
+                  "top": 283.765625,
+                  "right": 304.578125,
+                  "bottom": 333.359375,
+                  "left": 172
+                },
+                "chevron": {
+                  "x": 262.265625,
+                  "y": 300.5625,
+                  "width": 16,
+                  "height": 16,
+                  "top": 300.5625,
+                  "right": 278.265625,
+                  "bottom": 316.5625,
+                  "left": 262.265625
+                },
+                "active": {
+                  "x": 310.578125,
+                  "y": 288.5625,
+                  "width": 41.421875,
+                  "height": 40,
+                  "top": 288.5625,
+                  "right": 352,
+                  "bottom": 328.5625,
+                  "left": 310.578125
+                },
+                "nameFont": 23.4,
+                "columns": 2,
+                "cellWidth": 19.703125,
+                "flameInk": 35.6979180375735,
+                "flameBox": {
+                  "x": 38,
+                  "y": 166.484375,
+                  "width": 46,
+                  "height": 52,
+                  "top": 166.484375,
+                  "right": 84,
+                  "bottom": 218.484375,
+                  "left": 38
+                },
+                "flameSvg": {
+                  "x": 32.25,
+                  "y": 159.984375,
+                  "width": 57.5,
+                  "height": 65,
+                  "top": 159.984375,
+                  "right": 89.75,
+                  "bottom": 224.984375,
+                  "left": 32.25
+                },
+                "numberInk": 32,
+                "squareError": 0
+              },
+              "opened": null
+            }
+          ],
+          "crossYear": "Vista del calendario: Semana, 30 dic 2024 – 5 ene 2025",
+          "files": [
+            {
+              "period": "this-week",
+              "format": "png",
+              "bytes": 360958,
+              "sha256": "5dc0c5d4bcbc4dde43d6d65bdb2a9ef2acc4c2e33fa36fb5d1dd7920026e28ef",
+              "previewEqualsDownload": true,
+              "width": 2000,
+              "height": 1760,
+              "avatarPixel": [
+                242,
+                200,
+                160,
+                255
+              ]
+            },
+            {
+              "period": "this-week",
+              "format": "pdf",
+              "bytes": 241863,
+              "sha256": "62556ca1200b1e8bebbc4243cc67847130b75f08233afa7a7589187960eb9577",
+              "previewEqualsDownload": true
+            },
+            {
+              "period": "this-month",
+              "format": "png",
+              "bytes": 456984,
+              "sha256": "83f9dd7d07eb8ecdd89393f80f968cda5ea7f237d2cd6424239f5d498aa1405e",
+              "previewEqualsDownload": true,
+              "width": 2000,
+              "height": 2772,
+              "avatarPixel": [
+                242,
+                200,
+                160,
+                255
+              ]
+            },
+            {
+              "period": "this-month",
+              "format": "pdf",
+              "bytes": 305181,
+              "sha256": "1c8ca711e6629765fe07b9fad258241f2731cf99a641038e2524a672314afcec",
+              "previewEqualsDownload": true
+            },
+            {
+              "period": "year",
+              "format": "png",
+              "bytes": 1069628,
+              "sha256": "13386bc15938465530eba0ffdfcf34c0eec27613c1dc1135f5b35fb802f100da",
+              "previewEqualsDownload": true,
+              "width": 2000,
+              "height": 3904,
+              "avatarPixel": [
+                242,
+                200,
+                160,
+                255
+              ]
+            },
+            {
+              "period": "year",
+              "format": "pdf",
+              "bytes": 787432,
+              "sha256": "189344d6424eb510c6232167614dbf8f9587ee2285cfeefa597a9240a9a9ff3e",
+              "previewEqualsDownload": true
+            },
+            {
+              "period": "full",
+              "format": "pdf",
+              "bytes": 787432,
+              "sha256": "133ca1dc42db200e92b2c3a53587eeed6d1f55d362ab0d969a4ae9c6c5229033",
+              "previewEqualsDownload": true
+            },
+            {
+              "period": "years",
+              "format": "pdf",
+              "bytes": 787432,
+              "sha256": "71cf227485ba5fb90e6279111e423e061ee08ee62313dc09974dc59d9e0d39f4",
+              "previewEqualsDownload": true
+            }
+          ],
+          "recordsPreserved": true
+        },
+        {
+          "name": "webkit-390",
+          "engine": "webkit",
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "lang": "en",
+          "theme": "light",
+          "longName": false,
+          "pass": true,
+          "checks": [
+            "closed default key, native keyboard disclosure, labeled legend, three period views, distinct activity counts, square dates, larger responsive annual grid, no overflow",
+            "all twelve months, leap day, previous/next period, cross-year week with complete accessible dates",
+            "saved profile show/hide and reload, transient reveal controls, key resets closed on reopen, long chosen name wraps",
+            "actual UI PNG and PDF exports, downloaded bytes match preview, embedded raster avatar verified at decoded pixel, 2x PNG quality",
+            "generic calendar keeps visible legend"
+          ],
+          "views": [
+            {
+              "label": "Week",
+              "level": "week",
+              "accessible": "Calendar view: Week, 19 Oct 2026 – 25 Oct 2026",
+              "count": 2,
+              "cells": 7,
+              "geometry": {
+                "overflow": false,
+                "width": 390,
+                "card": {
+                  "x": 19,
+                  "y": 145.40625,
+                  "width": 352,
+                  "height": 560.140625,
+                  "top": 145.40625,
+                  "right": 371,
+                  "bottom": 705.546875,
+                  "left": 19
+                },
+                "heading": {
+                  "x": 38,
+                  "y": 164.40625,
+                  "width": 314,
+                  "height": 56.125,
+                  "top": 164.40625,
+                  "right": 352,
+                  "bottom": 220.53125,
+                  "left": 38
+                },
+                "name": {
+                  "x": 130.1875,
+                  "y": 164.40625,
+                  "width": 221.8125,
+                  "height": 56.125,
+                  "top": 164.40625,
+                  "right": 352,
+                  "bottom": 220.53125,
+                  "left": 130.1875
+                },
+                "counter": {
+                  "x": 38,
+                  "y": 166.46875,
+                  "width": 72.1875,
+                  "height": 52,
+                  "top": 166.46875,
+                  "right": 110.1875,
+                  "bottom": 218.46875,
+                  "left": 38
+                },
+                "nav": {
+                  "x": 38,
+                  "y": 244.53125,
+                  "width": 314,
+                  "height": 176,
+                  "top": 244.53125,
+                  "right": 352,
+                  "bottom": 420.53125,
+                  "left": 38
+                },
+                "avatar": {
+                  "x": 38,
+                  "y": 244.53125,
+                  "width": 128,
+                  "height": 128,
+                  "top": 244.53125,
+                  "right": 166,
+                  "bottom": 372.53125,
+                  "left": 38
+                },
+                "picker": {
+                  "x": 172,
+                  "y": 286.125,
+                  "width": 149.75,
+                  "height": 44.796875,
+                  "top": 286.125,
+                  "right": 321.75,
+                  "bottom": 330.921875,
+                  "left": 172
+                },
+                "chevron": {
+                  "x": 271.890625,
+                  "y": 300.515625,
+                  "width": 16,
+                  "height": 16,
+                  "top": 300.515625,
+                  "right": 287.890625,
+                  "bottom": 316.515625,
+                  "left": 271.890625
+                },
+                "active": {
+                  "x": 327.75,
+                  "y": 290.53125,
+                  "width": 24.25,
+                  "height": 36,
+                  "top": 290.53125,
+                  "right": 352,
+                  "bottom": 326.53125,
+                  "left": 327.75
+                },
+                "nameFont": 23.4,
+                "columns": null,
+                "cellWidth": 39.703125,
+                "flameInk": 35.6979180375735,
+                "flameBox": {
+                  "x": 38,
+                  "y": 166.46875,
+                  "width": 46,
+                  "height": 52,
+                  "top": 166.46875,
+                  "right": 84,
+                  "bottom": 218.46875,
+                  "left": 38
+                },
+                "flameSvg": {
+                  "x": 32.25,
+                  "y": 159.96875,
+                  "width": 57.5,
+                  "height": 65,
+                  "top": 159.96875,
+                  "right": 89.75,
+                  "bottom": 224.96875,
+                  "left": 32.25
+                },
+                "numberInk": 32,
+                "squareError": 0
+              },
+              "opened": null
+            },
+            {
+              "label": "Month",
+              "level": "month",
+              "accessible": "Calendar view: Month, October 2026",
+              "count": 18,
+              "cells": 31,
+              "geometry": {
+                "overflow": false,
+                "width": 390,
+                "card": {
+                  "x": 19,
+                  "y": 145.40625,
+                  "width": 352,
+                  "height": 728.015625,
+                  "top": 145.40625,
+                  "right": 371,
+                  "bottom": 873.421875,
+                  "left": 19
+                },
+                "heading": {
+                  "x": 38,
+                  "y": 164.40625,
+                  "width": 314,
+                  "height": 56.125,
+                  "top": 164.40625,
+                  "right": 352,
+                  "bottom": 220.53125,
+                  "left": 38
+                },
+                "name": {
+                  "x": 130.1875,
+                  "y": 164.40625,
+                  "width": 221.8125,
+                  "height": 56.125,
+                  "top": 164.40625,
+                  "right": 352,
+                  "bottom": 220.53125,
+                  "left": 130.1875
+                },
+                "counter": {
+                  "x": 38,
+                  "y": 166.46875,
+                  "width": 72.1875,
+                  "height": 52,
+                  "top": 166.46875,
+                  "right": 110.1875,
+                  "bottom": 218.46875,
+                  "left": 38
+                },
+                "nav": {
+                  "x": 38,
+                  "y": 244.53125,
+                  "width": 314,
+                  "height": 176,
+                  "top": 244.53125,
+                  "right": 352,
+                  "bottom": 420.53125,
+                  "left": 38
+                },
+                "avatar": {
+                  "x": 38,
+                  "y": 244.53125,
+                  "width": 128,
+                  "height": 128,
+                  "top": 244.53125,
+                  "right": 166,
+                  "bottom": 372.53125,
+                  "left": 38
+                },
+                "picker": {
+                  "x": 172,
+                  "y": 286.53125,
+                  "width": 138.28125,
+                  "height": 44,
+                  "top": 286.53125,
+                  "right": 310.28125,
+                  "bottom": 330.53125,
+                  "left": 172
+                },
+                "chevron": {
+                  "x": 274.515625,
+                  "y": 300.53125,
+                  "width": 16,
+                  "height": 16,
+                  "top": 300.53125,
+                  "right": 290.515625,
+                  "bottom": 316.53125,
+                  "left": 274.515625
+                },
+                "active": {
+                  "x": 316.28125,
+                  "y": 290.53125,
+                  "width": 35.71875,
+                  "height": 36,
+                  "top": 290.53125,
+                  "right": 352,
+                  "bottom": 326.53125,
+                  "left": 316.28125
+                },
+                "nameFont": 23.4,
+                "columns": null,
+                "cellWidth": 39.71875,
+                "flameInk": 35.6979180375735,
+                "flameBox": {
+                  "x": 38,
+                  "y": 166.46875,
+                  "width": 46,
+                  "height": 52,
+                  "top": 166.46875,
+                  "right": 84,
+                  "bottom": 218.46875,
+                  "left": 38
+                },
+                "flameSvg": {
+                  "x": 32.25,
+                  "y": 159.96875,
+                  "width": 57.5,
+                  "height": 65,
+                  "top": 159.96875,
+                  "right": 89.75,
+                  "bottom": 224.96875,
+                  "left": 32.25
+                },
+                "numberInk": 32,
+                "squareError": 0
+              }
+            },
+            {
+              "label": "Year",
+              "level": "months",
+              "accessible": "Calendar view: Year, 2026",
+              "count": 18,
+              "cells": 365,
+              "geometry": {
+                "overflow": false,
+                "width": 390,
+                "card": {
+                  "x": 19,
+                  "y": 145.40625,
+                  "width": 352,
+                  "height": 1403.375,
+                  "top": 145.40625,
+                  "right": 371,
+                  "bottom": 1548.78125,
+                  "left": 19
+                },
+                "heading": {
+                  "x": 38,
+                  "y": 164.40625,
+                  "width": 314,
+                  "height": 56.125,
+                  "top": 164.40625,
+                  "right": 352,
+                  "bottom": 220.53125,
+                  "left": 38
+                },
+                "name": {
+                  "x": 130.1875,
+                  "y": 164.40625,
+                  "width": 221.8125,
+                  "height": 56.125,
+                  "top": 164.40625,
+                  "right": 352,
+                  "bottom": 220.53125,
+                  "left": 130.1875
+                },
+                "counter": {
+                  "x": 38,
+                  "y": 166.46875,
+                  "width": 72.1875,
+                  "height": 52,
+                  "top": 166.46875,
+                  "right": 110.1875,
+                  "bottom": 218.46875,
+                  "left": 38
+                },
+                "nav": {
+                  "x": 38,
+                  "y": 244.53125,
+                  "width": 314,
+                  "height": 176,
+                  "top": 244.53125,
+                  "right": 352,
+                  "bottom": 420.53125,
+                  "left": 38
+                },
+                "avatar": {
+                  "x": 38,
+                  "y": 244.53125,
+                  "width": 128,
+                  "height": 128,
+                  "top": 244.53125,
+                  "right": 166,
+                  "bottom": 372.53125,
+                  "left": 38
+                },
+                "picker": {
+                  "x": 172,
+                  "y": 283.734375,
+                  "width": 134.328125,
+                  "height": 49.59375,
+                  "top": 283.734375,
+                  "right": 306.328125,
+                  "bottom": 333.328125,
+                  "left": 172
+                },
+                "chevron": {
+                  "x": 261.390625,
+                  "y": 300.53125,
+                  "width": 16,
+                  "height": 16,
+                  "top": 300.53125,
+                  "right": 277.390625,
+                  "bottom": 316.53125,
+                  "left": 261.390625
+                },
+                "active": {
+                  "x": 312.328125,
+                  "y": 288.53125,
+                  "width": 39.671875,
+                  "height": 40,
+                  "top": 288.53125,
+                  "right": 352,
+                  "bottom": 328.53125,
+                  "left": 312.328125
+                },
+                "nameFont": 23.4,
+                "columns": 2,
+                "cellWidth": 19.703125,
+                "flameInk": 35.6979180375735,
+                "flameBox": {
+                  "x": 38,
+                  "y": 166.46875,
+                  "width": 46,
+                  "height": 52,
+                  "top": 166.46875,
+                  "right": 84,
+                  "bottom": 218.46875,
+                  "left": 38
+                },
+                "flameSvg": {
+                  "x": 32.25,
+                  "y": 159.96875,
+                  "width": 57.5,
+                  "height": 65,
+                  "top": 159.96875,
+                  "right": 89.75,
+                  "bottom": 224.96875,
+                  "left": 32.25
+                },
+                "numberInk": 32,
+                "squareError": 0
+              },
+              "opened": null
+            }
+          ],
+          "crossYear": "Calendar view: Week, 30 Dec 2024 – 5 Jan 2025",
+          "files": [
+            {
+              "period": "this-week",
+              "format": "png",
+              "bytes": 149162,
+              "sha256": "12b855b7ba88b9bf9f52df34fe1b5304c6fbe0d113adfd882d5bd7ed1f0692ea",
+              "previewEqualsDownload": true,
+              "width": 2000,
+              "height": 1760,
+              "avatarPixel": [
+                242,
+                200,
+                160,
+                255
+              ]
+            },
+            {
+              "period": "this-week",
+              "format": "pdf",
+              "bytes": 174969,
+              "sha256": "bc6d05cc83c633f1dbc885043af2d5b75a11bfcf558d0b14105520005fa58917",
+              "previewEqualsDownload": true
+            },
+            {
+              "period": "this-month",
+              "format": "png",
+              "bytes": 188474,
+              "sha256": "96a11637b5bb51ee16b4876f33739b7665716ec22684e10e012b1f16fcc5040e",
+              "previewEqualsDownload": true,
+              "width": 2000,
+              "height": 2772,
+              "avatarPixel": [
+                242,
+                200,
+                160,
+                255
+              ]
+            },
+            {
+              "period": "this-month",
+              "format": "pdf",
+              "bytes": 227894,
+              "sha256": "5fcf3f04c2bda377888fa40a9b07b60147bb995d7308e7c7b6e855ccfceba9ab",
+              "previewEqualsDownload": true
+            },
+            {
+              "period": "year",
+              "format": "png",
+              "bytes": 485025,
+              "sha256": "a9a30338a0dfc328d4cf1c40ec2e9cc763a9e48390cb5b575763a99fdec3dfd2",
+              "previewEqualsDownload": true,
+              "width": 2000,
+              "height": 3904,
+              "avatarPixel": [
+                242,
+                200,
+                160,
+                255
+              ]
+            },
+            {
+              "period": "year",
+              "format": "pdf",
+              "bytes": 605027,
+              "sha256": "be50e694e44cc910b367a3866518cc5bab2b2303c64f118407cf6898ac6298f6",
+              "previewEqualsDownload": true
+            },
+            {
+              "period": "full",
+              "format": "pdf",
+              "bytes": 605027,
+              "sha256": "d227ed7dfadcfb0c8e1e542cc4fece083b06646429ec20709e746509e36b6211",
+              "previewEqualsDownload": true
+            },
+            {
+              "period": "years",
+              "format": "pdf",
+              "bytes": 605027,
+              "sha256": "427d3671d4b95845cc5ebdb60d6f5777bb4fe9e5e3ff530474d80d904034d088",
+              "previewEqualsDownload": true
+            }
+          ],
+          "recordsPreserved": true
+        },
+        {
+          "name": "edge-desktop",
+          "engine": "edge",
+          "viewport": {
+            "width": 1440,
+            "height": 1000
+          },
+          "lang": "en",
+          "theme": "dark",
+          "longName": false,
+          "pass": true,
+          "checks": [
+            "closed default key, native keyboard disclosure, labeled legend, three period views, distinct activity counts, square dates, larger responsive annual grid, no overflow",
+            "all twelve months, leap day, previous/next period, cross-year week with complete accessible dates",
+            "saved profile show/hide and reload, transient reveal controls, key resets closed on reopen, long chosen name wraps",
+            "actual UI PNG and PDF exports, downloaded bytes match preview, embedded raster avatar verified at decoded pixel, 2x PNG quality",
+            "generic calendar keeps visible legend"
+          ],
+          "views": [
+            {
+              "label": "Week",
+              "level": "week",
+              "accessible": "Calendar view: Week, 19 Oct 2026 – 25 Oct 2026",
+              "count": 2,
+              "cells": 7,
+              "geometry": {
+                "overflow": false,
+                "width": 1440,
+                "card": {
+                  "x": 399,
+                  "y": 161,
+                  "width": 642,
+                  "height": 528.296875,
+                  "top": 161,
+                  "right": 1041,
+                  "bottom": 689.296875,
+                  "left": 399
+                },
+                "heading": {
+                  "x": 418,
+                  "y": 180,
+                  "width": 604,
+                  "height": 52,
+                  "top": 180,
+                  "right": 1022,
+                  "bottom": 232,
+                  "left": 418
+                },
+                "name": {
+                  "x": 708.859375,
+                  "y": 188,
+                  "width": 313.140625,
+                  "height": 36,
+                  "top": 188,
+                  "right": 1022,
+                  "bottom": 224,
+                  "left": 708.859375
+                },
+                "counter": {
+                  "x": 418,
+                  "y": 180,
+                  "width": 72.1875,
+                  "height": 52,
+                  "top": 180,
+                  "right": 490.1875,
+                  "bottom": 232,
+                  "left": 418
+                },
+                "nav": {
+                  "x": 418,
+                  "y": 256,
+                  "width": 604,
+                  "height": 128,
+                  "top": 256,
+                  "right": 1022,
+                  "bottom": 384,
+                  "left": 418
+                },
+                "avatar": {
+                  "x": 472,
+                  "y": 256,
+                  "width": 128,
+                  "height": 128,
+                  "top": 256,
+                  "right": 600,
+                  "bottom": 384,
+                  "left": 472
+                },
+                "picker": {
+                  "x": 612,
+                  "y": 297.59375,
+                  "width": 319.390625,
+                  "height": 44.796875,
+                  "top": 297.59375,
+                  "right": 931.390625,
+                  "bottom": 342.390625,
+                  "left": 612
+                },
+                "chevron": {
+                  "x": 798.15625,
+                  "y": 311.984375,
+                  "width": 16,
+                  "height": 16,
+                  "top": 311.984375,
+                  "right": 814.15625,
+                  "bottom": 327.984375,
+                  "left": 798.15625
+                },
+                "active": {
+                  "x": 943.390625,
+                  "y": 302,
+                  "width": 24.609375,
+                  "height": 36,
+                  "top": 302,
+                  "right": 968,
+                  "bottom": 338,
+                  "left": 943.390625
+                },
+                "nameFont": 30,
+                "columns": null,
+                "cellWidth": 60,
+                "flameInk": 35.6979180375735,
+                "flameBox": {
+                  "x": 418,
+                  "y": 180,
+                  "width": 46,
+                  "height": 52,
+                  "top": 180,
+                  "right": 464,
+                  "bottom": 232,
+                  "left": 418
+                },
+                "flameSvg": {
+                  "x": 412.25,
+                  "y": 173.5,
+                  "width": 57.5,
+                  "height": 65,
+                  "top": 173.5,
+                  "right": 469.75,
+                  "bottom": 238.5,
+                  "left": 412.25
+                },
+                "numberInk": 32,
+                "squareError": 0
+              },
+              "opened": null
+            },
+            {
+              "label": "Month",
+              "level": "month",
+              "accessible": "Calendar view: Month, October 2026",
+              "count": 18,
+              "cells": 31,
+              "geometry": {
+                "overflow": false,
+                "width": 1440,
+                "card": {
+                  "x": 399,
+                  "y": 161,
+                  "width": 642,
+                  "height": 777.296875,
+                  "top": 161,
+                  "right": 1041,
+                  "bottom": 938.296875,
+                  "left": 399
+                },
+                "heading": {
+                  "x": 418,
+                  "y": 180,
+                  "width": 604,
+                  "height": 52,
+                  "top": 180,
+                  "right": 1022,
+                  "bottom": 232,
+                  "left": 418
+                },
+                "name": {
+                  "x": 708.859375,
+                  "y": 188,
+                  "width": 313.140625,
+                  "height": 36,
+                  "top": 188,
+                  "right": 1022,
+                  "bottom": 224,
+                  "left": 708.859375
+                },
+                "counter": {
+                  "x": 418,
+                  "y": 180,
+                  "width": 72.1875,
+                  "height": 52,
+                  "top": 180,
+                  "right": 490.1875,
+                  "bottom": 232,
+                  "left": 418
+                },
+                "nav": {
+                  "x": 418,
+                  "y": 256,
+                  "width": 604,
+                  "height": 128,
+                  "top": 256,
+                  "right": 1022,
+                  "bottom": 384,
+                  "left": 418
+                },
+                "avatar": {
+                  "x": 472,
+                  "y": 256,
+                  "width": 128,
+                  "height": 128,
+                  "top": 256,
+                  "right": 600,
+                  "bottom": 384,
+                  "left": 472
+                },
+                "picker": {
+                  "x": 612,
+                  "y": 297.59375,
+                  "width": 306.78125,
+                  "height": 44.796875,
+                  "top": 297.59375,
+                  "right": 918.78125,
+                  "bottom": 342.390625,
+                  "left": 612
+                },
+                "chevron": {
+                  "x": 804.921875,
+                  "y": 311.984375,
+                  "width": 16,
+                  "height": 16,
+                  "top": 311.984375,
+                  "right": 820.921875,
+                  "bottom": 327.984375,
+                  "left": 804.921875
+                },
+                "active": {
+                  "x": 930.78125,
+                  "y": 302,
+                  "width": 37.21875,
+                  "height": 36,
+                  "top": 302,
+                  "right": 968,
+                  "bottom": 338,
+                  "left": 930.78125
+                },
+                "nameFont": 30,
+                "columns": null,
+                "cellWidth": 60,
+                "flameInk": 35.6979180375735,
+                "flameBox": {
+                  "x": 418,
+                  "y": 180,
+                  "width": 46,
+                  "height": 52,
+                  "top": 180,
+                  "right": 464,
+                  "bottom": 232,
+                  "left": 418
+                },
+                "flameSvg": {
+                  "x": 412.25,
+                  "y": 173.5,
+                  "width": 57.5,
+                  "height": 65,
+                  "top": 173.5,
+                  "right": 469.75,
+                  "bottom": 238.5,
+                  "left": 412.25
+                },
+                "numberInk": 32,
+                "squareError": 0
+              }
+            },
+            {
+              "label": "Year",
+              "level": "months",
+              "accessible": "Calendar view: Year, 2026",
+              "count": 18,
+              "cells": 365,
+              "geometry": {
+                "overflow": false,
+                "width": 1440,
+                "card": {
+                  "x": 399,
+                  "y": 161,
+                  "width": 642,
+                  "height": 1201.90625,
+                  "top": 161,
+                  "right": 1041,
+                  "bottom": 1362.90625,
+                  "left": 399
+                },
+                "heading": {
+                  "x": 418,
+                  "y": 180,
+                  "width": 604,
+                  "height": 52,
+                  "top": 180,
+                  "right": 1022,
+                  "bottom": 232,
+                  "left": 418
+                },
+                "name": {
+                  "x": 708.859375,
+                  "y": 188,
+                  "width": 313.140625,
+                  "height": 36,
+                  "top": 188,
+                  "right": 1022,
+                  "bottom": 224,
+                  "left": 708.859375
+                },
+                "counter": {
+                  "x": 418,
+                  "y": 180,
+                  "width": 72.1875,
+                  "height": 52,
+                  "top": 180,
+                  "right": 490.1875,
+                  "bottom": 232,
+                  "left": 418
+                },
+                "nav": {
+                  "x": 418,
+                  "y": 256,
+                  "width": 604,
+                  "height": 128,
+                  "top": 256,
+                  "right": 1022,
+                  "bottom": 384,
+                  "left": 418
+                },
+                "avatar": {
+                  "x": 472,
+                  "y": 256,
+                  "width": 128,
+                  "height": 128,
+                  "top": 256,
+                  "right": 600,
+                  "bottom": 384,
+                  "left": 472
+                },
+                "picker": {
+                  "x": 612,
+                  "y": 285.59375,
+                  "width": 285.78125,
+                  "height": 68.796875,
+                  "top": 285.59375,
+                  "right": 897.78125,
+                  "bottom": 354.390625,
+                  "left": 612
+                },
+                "chevron": {
+                  "x": 795.984375,
+                  "y": 311.984375,
+                  "width": 16,
+                  "height": 16,
+                  "top": 311.984375,
+                  "right": 811.984375,
+                  "bottom": 327.984375,
+                  "left": 795.984375
+                },
+                "active": {
+                  "x": 909.78125,
+                  "y": 292,
+                  "width": 58.21875,
+                  "height": 56,
+                  "top": 292,
+                  "right": 968,
+                  "bottom": 348,
+                  "left": 909.78125
+                },
+                "nameFont": 30,
+                "columns": 3,
+                "cellWidth": 26.09375,
+                "flameInk": 35.6979180375735,
+                "flameBox": {
+                  "x": 418,
+                  "y": 180,
+                  "width": 46,
+                  "height": 52,
+                  "top": 180,
+                  "right": 464,
+                  "bottom": 232,
+                  "left": 418
+                },
+                "flameSvg": {
+                  "x": 412.25,
+                  "y": 173.5,
+                  "width": 57.5,
+                  "height": 65,
+                  "top": 173.5,
+                  "right": 469.75,
+                  "bottom": 238.5,
+                  "left": 412.25
+                },
+                "numberInk": 32,
+                "squareError": 0
+              },
+              "opened": null
+            }
+          ],
+          "crossYear": "Calendar view: Week, 30 Dec 2024 – 5 Jan 2025",
+          "files": [
+            {
+              "period": "this-week",
+              "format": "png",
+              "bytes": 350716,
+              "sha256": "fe7bfa77d75011d77c92b70e6ec114dc3af7b55d0d86621d7ad7ee7431ea2ef1",
+              "previewEqualsDownload": true,
+              "width": 2000,
+              "height": 1760,
+              "avatarPixel": [
+                242,
+                200,
+                160,
+                255
+              ]
+            },
+            {
+              "period": "this-week",
+              "format": "pdf",
+              "bytes": 232004,
+              "sha256": "cac03daf0ea8527827418d15edf910f09c88f8594c5a2977a22ae71c3f7e97c8",
+              "previewEqualsDownload": true
+            },
+            {
+              "period": "this-month",
+              "format": "png",
+              "bytes": 446819,
+              "sha256": "40973a43df882eec5f1385077561e8a7961adbec3f221eeb77069328141d0519",
+              "previewEqualsDownload": true,
+              "width": 2000,
+              "height": 2772,
+              "avatarPixel": [
+                242,
+                200,
+                160,
+                255
+              ]
+            },
+            {
+              "period": "this-month",
+              "format": "pdf",
+              "bytes": 295473,
+              "sha256": "1d9ebe93b3a912e1b1f7b375a34ed4ed844d5aa658a058004a35790d53398b04",
+              "previewEqualsDownload": true
+            },
+            {
+              "period": "year",
+              "format": "png",
+              "bytes": 1065386,
+              "sha256": "7d8ca0e15b4a300671ad9398de5bdbb95fbf8fca1542570ff7f6a6376d472395",
+              "previewEqualsDownload": true,
+              "width": 2000,
+              "height": 3904,
+              "avatarPixel": [
+                242,
+                200,
+                160,
+                255
+              ]
+            },
+            {
+              "period": "year",
+              "format": "pdf",
+              "bytes": 782796,
+              "sha256": "b62f366e006cfa3735cae9663c84ff562d3c35e2ad1eb85b087b9d9f4415b458",
+              "previewEqualsDownload": true
+            },
+            {
+              "period": "full",
+              "format": "pdf",
+              "bytes": 782796,
+              "sha256": "f33c01cb0b27a71147b280cb21c6407b3f236e4339895a76929d1766b3a6fcac",
+              "previewEqualsDownload": true
+            },
+            {
+              "period": "years",
+              "format": "pdf",
+              "bytes": 782796,
+              "sha256": "c2a96c568a2f7843897d60bf23c1d9ebc6f4bd4d35293bdc1ea9b07148f9d646",
+              "previewEqualsDownload": true
+            }
+          ],
+          "recordsPreserved": true
+        },
+        {
+          "name": "webkit-desktop",
+          "engine": "webkit",
+          "viewport": {
+            "width": 1440,
+            "height": 1000
+          },
+          "lang": "es",
+          "theme": "light",
+          "longName": false,
+          "pass": true,
+          "checks": [
+            "closed default key, native keyboard disclosure, labeled legend, three period views, distinct activity counts, square dates, larger responsive annual grid, no overflow",
+            "all twelve months, leap day, previous/next period, cross-year week with complete accessible dates",
+            "saved profile show/hide and reload, transient reveal controls, key resets closed on reopen, long chosen name wraps",
+            "actual UI PNG and PDF exports, downloaded bytes match preview, embedded raster avatar verified at decoded pixel, 2x PNG quality",
+            "generic calendar keeps visible legend"
+          ],
+          "views": [
+            {
+              "label": "Week",
+              "level": "week",
+              "accessible": "Vista del calendario: Semana, 19 oct 2026 – 25 oct 2026",
+              "count": 2,
+              "cells": 7,
+              "geometry": {
+                "overflow": false,
+                "width": 1440,
+                "card": {
+                  "x": 399,
+                  "y": 161,
+                  "width": 642,
+                  "height": 528.296875,
+                  "top": 161,
+                  "right": 1041,
+                  "bottom": 689.296875,
+                  "left": 399
+                },
+                "heading": {
+                  "x": 418,
+                  "y": 180,
+                  "width": 604,
+                  "height": 52,
+                  "top": 180,
+                  "right": 1022,
+                  "bottom": 232,
+                  "left": 418
+                },
+                "name": {
+                  "x": 719.921875,
+                  "y": 188,
+                  "width": 302.078125,
+                  "height": 36,
+                  "top": 188,
+                  "right": 1022,
+                  "bottom": 224,
+                  "left": 719.921875
+                },
+                "counter": {
+                  "x": 418,
+                  "y": 180,
+                  "width": 72.1875,
+                  "height": 52,
+                  "top": 180,
+                  "right": 490.1875,
+                  "bottom": 232,
+                  "left": 418
+                },
+                "nav": {
+                  "x": 418,
+                  "y": 256,
+                  "width": 604,
+                  "height": 128,
+                  "top": 256,
+                  "right": 1022,
+                  "bottom": 384,
+                  "left": 418
+                },
+                "avatar": {
+                  "x": 472,
+                  "y": 256,
+                  "width": 128,
+                  "height": 128,
+                  "top": 256,
+                  "right": 600,
+                  "bottom": 384,
+                  "left": 472
+                },
+                "picker": {
+                  "x": 612,
+                  "y": 297.59375,
+                  "width": 319.75,
+                  "height": 44.796875,
+                  "top": 297.59375,
+                  "right": 931.75,
+                  "bottom": 342.390625,
+                  "left": 612
+                },
+                "chevron": {
+                  "x": 796.890625,
+                  "y": 311.984375,
+                  "width": 16,
+                  "height": 16,
+                  "top": 311.984375,
+                  "right": 812.890625,
+                  "bottom": 327.984375,
+                  "left": 796.890625
+                },
+                "active": {
+                  "x": 943.75,
+                  "y": 302,
+                  "width": 24.25,
+                  "height": 36,
+                  "top": 302,
+                  "right": 968,
+                  "bottom": 338,
+                  "left": 943.75
+                },
+                "nameFont": 30,
+                "columns": null,
+                "cellWidth": 60,
+                "flameInk": 35.6979180375735,
+                "flameBox": {
+                  "x": 418,
+                  "y": 180,
+                  "width": 46,
+                  "height": 52,
+                  "top": 180,
+                  "right": 464,
+                  "bottom": 232,
+                  "left": 418
+                },
+                "flameSvg": {
+                  "x": 412.25,
+                  "y": 173.5,
+                  "width": 57.5,
+                  "height": 65,
+                  "top": 173.5,
+                  "right": 469.75,
+                  "bottom": 238.5,
+                  "left": 412.25
+                },
+                "numberInk": 32,
+                "squareError": 0
+              },
+              "opened": null
+            },
+            {
+              "label": "Month",
+              "level": "month",
+              "accessible": "Vista del calendario: Mes, Octubre 2026",
+              "count": 18,
+              "cells": 31,
+              "geometry": {
+                "overflow": false,
+                "width": 1440,
+                "card": {
+                  "x": 399,
+                  "y": 161,
+                  "width": 642,
+                  "height": 777.296875,
+                  "top": 161,
+                  "right": 1041,
+                  "bottom": 938.296875,
+                  "left": 399
+                },
+                "heading": {
+                  "x": 418,
+                  "y": 180,
+                  "width": 604,
+                  "height": 52,
+                  "top": 180,
+                  "right": 1022,
+                  "bottom": 232,
+                  "left": 418
+                },
+                "name": {
+                  "x": 719.921875,
+                  "y": 188,
+                  "width": 302.078125,
+                  "height": 36,
+                  "top": 188,
+                  "right": 1022,
+                  "bottom": 224,
+                  "left": 719.921875
+                },
+                "counter": {
+                  "x": 418,
+                  "y": 180,
+                  "width": 72.1875,
+                  "height": 52,
+                  "top": 180,
+                  "right": 490.1875,
+                  "bottom": 232,
+                  "left": 418
+                },
+                "nav": {
+                  "x": 418,
+                  "y": 256,
+                  "width": 604,
+                  "height": 128,
+                  "top": 256,
+                  "right": 1022,
+                  "bottom": 384,
+                  "left": 418
+                },
+                "avatar": {
+                  "x": 472,
+                  "y": 256,
+                  "width": 128,
+                  "height": 128,
+                  "top": 256,
+                  "right": 600,
+                  "bottom": 384,
+                  "left": 472
+                },
+                "picker": {
+                  "x": 612,
+                  "y": 297.59375,
+                  "width": 308.28125,
+                  "height": 44.796875,
+                  "top": 297.59375,
+                  "right": 920.28125,
+                  "bottom": 342.390625,
+                  "left": 612
+                },
+                "chevron": {
+                  "x": 802.90625,
+                  "y": 311.984375,
+                  "width": 16,
+                  "height": 16,
+                  "top": 311.984375,
+                  "right": 818.90625,
+                  "bottom": 327.984375,
+                  "left": 802.90625
+                },
+                "active": {
+                  "x": 932.28125,
+                  "y": 302,
+                  "width": 35.71875,
+                  "height": 36,
+                  "top": 302,
+                  "right": 968,
+                  "bottom": 338,
+                  "left": 932.28125
+                },
+                "nameFont": 30,
+                "columns": null,
+                "cellWidth": 60,
+                "flameInk": 35.6979180375735,
+                "flameBox": {
+                  "x": 418,
+                  "y": 180,
+                  "width": 46,
+                  "height": 52,
+                  "top": 180,
+                  "right": 464,
+                  "bottom": 232,
+                  "left": 418
+                },
+                "flameSvg": {
+                  "x": 412.25,
+                  "y": 173.5,
+                  "width": 57.5,
+                  "height": 65,
+                  "top": 173.5,
+                  "right": 469.75,
+                  "bottom": 238.5,
+                  "left": 412.25
+                },
+                "numberInk": 32,
+                "squareError": 0
+              }
+            },
+            {
+              "label": "Year",
+              "level": "months",
+              "accessible": "Vista del calendario: Año, 2026",
+              "count": 18,
+              "cells": 365,
+              "geometry": {
+                "overflow": false,
+                "width": 1440,
+                "card": {
+                  "x": 399,
+                  "y": 161,
+                  "width": 642,
+                  "height": 1201.90625,
+                  "top": 161,
+                  "right": 1041,
+                  "bottom": 1362.90625,
+                  "left": 399
+                },
+                "heading": {
+                  "x": 418,
+                  "y": 180,
+                  "width": 604,
+                  "height": 52,
+                  "top": 180,
+                  "right": 1022,
+                  "bottom": 232,
+                  "left": 418
+                },
+                "name": {
+                  "x": 719.921875,
+                  "y": 188,
+                  "width": 302.078125,
+                  "height": 36,
+                  "top": 188,
+                  "right": 1022,
+                  "bottom": 224,
+                  "left": 719.921875
+                },
+                "counter": {
+                  "x": 418,
+                  "y": 180,
+                  "width": 72.1875,
+                  "height": 52,
+                  "top": 180,
+                  "right": 490.1875,
+                  "bottom": 232,
+                  "left": 418
+                },
+                "nav": {
+                  "x": 418,
+                  "y": 256,
+                  "width": 604,
+                  "height": 128,
+                  "top": 256,
+                  "right": 1022,
+                  "bottom": 384,
+                  "left": 418
+                },
+                "avatar": {
+                  "x": 472,
+                  "y": 256,
+                  "width": 128,
+                  "height": 128,
+                  "top": 256,
+                  "right": 600,
+                  "bottom": 384,
+                  "left": 472
+                },
+                "picker": {
+                  "x": 612,
+                  "y": 285.59375,
+                  "width": 288.515625,
+                  "height": 68.796875,
+                  "top": 285.59375,
+                  "right": 900.515625,
+                  "bottom": 354.390625,
+                  "left": 612
+                },
+                "chevron": {
+                  "x": 794.609375,
+                  "y": 311.984375,
+                  "width": 16,
+                  "height": 16,
+                  "top": 311.984375,
+                  "right": 810.609375,
+                  "bottom": 327.984375,
+                  "left": 794.609375
+                },
+                "active": {
+                  "x": 912.515625,
+                  "y": 292,
+                  "width": 55.484375,
+                  "height": 56,
+                  "top": 292,
+                  "right": 968,
+                  "bottom": 348,
+                  "left": 912.515625
+                },
+                "nameFont": 30,
+                "columns": 3,
+                "cellWidth": 26.09375,
+                "flameInk": 35.6979180375735,
+                "flameBox": {
+                  "x": 418,
+                  "y": 180,
+                  "width": 46,
+                  "height": 52,
+                  "top": 180,
+                  "right": 464,
+                  "bottom": 232,
+                  "left": 418
+                },
+                "flameSvg": {
+                  "x": 412.25,
+                  "y": 173.5,
+                  "width": 57.5,
+                  "height": 65,
+                  "top": 173.5,
+                  "right": 469.75,
+                  "bottom": 238.5,
+                  "left": 412.25
+                },
+                "numberInk": 32,
+                "squareError": 0
+              },
+              "opened": null
+            }
+          ],
+          "crossYear": "Vista del calendario: Semana, 30 dic 2024 – 5 ene 2025",
+          "files": [
+            {
+              "period": "this-week",
+              "format": "png",
+              "bytes": 153119,
+              "sha256": "535d8cfad43cdc34e38bc322858d5c37d9aae07c7716b7485da0060c1f57d4e6",
+              "previewEqualsDownload": true,
+              "width": 2000,
+              "height": 1760,
+              "avatarPixel": [
+                242,
+                200,
+                160,
+                255
+              ]
+            },
+            {
+              "period": "this-week",
+              "format": "pdf",
+              "bytes": 182907,
+              "sha256": "837696372364896d41b0213d55b77a737e53a719c9dfaedb734863a42e29c427",
+              "previewEqualsDownload": true
+            },
+            {
+              "period": "this-month",
+              "format": "png",
+              "bytes": 192192,
+              "sha256": "c20aa9c27a68336d13ba4a08e68824003db9e12953e1ce9689b33c4564138a2a",
+              "previewEqualsDownload": true,
+              "width": 2000,
+              "height": 2772,
+              "avatarPixel": [
+                242,
+                200,
+                160,
+                255
+              ]
+            },
+            {
+              "period": "this-month",
+              "format": "pdf",
+              "bytes": 235738,
+              "sha256": "4df610b6c525e7253b2405534c74c553f9babc4473dfd747ffe9a79fa1df3dbf",
+              "previewEqualsDownload": true
+            },
+            {
+              "period": "year",
+              "format": "png",
+              "bytes": 486921,
+              "sha256": "a086109853342d144290f0a42f74912bf40859903ba4dbeb5a0a8eb2ac05cc6c",
+              "previewEqualsDownload": true,
+              "width": 2000,
+              "height": 3904,
+              "avatarPixel": [
+                242,
+                200,
+                160,
+                255
+              ]
+            },
+            {
+              "period": "year",
+              "format": "pdf",
+              "bytes": 611974,
+              "sha256": "e00a88f2d3c9efcdd94028c5c0b199afedd094d09052cef279daf409b930c87e",
+              "previewEqualsDownload": true
+            },
+            {
+              "period": "full",
+              "format": "pdf",
+              "bytes": 611974,
+              "sha256": "196036aea165af5ac6ade9e569bc50b9273286e67424ac4d0cf1786373a7274a",
+              "previewEqualsDownload": true
+            },
+            {
+              "period": "years",
+              "format": "pdf",
+              "bytes": 611974,
+              "sha256": "bca384b81d3d4d70ca2b7be3c83b75fc020a015db34483e5d04f28b573bf2c07",
+              "previewEqualsDownload": true
+            }
+          ],
+          "recordsPreserved": true
+        }
+      ]
+    },
+    "weight": {
+      "sourceCommit": "d664d461bf5139d75991d7a1fe421bde77f1c78a",
+      "pass": true,
+      "cases": 4,
+      "checks": 24,
+      "runtimeErrors": 0,
+      "syntheticOnly": true,
+      "actualPublic": false,
+      "results": [
+        {
+          "engine": "edge",
+          "unit": "kg",
+          "pass": true,
+          "checks": [
+            "Opening isolated ruler preserves workout/history",
+            "Trusted ruler drag reaches adjacent whole-unit load without session writes",
+            "Confirmed Top recalculates both pending backoffs, preserves manual reps/history/routine/units",
+            "Exact saved loads and automation survive reload",
+            "Cancel discards new ruler draft",
+            "Workout remains navigation-free without runtime errors"
+          ],
+          "errors": [],
+          "trustedGesture": "CDP touch",
+          "profilePreserved": true
+        },
+        {
+          "engine": "edge",
+          "unit": "lb",
+          "pass": true,
+          "checks": [
+            "Opening isolated ruler preserves workout/history",
+            "Trusted ruler drag reaches adjacent whole-unit load without session writes",
+            "Confirmed Top recalculates both pending backoffs, preserves manual reps/history/routine/units",
+            "Exact saved loads and automation survive reload",
+            "Cancel discards new ruler draft",
+            "Workout remains navigation-free without runtime errors"
+          ],
+          "errors": [],
+          "trustedGesture": "CDP touch",
+          "profilePreserved": true
+        },
+        {
+          "engine": "webkit",
+          "unit": "kg",
+          "pass": true,
+          "checks": [
+            "Opening isolated ruler preserves workout/history",
+            "Trusted ruler drag reaches adjacent whole-unit load without session writes",
+            "Confirmed Top recalculates both pending backoffs, preserves manual reps/history/routine/units",
+            "Exact saved loads and automation survive reload",
+            "Cancel discards new ruler draft",
+            "Workout remains navigation-free without runtime errors"
+          ],
+          "errors": [],
+          "trustedGesture": "WebKit mouse pointer",
+          "profilePreserved": true
+        },
+        {
+          "engine": "webkit",
+          "unit": "lb",
+          "pass": true,
+          "checks": [
+            "Opening isolated ruler preserves workout/history",
+            "Trusted ruler drag reaches adjacent whole-unit load without session writes",
+            "Confirmed Top recalculates both pending backoffs, preserves manual reps/history/routine/units",
+            "Exact saved loads and automation survive reload",
+            "Cancel discards new ruler draft",
+            "Workout remains navigation-free without runtime errors"
+          ],
+          "errors": [],
+          "trustedGesture": "WebKit mouse pointer",
+          "profilePreserved": true
+        }
+      ]
+    },
+    "regression": {
+      "sourceCommit": "d664d461bf5139d75991d7a1fe421bde77f1c78a",
+      "pass": true,
+      "cases": 4,
+      "checks": 20,
+      "runtimeErrors": 0,
+      "syntheticOnly": true,
+      "actualPublic": false,
+      "engineLimits": {
+        "edge": "Windows Edge, mobile viewport and trusted Playwright clicks",
+        "webkit": "Windows WebKit, not physical iPhone or native iOS"
+      },
+      "results": [
+        {
+          "engine": "edge",
+          "scenario": "start",
+          "checks": [
+            {
+              "name": "Start opens the existing required check-in without mutating profile",
+              "pass": true
+            },
+            {
+              "name": "Settings and routine editor remain dock-free",
+              "pass": true
+            },
+            {
+              "name": "Direct buttons return with entire inactive profile equal",
+              "pass": true
+            },
+            {
+              "name": "No observed page errors",
+              "pass": true
+            }
+          ],
+          "pageErrors": [],
+          "pass": true
+        },
+        {
+          "engine": "edge",
+          "scenario": "resume",
+          "checks": [
+            {
+              "name": "Rest timer clears fixed navigation and raised Start",
+              "pass": true,
+              "barTop": 766,
+              "circleTop": 747,
+              "timerTop": 659.703125,
+              "timerBottom": 733,
+              "bottom": 184.296875,
+              "height": 844
+            },
+            {
+              "name": "Resume enters Workout without dock or protected-data change",
+              "pass": true
+            },
+            {
+              "name": "Workout Back restores all direct tabs and Resume",
+              "pass": true
+            },
+            {
+              "name": "Settings remains dock-free during a live session",
+              "pass": true
+            },
+            {
+              "name": "Entire live profile preserved except documented interaction/store timestamps",
+              "pass": true
+            },
+            {
+              "name": "No observed page errors",
+              "pass": true
+            }
+          ],
+          "pageErrors": [],
+          "pass": true
+        },
+        {
+          "engine": "webkit",
+          "scenario": "start",
+          "checks": [
+            {
+              "name": "Start opens the existing required check-in without mutating profile",
+              "pass": true
+            },
+            {
+              "name": "Settings and routine editor remain dock-free",
+              "pass": true
+            },
+            {
+              "name": "Direct buttons return with entire inactive profile equal",
+              "pass": true
+            },
+            {
+              "name": "No observed page errors",
+              "pass": true
+            }
+          ],
+          "pageErrors": [],
+          "pass": true
+        },
+        {
+          "engine": "webkit",
+          "scenario": "resume",
+          "checks": [
+            {
+              "name": "Rest timer clears fixed navigation and raised Start",
+              "pass": true,
+              "barTop": 766,
+              "circleTop": 747,
+              "timerTop": 659.703125,
+              "timerBottom": 733,
+              "bottom": 184.296875,
+              "height": 844
+            },
+            {
+              "name": "Resume enters Workout without dock or protected-data change",
+              "pass": true
+            },
+            {
+              "name": "Workout Back restores all direct tabs and Resume",
+              "pass": true
+            },
+            {
+              "name": "Settings remains dock-free during a live session",
+              "pass": true
+            },
+            {
+              "name": "Entire live profile preserved except documented interaction/store timestamps",
+              "pass": true
+            },
+            {
+              "name": "No observed page errors",
+              "pass": true
+            }
+          ],
+          "pageErrors": [],
+          "pass": true
+        }
+      ]
+    }
+  },
+  "publicBrowser": {
+    "calendar": {
+      "sourceCommit": "d664d461bf5139d75991d7a1fe421bde77f1c78a",
+      "pass": true,
+      "cases": 2,
+      "checks": 10,
+      "exports": 16,
+      "runtimeErrors": 0,
+      "syntheticOnly": true,
+      "recordsPreserved": true,
+      "actualPublic": true,
+      "results": [
+        {
+          "name": "edge-390",
+          "engine": "edge",
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "lang": "es",
+          "theme": "dark",
+          "longName": false,
+          "pass": true,
+          "checks": [
+            "closed default key, native keyboard disclosure, labeled legend, three period views, distinct activity counts, square dates, larger responsive annual grid, no overflow",
+            "all twelve months, leap day, previous/next period, cross-year week with complete accessible dates",
+            "saved profile show/hide and reload, transient reveal controls, key resets closed on reopen, long chosen name wraps",
+            "actual UI PNG and PDF exports, downloaded bytes match preview, embedded raster avatar verified at decoded pixel, 2x PNG quality",
+            "generic calendar keeps visible legend"
+          ],
+          "views": [
+            {
+              "label": "Week",
+              "level": "week",
+              "accessible": "Vista del calendario: Semana, 19 oct 2026 – 25 oct 2026",
+              "count": 2,
+              "cells": 7,
+              "geometry": {
+                "overflow": false,
+                "width": 390,
+                "card": {
+                  "x": 19,
+                  "y": 145.40625,
+                  "width": 352,
+                  "height": 560.171875,
+                  "top": 145.40625,
+                  "right": 371,
+                  "bottom": 705.578125,
+                  "left": 19
+                },
+                "heading": {
+                  "x": 38,
+                  "y": 164.40625,
+                  "width": 314,
+                  "height": 56.15625,
+                  "top": 164.40625,
+                  "right": 352,
+                  "bottom": 220.5625,
+                  "left": 38
+                },
+                "name": {
+                  "x": 130.1875,
+                  "y": 164.40625,
+                  "width": 221.8125,
+                  "height": 56.15625,
+                  "top": 164.40625,
+                  "right": 352,
+                  "bottom": 220.5625,
+                  "left": 130.1875
+                },
+                "counter": {
+                  "x": 38,
+                  "y": 166.484375,
+                  "width": 72.1875,
+                  "height": 52,
+                  "top": 166.484375,
+                  "right": 110.1875,
+                  "bottom": 218.484375,
+                  "left": 38
+                },
+                "nav": {
+                  "x": 38,
+                  "y": 244.5625,
+                  "width": 314,
+                  "height": 176,
+                  "top": 244.5625,
+                  "right": 352,
+                  "bottom": 420.5625,
+                  "left": 38
+                },
+                "avatar": {
+                  "x": 38,
+                  "y": 244.5625,
+                  "width": 128,
+                  "height": 128,
+                  "top": 244.5625,
+                  "right": 166,
+                  "bottom": 372.5625,
+                  "left": 38
+                },
+                "picker": {
+                  "x": 172,
+                  "y": 286.15625,
+                  "width": 149.390625,
+                  "height": 44.796875,
+                  "top": 286.15625,
+                  "right": 321.390625,
+                  "bottom": 330.953125,
+                  "left": 172
+                },
+                "chevron": {
+                  "x": 273.15625,
+                  "y": 300.546875,
+                  "width": 16,
+                  "height": 16,
+                  "top": 300.546875,
+                  "right": 289.15625,
+                  "bottom": 316.546875,
+                  "left": 273.15625
+                },
+                "active": {
+                  "x": 327.390625,
+                  "y": 290.5625,
+                  "width": 24.609375,
+                  "height": 36,
+                  "top": 290.5625,
+                  "right": 352,
+                  "bottom": 326.5625,
+                  "left": 327.390625
+                },
+                "nameFont": 23.4,
+                "columns": null,
+                "cellWidth": 39.703125,
+                "flameInk": 35.6979180375735,
+                "flameBox": {
+                  "x": 38,
+                  "y": 166.484375,
+                  "width": 46,
+                  "height": 52,
+                  "top": 166.484375,
+                  "right": 84,
+                  "bottom": 218.484375,
+                  "left": 38
+                },
+                "flameSvg": {
+                  "x": 32.25,
+                  "y": 159.984375,
+                  "width": 57.5,
+                  "height": 65,
+                  "top": 159.984375,
+                  "right": 89.75,
+                  "bottom": 224.984375,
+                  "left": 32.25
+                },
+                "numberInk": 32,
+                "squareError": 0
+              },
+              "opened": null
+            },
+            {
+              "label": "Month",
+              "level": "month",
+              "accessible": "Vista del calendario: Mes, Octubre 2026",
+              "count": 18,
+              "cells": 31,
+              "geometry": {
+                "overflow": false,
+                "width": 390,
+                "card": {
+                  "x": 19,
+                  "y": 145.40625,
+                  "width": 352,
+                  "height": 728.046875,
+                  "top": 145.40625,
+                  "right": 371,
+                  "bottom": 873.453125,
+                  "left": 19
+                },
+                "heading": {
+                  "x": 38,
+                  "y": 164.40625,
+                  "width": 314,
+                  "height": 56.15625,
+                  "top": 164.40625,
+                  "right": 352,
+                  "bottom": 220.5625,
+                  "left": 38
+                },
+                "name": {
+                  "x": 130.1875,
+                  "y": 164.40625,
+                  "width": 221.8125,
+                  "height": 56.15625,
+                  "top": 164.40625,
+                  "right": 352,
+                  "bottom": 220.5625,
+                  "left": 130.1875
+                },
+                "counter": {
+                  "x": 38,
+                  "y": 166.484375,
+                  "width": 72.1875,
+                  "height": 52,
+                  "top": 166.484375,
+                  "right": 110.1875,
+                  "bottom": 218.484375,
+                  "left": 38
+                },
+                "nav": {
+                  "x": 38,
+                  "y": 244.5625,
+                  "width": 314,
+                  "height": 176,
+                  "top": 244.5625,
+                  "right": 352,
+                  "bottom": 420.5625,
+                  "left": 38
+                },
+                "avatar": {
+                  "x": 38,
+                  "y": 244.5625,
+                  "width": 128,
+                  "height": 128,
+                  "top": 244.5625,
+                  "right": 166,
+                  "bottom": 372.5625,
+                  "left": 38
+                },
+                "picker": {
+                  "x": 172,
+                  "y": 286.5625,
+                  "width": 136.78125,
+                  "height": 44,
+                  "top": 286.5625,
+                  "right": 308.78125,
+                  "bottom": 330.5625,
+                  "left": 172
+                },
+                "chevron": {
+                  "x": 276.046875,
+                  "y": 300.5625,
+                  "width": 16,
+                  "height": 16,
+                  "top": 300.5625,
+                  "right": 292.046875,
+                  "bottom": 316.5625,
+                  "left": 276.046875
+                },
+                "active": {
+                  "x": 314.78125,
+                  "y": 290.5625,
+                  "width": 37.21875,
+                  "height": 36,
+                  "top": 290.5625,
+                  "right": 352,
+                  "bottom": 326.5625,
+                  "left": 314.78125
+                },
+                "nameFont": 23.4,
+                "columns": null,
+                "cellWidth": 39.71875,
+                "flameInk": 35.6979180375735,
+                "flameBox": {
+                  "x": 38,
+                  "y": 166.484375,
+                  "width": 46,
+                  "height": 52,
+                  "top": 166.484375,
+                  "right": 84,
+                  "bottom": 218.484375,
+                  "left": 38
+                },
+                "flameSvg": {
+                  "x": 32.25,
+                  "y": 159.984375,
+                  "width": 57.5,
+                  "height": 65,
+                  "top": 159.984375,
+                  "right": 89.75,
+                  "bottom": 224.984375,
+                  "left": 32.25
+                },
+                "numberInk": 32,
+                "squareError": 0
+              }
+            },
+            {
+              "label": "Year",
+              "level": "months",
+              "accessible": "Vista del calendario: Año, 2026",
+              "count": 18,
+              "cells": 365,
+              "geometry": {
+                "overflow": false,
+                "width": 390,
+                "card": {
+                  "x": 19,
+                  "y": 145.40625,
+                  "width": 352,
+                  "height": 1403.40625,
+                  "top": 145.40625,
+                  "right": 371,
+                  "bottom": 1548.8125,
+                  "left": 19
+                },
+                "heading": {
+                  "x": 38,
+                  "y": 164.40625,
+                  "width": 314,
+                  "height": 56.15625,
+                  "top": 164.40625,
+                  "right": 352,
+                  "bottom": 220.5625,
+                  "left": 38
+                },
+                "name": {
+                  "x": 130.1875,
+                  "y": 164.40625,
+                  "width": 221.8125,
+                  "height": 56.15625,
+                  "top": 164.40625,
+                  "right": 352,
+                  "bottom": 220.5625,
+                  "left": 130.1875
+                },
+                "counter": {
+                  "x": 38,
+                  "y": 166.484375,
+                  "width": 72.1875,
+                  "height": 52,
+                  "top": 166.484375,
+                  "right": 110.1875,
+                  "bottom": 218.484375,
+                  "left": 38
+                },
+                "nav": {
+                  "x": 38,
+                  "y": 244.5625,
+                  "width": 314,
+                  "height": 176,
+                  "top": 244.5625,
+                  "right": 352,
+                  "bottom": 420.5625,
+                  "left": 38
+                },
+                "avatar": {
+                  "x": 38,
+                  "y": 244.5625,
+                  "width": 128,
+                  "height": 128,
+                  "top": 244.5625,
+                  "right": 166,
+                  "bottom": 372.5625,
+                  "left": 38
+                },
+                "picker": {
+                  "x": 172,
+                  "y": 283.765625,
+                  "width": 132.578125,
+                  "height": 49.59375,
+                  "top": 283.765625,
+                  "right": 304.578125,
+                  "bottom": 333.359375,
+                  "left": 172
+                },
+                "chevron": {
+                  "x": 262.265625,
+                  "y": 300.5625,
+                  "width": 16,
+                  "height": 16,
+                  "top": 300.5625,
+                  "right": 278.265625,
+                  "bottom": 316.5625,
+                  "left": 262.265625
+                },
+                "active": {
+                  "x": 310.578125,
+                  "y": 288.5625,
+                  "width": 41.421875,
+                  "height": 40,
+                  "top": 288.5625,
+                  "right": 352,
+                  "bottom": 328.5625,
+                  "left": 310.578125
+                },
+                "nameFont": 23.4,
+                "columns": 2,
+                "cellWidth": 19.703125,
+                "flameInk": 35.6979180375735,
+                "flameBox": {
+                  "x": 38,
+                  "y": 166.484375,
+                  "width": 46,
+                  "height": 52,
+                  "top": 166.484375,
+                  "right": 84,
+                  "bottom": 218.484375,
+                  "left": 38
+                },
+                "flameSvg": {
+                  "x": 32.25,
+                  "y": 159.984375,
+                  "width": 57.5,
+                  "height": 65,
+                  "top": 159.984375,
+                  "right": 89.75,
+                  "bottom": 224.984375,
+                  "left": 32.25
+                },
+                "numberInk": 32,
+                "squareError": 0
+              },
+              "opened": null
+            }
+          ],
+          "crossYear": "Vista del calendario: Semana, 30 dic 2024 – 5 ene 2025",
+          "files": [
+            {
+              "period": "this-week",
+              "format": "png",
+              "bytes": 360958,
+              "sha256": "5dc0c5d4bcbc4dde43d6d65bdb2a9ef2acc4c2e33fa36fb5d1dd7920026e28ef",
+              "previewEqualsDownload": true,
+              "width": 2000,
+              "height": 1760,
+              "avatarPixel": [
+                242,
+                200,
+                160,
+                255
+              ]
+            },
+            {
+              "period": "this-week",
+              "format": "pdf",
+              "bytes": 241863,
+              "sha256": "40faf0d4b9e352b038c97fb12a0f9e50ad48247ca2f877dcc89cd3a564060e43",
+              "previewEqualsDownload": true
+            },
+            {
+              "period": "this-month",
+              "format": "png",
+              "bytes": 456984,
+              "sha256": "83f9dd7d07eb8ecdd89393f80f968cda5ea7f237d2cd6424239f5d498aa1405e",
+              "previewEqualsDownload": true,
+              "width": 2000,
+              "height": 2772,
+              "avatarPixel": [
+                242,
+                200,
+                160,
+                255
+              ]
+            },
+            {
+              "period": "this-month",
+              "format": "pdf",
+              "bytes": 305181,
+              "sha256": "ae4a3f2a2c8367b266976190928f7d8a5879b955baa73f318a5250d30b0a6a89",
+              "previewEqualsDownload": true
+            },
+            {
+              "period": "year",
+              "format": "png",
+              "bytes": 1069628,
+              "sha256": "13386bc15938465530eba0ffdfcf34c0eec27613c1dc1135f5b35fb802f100da",
+              "previewEqualsDownload": true,
+              "width": 2000,
+              "height": 3904,
+              "avatarPixel": [
+                242,
+                200,
+                160,
+                255
+              ]
+            },
+            {
+              "period": "year",
+              "format": "pdf",
+              "bytes": 787432,
+              "sha256": "3c4acf7071ada67a7cd585d730a32bdd70af5ae271bf439ddea467eb06b4504a",
+              "previewEqualsDownload": true
+            },
+            {
+              "period": "full",
+              "format": "pdf",
+              "bytes": 787432,
+              "sha256": "3fc2bf2bff614c1b02b529e7fa01b882c9664ffedc81627078cbade5467473ed",
+              "previewEqualsDownload": true
+            },
+            {
+              "period": "years",
+              "format": "pdf",
+              "bytes": 787432,
+              "sha256": "2126a9d3f698948ea5022d266676fcee81ee70782679226f693bb51b7020eeb3",
+              "previewEqualsDownload": true
+            }
+          ],
+          "recordsPreserved": true
+        },
+        {
+          "name": "webkit-390",
+          "engine": "webkit",
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "lang": "en",
+          "theme": "light",
+          "longName": false,
+          "pass": true,
+          "checks": [
+            "closed default key, native keyboard disclosure, labeled legend, three period views, distinct activity counts, square dates, larger responsive annual grid, no overflow",
+            "all twelve months, leap day, previous/next period, cross-year week with complete accessible dates",
+            "saved profile show/hide and reload, transient reveal controls, key resets closed on reopen, long chosen name wraps",
+            "actual UI PNG and PDF exports, downloaded bytes match preview, embedded raster avatar verified at decoded pixel, 2x PNG quality",
+            "generic calendar keeps visible legend"
+          ],
+          "views": [
+            {
+              "label": "Week",
+              "level": "week",
+              "accessible": "Calendar view: Week, 19 Oct 2026 – 25 Oct 2026",
+              "count": 2,
+              "cells": 7,
+              "geometry": {
+                "overflow": false,
+                "width": 390,
+                "card": {
+                  "x": 19,
+                  "y": 145.40625,
+                  "width": 352,
+                  "height": 560.140625,
+                  "top": 145.40625,
+                  "right": 371,
+                  "bottom": 705.546875,
+                  "left": 19
+                },
+                "heading": {
+                  "x": 38,
+                  "y": 164.40625,
+                  "width": 314,
+                  "height": 56.125,
+                  "top": 164.40625,
+                  "right": 352,
+                  "bottom": 220.53125,
+                  "left": 38
+                },
+                "name": {
+                  "x": 130.1875,
+                  "y": 164.40625,
+                  "width": 221.8125,
+                  "height": 56.125,
+                  "top": 164.40625,
+                  "right": 352,
+                  "bottom": 220.53125,
+                  "left": 130.1875
+                },
+                "counter": {
+                  "x": 38,
+                  "y": 166.46875,
+                  "width": 72.1875,
+                  "height": 52,
+                  "top": 166.46875,
+                  "right": 110.1875,
+                  "bottom": 218.46875,
+                  "left": 38
+                },
+                "nav": {
+                  "x": 38,
+                  "y": 244.53125,
+                  "width": 314,
+                  "height": 176,
+                  "top": 244.53125,
+                  "right": 352,
+                  "bottom": 420.53125,
+                  "left": 38
+                },
+                "avatar": {
+                  "x": 38,
+                  "y": 244.53125,
+                  "width": 128,
+                  "height": 128,
+                  "top": 244.53125,
+                  "right": 166,
+                  "bottom": 372.53125,
+                  "left": 38
+                },
+                "picker": {
+                  "x": 172,
+                  "y": 286.125,
+                  "width": 149.75,
+                  "height": 44.796875,
+                  "top": 286.125,
+                  "right": 321.75,
+                  "bottom": 330.921875,
+                  "left": 172
+                },
+                "chevron": {
+                  "x": 271.890625,
+                  "y": 300.515625,
+                  "width": 16,
+                  "height": 16,
+                  "top": 300.515625,
+                  "right": 287.890625,
+                  "bottom": 316.515625,
+                  "left": 271.890625
+                },
+                "active": {
+                  "x": 327.75,
+                  "y": 290.53125,
+                  "width": 24.25,
+                  "height": 36,
+                  "top": 290.53125,
+                  "right": 352,
+                  "bottom": 326.53125,
+                  "left": 327.75
+                },
+                "nameFont": 23.4,
+                "columns": null,
+                "cellWidth": 39.703125,
+                "flameInk": 35.6979180375735,
+                "flameBox": {
+                  "x": 38,
+                  "y": 166.46875,
+                  "width": 46,
+                  "height": 52,
+                  "top": 166.46875,
+                  "right": 84,
+                  "bottom": 218.46875,
+                  "left": 38
+                },
+                "flameSvg": {
+                  "x": 32.25,
+                  "y": 159.96875,
+                  "width": 57.5,
+                  "height": 65,
+                  "top": 159.96875,
+                  "right": 89.75,
+                  "bottom": 224.96875,
+                  "left": 32.25
+                },
+                "numberInk": 32,
+                "squareError": 0
+              },
+              "opened": null
+            },
+            {
+              "label": "Month",
+              "level": "month",
+              "accessible": "Calendar view: Month, October 2026",
+              "count": 18,
+              "cells": 31,
+              "geometry": {
+                "overflow": false,
+                "width": 390,
+                "card": {
+                  "x": 19,
+                  "y": 145.40625,
+                  "width": 352,
+                  "height": 728.015625,
+                  "top": 145.40625,
+                  "right": 371,
+                  "bottom": 873.421875,
+                  "left": 19
+                },
+                "heading": {
+                  "x": 38,
+                  "y": 164.40625,
+                  "width": 314,
+                  "height": 56.125,
+                  "top": 164.40625,
+                  "right": 352,
+                  "bottom": 220.53125,
+                  "left": 38
+                },
+                "name": {
+                  "x": 130.1875,
+                  "y": 164.40625,
+                  "width": 221.8125,
+                  "height": 56.125,
+                  "top": 164.40625,
+                  "right": 352,
+                  "bottom": 220.53125,
+                  "left": 130.1875
+                },
+                "counter": {
+                  "x": 38,
+                  "y": 166.46875,
+                  "width": 72.1875,
+                  "height": 52,
+                  "top": 166.46875,
+                  "right": 110.1875,
+                  "bottom": 218.46875,
+                  "left": 38
+                },
+                "nav": {
+                  "x": 38,
+                  "y": 244.53125,
+                  "width": 314,
+                  "height": 176,
+                  "top": 244.53125,
+                  "right": 352,
+                  "bottom": 420.53125,
+                  "left": 38
+                },
+                "avatar": {
+                  "x": 38,
+                  "y": 244.53125,
+                  "width": 128,
+                  "height": 128,
+                  "top": 244.53125,
+                  "right": 166,
+                  "bottom": 372.53125,
+                  "left": 38
+                },
+                "picker": {
+                  "x": 172,
+                  "y": 286.53125,
+                  "width": 138.28125,
+                  "height": 44,
+                  "top": 286.53125,
+                  "right": 310.28125,
+                  "bottom": 330.53125,
+                  "left": 172
+                },
+                "chevron": {
+                  "x": 274.515625,
+                  "y": 300.53125,
+                  "width": 16,
+                  "height": 16,
+                  "top": 300.53125,
+                  "right": 290.515625,
+                  "bottom": 316.53125,
+                  "left": 274.515625
+                },
+                "active": {
+                  "x": 316.28125,
+                  "y": 290.53125,
+                  "width": 35.71875,
+                  "height": 36,
+                  "top": 290.53125,
+                  "right": 352,
+                  "bottom": 326.53125,
+                  "left": 316.28125
+                },
+                "nameFont": 23.4,
+                "columns": null,
+                "cellWidth": 39.71875,
+                "flameInk": 35.6979180375735,
+                "flameBox": {
+                  "x": 38,
+                  "y": 166.46875,
+                  "width": 46,
+                  "height": 52,
+                  "top": 166.46875,
+                  "right": 84,
+                  "bottom": 218.46875,
+                  "left": 38
+                },
+                "flameSvg": {
+                  "x": 32.25,
+                  "y": 159.96875,
+                  "width": 57.5,
+                  "height": 65,
+                  "top": 159.96875,
+                  "right": 89.75,
+                  "bottom": 224.96875,
+                  "left": 32.25
+                },
+                "numberInk": 32,
+                "squareError": 0
+              }
+            },
+            {
+              "label": "Year",
+              "level": "months",
+              "accessible": "Calendar view: Year, 2026",
+              "count": 18,
+              "cells": 365,
+              "geometry": {
+                "overflow": false,
+                "width": 390,
+                "card": {
+                  "x": 19,
+                  "y": 145.40625,
+                  "width": 352,
+                  "height": 1403.375,
+                  "top": 145.40625,
+                  "right": 371,
+                  "bottom": 1548.78125,
+                  "left": 19
+                },
+                "heading": {
+                  "x": 38,
+                  "y": 164.40625,
+                  "width": 314,
+                  "height": 56.125,
+                  "top": 164.40625,
+                  "right": 352,
+                  "bottom": 220.53125,
+                  "left": 38
+                },
+                "name": {
+                  "x": 130.1875,
+                  "y": 164.40625,
+                  "width": 221.8125,
+                  "height": 56.125,
+                  "top": 164.40625,
+                  "right": 352,
+                  "bottom": 220.53125,
+                  "left": 130.1875
+                },
+                "counter": {
+                  "x": 38,
+                  "y": 166.46875,
+                  "width": 72.1875,
+                  "height": 52,
+                  "top": 166.46875,
+                  "right": 110.1875,
+                  "bottom": 218.46875,
+                  "left": 38
+                },
+                "nav": {
+                  "x": 38,
+                  "y": 244.53125,
+                  "width": 314,
+                  "height": 176,
+                  "top": 244.53125,
+                  "right": 352,
+                  "bottom": 420.53125,
+                  "left": 38
+                },
+                "avatar": {
+                  "x": 38,
+                  "y": 244.53125,
+                  "width": 128,
+                  "height": 128,
+                  "top": 244.53125,
+                  "right": 166,
+                  "bottom": 372.53125,
+                  "left": 38
+                },
+                "picker": {
+                  "x": 172,
+                  "y": 283.734375,
+                  "width": 134.328125,
+                  "height": 49.59375,
+                  "top": 283.734375,
+                  "right": 306.328125,
+                  "bottom": 333.328125,
+                  "left": 172
+                },
+                "chevron": {
+                  "x": 261.390625,
+                  "y": 300.53125,
+                  "width": 16,
+                  "height": 16,
+                  "top": 300.53125,
+                  "right": 277.390625,
+                  "bottom": 316.53125,
+                  "left": 261.390625
+                },
+                "active": {
+                  "x": 312.328125,
+                  "y": 288.53125,
+                  "width": 39.671875,
+                  "height": 40,
+                  "top": 288.53125,
+                  "right": 352,
+                  "bottom": 328.53125,
+                  "left": 312.328125
+                },
+                "nameFont": 23.4,
+                "columns": 2,
+                "cellWidth": 19.703125,
+                "flameInk": 35.6979180375735,
+                "flameBox": {
+                  "x": 38,
+                  "y": 166.46875,
+                  "width": 46,
+                  "height": 52,
+                  "top": 166.46875,
+                  "right": 84,
+                  "bottom": 218.46875,
+                  "left": 38
+                },
+                "flameSvg": {
+                  "x": 32.25,
+                  "y": 159.96875,
+                  "width": 57.5,
+                  "height": 65,
+                  "top": 159.96875,
+                  "right": 89.75,
+                  "bottom": 224.96875,
+                  "left": 32.25
+                },
+                "numberInk": 32,
+                "squareError": 0
+              },
+              "opened": null
+            }
+          ],
+          "crossYear": "Calendar view: Week, 30 Dec 2024 – 5 Jan 2025",
+          "files": [
+            {
+              "period": "this-week",
+              "format": "png",
+              "bytes": 149162,
+              "sha256": "12b855b7ba88b9bf9f52df34fe1b5304c6fbe0d113adfd882d5bd7ed1f0692ea",
+              "previewEqualsDownload": true,
+              "width": 2000,
+              "height": 1760,
+              "avatarPixel": [
+                242,
+                200,
+                160,
+                255
+              ]
+            },
+            {
+              "period": "this-week",
+              "format": "pdf",
+              "bytes": 174969,
+              "sha256": "c950992fa793a32212ca84c7c399d57532aca6d62db3c6706e8a01378ef53b8e",
+              "previewEqualsDownload": true
+            },
+            {
+              "period": "this-month",
+              "format": "png",
+              "bytes": 188474,
+              "sha256": "96a11637b5bb51ee16b4876f33739b7665716ec22684e10e012b1f16fcc5040e",
+              "previewEqualsDownload": true,
+              "width": 2000,
+              "height": 2772,
+              "avatarPixel": [
+                242,
+                200,
+                160,
+                255
+              ]
+            },
+            {
+              "period": "this-month",
+              "format": "pdf",
+              "bytes": 227894,
+              "sha256": "b2007818c3bfba3f4d0561bf03398ab266875991c57988171d4c76c5153aade5",
+              "previewEqualsDownload": true
+            },
+            {
+              "period": "year",
+              "format": "png",
+              "bytes": 485025,
+              "sha256": "a9a30338a0dfc328d4cf1c40ec2e9cc763a9e48390cb5b575763a99fdec3dfd2",
+              "previewEqualsDownload": true,
+              "width": 2000,
+              "height": 3904,
+              "avatarPixel": [
+                242,
+                200,
+                160,
+                255
+              ]
+            },
+            {
+              "period": "year",
+              "format": "pdf",
+              "bytes": 605027,
+              "sha256": "9a197b5b7694d4b6e58e630fb711d61429218943f64f1d1e1c703223e7537b85",
+              "previewEqualsDownload": true
+            },
+            {
+              "period": "full",
+              "format": "pdf",
+              "bytes": 605027,
+              "sha256": "811250240e527f653a8cb737df0bf1a3fd79368c5794f40c84ded76398656cf2",
+              "previewEqualsDownload": true
+            },
+            {
+              "period": "years",
+              "format": "pdf",
+              "bytes": 605027,
+              "sha256": "beaee0183a8524ef5ceae2505e36a4fa69fc609a4cd4e300f5ce33cb7bf7f7e1",
+              "previewEqualsDownload": true
+            }
+          ],
+          "recordsPreserved": true
+        }
+      ]
+    },
+    "weight": {
+      "sourceCommit": "d664d461bf5139d75991d7a1fe421bde77f1c78a",
+      "pass": true,
+      "cases": 4,
+      "checks": 24,
+      "runtimeErrors": 0,
+      "syntheticOnly": true,
+      "actualPublic": true,
+      "results": [
+        {
+          "engine": "edge",
+          "unit": "kg",
+          "pass": true,
+          "checks": [
+            "Opening isolated ruler preserves workout/history",
+            "Trusted ruler drag reaches adjacent whole-unit load without session writes",
+            "Confirmed Top recalculates both pending backoffs, preserves manual reps/history/routine/units",
+            "Exact saved loads and automation survive reload",
+            "Cancel discards new ruler draft",
+            "Workout remains navigation-free without runtime errors"
+          ],
+          "errors": [],
+          "trustedGesture": "CDP touch",
+          "profilePreserved": true
+        },
+        {
+          "engine": "edge",
+          "unit": "lb",
+          "pass": true,
+          "checks": [
+            "Opening isolated ruler preserves workout/history",
+            "Trusted ruler drag reaches adjacent whole-unit load without session writes",
+            "Confirmed Top recalculates both pending backoffs, preserves manual reps/history/routine/units",
+            "Exact saved loads and automation survive reload",
+            "Cancel discards new ruler draft",
+            "Workout remains navigation-free without runtime errors"
+          ],
+          "errors": [],
+          "trustedGesture": "CDP touch",
+          "profilePreserved": true
+        },
+        {
+          "engine": "webkit",
+          "unit": "kg",
+          "pass": true,
+          "checks": [
+            "Opening isolated ruler preserves workout/history",
+            "Trusted ruler drag reaches adjacent whole-unit load without session writes",
+            "Confirmed Top recalculates both pending backoffs, preserves manual reps/history/routine/units",
+            "Exact saved loads and automation survive reload",
+            "Cancel discards new ruler draft",
+            "Workout remains navigation-free without runtime errors"
+          ],
+          "errors": [],
+          "trustedGesture": "WebKit mouse pointer",
+          "profilePreserved": true
+        },
+        {
+          "engine": "webkit",
+          "unit": "lb",
+          "pass": true,
+          "checks": [
+            "Opening isolated ruler preserves workout/history",
+            "Trusted ruler drag reaches adjacent whole-unit load without session writes",
+            "Confirmed Top recalculates both pending backoffs, preserves manual reps/history/routine/units",
+            "Exact saved loads and automation survive reload",
+            "Cancel discards new ruler draft",
+            "Workout remains navigation-free without runtime errors"
+          ],
+          "errors": [],
+          "trustedGesture": "WebKit mouse pointer",
+          "profilePreserved": true
+        }
+      ]
+    },
+    "regression": {
+      "sourceCommit": "d664d461bf5139d75991d7a1fe421bde77f1c78a",
+      "pass": true,
+      "cases": 4,
+      "checks": 23,
+      "runtimeErrors": 0,
+      "syntheticOnly": true,
+      "actualPublic": true,
+      "engineLimits": {
+        "edge": "Windows Edge, mobile viewport and trusted Playwright clicks",
+        "webkit": "Windows WebKit, not physical iPhone or native iOS"
+      },
+      "results": [
+        {
+          "engine": "edge",
+          "scenario": "start",
+          "checks": [
+            {
+              "name": "Start opens the existing required check-in without mutating profile",
+              "pass": true
+            },
+            {
+              "name": "Settings and routine editor remain dock-free",
+              "pass": true
+            },
+            {
+              "name": "Direct buttons return with entire inactive profile equal",
+              "pass": true
+            },
+            {
+              "name": "Edge offline cold-open restores permanent navigation and exact inactive profile",
+              "pass": true
+            },
+            {
+              "name": "No observed page errors",
+              "pass": true
+            }
+          ],
+          "pageErrors": [],
+          "pass": true,
+          "workerReady": true,
+          "offlineColdOpen": true
+        },
+        {
+          "engine": "edge",
+          "scenario": "resume",
+          "checks": [
+            {
+              "name": "Rest timer clears fixed navigation and raised Start",
+              "pass": true,
+              "barTop": 766,
+              "circleTop": 747,
+              "timerTop": 659.703125,
+              "timerBottom": 733,
+              "bottom": 184.296875,
+              "height": 844
+            },
+            {
+              "name": "Resume enters Workout without dock or protected-data change",
+              "pass": true
+            },
+            {
+              "name": "Workout Back restores all direct tabs and Resume",
+              "pass": true
+            },
+            {
+              "name": "Settings remains dock-free during a live session",
+              "pass": true
+            },
+            {
+              "name": "Settings updater does not reoffer the current published version",
+              "pass": true
+            },
+            {
+              "name": "Entire live profile preserved except documented interaction/store timestamps",
+              "pass": true
+            },
+            {
+              "name": "No observed page errors",
+              "pass": true
+            }
+          ],
+          "pageErrors": [],
+          "pass": true,
+          "updaterNoSelfReoffer": true
+        },
+        {
+          "engine": "webkit",
+          "scenario": "start",
+          "checks": [
+            {
+              "name": "Start opens the existing required check-in without mutating profile",
+              "pass": true
+            },
+            {
+              "name": "Settings and routine editor remain dock-free",
+              "pass": true
+            },
+            {
+              "name": "Direct buttons return with entire inactive profile equal",
+              "pass": true
+            },
+            {
+              "name": "No observed page errors",
+              "pass": true
+            }
+          ],
+          "pageErrors": [],
+          "pass": true,
+          "workerReady": true,
+          "offlineColdOpen": "not claimed: documented Windows WebKit engine limitation"
+        },
+        {
+          "engine": "webkit",
+          "scenario": "resume",
+          "checks": [
+            {
+              "name": "Rest timer clears fixed navigation and raised Start",
+              "pass": true,
+              "barTop": 766,
+              "circleTop": 747,
+              "timerTop": 659.703125,
+              "timerBottom": 733,
+              "bottom": 184.296875,
+              "height": 844
+            },
+            {
+              "name": "Resume enters Workout without dock or protected-data change",
+              "pass": true
+            },
+            {
+              "name": "Workout Back restores all direct tabs and Resume",
+              "pass": true
+            },
+            {
+              "name": "Settings remains dock-free during a live session",
+              "pass": true
+            },
+            {
+              "name": "Settings updater does not reoffer the current published version",
+              "pass": true
+            },
+            {
+              "name": "Entire live profile preserved except documented interaction/store timestamps",
+              "pass": true
+            },
+            {
+              "name": "No observed page errors",
+              "pass": true
+            }
+          ],
+          "pageErrors": [],
+          "pass": true,
+          "updaterNoSelfReoffer": true
+        }
+      ]
+    }
+  },
+  "pdfInspection": {
+    "pass": true,
+    "sourceCommit": "d664d461bf5139d75991d7a1fe421bde77f1c78a",
+    "records": [
+      {
+        "sha256": "189344d6424eb510c6232167614dbf8f9587ee2285cfeefa597a9240a9a9ff3e",
+        "pages": 1,
+        "embeddedImage": [
+          2000,
+          3904
+        ],
+        "pageSize": [
+          595.280029296875,
+          841.8900146484375
+        ],
+        "rendered": true,
+        "period": "year"
+      },
+      {
+        "sha256": "1c8ca711e6629765fe07b9fad258241f2731cf99a641038e2524a672314afcec",
+        "pages": 1,
+        "embeddedImage": [
+          2000,
+          2772
+        ],
+        "pageSize": [
+          595.280029296875,
+          841.8900146484375
+        ],
+        "rendered": true,
+        "period": "this-month"
+      },
+      {
+        "sha256": "62556ca1200b1e8bebbc4243cc67847130b75f08233afa7a7589187960eb9577",
+        "pages": 1,
+        "embeddedImage": [
+          2000,
+          1760
+        ],
+        "pageSize": [
+          595.280029296875,
+          841.8900146484375
+        ],
+        "rendered": true,
+        "period": "this-week"
+      },
+      {
+        "sha256": "133ca1dc42db200e92b2c3a53587eeed6d1f55d362ab0d969a4ae9c6c5229033",
+        "pages": 1,
+        "embeddedImage": [
+          2000,
+          3904
+        ],
+        "pageSize": [
+          595.280029296875,
+          841.8900146484375
+        ],
+        "rendered": true,
+        "period": "full"
+      },
+      {
+        "sha256": "71cf227485ba5fb90e6279111e423e061ee08ee62313dc09974dc59d9e0d39f4",
+        "pages": 1,
+        "embeddedImage": [
+          2000,
+          3904
+        ],
+        "pageSize": [
+          595.280029296875,
+          841.8900146484375
+        ],
+        "rendered": true,
+        "period": "years"
+      }
+    ],
+    "syntheticOnly": true,
+    "physicalDevice": false
+  },
+  "artifact": {
+    "apkSha256": "44d96837182ff0e6682b978bf5355ee83a140e39155f4ebe30ef01f610868603",
+    "aabSha256": "205f2cdeca2f34d98d9f954492799789ec199e1c5f90d84f13021ee3225fe00f",
+    "certificateSha256": "8ee233c984615e2b3f6f083dc0c47d148bb8956ff7caca97be0b9a0d260e6082",
+    "officialSigningContinuity": true,
+    "releaseAndPagesApkIdentical": true,
+    "pwaFilesChecked": 51,
+    "candidateSharedRuntimeAssetsExact": 55,
+    "publicManifestAndBuildExact": true
+  },
+  "privacy": {
+    "knownHashesChecked": 92,
+    "personalMediaIncluded": false,
+    "rejectedMediaIncluded": false,
+    "metadataHashesOnly": true,
+    "scans": [
+      {
+        "kind": "apk",
+        "entries": 1108,
+        "forbiddenImageMatches": 0,
+        "gifFiles": 0
+      },
+      {
+        "kind": "aab",
+        "entries": 1112,
+        "forbiddenImageMatches": 0,
+        "gifFiles": 0
+      },
+      {
+        "kind": "pwa",
+        "entries": 52,
+        "forbiddenImageMatches": 0,
+        "gifFiles": 0
+      }
+    ]
+  },
+  "physicalEvidence": {
+    "pixel": true,
+    "iphone": false,
+    "nativeIos": false,
+    "phoneInstallation": true,
+    "physicalFrameRate": false,
+    "windowsWebKitIsNativeIos": false,
+    "status": "Observed Pixel checks are limited to the existing QA package and scenarios listed here.",
+    "package": "app.framegym.mobile.qa",
+    "profilePreserved": true,
+    "originalAppAccessed": false,
+    "existingActiveSessionPreserved": true,
+    "temporaryWorkoutCreated": false,
+    "temporaryPinCreated": false,
+    "screenSettingRestored": true,
+    "notificationScope": "Collapsed Android notification visually observed and own QA-package record verified; expanded/rest/font-scale combinations use separate emulator coverage.",
+    "expandedNotificationPhysicalVerified": false,
+    "restNotificationPhysicalVerified": false,
+    "fontScalePhysicalVerified": false,
+    "wholeUnitScope": "Trusted ruler gesture and draft cancellation preserve the existing workout; persisted Top Set/back-off confirmation is covered separately by synthetic browser tests.",
+    "tests": [
+      {
+        "name": "Fresh QA backup and signed in-place installation preserve native, local and lock data",
+        "pass": true
+      },
+      {
+        "name": "Week, Month and Year show large photo in original position with name/streak and inline counts",
+        "pass": true
+      },
+      {
+        "name": "Trusted ruler gesture reaches whole-unit draft; Cancel preserves workout entries and history",
+        "pass": true
+      },
+      {
+        "name": "Actual Android workout notification has ordered status, set and elapsed clock",
+        "pass": true
+      },
+      {
+        "name": "Existing profile, routine history and active workout entries preserved; screen setting restored",
+        "pass": true
+      }
+    ]
+  },
+  "protectedMainRetainsIndependentReview": true
+}

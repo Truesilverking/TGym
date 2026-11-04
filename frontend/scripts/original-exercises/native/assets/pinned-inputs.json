@@ -1,0 +1,15 @@
+{
+  "assets/anatomy-surface-atlas.png": "9f458b5fe36b983fecb499d45929a84a02b87420dbc615a294a1e235b9aa7e01",
+  "assets/anatomy-surface-input.png": "39ef3d9eeec0dab69f6ee89827dc0e2e60147985fbaabe71d37a383b46a03596",
+  "assets/anatomy-surface-prompt.md": "7c44c445ec946f2187ddf2ec81b65b470e78e681af16ef36e5c9ae267d9eb972",
+  "assets/body-envelope-source-proof.json": "1aa11460da483ce089a17a6adfef7518bc9b199f42c098c352a403ffa297a657",
+  "assets/body-envelope.mesh.bin": "785ca9f4b5da05beca774fde4c3de387ffbbd3b58ebaa0dd83488f8164a2c612",
+  "assets/body-envelope.mesh.json": "bec10e9d983312fa21c786eacadb102f8302656ce4fb356d8feb4c849c646885",
+  "assets/head-geometry.json": "505634911266358ba673e55aeef396c511db3d2dcaf9edc68e4fab09c5c714b1",
+  "assets/head-refinement-proof.json": "ba8f9011386c4defd3a485e40659f44a83725dd4163dda97953058f653b18019",
+  "assets/head-source.json": "cebf1b1fba61705e83918f78c9f98b0dd720e23e3a425d60fa704558b30eaacd",
+  "assets/LICENSE-MAKEHUMAN-CC0.md": "f6089cba01cb570a24712b41ab8a586ccd3cc5ef53dc266ca50b95c288956d2c",
+  "assets/NOTICE.md": "f0dce2c461756946497092cb0d58af188bd0405367e895d62abe2e6eb125b1cf",
+  "assets/opengym-walk-manifest.json": "bc40498f7f1228e5d9a6c9e7b23cc8f32f69e382d05457ea5d8bd3d1d0f42046",
+  "assets/source-provenance.json": "c5cc9f18b26a066c23577c103490e10f457bfb2a601442b297e83a4517452c7e"
+}

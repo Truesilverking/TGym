@@ -1,0 +1,281 @@
+{
+  "version": "1.15.110",
+  "versionCode": 146,
+  "sourceCommit": "179ec5f6cb7b1e0d8f0dcf4aed89fdd3031ab34b",
+  "recordedAt": "2026-11-03T01:31:58.320Z",
+  "release": {
+    "url": "https://github.com/Truesilverking/TGym/releases/tag/v1.15.110",
+    "id": 432162880,
+    "run": 41559442668,
+    "updateBroadcastSuppressed": true
+  },
+  "baseline": {
+    "version": "1.15.109",
+    "versionCode": 145,
+    "sourceCommit": "22f3ead389871ee9db6d8ce5b90c0c3468d0e75f",
+    "scope": "Fresh public manifest/build metadata only; source remains unset and old APK bytes were not reverified",
+    "previousApkBytesReverifiedThisTurn": false
+  },
+  "localChecks": {
+    "pass": true,
+    "scope": "Local current working-tree checks; not exact-source CI or physical-device acceptance",
+    "frontend": {
+      "exitCode": 0,
+      "tests": 3080,
+      "files": 259,
+      "durationSeconds": 42.59,
+      "log": "frontend-full.log"
+    },
+    "api": {
+      "exitCode": 0,
+      "tests": 24,
+      "failures": 0,
+      "log": "api.log"
+    },
+    "mcp": {
+      "exitCode": 0,
+      "tests": 38,
+      "files": 2,
+      "log": "mcp.log"
+    },
+    "nodeLoadable": {
+      "exitCode": 0,
+      "pass": true,
+      "log": "mcp-node.log"
+    },
+    "locales": {
+      "exitCode": 0,
+      "localeCount": 1,
+      "keysPerLocale": 2189,
+      "inSync": true,
+      "log": "locales.log"
+    },
+    "sourceStrings": {
+      "exitCode": 0,
+      "translatedStrings": 1381,
+      "allPresent": true,
+      "reportOnlyMode": true,
+      "log": "source-strings.log"
+    },
+    "appSourceEditedByThisCheckRun": false,
+    "remoteMutation": false,
+    "physicalDeviceAccessed": false
+  },
+  "localBuilds": {
+    "pass": true,
+    "web": true,
+    "mobileSync": true,
+    "androidAssembleDebug": true,
+    "androidLintDebug": true,
+    "actualProcessExits": 0,
+    "phoneAccessed": false
+  },
+  "sourceCiRuns": [
+    {
+      "id": 41558615343,
+      "name": "Tests",
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success",
+      "sourceCommit": "179ec5f6cb7b1e0d8f0dcf4aed89fdd3031ab34b",
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/41558615343"
+    },
+    {
+      "id": 41558624421,
+      "name": "Tests",
+      "event": "pull_request",
+      "status": "completed",
+      "conclusion": "success",
+      "sourceCommit": "179ec5f6cb7b1e0d8f0dcf4aed89fdd3031ab34b",
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/41558624421"
+    },
+    {
+      "id": 41558615372,
+      "name": "Validate PWA",
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success",
+      "sourceCommit": "179ec5f6cb7b1e0d8f0dcf4aed89fdd3031ab34b",
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/41558615372"
+    },
+    {
+      "id": 41558615389,
+      "name": "Validate Android",
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success",
+      "sourceCommit": "179ec5f6cb7b1e0d8f0dcf4aed89fdd3031ab34b",
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/41558615389"
+    },
+    {
+      "id": 41558616988,
+      "name": "Build signed Android candidate",
+      "event": "workflow_dispatch",
+      "status": "completed",
+      "conclusion": "success",
+      "sourceCommit": "179ec5f6cb7b1e0d8f0dcf4aed89fdd3031ab34b",
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/41558616988"
+    }
+  ],
+  "native": {
+    "run": 41558615389,
+    "tests": 52,
+    "failures": 0,
+    "skipped": 0,
+    "duration": "49.403s",
+    "scope": "Native components in an emulator; not physical swipe performance"
+  },
+  "compiledBrowser": {
+    "pass": true,
+    "sourceCommit": "179ec5f6cb7b1e0d8f0dcf4aed89fdd3031ab34b",
+    "cases": 8,
+    "checks": 135,
+    "runtimeErrors": 0,
+    "syntheticOnly": true,
+    "physicalDevice": false,
+    "phoneAccessed": false,
+    "profilesPreserved": true,
+    "scope": "Two complete gesture/control contexts and six targeted navigation/blank-section contexts; includes light, reduced-motion, landscape and empty Stats. Edge trusted CDP touch; Windows WebKit pointer/mouse, not native iOS.",
+    "regression": {
+      "cases": 4,
+      "checks": 20,
+      "runtimeErrors": 0,
+      "start": true,
+      "resume": true,
+      "workoutDockAbsent": true,
+      "settingsAndEditorDockAbsent": true,
+      "timerClearsBar": true,
+      "protectedDataPreserved": true
+    },
+    "reports": [
+      "final-edge/proof.json",
+      "final-webkit/proof.json",
+      "final-regression/proof.json"
+    ]
+  },
+  "publicBrowser": {
+    "pass": true,
+    "sourceCommit": "179ec5f6cb7b1e0d8f0dcf4aed89fdd3031ab34b",
+    "cases": 2,
+    "checks": 81,
+    "runtimeErrors": 0,
+    "syntheticOnly": true,
+    "physicalDevice": false,
+    "phoneAccessed": false,
+    "profilesPreserved": true,
+    "updaterNoSelfReoffer": true,
+    "edgeOfflineColdOpen": true,
+    "webkitOfflineColdOpen": false,
+    "regression": {
+      "pass": true,
+      "cases": 4,
+      "checks": 23,
+      "runtimeErrors": 0,
+      "start": true,
+      "resume": true,
+      "workoutDockAbsent": true,
+      "settingsAndEditorDockAbsent": true,
+      "timerClearsBar": true,
+      "protectedDataPreserved": true,
+      "updaterNoSelfReoffer": true,
+      "edgeOfflineColdOpen": true
+    },
+    "reports": [
+      "public-edge/proof.json",
+      "public-webkit/proof.json",
+      "public-regression/proof.json"
+    ],
+    "scope": "Actual public app, two normal390 gesture/control contexts and four separate Start/Resume contexts; WebKit not physical iPhone, Edge CDP touch not a physical Pixel"
+  },
+  "optionalPublicChecks": {
+    "updaterNoSelfReoffer": true,
+    "edgeOfflineColdOpen": true
+  },
+  "artifact": {
+    "apkSha256": "b8ef771f02f8598f6473b0dfbcfa1c756359db4700a43a72ae4abe3fba387e2a",
+    "aabSha256": "41cd766dc80a0ac3e3274f19af486c446f2b1d81ae84c16d1deb819e8d8c6ee8",
+    "certificateSha256": "8ee233c984615e2b3f6f083dc0c47d148bb8956ff7caca97be0b9a0d260e6082",
+    "officialSigningContinuity": true,
+    "releaseAndPagesApkIdentical": true,
+    "pwaFilesChecked": 51,
+    "candidateSharedRuntimeAssetsExact": 55,
+    "publicManifestAndBuildExact": true
+  },
+  "privacy": {
+    "knownHashesChecked": 92,
+    "personalMediaIncluded": false,
+    "rejectedMediaIncluded": false,
+    "metadataHashesOnly": true,
+    "scans": [
+      {
+        "kind": "apk",
+        "entries": 1107,
+        "forbiddenImageMatches": 0,
+        "gifFiles": 0
+      },
+      {
+        "kind": "aab",
+        "entries": 1111,
+        "forbiddenImageMatches": 0,
+        "gifFiles": 0
+      },
+      {
+        "kind": "pwa",
+        "entries": 52,
+        "forbiddenImageMatches": 0,
+        "gifFiles": 0
+      }
+    ]
+  },
+  "preservedGestureAndStatsSource": {
+    "baselineCommit": "22f3ead389871ee9db6d8ce5b90c0c3468d0e75f",
+    "byteEqual": true,
+    "files": [
+      {
+        "file": "frontend/src/components/SwipeNavigation.jsx",
+        "sha256": "b3c6c074b1cf29516fb741cd407ad5919cd7b811fd7dcea995d6b697f5c082f4"
+      },
+      {
+        "file": "frontend/src/components/SwipeNavigation.css",
+        "sha256": "f11ec789b8982f86afbbbb1bd66b2e39810070fbb77b6c74d653587b0ac197e3"
+      },
+      {
+        "file": "frontend/src/lib/swipe-gesture.js",
+        "sha256": "fa43a0020fd338b3601f5de39850849bbaeeda416ea674e41668e9a9cce022ae"
+      },
+      {
+        "file": "frontend/src/lib/navigation-model.js",
+        "sha256": "4dac108ce3fc6c77ab6b60e5a0fe61a05b3f1132cc7df560df397ff5e9ce1b21"
+      },
+      {
+        "file": "frontend/src/components/ModuleDeck.jsx",
+        "sha256": "4f9cac0ad612510ff1260e063a364c859aa2c6e01221ca6b5c6bbc25dc4e65ad"
+      },
+      {
+        "file": "frontend/src/components/StatsHeader.jsx",
+        "sha256": "4207af77f8c8c7fba584cbd061da93311a520a39b3e4d10eea68e8224c1747c5"
+      },
+      {
+        "file": "frontend/src/components/StatsSections.jsx",
+        "sha256": "b736e2e1697722784b54718297196051b4078da06c2c30850783abd4972f9c47"
+      },
+      {
+        "file": "frontend/src/views/Stats.jsx",
+        "sha256": "d5a2bd65d3d6e57a3ffe37cea5ae2f311158f6f705f0f0694c81cee9806552f6"
+      },
+      {
+        "file": "frontend/src/views/Stats.css",
+        "sha256": "5ee608cdf73ed9f548dd0470a619c9fe89b413c2d04c05710ba555ef582b4f49"
+      }
+    ]
+  },
+  "physicalEvidence": {
+    "pixel": false,
+    "iphone": false,
+    "nativeIos": false,
+    "phoneInstall": false,
+    "physicalFrameRate": false,
+    "windowsWebKitIsNativeIos": false
+  },
+  "protectedMainRetainsIndependentReview": true
+}

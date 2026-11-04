@@ -1,0 +1,852 @@
+{
+  "version": "1.15.108",
+  "versionCode": 144,
+  "sourceCommit": "fa039d9d6db301db9396d842dce44b80e57c3309",
+  "releaseUrl": "https://github.com/Truesilverking/TGym/releases/tag/v1.15.108",
+  "recordedAt": "2026-11-02T21:22:01.840Z",
+  "frontend": {
+    "tests": 3079,
+    "files": 259
+  },
+  "apiTests": 24,
+  "mcp": {
+    "tests": 38,
+    "files": 2
+  },
+  "catalogTests": 6,
+  "native": {
+    "run": 41524775916,
+    "tests": 52,
+    "failures": 0,
+    "skipped": 0,
+    "duration": "55.901s",
+    "emulatorOnly": true
+  },
+  "localAndroid": {
+    "assembleDebug": true,
+    "appLintDebug": true,
+    "buildSuccessful": true,
+    "duration": "35s",
+    "physicalDevice": false
+  },
+  "compiledBrowser": {
+    "cases": 6,
+    "runtimeErrors": 0,
+    "syntheticProfilesPreserved": true,
+    "pngExports": 6,
+    "pdfExports": 6,
+    "results": [
+      {
+        "name": "edge-320",
+        "engine": "edge",
+        "viewport": {
+          "width": 320,
+          "height": 740
+        },
+        "lang": "en",
+        "theme": "light",
+        "longName": true,
+        "pass": true,
+        "recordsPreserved": true,
+        "runtimeErrors": 0,
+        "views": [
+          {
+            "level": "week",
+            "count": 2,
+            "cells": 7,
+            "squareDatesVerified": true,
+            "noHorizontalOverflow": true,
+            "screenshot": "output/streak-108/edge-320-week.png"
+          },
+          {
+            "level": "month",
+            "count": 18,
+            "cells": 31,
+            "squareDatesVerified": true,
+            "noHorizontalOverflow": true,
+            "screenshot": "output/streak-108/edge-320-month.png"
+          },
+          {
+            "level": "months",
+            "count": 18,
+            "cells": 365,
+            "squareDatesVerified": true,
+            "noHorizontalOverflow": true,
+            "screenshot": "output/streak-108/edge-320-months.png"
+          }
+        ],
+        "exports": [
+          {
+            "format": "png",
+            "file": "output/streak-108/edge-320-profile-month.png",
+            "bytes": 408115,
+            "sha256": "c577554113eab14e29d70c3cac4ee7ccbd6aba2584c8f5b00af409796b3512d2",
+            "previewEqualsDownload": true,
+            "width": 2000,
+            "height": 2644,
+            "embeddedAvatarPixelVerified": true
+          },
+          {
+            "format": "pdf",
+            "file": "output/streak-108/edge-320-profile-month.pdf",
+            "bytes": 366127,
+            "sha256": "70449d817d42af00b2a9e5de42814af922da4a8a4a5ae820d4c803bfeeb58fd7",
+            "previewEqualsDownload": true
+          }
+        ]
+      },
+      {
+        "name": "webkit-320",
+        "engine": "webkit",
+        "viewport": {
+          "width": 320,
+          "height": 740
+        },
+        "lang": "es",
+        "theme": "dark",
+        "longName": true,
+        "pass": true,
+        "recordsPreserved": true,
+        "runtimeErrors": 0,
+        "views": [
+          {
+            "level": "week",
+            "count": 2,
+            "cells": 7,
+            "squareDatesVerified": true,
+            "noHorizontalOverflow": true,
+            "screenshot": "output/streak-108/webkit-320-week.png"
+          },
+          {
+            "level": "month",
+            "count": 18,
+            "cells": 31,
+            "squareDatesVerified": true,
+            "noHorizontalOverflow": true,
+            "screenshot": "output/streak-108/webkit-320-month.png"
+          },
+          {
+            "level": "months",
+            "count": 18,
+            "cells": 365,
+            "squareDatesVerified": true,
+            "noHorizontalOverflow": true,
+            "screenshot": "output/streak-108/webkit-320-months.png"
+          }
+        ],
+        "exports": [
+          {
+            "format": "png",
+            "file": "output/streak-108/webkit-320-profile-month.png",
+            "bytes": 180807,
+            "sha256": "1529a39db280e0edbda3914340a63f7ad9d799518e63e94d865af9e2e0b3ddca",
+            "previewEqualsDownload": true,
+            "width": 2000,
+            "height": 2644,
+            "embeddedAvatarPixelVerified": true
+          },
+          {
+            "format": "pdf",
+            "file": "output/streak-108/webkit-320-profile-month.pdf",
+            "bytes": 393503,
+            "sha256": "3cf50ac8bcd962dbb1d59dbeb535ca8ebb958996bcc2f560a7d66b1d912ea3bc",
+            "previewEqualsDownload": true
+          }
+        ]
+      },
+      {
+        "name": "edge-390",
+        "engine": "edge",
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "lang": "es",
+        "theme": "dark",
+        "longName": false,
+        "pass": true,
+        "recordsPreserved": true,
+        "runtimeErrors": 0,
+        "views": [
+          {
+            "level": "week",
+            "count": 2,
+            "cells": 7,
+            "squareDatesVerified": true,
+            "noHorizontalOverflow": true,
+            "screenshot": "output/streak-108/edge-390-week.png"
+          },
+          {
+            "level": "month",
+            "count": 18,
+            "cells": 31,
+            "squareDatesVerified": true,
+            "noHorizontalOverflow": true,
+            "screenshot": "output/streak-108/edge-390-month.png"
+          },
+          {
+            "level": "months",
+            "count": 18,
+            "cells": 365,
+            "squareDatesVerified": true,
+            "noHorizontalOverflow": true,
+            "screenshot": "output/streak-108/edge-390-months.png"
+          }
+        ],
+        "exports": [
+          {
+            "format": "png",
+            "file": "output/streak-108/edge-390-profile-month.png",
+            "bytes": 392768,
+            "sha256": "af757b1d73bdece65b937e10b549ea2e7ed87fbedae89fe777f7bcf4c5a0c61d",
+            "previewEqualsDownload": true,
+            "width": 2000,
+            "height": 2642,
+            "embeddedAvatarPixelVerified": true
+          },
+          {
+            "format": "pdf",
+            "file": "output/streak-108/edge-390-profile-month.pdf",
+            "bytes": 351251,
+            "sha256": "875b87d5b4d5d0e8b6c012a961cb0a7dec8c233b5203e2afd852df02018acc12",
+            "previewEqualsDownload": true
+          }
+        ]
+      },
+      {
+        "name": "webkit-390",
+        "engine": "webkit",
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "lang": "en",
+        "theme": "light",
+        "longName": false,
+        "pass": true,
+        "recordsPreserved": true,
+        "runtimeErrors": 0,
+        "views": [
+          {
+            "level": "week",
+            "count": 2,
+            "cells": 7,
+            "squareDatesVerified": true,
+            "noHorizontalOverflow": true,
+            "screenshot": "output/streak-108/webkit-390-week.png"
+          },
+          {
+            "level": "month",
+            "count": 18,
+            "cells": 31,
+            "squareDatesVerified": true,
+            "noHorizontalOverflow": true,
+            "screenshot": "output/streak-108/webkit-390-month.png"
+          },
+          {
+            "level": "months",
+            "count": 18,
+            "cells": 365,
+            "squareDatesVerified": true,
+            "noHorizontalOverflow": true,
+            "screenshot": "output/streak-108/webkit-390-months.png"
+          }
+        ],
+        "exports": [
+          {
+            "format": "png",
+            "file": "output/streak-108/webkit-390-profile-month.png",
+            "bytes": 166110,
+            "sha256": "703b8e7c603d9f5af9a436d533b699f3b967b0dbee712b826062b6ae406171cf",
+            "previewEqualsDownload": true,
+            "width": 2000,
+            "height": 2642,
+            "embeddedAvatarPixelVerified": true
+          },
+          {
+            "format": "pdf",
+            "file": "output/streak-108/webkit-390-profile-month.pdf",
+            "bytes": 334918,
+            "sha256": "d16e22f60cfae417410d47ff31c820eabf42ad8a887e77d636a4e2722a73d4a7",
+            "previewEqualsDownload": true
+          }
+        ]
+      },
+      {
+        "name": "edge-desktop",
+        "engine": "edge",
+        "viewport": {
+          "width": 1440,
+          "height": 1000
+        },
+        "lang": "en",
+        "theme": "dark",
+        "longName": false,
+        "pass": true,
+        "recordsPreserved": true,
+        "runtimeErrors": 0,
+        "views": [
+          {
+            "level": "week",
+            "count": 2,
+            "cells": 7,
+            "squareDatesVerified": true,
+            "noHorizontalOverflow": true,
+            "screenshot": "output/streak-108/edge-desktop-week.png"
+          },
+          {
+            "level": "month",
+            "count": 18,
+            "cells": 31,
+            "squareDatesVerified": true,
+            "noHorizontalOverflow": true,
+            "screenshot": "output/streak-108/edge-desktop-month.png"
+          },
+          {
+            "level": "months",
+            "count": 18,
+            "cells": 365,
+            "squareDatesVerified": true,
+            "noHorizontalOverflow": true,
+            "screenshot": "output/streak-108/edge-desktop-months.png"
+          }
+        ],
+        "exports": [
+          {
+            "format": "png",
+            "file": "output/streak-108/edge-desktop-profile-month.png",
+            "bytes": 382963,
+            "sha256": "f331a356f22f9cd4b7b871549c09c009441fad9c7c2cdce760b2f34c78c00fed",
+            "previewEqualsDownload": true,
+            "width": 2000,
+            "height": 2642,
+            "embeddedAvatarPixelVerified": true
+          },
+          {
+            "format": "pdf",
+            "file": "output/streak-108/edge-desktop-profile-month.pdf",
+            "bytes": 330133,
+            "sha256": "f612f6cda6795600b9aaf07ae91feac4985d31fa9c0d76bdbc474a2a94be3c33",
+            "previewEqualsDownload": true
+          }
+        ]
+      },
+      {
+        "name": "webkit-desktop",
+        "engine": "webkit",
+        "viewport": {
+          "width": 1440,
+          "height": 1000
+        },
+        "lang": "es",
+        "theme": "light",
+        "longName": false,
+        "pass": true,
+        "recordsPreserved": true,
+        "runtimeErrors": 0,
+        "views": [
+          {
+            "level": "week",
+            "count": 2,
+            "cells": 7,
+            "squareDatesVerified": true,
+            "noHorizontalOverflow": true,
+            "screenshot": "output/streak-108/webkit-desktop-week.png"
+          },
+          {
+            "level": "month",
+            "count": 18,
+            "cells": 31,
+            "squareDatesVerified": true,
+            "noHorizontalOverflow": true,
+            "screenshot": "output/streak-108/webkit-desktop-month.png"
+          },
+          {
+            "level": "months",
+            "count": 18,
+            "cells": 365,
+            "squareDatesVerified": true,
+            "noHorizontalOverflow": true,
+            "screenshot": "output/streak-108/webkit-desktop-months.png"
+          }
+        ],
+        "exports": [
+          {
+            "format": "png",
+            "file": "output/streak-108/webkit-desktop-profile-month.png",
+            "bytes": 169757,
+            "sha256": "c79a5764c003a9dc2851d66dbf0aed976394be826515d63773d5117b5a8d210b",
+            "previewEqualsDownload": true,
+            "width": 2000,
+            "height": 2642,
+            "embeddedAvatarPixelVerified": true
+          },
+          {
+            "format": "pdf",
+            "file": "output/streak-108/webkit-desktop-profile-month.pdf",
+            "bytes": 356357,
+            "sha256": "3194da4bbad675665d26f17413e4f24931555770a0817bf7d9ec14b6d907b324",
+            "previewEqualsDownload": true
+          }
+        ]
+      }
+    ]
+  },
+  "publicBrowser": {
+    "cases": 6,
+    "runtimeErrors": 0,
+    "syntheticProfilesPreserved": true,
+    "pngExports": 6,
+    "pdfExports": 6,
+    "results": [
+      {
+        "name": "edge-320",
+        "engine": "edge",
+        "viewport": {
+          "width": 320,
+          "height": 740
+        },
+        "lang": "en",
+        "theme": "light",
+        "longName": true,
+        "pass": true,
+        "recordsPreserved": true,
+        "runtimeErrors": 0,
+        "views": [
+          {
+            "level": "week",
+            "count": 2,
+            "cells": 7,
+            "squareDatesVerified": true,
+            "noHorizontalOverflow": true,
+            "screenshot": "output/streak-108-public/edge-320-week.png"
+          },
+          {
+            "level": "month",
+            "count": 18,
+            "cells": 31,
+            "squareDatesVerified": true,
+            "noHorizontalOverflow": true,
+            "screenshot": "output/streak-108-public/edge-320-month.png"
+          },
+          {
+            "level": "months",
+            "count": 18,
+            "cells": 365,
+            "squareDatesVerified": true,
+            "noHorizontalOverflow": true,
+            "screenshot": "output/streak-108-public/edge-320-months.png"
+          }
+        ],
+        "exports": [
+          {
+            "format": "png",
+            "file": "output/streak-108-public/edge-320-profile-month.png",
+            "bytes": 408115,
+            "sha256": "c577554113eab14e29d70c3cac4ee7ccbd6aba2584c8f5b00af409796b3512d2",
+            "previewEqualsDownload": true,
+            "width": 2000,
+            "height": 2644,
+            "embeddedAvatarPixelVerified": true
+          },
+          {
+            "format": "pdf",
+            "file": "output/streak-108-public/edge-320-profile-month.pdf",
+            "bytes": 366127,
+            "sha256": "e86bec0a1f56d69c98f445cbbaf7febaf25592ccf438a038d4a1ac2ff4f9e456",
+            "previewEqualsDownload": true
+          }
+        ]
+      },
+      {
+        "name": "webkit-320",
+        "engine": "webkit",
+        "viewport": {
+          "width": 320,
+          "height": 740
+        },
+        "lang": "es",
+        "theme": "dark",
+        "longName": true,
+        "pass": true,
+        "recordsPreserved": true,
+        "runtimeErrors": 0,
+        "views": [
+          {
+            "level": "week",
+            "count": 2,
+            "cells": 7,
+            "squareDatesVerified": true,
+            "noHorizontalOverflow": true,
+            "screenshot": "output/streak-108-public/webkit-320-week.png"
+          },
+          {
+            "level": "month",
+            "count": 18,
+            "cells": 31,
+            "squareDatesVerified": true,
+            "noHorizontalOverflow": true,
+            "screenshot": "output/streak-108-public/webkit-320-month.png"
+          },
+          {
+            "level": "months",
+            "count": 18,
+            "cells": 365,
+            "squareDatesVerified": true,
+            "noHorizontalOverflow": true,
+            "screenshot": "output/streak-108-public/webkit-320-months.png"
+          }
+        ],
+        "exports": [
+          {
+            "format": "png",
+            "file": "output/streak-108-public/webkit-320-profile-month.png",
+            "bytes": 180807,
+            "sha256": "1529a39db280e0edbda3914340a63f7ad9d799518e63e94d865af9e2e0b3ddca",
+            "previewEqualsDownload": true,
+            "width": 2000,
+            "height": 2644,
+            "embeddedAvatarPixelVerified": true
+          },
+          {
+            "format": "pdf",
+            "file": "output/streak-108-public/webkit-320-profile-month.pdf",
+            "bytes": 393503,
+            "sha256": "caadffbf402412b4d508c102f4e4144e7229037ccf6208debc9adc518bc7bbef",
+            "previewEqualsDownload": true
+          }
+        ]
+      },
+      {
+        "name": "edge-390",
+        "engine": "edge",
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "lang": "es",
+        "theme": "dark",
+        "longName": false,
+        "pass": true,
+        "recordsPreserved": true,
+        "runtimeErrors": 0,
+        "views": [
+          {
+            "level": "week",
+            "count": 2,
+            "cells": 7,
+            "squareDatesVerified": true,
+            "noHorizontalOverflow": true,
+            "screenshot": "output/streak-108-public/edge-390-week.png"
+          },
+          {
+            "level": "month",
+            "count": 18,
+            "cells": 31,
+            "squareDatesVerified": true,
+            "noHorizontalOverflow": true,
+            "screenshot": "output/streak-108-public/edge-390-month.png"
+          },
+          {
+            "level": "months",
+            "count": 18,
+            "cells": 365,
+            "squareDatesVerified": true,
+            "noHorizontalOverflow": true,
+            "screenshot": "output/streak-108-public/edge-390-months.png"
+          }
+        ],
+        "exports": [
+          {
+            "format": "png",
+            "file": "output/streak-108-public/edge-390-profile-month.png",
+            "bytes": 392768,
+            "sha256": "af757b1d73bdece65b937e10b549ea2e7ed87fbedae89fe777f7bcf4c5a0c61d",
+            "previewEqualsDownload": true,
+            "width": 2000,
+            "height": 2642,
+            "embeddedAvatarPixelVerified": true
+          },
+          {
+            "format": "pdf",
+            "file": "output/streak-108-public/edge-390-profile-month.pdf",
+            "bytes": 351251,
+            "sha256": "46d88b4243f9aec2b7228a49699b5e76fb104da747ec7bbc1b7940ed9879b8a2",
+            "previewEqualsDownload": true
+          }
+        ]
+      },
+      {
+        "name": "webkit-390",
+        "engine": "webkit",
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "lang": "en",
+        "theme": "light",
+        "longName": false,
+        "pass": true,
+        "recordsPreserved": true,
+        "runtimeErrors": 0,
+        "views": [
+          {
+            "level": "week",
+            "count": 2,
+            "cells": 7,
+            "squareDatesVerified": true,
+            "noHorizontalOverflow": true,
+            "screenshot": "output/streak-108-public/webkit-390-week.png"
+          },
+          {
+            "level": "month",
+            "count": 18,
+            "cells": 31,
+            "squareDatesVerified": true,
+            "noHorizontalOverflow": true,
+            "screenshot": "output/streak-108-public/webkit-390-month.png"
+          },
+          {
+            "level": "months",
+            "count": 18,
+            "cells": 365,
+            "squareDatesVerified": true,
+            "noHorizontalOverflow": true,
+            "screenshot": "output/streak-108-public/webkit-390-months.png"
+          }
+        ],
+        "exports": [
+          {
+            "format": "png",
+            "file": "output/streak-108-public/webkit-390-profile-month.png",
+            "bytes": 166110,
+            "sha256": "703b8e7c603d9f5af9a436d533b699f3b967b0dbee712b826062b6ae406171cf",
+            "previewEqualsDownload": true,
+            "width": 2000,
+            "height": 2642,
+            "embeddedAvatarPixelVerified": true
+          },
+          {
+            "format": "pdf",
+            "file": "output/streak-108-public/webkit-390-profile-month.pdf",
+            "bytes": 334918,
+            "sha256": "2cd952a1f05490ab11c56abcefa7ce90c2bc235ab7aeeacb60f7c00d2b8d5911",
+            "previewEqualsDownload": true
+          }
+        ]
+      },
+      {
+        "name": "edge-desktop",
+        "engine": "edge",
+        "viewport": {
+          "width": 1440,
+          "height": 1000
+        },
+        "lang": "en",
+        "theme": "dark",
+        "longName": false,
+        "pass": true,
+        "recordsPreserved": true,
+        "runtimeErrors": 0,
+        "views": [
+          {
+            "level": "week",
+            "count": 2,
+            "cells": 7,
+            "squareDatesVerified": true,
+            "noHorizontalOverflow": true,
+            "screenshot": "output/streak-108-public/edge-desktop-week.png"
+          },
+          {
+            "level": "month",
+            "count": 18,
+            "cells": 31,
+            "squareDatesVerified": true,
+            "noHorizontalOverflow": true,
+            "screenshot": "output/streak-108-public/edge-desktop-month.png"
+          },
+          {
+            "level": "months",
+            "count": 18,
+            "cells": 365,
+            "squareDatesVerified": true,
+            "noHorizontalOverflow": true,
+            "screenshot": "output/streak-108-public/edge-desktop-months.png"
+          }
+        ],
+        "exports": [
+          {
+            "format": "png",
+            "file": "output/streak-108-public/edge-desktop-profile-month.png",
+            "bytes": 382963,
+            "sha256": "f331a356f22f9cd4b7b871549c09c009441fad9c7c2cdce760b2f34c78c00fed",
+            "previewEqualsDownload": true,
+            "width": 2000,
+            "height": 2642,
+            "embeddedAvatarPixelVerified": true
+          },
+          {
+            "format": "pdf",
+            "file": "output/streak-108-public/edge-desktop-profile-month.pdf",
+            "bytes": 330133,
+            "sha256": "b221f5ffdda25d95c1cecd3d56d56f354cec43d8864decd94a02f2fa4502efb6",
+            "previewEqualsDownload": true
+          }
+        ]
+      },
+      {
+        "name": "webkit-desktop",
+        "engine": "webkit",
+        "viewport": {
+          "width": 1440,
+          "height": 1000
+        },
+        "lang": "es",
+        "theme": "light",
+        "longName": false,
+        "pass": true,
+        "recordsPreserved": true,
+        "runtimeErrors": 0,
+        "views": [
+          {
+            "level": "week",
+            "count": 2,
+            "cells": 7,
+            "squareDatesVerified": true,
+            "noHorizontalOverflow": true,
+            "screenshot": "output/streak-108-public/webkit-desktop-week.png"
+          },
+          {
+            "level": "month",
+            "count": 18,
+            "cells": 31,
+            "squareDatesVerified": true,
+            "noHorizontalOverflow": true,
+            "screenshot": "output/streak-108-public/webkit-desktop-month.png"
+          },
+          {
+            "level": "months",
+            "count": 18,
+            "cells": 365,
+            "squareDatesVerified": true,
+            "noHorizontalOverflow": true,
+            "screenshot": "output/streak-108-public/webkit-desktop-months.png"
+          }
+        ],
+        "exports": [
+          {
+            "format": "png",
+            "file": "output/streak-108-public/webkit-desktop-profile-month.png",
+            "bytes": 169757,
+            "sha256": "c79a5764c003a9dc2851d66dbf0aed976394be826515d63773d5117b5a8d210b",
+            "previewEqualsDownload": true,
+            "width": 2000,
+            "height": 2642,
+            "embeddedAvatarPixelVerified": true
+          },
+          {
+            "format": "pdf",
+            "file": "output/streak-108-public/webkit-desktop-profile-month.pdf",
+            "bytes": 356357,
+            "sha256": "730d66e678564fbf3cd1af0266bcd364e3b3ede1479a939860782c023d886d27",
+            "previewEqualsDownload": true
+          }
+        ]
+      }
+    ],
+    "regressionCases": 4,
+    "noSelfReoffer": true,
+    "edgeOfflineColdOpen": true
+  },
+  "artifact": {
+    "apkSha256": "7d3a870b3668989ce2c042376438061d481d25b36072fa973a0379de8af84903",
+    "aabSha256": "a3080fe9dcd1014280888bc41d0e1c6ae7991e86993c69ba060ab49689be7c54",
+    "certificateSha256": "8ee233c984615e2b3f6f083dc0c47d148bb8956ff7caca97be0b9a0d260e6082",
+    "officialSigningContinuity": true,
+    "releaseAndPagesApkIdentical": true,
+    "pwaFilesChecked": 51,
+    "candidateSharedRuntimeAssetsExact": 55
+  },
+  "privacy": {
+    "candidateScanExactSource": true,
+    "publicCandidateRuntimeParityVerified": true,
+    "baselinePublicApkAndAabHashesVerified": true,
+    "forbiddenImageHashesFromMetadata": 389,
+    "personalMediaIncluded": false,
+    "rejectedMediaIncluded": false,
+    "newBinaryStaticAssets": 0,
+    "newEmbeddedRasterImages": 0,
+    "scans": [
+      {
+        "kind": "apk",
+        "entries": 1107,
+        "forbiddenImageMatches": 0,
+        "gifFiles": 0,
+        "rejectedFilenames": 0,
+        "unchangedMediaFontsAndSounds": 262
+      },
+      {
+        "kind": "aab",
+        "entries": 1111,
+        "forbiddenImageMatches": 0,
+        "gifFiles": 0,
+        "rejectedFilenames": 0,
+        "unchangedMediaFontsAndSounds": 262
+      }
+    ]
+  },
+  "releaseRun": {
+    "id": 41526033354,
+    "url": "https://github.com/Truesilverking/TGym/actions/runs/41526033354",
+    "conclusion": "success"
+  },
+  "sourceRuns": [
+    {
+      "id": 41524775974,
+      "name": "Tests",
+      "event": "push",
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/41524775974",
+      "conclusion": "success"
+    },
+    {
+      "id": 41524787999,
+      "name": "Tests",
+      "event": "pull_request",
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/41524787999",
+      "conclusion": "success"
+    },
+    {
+      "id": 41524775957,
+      "name": "Validate PWA",
+      "event": "push",
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/41524775957",
+      "conclusion": "success"
+    },
+    {
+      "id": 41524775916,
+      "name": "Validate Android",
+      "event": "push",
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/41524775916",
+      "conclusion": "success"
+    },
+    {
+      "id": 41524787318,
+      "name": "Build signed Android candidate",
+      "event": "workflow_dispatch",
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/41524787318",
+      "conclusion": "success"
+    }
+  ],
+  "localProfileDataPublished": false,
+  "updateBroadcastSuppressed": true,
+  "limits": {
+    "pixelWaivedByUser": true,
+    "physicalPixel": false,
+    "physicalIphone": false,
+    "nativeIosBuild": false,
+    "nativeSharing": false,
+    "phoneInstall": false,
+    "webkitOfflineColdOpen": false
+  },
+  "protectedMainRetainsIndependentReview": true
+}

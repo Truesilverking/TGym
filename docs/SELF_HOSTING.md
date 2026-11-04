@@ -1,15 +1,17 @@
-# Self-hosting openGym
+# Self-hosting TGym
 
-openGym is two small containers (a web server and an API) plus a folder of your data.
+TGym is two small containers (a web server and an API) plus a folder of your data.
 This guide takes you from "just cloned it" to "using it from my phone over the internet".
 
 ## 1. Run it locally (5 minutes)
 
+Build from this checkout to run TGym: Compose image tags still point to upstream openGym; pulling those images does not install these TGym changes. The commands below are source-reviewed; Docker deployment was not executed in this audit.
+
 Requirements: [Docker](https://docs.docker.com/get-docker/) with the Compose plugin.
 
 ```bash
-git clone https://gitlab.com/DuarteSantos8/opengym
-cd openGym
+git clone https://github.com/Truesilverking/TGym.git
+cd TGym
 cp .env.example .env
 docker compose pull   # prebuilt images from GitLab (amd64 + arm64) — or skip and build from source
 docker compose up -d

@@ -1,0 +1,298 @@
+{
+  "date": "2026-10-20",
+  "verifiedAt": "2026-10-20T15:06:08.813Z",
+  "version": "1.15.76",
+  "androidVersionCode": 112,
+  "sourceCommit": "eb2813487803bec1dc47b92988965873805dfd82",
+  "branch": "feature/streak-calendar-1.15.76",
+  "tag": "v1.15.76",
+  "tagObject": "df67bfc85d09278b2c12893f12076728cf67ce5a",
+  "palette": {
+    "partial": {
+      "fill": "#0087c2",
+      "ink": "#000000",
+      "border": "#00547a",
+      "contrast": 5.244597557880779
+    },
+    "completed": {
+      "fill": "#115bb2",
+      "ink": "#ffffff",
+      "border": "#073977"
+    },
+    "missed": {
+      "fill": "#ed1c24",
+      "ink": "#000000",
+      "border": "#8f1015"
+    },
+    "pending": {
+      "fill": "#696969",
+      "ink": "#ffffff",
+      "border": "#424242"
+    },
+    "rest": {
+      "fill": "#ffffff",
+      "ink": "#263345",
+      "border": "#7b8796"
+    },
+    "paused": {
+      "fill": "#791f34",
+      "ink": "#ffffff",
+      "border": "#4b1020"
+    },
+    "trackingStartMarker": {
+      "fill": "#0f766e",
+      "border": "#064e3b",
+      "outsideGrid": true
+    }
+  },
+  "scope": "Shared week/month/year screen calendar and authoritative active-date presentation; existing report files and statistical rules preserved",
+  "dataRules": {
+    "storageSchemaChanged": false,
+    "historicalReclassification": false,
+    "streakRulesChanged": false,
+    "timezoneRulesChanged": false,
+    "existingMetricsCompared": {
+      "fixtures": 8,
+      "times": 3,
+      "streak": 192,
+      "calendar": 96,
+      "consistency": 24,
+      "trainingStreak": 24,
+      "identical": true
+    },
+    "annualCounts": "Distinct authoritative valid local active dates; excludes future/cancelled/active/warmup-only/invalid activity, separate from current/best streak"
+  },
+  "tests": {
+    "frontend": {
+      "passed": 2130,
+      "files": 192,
+      "boundedLocalWorkers": 4,
+      "defaultLocalAttempt": "Four existing Excel5000ms timeouts before final regression; preserved and passed bounded without changing assertions/timeouts",
+      "ciPassed": true
+    },
+    "api": 16,
+    "mcp": 37,
+    "nodeLoadable": true,
+    "catalog": 6,
+    "locales": 12,
+    "keysPerLocale": 1922,
+    "sourceStrings": 1218,
+    "fatigueComparisons": 108000,
+    "historyDeletionComparisons": 14076,
+    "frontendLintTypecheckScriptsAvailable": false,
+    "androidInstrumentation": {
+      "tests": 11,
+      "failures": 0,
+      "skipped": 0,
+      "physicalDevice": false
+    },
+    "builds": [
+      "web",
+      "PWA",
+      "mobile assets/Capacitor sync",
+      "Android assembleDebug/lintDebug",
+      "signed release APK/AAB"
+    ],
+    "iosNativeCompilation": false
+  },
+  "visual": {
+    "sourceCases": 144,
+    "sourceFixtureCases": 16,
+    "responsiveContainerCases": 8,
+    "futureLegendComputedDevCases": 4,
+    "exactFinalBuildCases": 36,
+    "livePublicCases": 36,
+    "allFinalFutureLegendChecks": true,
+    "screenshots": [
+      {
+        "file": "docs/assets/streak-calendar-1.15.76/semana.png",
+        "bytes": 26526,
+        "sha256": "1d9a9191753e180874104eed610760a3b54e9bad9c25a9b92a76ba8bec0833af",
+        "source": "Live public URL; isolated synthetic profile",
+        "physicalDevice": false
+      },
+      {
+        "file": "docs/assets/streak-calendar-1.15.76/mes.png",
+        "bytes": 35031,
+        "sha256": "1a7fcdabcf7b978349c61a2f7a8e1ded56cc180c3bf56f77ea46ec29f142f432",
+        "source": "Live public URL; isolated synthetic profile",
+        "physicalDevice": false
+      },
+      {
+        "file": "docs/assets/streak-calendar-1.15.76/anual.png",
+        "bytes": 47961,
+        "sha256": "9498e638fcf7b932055152abfd4545517895491ae5846199b940367be76613cb",
+        "source": "Live public URL; isolated synthetic profile",
+        "physicalDevice": false
+      }
+    ],
+    "deviceBoundary": "Desktop Edge and emulated mobile WebKit; no physical iPhone"
+  },
+  "exports": {
+    "rulesAndFormatsChanged": false,
+    "builtFilesOpened": 10,
+    "builtPdfPagesRendered": 8,
+    "reportPngsByteIdenticalTo75": 4,
+    "offlineExactFinal": {
+      "profiles": 4,
+      "filesOpened": 16,
+      "pdfDecodedImagesCompared": 52,
+      "pngCompared": 4,
+      "newPopplerPages": 8
+    },
+    "offlinePublic": {
+      "profiles": 4,
+      "proof": ".tools/calendar76/public-pwa-acceptance.json"
+    },
+    "nativeThirdPartyShareSent": false
+  },
+  "ci": [
+    {
+      "id": 39442772082,
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/39442772082",
+      "conclusion": "success"
+    },
+    {
+      "id": 39442775961,
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/39442775961",
+      "conclusion": "success"
+    },
+    {
+      "id": 39442779428,
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/39442779428",
+      "conclusion": "success"
+    },
+    {
+      "id": 39442783565,
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/39442783565",
+      "conclusion": "success"
+    }
+  ],
+  "publication": {
+    "release": "https://github.com/Truesilverking/TGym/releases/tag/v1.15.76",
+    "run": 39443765992,
+    "url": "https://github.com/Truesilverking/TGym/actions/runs/39443765992",
+    "assets": {
+      "TGym-Android-v1.15.76.apk": {
+        "bytes": 9033663,
+        "sha256": "1e2d221ea81b93a9ae8b38c494e1fa343d628eb9002a17cd12f570a996708f52"
+      },
+      "TGym-Android-v1.15.76.aab": {
+        "bytes": 8082404,
+        "sha256": "41f3c00faa3230768b959843fe36410de48566141b36ac14456446695c42b5ab"
+      },
+      "checksums.txt": {
+        "bytes": 184,
+        "sha256": "2aa6acea3c2a0f83095ef4e0c7f3f2b6f3b9b5465575aeeaf67fece72ff61be6"
+      },
+      "latest.json": {
+        "bytes": 701,
+        "sha256": "bf290592bbfb6575c72d97855f04aa1ed22e3abfb09ee46e45f247d738a2b827"
+      }
+    },
+    "certificateSha256": "8ee233c984615e2b3f6f083dc0c47d148bb8956ff7caca97be0b9a0d260e6082",
+    "nativePackage": "app.framegym.mobile",
+    "nativeSdk": {
+      "min": 23,
+      "target": 35,
+      "compile": 35
+    },
+    "githubPagesApkIdentical": true,
+    "livePwaBuild": {
+      "version": "1.15.76",
+      "commit": "eb2813487803bec1dc47b92988965873805dfd82"
+    },
+    "livePwaCache": "tgym-app-1.15.76-eb2813487803bec1dc47b92988965873805dfd82-04ed90cf5f56",
+    "livePwaShellCount": 57,
+    "publicCompiledAssetsByteIdenticalToAcceptedProductionPwa": true,
+    "compiledAssets": 50,
+    "staticDifferenceCount": 6,
+    "updateChecks": [
+      {
+        "distribution": "github",
+        "currentVersion": "1.15.75",
+        "offeredVersion": "1.15.76",
+        "offeredVersionCode": 112,
+        "passed": true
+      },
+      {
+        "distribution": "github",
+        "currentVersion": "1.15.76",
+        "offeredVersion": null,
+        "offeredVersionCode": null,
+        "passed": true
+      },
+      {
+        "distribution": "pwa",
+        "currentVersion": "1.15.75",
+        "offeredVersion": "1.15.76",
+        "offeredVersionCode": 0,
+        "passed": true
+      },
+      {
+        "distribution": "pwa",
+        "currentVersion": "1.15.76",
+        "offeredVersion": null,
+        "offeredVersionCode": null,
+        "passed": true
+      }
+    ],
+    "notification": {
+      "acceptedTopics": [
+        "tgym_updates",
+        "tgym_updates_v2"
+      ],
+      "safeLogLines": [
+        "2026-10-20T14:56:16.4358127Z Release update notifications enabled: true",
+        "2026-10-20T15:02:10.6480989Z FCM accepted tgym_updates update notification: [FCM message ID omitted]",
+        "2026-10-20T15:02:10.8511140Z FCM accepted tgym_updates_v2 update notification: [FCM message ID omitted]"
+      ],
+      "notificationRerunPerformed": false,
+      "physicalReceiptVerified": false
+    }
+  },
+  "corrections": [
+    {
+      "cause": "Legend swatch inherited theme text color",
+      "change": "Explicit calendar ink in shared swatch",
+      "regression": "144 matrix and computed palette check"
+    },
+    {
+      "cause": "General temporal legend selector overrode future dashed border",
+      "change": "Specific i selector preserves dashed border on future legend",
+      "regression": "Actual CSS unit test plus computed DEV4/build36/public36 futureLegendDashed guard"
+    }
+  ],
+  "pending": [
+    "Physical iPhone Safari/installed PWA and native iOS sharing",
+    "Physical Android/iPhone notification receipt, tap, installation and post-install acceptance",
+    "Existing provider/device boundaries documented in APP-AUDIT-2026-10-19.md"
+  ],
+  "syntheticProfilesOnly": true,
+  "userProfilesTouched": false,
+  "earlierSourceD839AcceptanceForFinal": false,
+  "proofSha256": {
+    ".tools/calendar76/pretag-gate-proof.json": "055b1066129cc88e4d5fb4bf206575011ae507dba62ae23724aad1cf30a6f9ea",
+    ".tools/calendar76/root-build-proof.json": "74f8b184ec4b53967ad00c3b2ba7be72fd25becaa7576bbf378494b212ce16c2",
+    ".tools/calendar76/candidate-artifacts-verified.json": "e0784bb2c19fb226c6cb03c2f5aaf08c95dde50ea61bd7405f9afa173c1a8bb8",
+    ".tools/calendar76/public-artifacts-verified.json": "dc7c22573a32772efe2f28b698553d0487be7bb60c94781702b697f21439c1b6",
+    ".tools/calendar76/public-production-pwa-comparison.json": "1eba3c75298992501be6287c2676432dbfcf0232ef4fceca52bee0e5c866ec7c",
+    ".tools/calendar76/candidate-public-comparison.json": "6d4f080f797e35f65cc3861555a087feb9b7f74265be022128d6846761dbfedb",
+    ".tools/calendar76/candidate-public-payload-verified.json": "013182bb1c1142a6771619a1efd79e77cefab4772e6ef4fac364f199f7bf46d3",
+    ".tools/calendar76/notification-verified.json": "06d729efaf78a515f7e2e5dcb5b025b41a69e2188a9753ec9c48e9a2043356fe",
+    ".tools/calendar76/exact-pwa-acceptance-eb28134.json": "e884cd6e9b9bc0958d8fde6c50634f944541151e31a8aba846df517d613d1ddd",
+    ".tools/calendar76/public-pwa-acceptance.json": "6570313222c72169d87d267656c17754188b3a32a50c25ea283748f694bf969e",
+    ".tools/calendar76/published-calendar-acceptance/proof.json": "cf2a787049512d2a0d7c18a07a4a32fe8d6ab38b255c182e49edd5f75158fead",
+    ".tools/calendar76/published-acceptance/proof.json": "d5f6eb88ece083d7df15e2b07f0cea5866e38075703ffae8fefe8eec93e33a45",
+    ".tools/calendar76/published-acceptance/file-review-proof.json": "37e9242e9acbd042bac9582406830f233b147d0a5ded6cdd04c01fb331d92224",
+    ".tools/calendar76/built-acceptance/file-review-proof.json": "9cfb6c8d13bf8de7117a8f92a1119ff46b0c0cb06b2dd4671b389e9a9f509fcb",
+    ".tools/calendar76/updater-verified.json": "f85d6d70a776210c153b360c389f1c25d76479add14ff5d629f672d888781b7b",
+    ".tools/calendar76/release-remote-annotation.json": "f2042e278eeee9c75bacfba000355aa593321675ed1e3d8db11898727e4a31e8",
+    ".tools/calendar76/ci-test-evidence.json": "6e1a495b82c5bf357e7b08ad3271cc5420953a9de7fa58770949dffdf166d7a1",
+    ".tools/calendar76/android-ci-test-evidence.json": "a6c896b205639ddca1a131299eae3de726fb53247ebe421a8b32e4376c84df06",
+    ".tools/calendar76/metrics-proof.json": "0a1f31358f1ae2c34cfcb7b5e9258180c67b937ba8ce7336934dd272a6771afb",
+    ".tools/calendar76/source-acceptance/proof.json": "b25c0d620c800dc347399ad40f698f8c15ea0dbe1e01cd76e7167ac9339e5886",
+    ".tools/calendar76/source-acceptance/future-legend-fix-proof.json": "cf69df4624d235c09d99957a85548e41d2e686e8129e67e9ac024b3623337695",
+    ".tools/calendar76/qa-delivery-summary.json": "e89b2d7dd8137c721fad0962189ad8cbc76f3fa3fbf5eff8e1b259bed8cb4600"
+  }
+}
