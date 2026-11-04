@@ -7,13 +7,15 @@ const locales = Object.entries(import.meta.glob('../locales/*.js', { eager: true
 const now = new Date('2026-10-17T12:00:00')
 const parse = svg => new DOMParser().parseFromString(svg, 'image/svg+xml')
 
-it.each(locales)('reserves wrapped note and metric space before the calendar in %s', (_, dictionary) => {
+it.each(locales)('reserves wrapped metric space before the centered period and calendar in %s', (_, dictionary) => {
   const t = key => dictionary[key] || key
   for (const pages of [streakReportPages({}, { period: 'year', now, t }), calendarReportPages({}, now, 'year', 'pdf', { now, t })]) {
     for (const page of pages) {
-      const doc = parse(page.svg), notes = [...doc.querySelectorAll('[data-report-note] text')]
-      const title = doc.querySelector('[data-period] > text'), lastNote = notes.at(-1)
-      expect(+title.getAttribute('y') - +title.getAttribute('font-size')).toBeGreaterThan(+lastNote.getAttribute('y') + 10)
+      const doc = parse(page.svg), period = doc.querySelector('[data-report-period] text')
+      const title = doc.querySelector('[data-period] > text')
+      expect(+title.getAttribute('y') - +title.getAttribute('font-size')).toBeGreaterThan(+period.getAttribute('y') + 10)
+      expect(doc.querySelector('[data-report-note]')).toBeNull()
+      expect(doc.querySelector('[data-report-title] text').getAttribute('text-anchor')).toBe('middle')
       for (const metric of doc.querySelectorAll('[data-summary]')) {
         const texts = [...metric.querySelectorAll('text')], value = texts.at(-1), lastLabel = texts.at(-2)
         expect(+value.getAttribute('y') - +value.getAttribute('font-size')).toBeGreaterThan(+lastLabel.getAttribute('y'))

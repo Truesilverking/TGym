@@ -43,7 +43,7 @@ it('rejects invalid Custom Range and forwards valid inclusive dates',async()=>{
  expect(mock.build.mock.calls[0][2].streak).toMatchObject({period:'custom',from:'2026-10-01',to:'2026-10-05'})
 })
 it('reveals invalid hidden filters on Download All before generating any file',()=>{
- render();act(()=>{const select=host.querySelector('select');select.value='custom';select.dispatchEvent(new Event('change',{bubbles:true}))})
+ render();act(()=>{const select=host.querySelector('.report-date-controls select');select.value='custom';select.dispatchEvent(new Event('change',{bubbles:true}))})
  const input=host.querySelector('input[type="date"]')
  act(()=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'');input.dispatchEvent(new Event('change',{bubbles:true}))})
  act(()=>checkbox('Streak Report').click());act(()=>button('Download All').click())
@@ -52,7 +52,7 @@ it('reveals invalid hidden filters on Download All before generating any file',(
 it.each(['streak','consistency'])('forwards complete-year settings from %s into the combined PDF and blocks invalid years',async id=>{
  render(S,{pdf:true})
  if(id==='consistency')act(()=>{checkbox('Streak Report').click();checkbox('Consistency Report').click()})
- const scope=host.querySelector(`[data-report="${id}"]`),select=scope.querySelector('select')
+ const scope=host.querySelector(`[data-report="${id}"]`),select=scope.querySelector('.report-date-controls select')
  act(()=>{select.value='years';select.dispatchEvent(new Event('change',{bubbles:true}))})
  const inputs=scope.querySelectorAll('input[type="number"]')
  const change=(input,value)=>act(()=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,value);input.dispatchEvent(new Event('change',{bubbles:true}))})
@@ -77,6 +77,23 @@ it('blocks double generation and discards stale results',async()=>{
  expect(mock.build).toHaveBeenCalledOnce();render({...S,workouts:[]})
  await act(async()=>resolve([{id:'streak',name:'old.pdf',blob:new Blob(['x'])}]))
  expect(mock.save).not.toHaveBeenCalled();expect(host.textContent).not.toContain('old.pdf')
+})
+it('shows measured creation progress and forwards the chosen black background',async()=>{
+ let complete
+ mock.build.mockImplementation((state,ids,settings,options)=>{
+   options.onProgress(37)
+   return new Promise(resolve=>{complete=()=>{options.onProgress(100);resolve([{id:'streak',name:'Streak Report 05-10-26.pdf',blob:new Blob(['pdf'])}])}})
+ })
+ render(S,{pdf:true})
+ const background=host.querySelector('[data-report="streak"] select')
+ act(()=>{background.value='black';background.dispatchEvent(new Event('change',{bubbles:true}))})
+ act(()=>button('Download Selected').click())
+ expect(mock.build.mock.calls[0][2].streak.theme).toBe('black')
+ expect(host.querySelector('progress').value).toBe(37)
+ expect(host.textContent).toContain('37% · PDF')
+ await act(async()=>complete())
+ expect(host.textContent).toContain('Streak Report 05-10-26.pdf')
+ expect(host.querySelector('progress')).toBeNull()
 })
 
 it('keeps the confirmed naming preferences for generation and discards the file if preferences change meanwhile',async()=>{

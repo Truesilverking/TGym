@@ -26,7 +26,7 @@ const openSavedSets=sets=>{
   const S={...state(),workouts:[{...workout(),entries:[{...entry(),sets}]}]}
   act(()=>useStore.setState({S}));localStorage.setItem('gym_state_v1',JSON.stringify(S))
   const saved=JSON.stringify(S),stored=localStorage.getItem('gym_state_v1')
-  mountRow();pointer('pointerdown');advance(1500)
+  mountRow();pointer('pointerdown');advance(500)
   expect(host.querySelector('.history-exercise-detail')).not.toBeNull()
   return()=>{expect(JSON.stringify(state())).toBe(saved);expect(localStorage.getItem('gym_state_v1')).toBe(stored)}
 }
@@ -42,12 +42,12 @@ afterEach(()=>{
   if(initialStored==null)localStorage.removeItem('gym_state_v1');else localStorage.setItem('gym_state_v1',initialStored)
   vi.clearAllTimers();vi.useRealTimers()
 })
-it('opens only after a full 1.5-second hold and preserves every saved field and storage byte',()=>{
+it('opens only after a full 0.5-second hold and preserves every saved field and storage byte',()=>{
   const before=JSON.stringify(state()),stored=localStorage.getItem('gym_state_v1');mountRow()
   expect(host.querySelector('.history-exercise-row').textContent).toContain('My saved alias')
-  expect(host.querySelector('.history-exercise-row').style.getPropertyValue('--history-exercise-hold-duration')).toBe('1500ms')
+  expect(host.querySelector('.history-exercise-row').style.getPropertyValue('--history-exercise-hold-duration')).toBe('500ms')
   expect(host.querySelector('.history-exercise-row').textContent).not.toMatch(/90|Back-off|Set 1/)
-  pointer('pointerdown');advance(1499);expect(useUI.getState().sheets).toHaveLength(0)
+  pointer('pointerdown');advance(499);expect(useUI.getState().sheets).toHaveLength(0)
   advance(1);expect(useUI.getState().sheets).toHaveLength(1)
   expect(host.querySelector('.history-exercise-detail [data-media-id]').dataset.mediaId).toBe('history-custom')
   expect(host.querySelector('.history-exercise-detail h3').textContent).toBe('My saved alias')
@@ -88,7 +88,7 @@ it('keeps main results readable without an empty extras list when saved nested r
   unchanged()
 })
 it.each(['pointerup','pointercancel','pointerleave','pointermove','scroll','blur','touchcancel','multitouch','secondary-pointer'])('cancels an incomplete hold on %s without opening another sheet',kind=>{
-  mountRow();pointer('pointerdown');advance(1000)
+  mountRow();pointer('pointerdown');advance(200)
   if(kind==='scroll')act(()=>document.dispatchEvent(new Event('scroll')))
   else if(kind==='blur')act(()=>window.dispatchEvent(new Event('blur')))
   else if(kind==='multitouch'){const event=new Event('touchstart',{bubbles:true});Object.defineProperty(event,'touches',{value:[{},{}]});act(()=>document.dispatchEvent(event))}
@@ -103,18 +103,18 @@ it.each([
   ['touch',15,0,false],['touch',11,10,false],
   ['mouse',9,0,false],['pen',9,0,false],['',9,0,false],
 ])('recognizes a %s hold with %ipx/%ipx travel using its own movement tolerance', (pointerType,dx,dy,opens)=>{
-  mountRow();pointer('pointerdown',{pointerType});advance(750)
+  mountRow();pointer('pointerdown',{pointerType});advance(200)
   const move=new PointerEvent('pointermove',{bubbles:true,cancelable:true,pointerId:1,pointerType,clientX:20+dx,clientY:20+dy})
   act(()=>host.querySelector('.history-exercise-row').dispatchEvent(move))
   expect(move.defaultPrevented).toBe(false)
-  advance(749);expect(useUI.getState().sheets).toHaveLength(0)
+  advance(299);expect(useUI.getState().sheets).toHaveLength(0)
   advance(1);expect(useUI.getState().sheets).toHaveLength(opens?1:0)
   pointer('pointerup',{pointerType});advance(2500)
   expect(useUI.getState().sheets).toHaveLength(opens?1:0)
 })
 it.each(['scroll','pointercancel','multitouch'])('still cancels a drifting touch hold on %s',kind=>{
-  mountRow();pointer('pointerdown',{pointerType:'touch'});advance(750)
-  pointer('pointermove',{pointerType:'touch',clientX:30});advance(500)
+  mountRow();pointer('pointerdown',{pointerType:'touch'});advance(200)
+  pointer('pointermove',{pointerType:'touch',clientX:30});advance(200)
   expect(host.querySelector('.history-exercise-row').classList.contains('is-holding')).toBe(true)
   if(kind==='scroll')act(()=>host.querySelector('.history-exercise-row').parentElement.dispatchEvent(new Event('scroll')))
   else if(kind==='multitouch'){
@@ -133,7 +133,7 @@ it('ignores a short pointer click and permits immediate keyboard/assistive activ
 })
 it('cancels native image dragging even when no pointerup or pointercancel follows',()=>{
   mountRow();const row=host.querySelector('.history-exercise-row'),image=document.createElement('img');row.querySelector('.thumb').append(image)
-  pointer('pointerdown');advance(1000)
+  pointer('pointerdown');advance(200)
   const drag=new Event('dragstart',{bubbles:true,cancelable:true});act(()=>image.dispatchEvent(drag))
   expect(drag.defaultPrevented).toBe(true);advance(3000);expect(useUI.getState().sheets).toHaveLength(0)
   // Ordinary pointer movement still belongs to scrolling, without prevention.
@@ -142,14 +142,14 @@ it('cancels native image dragging even when no pointerup or pointercancel follow
   advance(3000);expect(useUI.getState().sheets).toHaveLength(0)
 })
 it('also cancels a pending hold when a drag starts outside that exercise row',()=>{
-  mountRow();pointer('pointerdown');advance(1000)
+  mountRow();pointer('pointerdown');advance(200)
   const drag=new Event('dragstart',{bubbles:true,cancelable:true});act(()=>document.dispatchEvent(drag))
   expect(drag.defaultPrevented).toBe(false);advance(3000);expect(useUI.getState().sheets).toHaveLength(0)
 })
 it('cancels on unmount or when the source sheet becomes inert',()=>{
-  mountRow();pointer('pointerdown');advance(1000);act(()=>root.render(null));advance(3000)
+  mountRow();pointer('pointerdown');advance(200);act(()=>root.render(null));advance(3000)
   expect(useUI.getState().sheets).toHaveLength(0)
-  mountRow();pointer('pointerdown');host.setAttribute('inert','');advance(1500)
+  mountRow();pointer('pointerdown');host.setAttribute('inert','');advance(500)
   expect(useUI.getState().sheets).toHaveLength(0);host.removeAttribute('inert')
 })
 it('uses only historical row roles in their saved order, including a phase that overrides legacy warmup',()=>{
@@ -244,15 +244,15 @@ const timedPointer=(type,stamp,options={},target=host.querySelector('.history-ex
   Object.defineProperty(event,'timeStamp',{value:stamp})
   act(()=>target.dispatchEvent(event))
 }
-it('opens a completed 1.5-second hold when release arrives before its overdue timer',()=>{
-  mountRow();timedPointer('pointerdown',100);timedPointer('pointerup',1600)
+it('opens a completed 0.5-second hold when release arrives before its overdue timer',()=>{
+  mountRow();timedPointer('pointerdown',100);timedPointer('pointerup',600)
   expect(useUI.getState().sheets).toHaveLength(1)
   const ids=useUI.getState().sheets.map(sheet=>sheet.id)
   advance(5000);expect(useUI.getState().sheets.map(sheet=>sheet.id)).toEqual(ids)
 })
 it('does not turn a queued short release into a hold by using its late processing time',()=>{
   mountRow();let now=100;vi.spyOn(performance,'now').mockImplementation(()=>now)
-  timedPointer('pointerdown',100);now=5000;timedPointer('pointerup',1599)
+  timedPointer('pointerdown',100);now=5000;timedPointer('pointerup',599)
   expect(useUI.getState().sheets).toHaveLength(0)
   advance(5000);expect(useUI.getState().sheets).toHaveLength(0)
 })
@@ -277,7 +277,7 @@ it('cancels a late window release outside the exercise instead of opening it',()
   advance(5000);expect(useUI.getState().sheets).toHaveLength(0)
 })
 it('does not duplicate a detail already opened by the timer on release or assistive click',()=>{
-  mountRow();timedPointer('pointerdown',100);advance(1500)
+  mountRow();timedPointer('pointerdown',100);advance(500)
   const ids=useUI.getState().sheets.map(sheet=>sheet.id);expect(ids).toHaveLength(1)
   timedPointer('pointerup',2300)
   act(()=>host.querySelector('.history-exercise-row').click());advance(5000)
@@ -285,9 +285,9 @@ it('does not duplicate a detail already opened by the timer on release or assist
 })
 it('uses monotonic processing time only when event timestamps are unavailable',()=>{
   mountRow();let now=100;vi.spyOn(performance,'now').mockImplementation(()=>now)
-  timedPointer('pointerdown',NaN);now=1599;timedPointer('pointerup',NaN)
+  timedPointer('pointerdown',NaN);now=599;timedPointer('pointerup',NaN)
   expect(useUI.getState().sheets).toHaveLength(0)
-  now=3000;timedPointer('pointerdown',NaN);now=4500;timedPointer('pointerup',NaN)
+  now=3000;timedPointer('pointerdown',NaN);now=3500;timedPointer('pointerup',NaN)
   expect(useUI.getState().sheets).toHaveLength(1)
 })
 it('does not fall back to processing time for backwards but available event timestamps',()=>{
@@ -322,7 +322,7 @@ it.each(['.history-exercise-row-copy','.thumb'])('keeps a short tap on %s from o
 it('does not open another detail from the expand compatibility click after a complete hold',()=>{
   const before=JSON.stringify(state()),stored=localStorage.getItem('gym_state_v1');mountRow()
   const area=host.querySelector('[data-history-open]')
-  pointer('pointerdown',{},area);advance(1500);expect(useUI.getState().sheets).toHaveLength(1)
+  pointer('pointerdown',{},area);advance(500);expect(useUI.getState().sheets).toHaveLength(1)
   const id=useUI.getState().sheets[0].id
   pointer('pointerup',{},area);act(()=>area.dispatchEvent(new MouseEvent('click',{bubbles:true,detail:1})));advance(2500)
   expect(useUI.getState().sheets.map(sheet=>sheet.id)).toEqual([id])

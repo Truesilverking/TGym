@@ -15,6 +15,7 @@ import { Button } from './ui.jsx'
 export default function CalendarExport({ S, anchor, close, reportType = 'streak' }) {
   const consistency = reportType === 'consistency', now = useLocalNow(), today = isoOf(now)
   const [range, setRange] = useState({ period: consistency ? 'week' : 'this-week', from: isoOf(anchor), to: today, fromYear: String(anchor.getFullYear()), toYear: String(anchor.getFullYear()) }), [format, setFormat] = useState('png')
+  const [theme,setTheme]=useState('light'),[progress,setProgress]=useState(0)
   const period = range.period
   const report = useMemo(()=>consistency ? null : buildStreakReport(S, { ...range, anchor, now }),[S,range,anchor,today,consistency])
   const rangeError = period === 'years' ? completeYearRange(range).error : report?.range.error
@@ -28,10 +29,10 @@ export default function CalendarExport({ S, anchor, close, reportType = 'streak'
   const generate = async () => {
     if (exporting.current) return
     exporting.current = true
-    setBusy(true); setError('')
+    setProgress(0); setBusy(true); setError('')
     try {
       const build = consistency ? buildConsistencyExport : buildCalendarExport
-      const file = await build(S, anchor, period, pdfOnly ? 'pdf' : format, { ...range, now, t })
+      const file = await build(S, anchor, period, pdfOnly ? 'pdf' : format, { ...range, now, t, theme, onProgress:value=>{if(mounted.current)setProgress(Math.floor(value))} })
       if (mounted.current && current.current.S === S && current.current.anchor === anchor && current.current.today === today) setResult({ ...file, url: URL.createObjectURL(file.blob) })
     }
     catch { if (mounted.current) setError(t('Export failed. Please try again.')) }
@@ -47,8 +48,10 @@ export default function CalendarExport({ S, anchor, close, reportType = 'streak'
   }
   return <><h3>{t(consistency ? 'Consistency Report' : 'Export Calendar')}</h3>
     {!result ? <><ReportDateRange value={range} onChange={setRange} periods={consistency ? CONSISTENCY_PERIODS : STREAK_PERIODS} disabled={busy} today={today}/>
+      {!consistency&&<label>{t('Background')}<select className="input" disabled={busy} value={theme} onChange={e=>setTheme(e.target.value)}><option value="light">{t('White')}</option><option value="black">{t('Black')}</option></select></label>}
       <label>{t('Format')}<select className="input" disabled={busy || pdfOnly} value={pdfOnly ? 'pdf' : format} onChange={e => setFormat(e.target.value)}><option value="png">PNG</option><option value="pdf">PDF</option></select></label>
-      <Button disabled={busy || !!rangeError} onClick={generate}>{t(busy ? 'Working…' : 'Export')}</Button></> : <><p>{result.name}</p><Button disabled={busy} onClick={share}>{t('Share / save')}</Button>{!MOBILE && <a href={result.url} target="_blank" rel="noopener noreferrer">{t('Open')}</a>}<Button onClick={close}>{t('Done')}</Button></>}
+      <Button disabled={busy || !!rangeError} onClick={generate}>{busy ? `${progress}% · ${pdfOnly ? 'PDF' : format.toUpperCase()}` : t('Export')}</Button></> : <><p>{result.name}</p><p className="small dim" role="status">100% · {pdfOnly ? 'PDF' : format.toUpperCase()}</p><Button disabled={busy} onClick={share}>{t('Share / save')}</Button>{!MOBILE && <a href={result.url} target="_blank" rel="noopener noreferrer">{t('Open')}</a>}<Button onClick={close}>{t('Done')}</Button></>}
+    {busy&&<progress aria-label={t('Creating report')} max="100" value={progress}/>}
     {report?.noData && !result && <p className="small dim">{t('No recorded activity in this period.')}</p>}
     {(error || rangeError) && <p role="alert">{error || t(rangeError)}</p>}
   </>

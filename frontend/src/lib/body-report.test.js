@@ -35,7 +35,8 @@ describe('selected PDF sections',()=>{
  const report=()=>buildProgressReport(S,{now:new Date('2026-09-27T12:00:00')})
  it('exports one section with its exact body comparison and a static model',()=>{
   const svg=progressReportPages(null,{report:report(),sections:['body'],bodyGeometry,bodySelection:{before:'0',after:'1'}}).map(p=>p.svg).join('')
-  expect(svg).toContain('Body Progress');expect(svg).toContain('32 cm');expect(svg).not.toContain('36 cm')
+  expect(svg).toContain('Body Progress');expect(svg).toContain('data-measurement="neck" data-before="30" data-after="32" data-unit="cm"')
+  expect(svg).toContain('Unit: cm');expect(svg).not.toContain('data-after="36"')
   expect(svg).toContain('2026-03-01');expect(svg).toContain('<path');expect(svg).not.toContain('Training consistency')
  })
  it('exports multiple selected sections, rejects none and labels empty sections correctly',()=>{

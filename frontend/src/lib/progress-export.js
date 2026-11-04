@@ -1,4 +1,5 @@
-import { MEASUREMENT_ZONES,measurementMapSvg,CHANGE_STYLES,measurementChange } from './measurement-map.js'
+import { bodyComparisonReportPanel } from './body-comparison-report.js'
+import { MEASUREMENT_ZONES } from './measurement-map.js'
 import { compareBody } from './body-report.js'
 import { buildProgressReport } from './progress-report.js'
 import { PROGRESS_SECTIONS } from './progress-sections.js'
@@ -23,7 +24,7 @@ const spark = (m,x,y,w,h) => {
 }
 export function progressReportHTML(report,{t=x=>x,state=report.exerciseNameState||{},exerciseNameFor=(exercise,context)=>resolveExerciseName(exercise,state,context),fmtNum=n=>Number(n.toFixed(1)).toLocaleString(),fmtDate=d=>d,fragment=false}={}) {
  const val=(n,u='')=>n==null?'—':esc((u==='kg'||u==='lb'?fmtWeight(n):fmtNum(n))+' '+t(u))
- let body=`<section class="progress-export"><h1>${esc(t('Progress Report'))}</h1><p>${esc(report.range.start)} → ${esc(report.range.end)}</p><p>${esc(t('Only recorded data. Changes are not automatically improvements.'))}</p>`
+ let body=`<section class="progress-export"><h1 style="text-align:center">${esc(t('Progress Report'))}</h1><p>${esc(t('Only recorded data. Changes are not automatically improvements.'))}</p>`
  for(const section of sections(report,t,exerciseNameFor)) {
   body+=`<h2>${esc(section.title)}</h2>`
   for(const l of section.lines||[])body+=`<p>${esc(l.label)}: <b>${l.previous!=null?val(l.previous,l.unit)+' → ':''}${val(l.value,l.unit)}</b></p>`
@@ -98,7 +99,7 @@ export function progressReportPages(S,{t=x=>x,now=new Date(),name=(exercise,cont
  const enabled=new Set(chosen.filter(id=>PROGRESS_SECTIONS.some(s=>s[0]===id))),rendered=new Set()
  if(!enabled.size)throw new Error('Select at least one section.')
  const pages=[];let svg='',y=0,hasContent=false
- const start=()=>{svg=`<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1390"><rect width="1000" height="1390" fill="#f8fafc"/><g font-family="Arial,sans-serif"><rect width="1000" height="8" fill="#b51e28"/>${text(44,46,'TGym',20,'#b51e28',700)}${text(44,87,t('Progress Report'),30,'#17212f',700)}${text(44,117,report.range.start+' → '+report.range.end,18,'#536174')}`;y=150;hasContent=false}
+ const start=()=>{svg=`<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1390"><rect width="1000" height="1390" fill="#f8fafc"/><g font-family="Arial,sans-serif"><rect width="1000" height="8" fill="#b51e28"/><g data-report-title="true" text-anchor="middle">${text(500,80,t('Progress Report'),36,'#17212f',700)}</g>`;y=117;hasContent=false}
  const finish=()=>{if(hasContent)pages.push(svg)}
  const next=()=>{finish();start()}
  const headingRows=h=>({title:wrap(h.title,65,24,700,912),sub:wrap(h.sub,90,18,400,912)})
@@ -146,14 +147,7 @@ export function progressReportPages(S,{t=x=>x,now=new Date(),name=(exercise,cont
  }
  const body=compareBody(report.bodyRecords||[],bodySelection.before,bodySelection.after)
  const renderBody=()=>{if(body.metrics.length){
-  const model={height:380,draw:y=>rect(44,y,912,368)+`<g transform="translate(0 ${y+4})">${measurementMapSvg(bodyGeometry,report.bodyType,body.metrics)}</g>`+body.metrics.map((m,i)=>text(365,y+30+i*25,CHANGE_STYLES[measurementChange(m)].symbol+' '+t(m.label),17,'#536174')+text(690,y+30+i*25,val(m.last,m.unit),19,'#17212f',700)).join('')}
-
-  const comparison=pairRows(body.metrics,m=>{const title=wrap(t(m.label),35,20,700,416),detail=m.delta==null?t('More data needed'):(m.delta>0?'+':'')+val(m.delta,m.unit)+' · '+(m.percent>0?'+':'')+val(m.percent,'%'),height=95+title.length*25;return {height,draw:(x,y,h)=>rect(x,y,448,h)+lines(x+16,y+27,title,20,'#17212f',700)+text(x+16,y+title.length*25+35,val(m.first,m.unit)+' → '+val(m.last,m.unit),23,'#17212f',700)+text(x+16,y+height-38,detail,18,'#b51e28')+text(x+16,y+height-15,body.before.d+' → '+body.after.d,16,'#536174')}})
-
-  const facts=[[t('First record'),report.bodyRecords[0].d],[t('Current record'),body.after.d],[t('Largest increase'),body.increase?t(body.increase.label)+' · '+val(body.increase.delta,body.increase.unit):'—'],[t('Largest decrease'),body.decrease?t(body.decrease.label)+' · '+val(body.decrease.delta,body.decrease.unit):'—'],[t('No significant change'),body.stable.length?body.stable.map(m=>t(m.label)).join(', '):'—']]
-  const factRows=pairRows(facts,([title,v])=>{const rows=wrap(title+': '+v,40);return {height:rows.length*24+12,draw:(x,y)=>lines(x+16,y+22,rows,18)}})
-  const note=wrap(t('Changes below 0.1 cm are treated as unchanged. Missing values are not zero.'),90)
-  group({...sectionHead('body'),sub:t('Before')+': '+body.before.d+' · '+t('After')+': '+body.after.d},[model,...tileRows([['Records',body.count],['Elapsed days',body.days]]),...comparison,...factRows,{height:note.length*23+16,draw:y=>lines(60,y+22,note,17,'#536174')},...metricRows(report.body.filter(m=>!m.key.startsWith('inbody:')&&!MEASUREMENT_ZONES[m.key]))])
+  group({...sectionHead('body'),sub:t('Before')+': '+body.before.d+' · '+t('After')+': '+body.after.d},[bodyComparisonReportPanel(bodyGeometry,report.bodyType,body,{t}),...metricRows(report.body.filter(m=>!m.key.startsWith('inbody:')&&!MEASUREMENT_ZONES[m.key]))])
  }
  }
  const groups=[
@@ -171,5 +165,5 @@ export function progressReportPages(S,{t=x=>x,now=new Date(),name=(exercise,cont
  }
  for(const id of enabled)if(!rendered.has(id))group(sectionHead(id),[{height:38,draw:y=>text(44,y+20,t('No comparable history in this period.'),18,'#536174')}])
  finish()
- return pages.map((page,i)=>({svg:page+text(44,1350,'TGym · '+t('Progress Report'),16,'#536174')+text(875,1350,(i+1)+' / '+pages.length,16,'#536174')+'</g></svg>',width:1000,height:1390}))
+ return pages.map((page,i)=>({svg:page+text(44,1350,t('Progress Report'),16,'#536174')+text(875,1350,(i+1)+' / '+pages.length,16,'#536174')+'</g></svg>',width:1000,height:1390}))
 }

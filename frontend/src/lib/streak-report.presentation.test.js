@@ -26,9 +26,10 @@ it.each(['png', 'pdf'])('lays out the complete annual %s as three columns and fo
   expect(page.height / page.width).toBeLessThan(2.1)
   expect(page.width * page.height * 4).toBeLessThan(12_000_000)
   const image = doc.querySelector('[data-profile-photo]'), name = doc.querySelector('[data-profile-name] text')
-  expect(+image.getAttribute('width')).toBeGreaterThanOrEqual(176)
-  expect(+name.getAttribute('font-size')).toBeGreaterThanOrEqual(38)
-  expect(+doc.querySelector('[data-summary] > rect').getAttribute('y')).toBeGreaterThan(+image.getAttribute('y') + +image.getAttribute('height') + 12)
+  expect(+image.getAttribute('width')).toBeGreaterThanOrEqual(224)
+  expect(+name.getAttribute('font-size')).toBeGreaterThanOrEqual(44)
+  const summary = doc.querySelector('[data-summary] > rect')
+  expect(+image.getAttribute('y')).toBeGreaterThan(+summary.getAttribute('y') + +summary.getAttribute('height') + 12)
   const pdfScale = Math.min(190 / page.width, 277 / page.height)
   for (const month of months) {
     const weekdays = [...month.querySelectorAll('[data-period] > text')].slice(1)

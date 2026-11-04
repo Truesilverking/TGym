@@ -1,3 +1,4 @@
+import { reportFileName } from './report-presentation.js'
 import { CATALOGUE } from './exercises.js'
 import { orderedRoutines } from './routine-order.js'
 import { routineIds } from './daily-plan.js'
@@ -895,7 +896,7 @@ export async function readRoutineExchangeFile(file) {
 export async function buildRoutineExchangeFile(S, ids, format, { signal, onProgress = () => {}, template = false } = {}) {
   aborted(signal); onProgress(5)
   const data = createRoutineExchange(S, template ? [] : ids, { fullCatalog: template })
-  const name = `TGym-${template ? `routine-template-v${data.tgym_routine_exchange}` : 'routines'}-${todayISO()}.${format}`
+  const name = format === 'pdf' ? reportFileName('Routines','pdf') : `TGym-${template ? `routine-template-v${data.tgym_routine_exchange}` : 'routines'}-${todayISO()}.${format}`
   if (!template && !data.routines.length) throw new Error('Select at least one routine')
   let blob
   if (format === 'json') blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })

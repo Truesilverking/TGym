@@ -80,8 +80,8 @@ it('excludes canceled and active rows from legacy start inference',()=>{
  expect(trainingStart(S,today)).toBe(today)
 })
 
-it('keeps a date-only week filename stable across time zones',()=>{
- expect(reportFilename('2026-09-21','week','pdf')).toBe('TGym-Consistency-Week-2026-09-21.pdf')
+it('names a report using the local download date independently of its selected period',()=>{
+  expect(reportFilename('2026-09-21','week','pdf',{now:new Date(2026,10,4,12)})).toBe('Consistency Report 04-11-26.pdf')
 })
 it('does not invent missed training for deleted routines',()=>{
  const S=base();S.routines=[]

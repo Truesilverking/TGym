@@ -5,7 +5,7 @@ import { trainingStreak } from './training-plan.js'
 import { hybridSummary } from './activities.js'
 import { routineConsistency, routineDurationSummary, bmiFor, bmiBand } from './stats-insights.js'
 import { bodyRecords, compareBody } from './body-report.js'
-import { measurementMapSvg } from './measurement-map.js'
+import { bodyComparisonReportPanel } from './body-comparison-report.js'
 import { EXIDX } from './exercises.js'
 import { loadOfWorkouts, rankOf, MUSCLES, INERT, MUSCLE_NAME, levelsOf } from './muscles.js'
 import { fatigueOf, strengthOf, STRENGTH_FLOOR, LB_TO_KG } from './recovery.js'
@@ -52,8 +52,8 @@ export function statsReportPages(rawState, {
   let svg = '', y = 0, hasContent = false
   const startPage = () => {
     svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}" aria-label="${esc(t('Stats'))}"><rect width="${WIDTH}" height="${HEIGHT}" fill="#f8fafc"/><g font-family="Arial,sans-serif"><rect width="${WIDTH}" height="8" fill="${accent}"/>`
-    svg += text(LEFT, 47, 'TGym', 22, accent, 700) + text(LEFT, 91, t('Stats'), 32, '#18202c', 700) + text(LEFT, 121, fmtDate(today, true, true), 17, '#536174')
-    y = 155; hasContent = false
+    svg += text(WIDTH / 2, 75, t('Stats'), 36, '#18202c', 700, 'text-anchor="middle"')
+    y = 111; hasContent = false
   }
   const finishPage = () => { if (hasContent) pages.push(svg) }
   const nextPage = () => { finishPage(); startPage() }
@@ -232,10 +232,8 @@ export function statsReportPages(rawState, {
   if (enabled.has('measurements')) {
     const records = bodyRecords(S, { start: '0001-01-01', end: today })
     const selection = filters.bodySelection || filters.measurementSelection || {}, comparison = compareBody(records, selection.before, selection.after)
-    const map = bodyGeometry && comparison.metrics.length ? [{ height: 384, draw: top => rect(LEFT, top, INNER, 372) + `<g transform="translate(0 ${top + 5})">${measurementMapSvg(bodyGeometry, S.body, comparison.metrics)}</g>` + lines(LEFT + 368, top + 33, wrap(t('Before') + ': ' + comparison.before.d + ' → ' + t('After') + ': ' + comparison.after.d, 42), 20, '#18202c', 700) + lines(LEFT + 368, top + 108, wrap(t('Changes below 0.1 cm are treated as unchanged. Missing values are not zero.'), 44), 18, '#536174') }] : []
     section('measurements', comparison.before ? t('Before') + ': ' + comparison.before.d + ' · ' + t('After') + ': ' + comparison.after.d : measurementUnit, comparison.metrics.length ? [
-      ...map, ...tiles([['Records', number(comparison.count)], ['Elapsed days', number(comparison.days)]]),
-      ...comparison.metrics.flatMap(metric => detailCard(t(metric.label), [t('Before') + ': ' + val(metric.first, metric.unit) + ' → ' + t('After') + ': ' + val(metric.last, metric.unit), metric.delta == null ? t('More data needed') : (metric.delta > 0 ? '+' : '') + val(metric.delta, metric.unit) + ' · ' + (metric.percent > 0 ? '+' : '') + val(metric.percent, '%')])),
+      bodyComparisonReportPanel(bodyGeometry,S.body,comparison,{t}),
       ...notes([t('Changes below 0.1 cm are treated as unchanged. Missing values are not zero.')]),
     ] : notes([t('No measurements logged yet.')]))
   }
@@ -306,5 +304,5 @@ export function statsReportPages(rawState, {
     }) : notes([t('No workouts yet')]))
   }
   finishPage()
-  return pages.map((page, i) => ({ svg: page + text(LEFT, 1381, 'TGym · ' + t('Stats'), 16, '#536174') + text(956, 1381, (i + 1) + ' / ' + pages.length, 16, '#536174', 400, 'text-anchor="end"') + '</g></svg>', width: WIDTH, height: HEIGHT }))
+  return pages.map((page, i) => ({ svg: page + text(LEFT, 1381, t('Stats'), 16, '#536174') + text(956, 1381, (i + 1) + ' / ' + pages.length, 16, '#536174', 400, 'text-anchor="end"') + '</g></svg>', width: WIDTH, height: HEIGHT }))
 }

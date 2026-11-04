@@ -3,6 +3,7 @@ import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { beforeEach, afterEach, expect, it, vi } from 'vitest'
 import CalendarExport from './CalendarExport.jsx'
+import { reportFileName } from '../lib/report-presentation.js'
 
 const mock = vi.hoisted(() => ({ build: vi.fn(), save: vi.fn() }))
 vi.mock('../lib/report-file.js', () => ({ reportPagesFile: (...args) => mock.build(...args), saveReportFile: (...args) => mock.save(...args) }))
@@ -23,9 +24,9 @@ afterEach(() => { if (mounted) act(() => root.unmount()); host.remove(); vi.rest
 it('forces Full Report to PDF, saves its independent file and releases the preview URL', async () => {
   render()
   act(() => { const select = host.querySelector('select'); select.value = 'full'; select.dispatchEvent(new Event('change', { bubbles: true })) })
-  expect(host.querySelectorAll('select')[1].value).toBe('pdf'); expect(host.querySelectorAll('select')[1].disabled).toBe(true)
+  expect([...host.querySelectorAll('select')].at(-1).value).toBe('pdf'); expect([...host.querySelectorAll('select')].at(-1).disabled).toBe(true)
   await act(async () => button('Export').click())
-  expect(mock.build.mock.calls[0][0]).toHaveLength(1); expect(mock.build.mock.calls[0][1]).toBe('TGym-Streak-2026-01-01_2026-12-31.pdf')
+  expect(mock.build.mock.calls[0][0]).toHaveLength(1); expect(mock.build.mock.calls[0][1]).toBe(reportFileName('Streak Report','pdf'))
   await act(async () => button('Share / save').click())
   expect(mock.save).toHaveBeenCalledWith({ ...file(), url: 'blob:calendar' }, { share: true })
   act(() => root.unmount()); mounted = false
@@ -49,11 +50,11 @@ it.each(['streak','consistency'])('exports complete years from %s with its reada
   expect(host.querySelector('[role="alert"]').textContent).toBe('Choose a valid year range.')
   expect(mock.build).not.toHaveBeenCalled()
   change(inputs[0],'2024')
-  expect(host.querySelectorAll('select')[1].value).toBe('pdf');expect(host.querySelectorAll('select')[1].disabled).toBe(true)
+  expect([...host.querySelectorAll('select')].at(-1).value).toBe('pdf');expect([...host.querySelectorAll('select')].at(-1).disabled).toBe(true)
   await act(async()=>button('Export').click())
   const [pages,name]=mock.build.mock.calls[0]
   expect(pages).toHaveLength(reportType==='streak'?3:9);expect(pages.every(page=>!page.orientation&&page.width<page.height)).toBe(true)
-  expect(name).toBe(`TGym-${reportType==='streak'?'Streak':'Consistency'}-Years-2024_2026.pdf`)
+  expect(name).toBe(reportFileName(reportType==='streak'?'Streak Report':'Consistency Report','pdf'))
   expect(host.querySelector('a').href).toBe('blob:calendar')
   await act(async()=>button('Share / save').click())
   expect(mock.save).toHaveBeenCalledOnce()

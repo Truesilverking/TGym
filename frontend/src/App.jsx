@@ -32,6 +32,7 @@ import AppUpdate from './components/AppUpdate.jsx'
 import OfflineStatus from './components/OfflineStatus.jsx'
 import ProfileRecovery from './components/ProfileRecovery.jsx'
 import AppTour from './components/AppTour.jsx'
+import { SmartScaleAutoSync } from './components/SmartScale.jsx'
 import { backupToGoogleDrive, cloudBackupDue } from './lib/cloud-sync.js'
 import { MOBILE, syncReminder } from './lib/mobile.js'
 import { workoutInactivitySheet } from './sheets.jsx'
@@ -329,6 +330,7 @@ function Shell() {
       <Modals />
       <Toast />
       {ready && authed && !needsMobileOnboarding && <AppTour />}
+      {ready && authed && !needsMobileOnboarding && <SmartScaleAutoSync />}
     </>
   )
 }

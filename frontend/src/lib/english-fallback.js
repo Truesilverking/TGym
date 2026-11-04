@@ -1,5 +1,52 @@
 // Explicit source-language fallback. Entries in language packs override these values.
 export default {
+  "Smart scale": "Smart scale",
+  "Import weight, body fat percentage and fat mass into Body Weight and body composition. New readings sync when you open or return to TGym online. Existing manual readings are kept.": "Import weight, body fat percentage and fat mass into Body Weight and body composition. New readings sync when you open or return to TGym online. Existing manual readings are kept.",
+  "Configure the Withings client ID, client secret and callback URL on your TGym server first. Credentials stay on the server.": "Configure the Withings client ID, client secret and callback URL on your TGym server first. Credentials stay on the server.",
+  "Connect a TGym server to use the Withings API in the PWA or Android app. This connection only imports scale readings; it does not replace or synchronize your full profile.": "Connect a TGym server to use the Withings API in the PWA or Android app. This connection only imports scale readings; it does not replace or synchronize your full profile.",
+  "Could not sync the scale. Check your server connection, Withings authorization and available storage. Your existing records are kept.": "Could not sync the scale. Check your server connection, Withings authorization and available storage. Your existing records are kept.",
+  "Connect Withings": "Connect Withings",
+  "API connection": "API connection",
+  "TGym server URL": "TGym server URL",
+  "Generate a one-time pairing code in Health on your signed-in TGym server. Register its /api/withings/callback URL in your Withings developer account.": "Generate a one-time pairing code in Health on your signed-in TGym server. Register its /api/withings/callback URL in your Withings developer account.",
+  "Connect server": "Connect server",
+  "Forget server": "Forget server",
+  "Sync automatically on app open": "Sync automatically on app open",
+  "Create pairing code": "Create pairing code",
+  "Use this code within 5 minutes to connect another device to this server.": "Use this code within 5 minutes to connect another device to this server.",
+  "Background": "Background",
+  "Black": "Black",
+  "White": "White",
+  "Creating report": "Creating report",
+  "Reports": "Reports",
+  "Name": "Name",
+  "About 3 minutes. You can skip at any time.": "About 3 minutes. You can skip at any time.",
+  "Age": "Age",
+  "Enter an age from 1 to 120, or leave it blank.": "Enter an age from 1 to 120, or leave it blank.",
+  "Weight, height and goal editors save their own records.": "Weight, height and goal editors save their own records.",
+  "Swipe between modules, or tap the bottom buttons to open one directly.": "Swipe between modules, or tap the bottom buttons to open one directly.",
+  "Record load, reps, time, cardio and effort. Tap a load to choose any whole-number weight; completed sets stay locked until you undo them.": "Record load, reps, time, cardio and effort. Tap a load to choose any whole-number weight; completed sets stay locked until you undo them.",
+  "Use top and back-off sets": "Use top and back-off sets",
+  "Warm-ups prepare you. Top sets lead the session; automatic back-off loads follow your top-set weight. A manual back-off change applies to that session.": "Warm-ups prepare you. Top sets lead the session; automatic back-off loads follow your top-set weight. A manual back-off change applies to that session.",
+  "Choose a nutrition day": "Choose a nutrition day",
+  "Use the calendar to browse days, weeks and months. Each date keeps its own food and water log; Back to today returns to the current date.": "Use the calendar to browse days, weeks and months. Each date keeps its own food and water log; Back to today returns to the current date.",
+  "Log food and water": "Log food and water",
+  "Add foods to a meal, reuse recent foods or copy the previous day. Calories, protein, carbs, fat and water update for the selected day.": "Add foods to a meal, reuse recent foods or copy the previous day. Calories, protein, carbs, fat and water update for the selected day.",
+  "Set your nutrition goals": "Set your nutrition goals",
+  "Set daily calorie, macro and water goals. The optional calculator uses your inputs to suggest a calorie goal; you choose what to save.": "Set daily calorie, macro and water goals. The optional calculator uses your inputs to suggest a calorie goal; you choose what to save.",
+  "Week opens first. Switch to Month or Year, or expand recent workouts. Export the selected period as an image or PDF, with a white or black background.": "Week opens first. Switch to Month or Year, or expand recent workouts. Export the selected period as an image or PDF, with a white or black background.",
+  "Swipe through Stats. Use this arrow to open a section or change its order.": "Swipe through Stats. Use this arrow to open a section or change its order.",
+  "Open reports, Progress, History or InBody here. Select dashboards and dates before exporting; the creation percentage shows when the file is ready.": "Open reports, Progress, History or InBody here. Select dashboards and dates before exporting; the creation percentage shows when the file is ready.",
+  "Inspect saved exercises": "Inspect saved exercises",
+  "Open a workout in History. Tap an exercise expand button or hold its card for half a second to see its image and recorded sets, grouped by set type.": "Open a workout in History. Tap an exercise expand button or hold its card for half a second to see its image and recorded sets, grouped by set type.",
+  "Compare your body records": "Compare your body records",
+  "Log body measurements and choose before and after records. Missing values stay distinct from zero; changing the comparison never changes your saved records.": "Log body measurements and choose before and after records. Missing values stay distinct from zero; changing the comparison never changes your saved records.",
+  "Open Profile to view your name, photo, age and personal data. Tap Edit to make changes, then Save to leave editing. Weight, height and goal editors have their own Save.": "Open Profile to view your name, photo, age and personal data. Tap Edit to make changes, then Save to leave editing. Weight, height and goal editors have their own Save.",
+  "Record or plan activities, and manage health connections here. Withings scale imports need a configured TGym server and your authorization. Imports require a compatible service, permission and its connection setup. Deload and equipment options are here too.": "Record or plan activities, and manage health connections here. Withings scale imports need a configured TGym server and your authorization. Imports require a compatible service, permission and its connection setup. Deload and equipment options are here too.",
+  "Keep your data available": "Keep your data available",
+  "Export a backup, restore a reviewed copy or connect optional synchronization. A restore can replace data, so keep a backup before importing.": "Export a backup, restore a reviewed copy or connect optional synchronization. A restore can replace data, so keep a backup before importing.",
+  "Be ready offline and stay up to date": "Be ready offline and stay up to date",
+  "Check offline readiness and updates here. Saved data stays on this device; cloud services and uncached exercise media need a connection. Replay this guide from Help.": "Check offline readiness and updates here. Saved data stays on this device; cloud services and uncached exercise media need a connection. Replay this guide from Help.",
   "Calendar key": "Calendar key",
   "Total training days": "Total training days",
   "Kilograms": "Kilograms",
@@ -1759,7 +1806,7 @@ export default {
 ,"Counts training dates, not calendar days.":"Counts training dates, not calendar days."
 ,"Four months per PDF page.":"Four months per PDF page."
 ,"Hold for 1.5 seconds or press Enter to view sets.":"Hold for 1.5 seconds or press Enter to view sets."
-,"Tap the expand icon, hold for 1.5 seconds or press Enter to view sets.":"Tap the expand icon, hold for 1.5 seconds or press Enter to view sets."
+,"Tap the expand icon, hold for 0.5 seconds or press Enter to view sets.":"Tap the expand icon, hold for 0.5 seconds or press Enter to view sets."
 ,"Years":"Years"
 ,"This workout changed while you were editing. Cancel and reopen it before saving.":"This workout changed while you were editing. Cancel and reopen it before saving."
 }

@@ -110,7 +110,12 @@ describe('shared calendar state presentation', () => {
     for (const page of pages) {
       const doc = parse(page.svg)
       expect(doc.querySelector('parsererror')).toBeNull()
-      expect(doc.querySelector('[data-date] pattern, [data-date] [data-symbol], [data-date] circle, [data-date] path')).toBeNull()
+      expect(doc.querySelector('[data-date] pattern, [data-date] [data-symbol], [data-date] circle:not([data-tracking-day]), [data-date] path')).toBeNull()
+      for(const marker of doc.querySelectorAll('[data-tracking-day]')) {
+        expect(marker.getAttribute('data-tracking-day')).toBe('2026-12-27')
+        expect(marker.closest('[data-date]').getAttribute('data-date')).toBe('2026-12-27')
+        expect(marker.getAttribute('fill')).toBe(TRACKING_START_MARKER.fill)
+      }
       for (const cell of doc.querySelectorAll('[data-date]')) {
         const status = cell.getAttribute('data-status'), legend = doc.querySelector(`[data-semantic="${calendarReportState(status, page.svg.includes('Streak Report') ? 'streak' : 'consistency').semantic}"][data-legend]`)
         statuses.add(status)
@@ -129,7 +134,7 @@ describe('shared calendar state presentation', () => {
     }
     expect([...statuses].sort()).toEqual(['completed', 'missed', 'partial', 'paused', 'pending', 'rest', 'untracked'])
   })
-  it.each(['png', 'pdf'])('keeps the %s tracking marker outside dates and legends without recoloring the first recorded day', format => {
+  it.each(['png', 'pdf'])('keeps the %s tracking footer outside dates and marks only the actual start without recoloring its cell', format => {
     const S = fixture()
     S.trainingStartDate = '2025-01-01'
     S.trainingHistory = { trackedFrom: '2027-01-04', historicalWorkouts: 30, workoutsPerWeek: 3 }
@@ -148,6 +153,8 @@ describe('shared calendar state presentation', () => {
       expect(marker.querySelector('circle').getAttribute('fill')).toBe(TRACKING_START_MARKER.fill)
       expect(marker.querySelector('circle').getAttribute('stroke')).toBe(TRACKING_START_MARKER.border)
       expect(doc.querySelector('[data-date="2027-01-01"] rect').getAttribute('fill')).toBe('#115bb2')
+      expect(doc.querySelectorAll('[data-tracking-day]')).toHaveLength(1)
+      expect(doc.querySelector('[data-tracking-day]').closest('[data-date]').getAttribute('data-date')).toBe('2027-01-01')
       expect(doc.querySelector('[data-legend="untracked"]')).toBeNull()
       expect(doc.documentElement.textContent).not.toContain('Not tracking yet')
     }
@@ -159,8 +166,11 @@ describe('shared calendar state presentation', () => {
       for (const page of [...calendarReportPages(S, now, period, format, { now }), ...streakReportPages(S, { period, anchor: now, format, now })]) {
         const doc = parse(page.svg)
         expect(doc.querySelector('parsererror')).toBeNull()
-        expect(doc.querySelector('[data-date] pattern, [data-date] [data-symbol], [data-date] circle, [data-date] path')).toBeNull()
-        expect(doc.querySelector('[data-tracking-start]').getAttribute('data-tracking-start')).toBe('2026-12-27')
+        expect(doc.querySelector('[data-date] pattern, [data-date] [data-symbol], [data-date] circle:not([data-tracking-day]), [data-date] path')).toBeNull()
+        const containsStart=!!doc.querySelector('[data-date="2026-12-27"]')
+        expect(Boolean(doc.querySelector('[data-tracking-start]'))).toBe(containsStart)
+        expect(Boolean(doc.querySelector('[data-tracking-day]'))).toBe(containsStart)
+        if(containsStart) expect(doc.querySelector('[data-tracking-start]').getAttribute('data-tracking-start')).toBe('2026-12-27')
         for (const cell of doc.querySelectorAll('[data-date] rect')) {
           expect(cell.getAttribute('width')).toBe(cell.getAttribute('height'))
           expect(+cell.getAttribute('x')).toBeGreaterThanOrEqual(48)
@@ -181,8 +191,10 @@ describe('shared calendar state presentation', () => {
   it('labels each month/year outside the squares and includes future and empty dates', () => {
     const S = fixture()
     const page = parse(streakReportPages(S, { period: 'custom', from: '2026-12-26', to: '2027-01-06', now, format: 'png' })[0].svg)
-    expect(page.documentElement.textContent).toContain('December 2026')
-    expect(page.documentElement.textContent).toContain('January 2027')
+    const monthTitles=[...page.querySelectorAll('[data-month] [data-period]>text:first-child')]
+    expect(monthTitles.map(title=>title.textContent)).toEqual(['December','January'])
+    monthTitles.forEach(title=>expect(title.getAttribute('text-anchor')).toBe('middle'))
+    expect(page.querySelector('[data-report-period] text').textContent).toBe('2026 - 2027')
     const empty = streakReportPages({}, { period: 'year', anchor: '2024-01-01', now: new Date('2024-03-01T12:00:00') })
     expect(empty.flatMap(p => [...parse(p.svg).querySelectorAll('[data-date]')])).toHaveLength(366)
     expect(empty.some(p => p.svg.includes('No recorded activity in this period.'))).toBe(true)

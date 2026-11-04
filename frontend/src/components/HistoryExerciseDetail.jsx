@@ -11,7 +11,7 @@ import Icon from './Icon.jsx'
 import './HistoryExerciseDetail.css'
 
 const validUnit = value => value === 'kg' || value === 'lb' ? value : null
-const HOLD_MS = 1500
+const HOLD_MS = 500
 // A recorded target can have its own prescription unit; it does not relabel results.
 export const historyResultUnit = (set, entry, workout, state) => validUnit(set?.unit) || validUnit(entry?.unit) || validUnit(workout?.unit) || validUnit(state?.unit) || 'kg'
 export function historyExercise(state, entry) {
@@ -129,7 +129,7 @@ export default function HistoryExerciseRow({ entry, workout, pr }) {
     if(elapsed>=HOLD_MS)open()
     else cancel()
   }
-  const hint = t('Tap the expand icon, hold for 1.5 seconds or press Enter to view sets.')
+  const hint = t('Tap the expand icon, hold for 0.5 seconds or press Enter to view sets.')
   return <button type="button" ref={button} className={'history-exercise-row'+(holding?' is-holding':'')} style={{'--history-exercise-hold-duration':`${HOLD_MS}ms`}} data-exercise-id={entry.id} aria-haspopup="dialog" aria-label={`${name}. ${hint}`}
     onPointerDown={start} onPointerUp={release} onPointerCancel={cancel} onPointerLeave={cancel} onTouchCancel={cancel} onContextMenu={event=>event.preventDefault()}
     onDragStart={event=>{event.preventDefault();cancel()}}

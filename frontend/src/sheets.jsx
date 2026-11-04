@@ -1470,7 +1470,7 @@ function WorkoutDetail({ w: original, close }) {
     {['inactivity','abandoned','auto_completed'].includes(w.finishReason) && w.resumeSnapshot && !st.active && <Button onClick={()=>{update(s=>resumeAutoFinished(s,w.id));close();nav('/workout')}}>{t('Continue in a new session')}</Button>}
     <div className="muted small" style={{ marginBottom: 12 }}>{[fmtDate(w.d, true), ...(Number(w.end) > Number(w.start) ? [clockAt(w.start) + '–' + clockAt(w.end)] : []), ...durPart(workoutElapsedMs(w)), ...(!w.activity || w.activity.preservesWorkout ? [fmtVol(w.vol, historyUnit)] : []), ...(w.bw ? [fmtWeight(w.bw) + ' ' + bodyweightUnit] : [])].join(' · ')}</div>
     <fieldset className="workout-history-fields" disabled={historySaving}>
-    {!editing && (!w.activity || w.activity.preservesWorkout) && w.entries?.length > 0 && <p className="history-exercise-hint">{t('Tap the expand icon, hold for 1.5 seconds or press Enter to view sets.')}</p>}
+    {!editing && (!w.activity || w.activity.preservesWorkout) && w.entries?.length > 0 && <p className="history-exercise-hint">{t('Tap the expand icon, hold for 0.5 seconds or press Enter to view sets.')}</p>}
     {(w.activity && !w.activity.preservesWorkout ? [] : editing ? draftEntries : w.entries || []).map((e, i) => {
       const ex = historyExercise(st,e)
       if (!editing) return <HistoryExerciseRow key={i} entry={e} workout={w} pr={w.prs?.includes(e.id)}/>

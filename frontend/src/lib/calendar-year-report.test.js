@@ -64,8 +64,9 @@ describe('readable complete-year PDF pages', () => {
       allDates.push(...cells.map(cell => cell.getAttribute('data-date')))
       const expectedMetrics = kind === 'streak' ? [['Training streak', annual.current], ['Best streak', annual.best]] : [['Completed', annual.stats.completed], ['Missed', annual.stats.missed], ['Completion', annual.completion == null ? '—' : `${annual.completion}%`]]
       for (const [label, value] of expectedMetrics) expect(doc.querySelector(`[data-summary="${label}"]`).getAttribute('data-value')).toBe(String(value))
-      if (kind === 'streak') expect(doc.documentElement.textContent).toContain(`Streak as of ${annual.asOf}`)
-      expect(doc.querySelector('[data-date] pattern, [data-date] path, [data-date] circle, [data-date] [data-symbol]')).toBeNull()
+      expect(doc.querySelector('[data-report-period] text').textContent).toBe(String(year))
+      expect(doc.documentElement.textContent).not.toContain('Streak as of')
+      expect(doc.querySelector('[data-date] pattern, [data-date] path, [data-date] circle:not([data-tracking-day]), [data-date] [data-symbol]')).toBeNull()
       for (const cell of cells) {
         const box = cell.querySelector('rect'), number = cell.querySelector('text')
         expect(cell.querySelectorAll('rect')).toHaveLength(1); expect(cell.querySelectorAll('text')).toHaveLength(1)
@@ -85,8 +86,8 @@ describe('readable complete-year PDF pages', () => {
   })
   it('uses portable inclusive range filenames and requires PDF before generation', () => {
     const options = { period: 'years', fromYear: '2024', toYear: '2026', now }
-    expect(streakFilename(options)).toBe('TGym-Streak-Years-2024_2026.pdf')
-    expect(reportFilename('irrelevant', 'years', 'pdf', options)).toBe('TGym-Consistency-Years-2024_2026.pdf')
+    expect(streakFilename(options)).toBe('Streak Report 07-01-26.pdf')
+    expect(reportFilename('irrelevant', 'years', 'pdf', options)).toBe('Consistency Report 07-01-26.pdf')
     expect(() => streakReportPages(S, { ...options, format: 'png' })).toThrow('Complete-year reports require PDF')
     expect(() => calendarReportPages(S, now, 'years', 'png', options)).toThrow('Complete-year reports require PDF')
   })
@@ -106,9 +107,8 @@ describe('readable complete-year PDF pages', () => {
       const texts = [...summary.querySelectorAll('text')]
       expect(texts).toHaveLength(2)
       expect(texts[0].textContent).toBe(labels[summary.getAttribute('data-summary')])
-      expect(texts[0].getAttribute('y')).toBe('208')
-      expect(texts[1].getAttribute('y')).toBe('258')
-      expect(texts[1].getAttribute('font-size')).toBe('40')
+      expect(+texts[1].getAttribute('y') - +texts[1].getAttribute('font-size')).toBeGreaterThan(+texts[0].getAttribute('y'))
+      expect(texts[1].getAttribute('font-size')).toBe('42')
     }
   })
 })

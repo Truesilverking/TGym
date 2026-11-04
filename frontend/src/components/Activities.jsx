@@ -6,6 +6,7 @@ import { isoOf, fmtNum, fmtDate } from '../lib/format.js'
 import { ACTIVITY_TYPES, activityType, createActivityWorkout, hybridSummary, mergeImportedActivities, planActivity, activityPace } from '../lib/activities.js'
 import { workoutElapsedMs } from '../lib/workout-time.js'
 import { healthConnectAdapter } from '../lib/health/adapters/health-connect.js'
+import SmartScale from './SmartScale.jsx'
 import { Button, TextField, TextArea, NumberField, Segmented } from './ui.jsx'
 import './Activities.css'
 import TotalTimeMetric from './TotalTimeMetric.jsx'
@@ -69,6 +70,7 @@ export function HealthActivities() {
       {S.healthConnection?.lastSync && <p className="small dim">{t('Last sync')}: {new Date(S.healthConnection.lastSync).toLocaleString()}</p>}
       {error && <p role="alert">{error}</p>}{message && <p role="status">{message}</p>}
     </section><p className="dim small">{t('Apple Health, Garmin, Fitbit and WHOOP direct connections are not available in this build. You can record activities manually; compatible Android apps can share exercise sessions through Health Connect.')}</p>
+    <SmartScale />
     <h3>{t('Activity history')}</h3>{!rows.length?<p className="empty">{t('No activities yet.')}</p>:rows.map(w=><article className="card activity-history" key={w.id}><div className="row between"><div><b>{t(activityType(w.activity.type).label)}</b><div className="dim small">{fmtDate(w.d)} · {fmtNum(workoutElapsedMs(w)/60000)} min</div></div>{w.activity.source==='manual' && <Button size="sm" onClick={()=>openActivityEditor({existing:w})}>{t('Edit')}</Button>}</div><ActivityMetrics workout={w} />{w.note && <p className="small">{w.note}</p>}</article>)}
   </div>
 }

@@ -9,27 +9,41 @@ import './AppTour.css'
 export const TOUR_STEPS = [
   ['/home','navigation','Your training at a glance','Swipe between modules, or tap the bottom buttons to open one directly.','Training'],
   ['/home','start','Start or resume','Start planned or freestyle training. Active sessions remain available here.','Training'],
-  ['/workout','sets','Log each set','Record load, reps, time, cardio and effort; distinguish warm-up, top and back-off sets.','Training'],
+  ['/workout','sets','Log each set','Record load, reps, time, cardio and effort. Tap a load to choose any whole-number weight; completed sets stay locked until you undo them.','Training'],
+  ['/workout','sets','Use top and back-off sets','Warm-ups prepare you. Top sets lead the session; automatic back-off loads follow your top-set weight. A manual back-off change applies to that session.','Training'],
   ['/workout','supersets','Pair and recover','Pair exercises, rest, substitute, pause or finish. This preview saves nothing.','Training'],
   ['/plan','routine','Build your routines','Create, edit or choose guided routines; configure progression and intensity techniques.','Planning'],
   ['/plan','schedule','Plan your week','Order daily routines, plan activities and date exceptions, or pause training.','Planning'],
   ['/plan','routine-transfer','Take your routines with you','Transfer selected routines using JSON, Excel or PDF; review before importing.','Planning'],
-  ['/home','streak','Explore your streak calendar','Week opens first. Switch to Month or Year, export, or expand recent workouts.','Tracking'],
+  ['/nutrition','nutrition-calendar','Choose a nutrition day','Use the calendar to browse days, weeks and months. Each date keeps its own food and water log; Back to today returns to the current date.','Nutrition'],
+  ['/nutrition','nutrition-food','Log food and water','Add foods to a meal, reuse recent foods or copy the previous day. Calories, protein, carbs, fat and water update for the selected day.','Nutrition'],
+  ['/nutrition','nutrition-goals','Set your nutrition goals','Set daily calorie, macro and water goals. The optional calculator uses your inputs to suggest a calorie goal; you choose what to save.','Nutrition'],
+  ['/home','streak','Explore your streak calendar','Week opens first. Switch to Month or Year, or expand recent workouts. Export the selected period as an image or PDF, with a white or black background.','Tracking'],
   ['/home','consistency','Review consistency and session times','Times shows three recent sessions; Show more reveals the rest.','Tracking'],
   ['/stats?section=history','stats-view','Choose your Stats view','Swipe through Stats. Use this arrow to open a section or change its order.','Tracking'],
-  ['/stats?section=history','stats-actions','Review and export your records','Open History, InBody or reports; compare weight, measurements, muscles and routine duration.','Tracking'],
-  ['/progress','report','Explore your progress','Compare periods, routines and exercises; export chosen sections as PDF.','Tracking'],
+  ['/stats?section=history','stats-actions','Review and export your records','Open reports, Progress, History or InBody here. Select dashboards and dates before exporting; the creation percentage shows when the file is ready.','Tracking'],
+  ['/stats?section=history','history','Inspect saved exercises','Open a workout in History. Tap an exercise expand button or hold its card for half a second to see its image and recorded sets, grouped by set type.','Tracking'],
+  ['/stats?section=measurements','measurements','Compare your body records','Log body measurements and choose before and after records. Missing values stay distinct from zero; changing the comparison never changes your saved records.','Tracking'],
+  ['/progress','report','Explore your progress','Compare periods, routines and exercises. Choose the report sections you need and export them as PDF; comparisons use your recorded data.','Tracking'],
   ['/library','exercises','Find and personalize exercises','Search names, muscles or equipment; inspect instructions and GIFs, edit aliases or create exercises.','Exercises'],
-  ['/settings','profile','Your local profile','Edit name, photo and personal measurements; everything stays available locally.','Settings / Profile'],
+  ['/settings','profile','Your local profile','Open Profile to view your name, photo, age and personal data. Tap Edit to make changes, then Save to leave editing. Weight, height and goal editors have their own Save.','Settings / Profile'],
   ['/settings','reminders','Know what comes next','Choose what, frequency and time; check switches, next dates and alert status.','Settings / Profile'],
-  ['/settings','health','Track activities and recovery','Record activities; manage health connections, deload cycles and equipment profiles.','Settings / Profile'],
+  ['/settings','health','Track activities and recovery','Record or plan activities, and manage health connections here. Withings scale imports need a configured TGym server and your authorization. Imports require a compatible service, permission and its connection setup. Deload and equipment options are here too.','Settings / Profile'],
   ['/settings','preferences','Make TGym yours','Set language, units, appearance, rest, sounds, vibration and screen behavior.','Settings / Profile'],
   ['/settings','privacy','Protect this device','Configure PIN and available biometrics; keep your recovery key private.','Settings / Profile'],
-  ['/settings','data','Keep your data available','Back up, restore and optionally synchronize; check updates and offline readiness. Replay from Help.','Settings / Profile'],
+  ['/settings','data','Keep your data available','Export a backup, restore a reviewed copy or connect optional synchronization. A restore can replace data, so keep a backup before importing.','Settings / Profile'],
+  ['/settings','data','Be ready offline and stay up to date','Check offline readiness and updates here. Saved data stays on this device; cloud services and uncached exercise media need a connection. Replay this guide from Help.','Settings / Profile'],
 ]
 
+// These targets already have stable, accessible IDs. Reuse them rather than
+// adding tour-only attributes to the nutrition data and calendar components.
+const TOUR_TARGETS = {
+  'nutrition-calendar': '#nutrition-calendar',
+  'nutrition-food': '#nutrition-breakfast',
+  'nutrition-goals': '#nutrition-top .hdr',
+}
 export function visibleTourTarget(key) {
-  return [...document.querySelectorAll(`[data-tour="${key}"]`)].find(node => {
+  return [...document.querySelectorAll(TOUR_TARGETS[key] || `[data-tour="${key}"]`)].find(node => {
     if (node.closest('[hidden], [aria-hidden="true"]')) return false
     for (let el=node; el; el=el.parentElement) {
       // The tour itself makes the whole app/tab bar inert. Other inert
@@ -57,7 +71,7 @@ export function tourHighlightRect(bounds,width,height,panelHeight,{left=0,top=0,
   const free=area(atTop),y=Math.max(bounds.top,free.top),x=Math.max(left+8,bounds.left),bottom=Math.min(bounds.bottom,free.bottom),right=Math.min(bounds.right,left+width-8)
   return bottom>y && right>x ? {top:y,left:x,width:right-x,height:bottom-y,atTop} : null
 }
-export function replayAppTour() { useUI.setState({ appTourRequest: Date.now() }) }
+export function replayAppTour() { useUI.setState(state => ({ appTourRequest: Math.max(Date.now(), Number(state.appTourRequest || 0) + 1) })) }
 export default function AppTour() {
   const nav = useNavigate(), location = useLocation(), currentPath=location.pathname+location.search+location.hash, originalPath = useRef(currentPath)
   const S = useStore(s => s.S), requested = useUI(s => s.appTourRequest)
@@ -190,7 +204,7 @@ export default function AppTour() {
     <section ref={dialog} className={'tour-panel' + (highlight?.atTop ? ' at-top' : '')} role="dialog" aria-modal="true" aria-labelledby="tour-title" aria-describedby="tour-copy">
       <div className="tour-body" aria-live="polite" aria-atomic="true">
       <div className="tour-count"><span>{t('App tour')} · {step + 1} / {TOUR_STEPS.length}</span><span>{t(TOUR_STEPS[step][4])}</span></div>
-      {step===0 && <p className="tour-duration">60–90 s · {t('You can skip at any time.')}</p>}
+      {step===0 && <p className="tour-duration">{t('About 3 minutes. You can skip at any time.')}</p>}
       <h2 id="tour-title">{t(TOUR_STEPS[step][2])}</h2><p id="tour-copy">{t(TOUR_STEPS[step][3])}{TOUR_STEPS[step][1]==='stats-view'&&<> {t('Drag or use arrow keys to move this control.')}</>}</p>
       <progress value={step + 1} max={TOUR_STEPS.length} aria-label={t('App tour')} />
       {error && <p role="alert">{error}</p>}

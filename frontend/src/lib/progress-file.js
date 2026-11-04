@@ -2,6 +2,7 @@ import { reportPagesFile } from './report-file.js'
 import { loadBodyGeometry } from './body-geometry.js'
 import { progressReportPages } from './progress-export.js'
 import { PROGRESS_SECTIONS } from './progress-sections.js'
+import { reportFileName, reportProgress } from './report-presentation.js'
 export { saveReportFile as saveProgressFile } from './report-file.js'
 
 // Build from the exact selected report, not a second all-time calculation.
@@ -14,9 +15,10 @@ export async function buildProgressPages(report, options = {}) {
 }
 
 export async function buildProgressFile(report, options = {}) {
+  reportProgress(options.onProgress, 0)
   const pages = await buildProgressPages(report, options)
-  const sections = PROGRESS_SECTIONS.map(([id]) => id).filter(id => !options.sections || options.sections.includes(id))
-  const suffix = sections.length === 1 ? '-' + sections[0] : sections.length < PROGRESS_SECTIONS.length ? '-selected' : ''
-  const name = `TGym-Progress-Report-${report.range.start}_${report.range.end}${suffix}.pdf`
-  return reportPagesFile(pages, name, { fullPage: true, title: 'TGym Progress Report' })
+  reportProgress(options.onProgress, 15)
+  const title = options.t?.('Progress Report') || 'Progress Report'
+  const name = reportFileName(title, 'pdf', options.now || new Date())
+  return reportPagesFile(pages, name, { fullPage: true, title, onProgress: value => reportProgress(options.onProgress, 15 + value * .85) })
 }

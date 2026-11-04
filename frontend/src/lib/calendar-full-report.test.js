@@ -36,7 +36,7 @@ describe('readable Full Reports', () => {
         expect(doc.documentElement.getAttribute('data-part')).toBe(String(i + 1))
         const monthsPerPage = kind === 'streak' ? 12 : 4
         expect([...doc.querySelectorAll('[data-month]')].map(month => month.getAttribute('data-month'))).toEqual(Array.from({ length: monthsPerPage }, (_, month) => `${year}-${String(i * monthsPerPage + month + 1).padStart(2, '0')}`))
-        expect(doc.querySelector('[data-date] pattern, [data-date] [data-symbol], [data-date] path, [data-date] circle')).toBeNull()
+        expect(doc.querySelector('[data-date] pattern, [data-date] [data-symbol], [data-date] path, [data-date] circle:not([data-tracking-day])')).toBeNull()
       }
     }
     expect(JSON.stringify(S)).toBe(before)
@@ -66,22 +66,24 @@ describe('readable Full Reports', () => {
       }
     }
   })
-  it('repeats the existing metric values and explicit evaluation context without changing their meaning', () => {
+  it('repeats the existing metric values with a concise centered period', () => {
     const S = fixture(2026), now = new Date('2026-01-07T12:00:00'), anchor = new Date('2027-08-01T12:00:00')
     const streak = buildStreakReport(S, { period: 'full', anchor, now }), consistency = calendarPeriod(S, anchor, 'year', now)
     for (const page of streakReportPages(S, { period: 'full', anchor, now })) {
       const doc = parse(page.svg)
       expect(doc.querySelector('[data-summary="Training streak"]').getAttribute('data-value')).toBe(String(streak.current))
       expect(doc.querySelector('[data-summary="Best streak"]').getAttribute('data-value')).toBe(String(streak.best))
-      expect(doc.documentElement.textContent).toContain(`Streak as of ${streak.asOf}`)
-      expect(doc.documentElement.textContent).toContain('2027-01-01 – 2027-12-31')
+      expect(doc.documentElement.textContent).not.toContain('Streak as of')
+      expect(doc.querySelector('[data-report-period] text').textContent).toBe('2027')
     }
     for (const page of calendarReportPages(S, anchor, 'full', 'pdf', { now })) {
       const doc = parse(page.svg)
       expect(doc.querySelector('[data-summary="Completed"]').getAttribute('data-value')).toBe(String(consistency.stats.completed))
       expect(doc.querySelector('[data-summary="Missed"]').getAttribute('data-value')).toBe(String(consistency.stats.missed))
       expect(doc.querySelector('[data-summary="Completion"]').getAttribute('data-value')).toBe(consistency.completion == null ? '—' : `${consistency.completion}%`)
-      expect(doc.documentElement.textContent).toContain('Training since 2026-01-02')
+      expect(doc.documentElement.textContent).not.toContain('Training since')
+      expect(doc.querySelector('[data-report-period] text').textContent).toBe('2027')
+      expect(doc.querySelector('[data-tracking-start]')).toBeNull()
     }
   })
   it('preserves the existing Year and low-level Streak PNG options and handles empty Full Reports', () => {

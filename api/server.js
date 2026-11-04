@@ -15,6 +15,7 @@ import webpush from 'web-push';
 import { dayReminderPush, testPush } from './push-messages.js';
 import { createPushTimers, timerSeconds, timerDeadline } from './push-timers.js';
 import { verifyError } from './verify-error.js';
+import { createWithings } from './withings.js';
 
 const PORT = +(process.env.PORT || 3000);
 const DATA = process.env.DATA_DIR || '/data';
@@ -45,6 +46,7 @@ fs.mkdirSync(DATA, { recursive: true });
 const secretFile = path.join(DATA, 'secret');
 if (!fs.existsSync(secretFile)) fs.writeFileSync(secretFile, crypto.randomBytes(32).toString('hex'), { mode: 0o600 });
 const SECRET = fs.readFileSync(secretFile, 'utf8').trim();
+const withings = createWithings({ directory: DATA, secret: SECRET, clientId: process.env.WITHINGS_CLIENT_ID, clientSecret: process.env.WITHINGS_CLIENT_SECRET, redirectUri: process.env.WITHINGS_REDIRECT_URI });
 
 const dbFile = path.join(DATA, 'db.json');
 let db = { users: [], creds: [], subs: [], invites: [] };
@@ -515,6 +517,33 @@ if (AUDIT_ON) {
 
 /* ---------- routes ---------- */
 const routes = {
+  'GET /api/withings/status': async (req, res) => {
+    const user = readSession(req); if (!user) return json(res, 401, { error: 'not signed in' });
+    res.setHeader('Cache-Control', 'no-store'); json(res, 200, withings.status(user.id));
+  },
+  'POST /api/withings/connect': async (req, res) => {
+    const user = readSession(req); if (!user) return json(res, 401, { error: 'not signed in' });
+    try { res.setHeader('Cache-Control', 'no-store'); json(res, 200, withings.start(user.id)); }
+    catch (error) { json(res, error.status || 502, { error: error.code || 'withings-unavailable' }); }
+  },
+  'GET /api/withings/callback': async (req, res) => {
+    let ok = false;
+    try { await withings.callback(new URL(req.url, 'https://callback.invalid').searchParams); ok = true; } catch {}
+    res.writeHead(ok ? 200 : 400, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'none'", 'Referrer-Policy': 'no-referrer', 'X-Content-Type-Options': 'nosniff' });
+    res.end('<!doctype html><html lang="en"><meta name="viewport" content="width=device-width"><title>Withings</title><body style="font:20px system-ui;background:#111;color:#fff;padding:32px"><h1>Withings</h1><p>' + (ok ? 'Connected. Return to TGym and select Sync now.' : 'Connection was not completed. Return to TGym and try again.') + '</p></body></html>');
+  },
+  'POST /api/withings/sync': async (req, res) => {
+    const user = readSession(req); if (!user) return json(res, 401, { error: 'not signed in' });
+    const body = await readBody(req);
+    if (!body || typeof body !== 'object' || Array.isArray(body) || body.since != null && (typeof body.since !== 'number' || !Number.isFinite(body.since) || body.since < 0 || body.since > Date.now() + 60000)) return json(res, 400, { error: 'invalid sync cursor' });
+    try { res.setHeader('Cache-Control', 'no-store'); json(res, 200, await withings.measures(user.id, body.since)); }
+    catch (error) { json(res, error.status || 502, { error: error.code || 'withings-unavailable' }); }
+  },
+  'POST /api/withings/disconnect': async (req, res) => {
+    const user = readSession(req); if (!user) return json(res, 401, { error: 'not signed in' });
+    try { await withings.disconnect(user.id); json(res, 200, { ok: true }); }
+    catch { json(res, 500, { error: 'withings-disconnect-failed' }); }
+  },
   'GET /api/health': async (req, res) => json(res, 200, { ok: true, users: db.users.length }),
 
   // Public config the login screen needs before anyone is signed in.

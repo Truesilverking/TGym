@@ -7,6 +7,7 @@ import { calendarReportLayout } from './calendar-report-layout.js'
 import { calendarFullReportPages } from './calendar-full-report.js'
 import { completeYearRange } from './calendar-year-range.js'
 import { calendarYearReportPages } from './calendar-year-report.js'
+import { reportFileName } from './report-presentation.js'
 
 export const STREAK_PERIODS = [['this-week','This week'],['last-week','Last Week'],['this-month','This month'],['last-month','Last Month'],['week','Selected Week'],['month','Selected Month'],['year','Year'],['full','Full report'],['custom','Custom Range'],['years','Complete years']]
 export function streakRange({ period = 'this-week', anchor = new Date(), from, to, fromYear, toYear, now = new Date() } = {}) {
@@ -60,24 +61,21 @@ export function streakReportPages(S, { format = 'pdf', t = x => x, ...options } 
   const trackingSince = trackingStart(S, report.range.today)
   const profile = S.streakCalendarShowProfile === true ? S.profile : undefined
   if (options.period === 'years') return report.yearReports.flatMap((annual, i) => calendarYearReportPages({ kind: 'streak', year: report.range.years[i], days: annual.days, trackingSince,
-    metrics: [['Training streak', annual.current], ['Best streak', annual.best]], context: t('Streak as of {0}').replace('{0}', annual.asOf),
-    note: `${t('Activity days advance the streak; missed scheduled days reset it.')} ${t('Counts training dates, not calendar days.')}`, emptyMessage: annual.noData ? t('No recorded activity in this period.') : '',
-    profile, t }))
+    metrics: [['Training streak', annual.current], ['Best streak', annual.best]], emptyMessage: annual.noData ? t('No recorded activity in this period.') : '',
+    profile, theme: options.theme, t }))
   if (format === 'png' && report.days.length > 366) throw Error('Use PDF for ranges longer than one year.')
   if (format === 'pdf' && options.period === 'full') return calendarFullReportPages({ kind: 'streak', days: report.days, start: report.range.start, end: report.range.end, trackingSince,
-    metrics: [['Training streak', report.current], ['Best streak', report.best]], context: t('Streak as of {0}').replace('{0}', report.asOf),
-    note: `${t('Activity days advance the streak; missed scheduled days reset it.')} ${t('Counts training dates, not calendar days.')}`, emptyMessage: report.noData ? t('No recorded activity in this period.') : '', profile, t })
+    metrics: [['Training streak', report.current], ['Best streak', report.best]], emptyMessage: report.noData ? t('No recorded activity in this period.') : '', profile, theme: options.theme, t })
   return calendarReportLayout({ kind: 'streak', days: report.days, start: report.range.start, end: report.range.end, trackingSince,
-    metrics: [['Training streak', report.current], ['Best streak', report.best]], context: t('Streak as of {0}').replace('{0}', report.asOf),
-    note: `${t('Activity days advance the streak; missed scheduled days reset it.')} ${t('Counts training dates, not calendar days.')}`,
-    emptyMessage: report.noData ? t('No recorded activity in this period.') : '', profile, format, week: (options.period || 'this-week').endsWith('week'), t })
+    metrics: [['Training streak', report.current], ['Best streak', report.best]],
+    emptyMessage: report.noData ? t('No recorded activity in this period.') : '', profile, format, theme: options.theme, week: (options.period || 'this-week').endsWith('week'), t })
 }
 export function streakFilename(options = {}) {
   const range=streakRange(options)
   if(range.error)throw Error(range.error)
   if (options.period === 'years') {
     if (options.format && options.format !== 'pdf') throw Error('Complete-year reports require PDF')
-    return `TGym-Streak-Years-${range.years[0]}_${range.years.at(-1)}.pdf`
+    return reportFileName((options.t || (key => key))('Streak Report'), 'pdf', options.now || new Date())
   }
-  return `TGym-Streak-${range.start}_${range.end}.${options.format || 'pdf'}`
+  return reportFileName((options.t || (key => key))('Streak Report'), options.format || 'pdf', options.now || new Date())
 }

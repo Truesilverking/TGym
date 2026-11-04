@@ -129,8 +129,9 @@ describe('exercise comparison and training aggregation',()=>{
   const s=base();s.measurements=[{d:'2026-07-01',neck:30},{d:'2026-09-20',neck:35}]
   const selected=buildProgressReport(s,{now,period:'custom',from:'2026-09-01',to:'2026-09-25'})
   const pages=progressReportPages(null,{report:selected})
-  expect(pages[0].svg).toContain('2026-09-01 → 2026-09-25')
-  expect(pages[0].svg).toContain('35 cm');expect(pages[0].svg).not.toContain('30 cm');expect(pages[0].svg).toContain('More data needed')
+  expect(selected.range).toMatchObject({start:'2026-09-01',end:'2026-09-25'})
+  expect(pages[0].svg).toContain('data-measurement="neck" data-before="35" data-after="35" data-unit="cm"')
+  expect(pages[0].svg).not.toContain('data-before="30"');expect(pages[0].svg).toContain('More data needed')
  })
  it('renders a valid single-page empty PDF layout and escapes imported text',()=>{
   const pages=progressReportPages(base(),{now});expect(pages).toHaveLength(1);expect(pages[0].svg).toContain('No comparable history in this period.');expect(pages[0].svg).not.toMatch(/NaN|undefined/)
@@ -227,10 +228,12 @@ it('exports routine context and every nested exercise without combining records 
  expect(svg).toContain('Routine progress · ROUTINE_ALPHA');expect(svg).toContain('Routine progress · ROUTINE_BETA')
  expect(svg).toContain('40 kg');expect(svg).toContain('100 kg');expect(r.records).toHaveLength(0)
 })
-it('keeps a small body dashboard and weight trend on one page without dropping comparison facts',()=>{
+it('keeps a small body dashboard and weight trend on one page with the compact before/after table',()=>{
  const s=base();s.measurements=[{d:'2026-09-01',neck:30,waist:90,armLeft:35},{d:'2026-09-25',neck:36,waist:86.5}]
  s.bodyweight=[{d:'2026-09-01',w:82.3},{d:'2026-09-25',w:78.7}]
  const pages=progressReportPages(s,{now,sections:['body']})
  expect(pages).toHaveLength(1)
- for(const label of ['Neck','Waist','Left upper arm','First record','Current record','Largest increase','Largest decrease','No significant change','Body Weight'])expect(pages[0].svg).toContain(label)
+ for(const label of ['Neck','Waist','Left upper arm','Before','After','Change','Unit: cm','Body Weight'])expect(pages[0].svg).toContain(label)
+ expect(pages[0].svg).toContain('data-before="90" data-after="86.5"')
+ expect(pages[0].svg).toContain('data-before="35" data-after=""')
 })

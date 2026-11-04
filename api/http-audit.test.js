@@ -21,7 +21,8 @@ const root = path.dirname(fileURLToPath(import.meta.url));
 async function start() {
   child = spawn(process.execPath, ['server.js'], { cwd: root, windowsHide: true,
     env: { ...process.env, PORT: String(port), DATA_DIR: directory, RP_ID: 'localhost', ORIGIN: origin,
-      ADMIN_UIDS: 'audit-admin', INVITE_ONLY: 'true', ALLOW_GUEST: 'false', AUDIT_LOG: 'true' },
+      ADMIN_UIDS: 'audit-admin', INVITE_ONLY: 'true', ALLOW_GUEST: 'false', AUDIT_LOG: 'true',
+      WITHINGS_CLIENT_ID: '', WITHINGS_CLIENT_SECRET: '', WITHINGS_REDIRECT_URI: '' },
     stdio: ['ignore', 'pipe', 'pipe'] });
   await new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error('Isolated API startup timeout')), 10000);
@@ -70,6 +71,22 @@ test('HTTP config, authentication and cross-origin boundaries refuse unauthorize
   assert.equal((await request('/api/data', { headers: { Cookie: `gymsid=${token('audit-user')}; gymsid=shadow` } })).status, 401);
   assert.equal((await request('/api/register/options', { method: 'POST', body: { name: '' } })).status, 400);
   assert.equal((await request('/api/register/options', { method: 'POST', body: { name: 'Synthetic', code: 'INVALID' } })).status, 403);
+});
+
+test('HTTP Withings connector requires authentication and valid sync cursors without touching training data', async () => {
+  for (const [method, route] of [['GET','status'],['POST','connect'],['POST','sync'],['POST','disconnect']]) {
+    assert.equal((await request('/api/withings/'+route,{method,body:method==='POST'?{}:undefined})).status,401);
+  }
+  const status=await request('/api/withings/status',{identity:'audit-user'});
+  assert.deepEqual(status,{status:200,data:{configured:false,connected:false}});
+  assert.equal((await request('/api/withings/connect',{method:'POST',identity:'audit-user',body:{}})).status,503);
+  for (const body of [null,[],false,{since:'123'},{since:-1},{since:Date.now()+120000}])
+    assert.equal((await request('/api/withings/sync',{method:'POST',identity:'audit-user',body})).status,400);
+  assert.equal((await request('/api/withings/sync',{method:'POST',identity:'audit-user',body:{since:0}})).status,503);
+  assert.equal((await request('/api/withings/connect',{method:'POST',body:{},headers:{Cookie:`gymsid=${token('audit-user')}`,Origin:'https://foreign.invalid'}})).status,403);
+  const callback=await fetch(origin+'/api/withings/callback?state=invalid&code=invalid');
+  assert.equal(callback.status,400);assert.equal(callback.headers.get('Cache-Control'),'no-store');assert.equal(callback.headers.get('Referrer-Policy'),'no-referrer');
+  assert(!(await callback.text()).includes('invalid'));
 });
 
 test('HTTP profile writes preserve history across restart and keep active workouts device-local', async () => {

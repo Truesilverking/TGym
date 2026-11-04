@@ -6,6 +6,7 @@ import {ActivityEditor,HealthActivities} from './Activities.jsx'
 import {useStore,DEF} from '../store/useStore.js'
 vi.mock('../lib/i18n.js',()=>({t:(s,...args)=>s.replace(/\{(\d+)\}/g,(_,i)=>args[i])}))
 vi.mock('../lib/health/adapters/health-connect.js',()=>({healthConnectAdapter:{status:async()=>({available:true,granted:true}),connect:async()=>({granted:true}),read:async()=>({records:[]}),settings:async()=>{}}}))
+vi.mock('./SmartScale.jsx',()=>({default:()=>null}))
 let host,root,flush,close
 beforeEach(()=>{globalThis.IS_REACT_ACT_ENVIRONMENT=true;localStorage.clear();flush=useStore.getState().flushPersistence;useStore.setState({S:structuredClone(DEF),flushPersistence:vi.fn().mockResolvedValue()});host=document.createElement('div');document.body.append(host);root=createRoot(host);close=vi.fn()})
 afterEach(async()=>{await act(()=>root.unmount());host.remove();useStore.setState({flushPersistence:flush})})

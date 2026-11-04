@@ -16,7 +16,7 @@ it('handles year/month boundaries, leap days and inclusive custom ranges',()=>{
  expect(streakRange({period:'last-month',now:new Date('2024-03-01T12:00:00')})).toMatchObject({start:'2024-02-01',end:'2024-02-29'})
  const r=buildStreakReport(fixture(),{period:'custom',from:'2026-09-30',to:'2026-10-02',now})
  expect(r.days.map(d=>d.iso)).toEqual(['2026-09-30','2026-10-01','2026-10-02'])
- expect(streakFilename({period:'custom',from:'2026-09-30',to:'2026-10-02',now})).toBe('TGym-Streak-2026-09-30_2026-10-02.pdf')
+ expect(streakFilename({period:'custom',from:'2026-09-30',to:'2026-10-02',now})).toBe('Streak Report 05-10-26.pdf')
 })
 it.each([['','2026-10-02'],['2026-02-30','2026-10-02'],['2026-10-03','2026-10-02'],['2026-10-02','2026-10-06']])('rejects invalid custom dates %s / %s',(from,to)=>{
  expect(streakRange({period:'custom',from,to,now}).error).toBeTruthy()

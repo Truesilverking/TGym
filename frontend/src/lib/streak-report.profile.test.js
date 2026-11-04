@@ -34,10 +34,10 @@ it.each([
     expect(identity.querySelector('[data-profile-name]').textContent).toBe(S.profile.name)
     expect(identity.querySelector('[data-profile-photo]').getAttribute('href')).toBe(photo)
     expect(page.svg).not.toContain('<Local>')
-    const identityBottom = Math.max(...[...identity.querySelectorAll('text')].map(text => +text.getAttribute('y')))
-    expect(+doc.querySelector('[data-summary] > rect').getAttribute('y')).toBeGreaterThan(identityBottom + 12)
-    const notes = [...doc.querySelectorAll('[data-report-note] text')]
-    expect(+doc.querySelector('[data-period] > text').getAttribute('y') - +doc.querySelector('[data-period] > text').getAttribute('font-size')).toBeGreaterThan(+notes.at(-1).getAttribute('y') + 10)
+    const summary = doc.querySelector('[data-summary] > rect'), image = doc.querySelector('[data-profile-photo]')
+    expect(+image.getAttribute('y')).toBeGreaterThan(+summary.getAttribute('y') + +summary.getAttribute('height') + 12)
+    expect(+doc.querySelector('[data-report-period] > text').getAttribute('y') - 36).toBeGreaterThan(+image.getAttribute('y') + +image.getAttribute('height') + 10)
+    expect(doc.querySelector('[data-report-note]')).toBeNull()
     const divider = +doc.querySelector('[data-legend] rect').getAttribute('y') - 16
     for (const cell of doc.querySelectorAll('[data-date] rect')) expect(+cell.getAttribute('y') + +cell.getAttribute('height')).toBeLessThan(divider)
     for (const text of doc.querySelectorAll('text')) expect(+text.getAttribute('y')).toBeLessThan(page.height)
@@ -67,7 +67,7 @@ it('handles photo-only, empty and long imported names without overlapping the re
     if (!profile.name && !profile.photo) expect(identity).toBeNull()
     else {
       const last = [...identity.querySelectorAll('text')].at(-1)
-      expect(+doc.querySelector('[data-summary] > rect').getAttribute('y')).toBeGreaterThan(+last.getAttribute('y') + 12)
+      expect(+doc.querySelector('[data-report-period] text').getAttribute('y') - 36).toBeGreaterThan(+last.getAttribute('y') + 12)
       expect(doc.querySelector('[data-profile-name]').textContent.length).toBeLessThanOrEqual(80)
     }
   }

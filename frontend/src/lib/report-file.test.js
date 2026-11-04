@@ -3,6 +3,7 @@ import { beforeEach, afterEach, expect, it, vi } from 'vitest'
 import { reportPagesFile, saveReportFile, saveReportBatch, rasterizeReport } from './report-file.js'
 import { buildProgressFile } from './progress-file.js'
 import { buildProgressReport } from './progress-report.js'
+import { reportFileName } from './report-presentation.js'
 import { PROGRESS_SECTIONS } from './progress-sections.js'
 
 const mock = vi.hoisted(() => ({ documents: [], share: vi.fn(), mobile: false, geometry: vi.fn(async () => ({})) }))
@@ -10,12 +11,28 @@ vi.mock('./mobile.js', () => ({ get MOBILE() { return mock.mobile }, shareBase64
 vi.mock('./body-geometry.js', () => ({ loadBodyGeometry: () => mock.geometry() }))
 vi.mock('jspdf', () => ({ jsPDF: class {
   constructor(options) { this.options = options; this.images = []; this.pages = 1; this.addedPages = []; mock.documents.push(this) }
+  setFillColor(value) { this.fillColor=value }
+  rect(...args) { (this.rects ||= []).push({color:this.fillColor,args}) }
   setProperties(properties) { this.properties = properties }
   addPage(...args) { this.pages++; this.addedPages.push(args) }
   addImage(...args) { this.images.push(args) }
   output() { return new Blob([JSON.stringify({ pages: this.pages, images: this.images, properties: this.properties })], { type: 'application/pdf' }) }
 } }))
 const page = { svg: '<svg/>', width: 1000, height: 1390 }
+it('reports real per-page creation progress through completion and paints the whole black PDF page',async()=>{
+ const values=[]
+ await reportPagesFile([{...page,background:'#000000'},page],'report.pdf',{onProgress:value=>values.push(value)})
+ expect(values[0]).toBe(0);expect(values.at(-1)).toBe(100)
+ expect(values).toEqual([...values].sort((a,b)=>a-b))
+ expect(values.some(value=>value>0&&value<100)).toBe(true)
+ expect(mock.documents[0].rects).toEqual([{color:'#000000',args:[0,0,210,297,'F']}])
+})
+it('does not report completion if an image fails to render',async()=>{
+ vi.stubGlobal('Image',class {set src(value){queueMicrotask(()=>this.onerror(new Error('decode')))}})
+ const values=[]
+ await expect(reportPagesFile([page],'report.pdf',{onProgress:value=>values.push(value)})).rejects.toThrow('decode')
+ expect(values).not.toContain(100)
+})
 beforeEach(() => {
   mock.documents.length = 0; mock.mobile = false; mock.geometry.mockClear(); mock.share.mockReset()
   const create = document.createElement.bind(document)
@@ -87,7 +104,7 @@ it('rejects an invalid PDF page orientation before allocating or rasterizing', a
 it.each(['overview', 'consistency', 'duration', 'routines', 'performance', 'body', 'inbody', 'trends'])('builds a correctly named %s-only progress file and loads body assets only when needed', async section => {
   const report = buildProgressReport({ workouts: [] }, { now: new Date('2026-09-26T12:00:00') })
   const file = await buildProgressFile(report, { sections: [section, section, 'invalid'] })
-  expect(file.name).toBe(`TGym-Progress-Report-${report.range.start}_${report.range.end}-${section}.pdf`)
+  expect(file.name).toBe(reportFileName('Progress Report','pdf'))
   expect(file.blob.type).toBe('application/pdf'); expect(file.blob.size).toBeGreaterThan(0)
   expect(mock.geometry).toHaveBeenCalledTimes(section === 'body' ? 1 : 0)
   expect(mock.documents).toHaveLength(1); expect(mock.documents[0].pages).toBe(1)
@@ -103,7 +120,7 @@ it('builds independent nonempty files for every one of the 255 section combinati
     const sections = ids.filter((_, i) => mask & (1 << i))
     const file = await buildProgressFile(report, { sections })
     const suffix = sections.length === 1 ? '-' + sections[0] : sections.length < ids.length ? '-selected' : ''
-    expect(file.name).toBe(`TGym-Progress-Report-${report.range.start}_${report.range.end}${suffix}.pdf`)
+    expect(file.name).toBe(reportFileName('Progress Report','pdf'))
     expect(file.blob.size).toBeGreaterThan(0); expect(file.blob.type).toBe('application/pdf')
     expect(mock.documents.at(-1).images.length).toBe(mock.documents.at(-1).pages)
   }

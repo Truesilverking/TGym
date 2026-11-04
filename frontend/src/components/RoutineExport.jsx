@@ -14,7 +14,7 @@ export default function RoutineExport({ close }) {
   const cancel = () => { abort.current?.abort(); generation.current++; working.current = false; setBusy(false); setProgress(0) }
   const prepare = async (template = false) => {
     if (working.current) return
-    const epoch = ++generation.current; abort.current = new AbortController(); working.current = true; setBusy(true); setError(''); setFile(null)
+    const epoch = ++generation.current; abort.current = new AbortController(); working.current = true; setProgress(0); setBusy(true); setError(''); setFile(null)
     try {
       const next = await buildRoutineExchangeFile(S, selection, template ? 'xlsx' : format, { template, signal: abort.current.signal, onProgress: value => { if (mounted.current && epoch === generation.current) setProgress(value) } })
       if (mounted.current && epoch === generation.current) setFile(next)
@@ -36,9 +36,9 @@ export default function RoutineExport({ close }) {
     <div className="routine-exchange-routines">{(S.routines || []).map(routine => <label className="routine-exchange-choice" key={routine.id}><input type="checkbox" disabled={busy} checked={selection.includes(routine.id)} onChange={event => changeSelection(event.target.checked ? [...selection, routine.id] : selection.filter(id => id !== routine.id))}/><span>{routine.name}</span><small>{routine.ex?.length || 0} {t('Exercises')}</small></label>)}</div>
     <label>{t('Format')}<select className="input" aria-label={t('Format')} disabled={busy} value={format} onChange={event => { setFormat(event.target.value); setFile(null) }}><option value="json">JSON v{ROUTINE_EXCHANGE_VERSION}</option><option value="xlsx">Excel (.xlsx) v{ROUTINE_EXCHANGE_VERSION}</option><option value="pdf">PDF</option></select></label>
     <p className="small dim">{t('Prepare {0} selected routines as {1}.', selection.length, format.toUpperCase())}</p>
-    <Button variant="primary" disabled={busy || !selection.length} onClick={() => prepare()}>{t('Prepare export')}</Button>
+    <Button variant="primary" disabled={busy || !selection.length} onClick={() => prepare()}>{busy?`${progress}% · ${format.toUpperCase()}`:t('Prepare export')}</Button>
     {busy && <><progress max="100" value={progress} aria-label={t('Export progress')}/><Button onClick={cancel}>{t('Cancel')}</Button></>}
-    {file && <div className="routine-exchange-result"><div>{file.name}</div><Button disabled={busy} onClick={download}>{t('Download')}</Button></div>}
+    {file && <div className="routine-exchange-result"><div>{file.name}</div><p className="small dim" role="status">100%</p><Button disabled={busy} onClick={download}>{t('Download')}</Button></div>}
     <Button disabled={busy} onClick={() => prepare(true)}>{t('Download Excel template')}</Button>
     {error && <p role="alert">{error}</p>}
     <Button disabled={busy} onClick={close}>{t('Done')}</Button>

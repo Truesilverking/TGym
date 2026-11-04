@@ -3,6 +3,12 @@ import { createBackup, readBackup } from './backup.js'
 import { parseTGymJson } from './json-import.js'
 describe('portable full snapshots', () => {
   const state = {workouts:[], routines:[], unit:'lb',lang:'en',active:{entries:[]},customEx:[],cloudSync:{on:true,accessToken:'secret',lastFileId:'private'},pin:'1234'}
+  it('keeps scale readings while disabling device-specific sync on restore', () => {
+    const source={...state,smartScaleConnection:{enabled:true,lastSync:1234},bodyweight:[{d:'2026-10-01',w:80,samples:[{w:80,id:'withings:1',source:'withings'}]}]}
+    const before=structuredClone(source),restored=readBackup(createBackup(source))
+    expect(restored.smartScaleConnection).toEqual({enabled:false,lastSync:0})
+    expect(restored.bodyweight).toEqual(source.bodyweight);expect(source).toEqual(before)
+  })
   it('round trips preferences and active training but excludes authentication', () => {
     const backup = createBackup(state)
     const restored = parseTGymJson(JSON.stringify(backup)).data

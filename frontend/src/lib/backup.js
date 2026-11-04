@@ -24,6 +24,9 @@ export function portableState(state) {
   const data = clean(JSON.parse(JSON.stringify(state)))
   delete data._ts
   if (data.cloudSync) data.cloudSync = { on: false, provider: 'google-drive', clientId: data.cloudSync.clientId || '' }
+  // Connections belong to one device/server account; restored training data
+  // must never silently resume an external account or inherit its cursor.
+  if (data.smartScaleConnection) data.smartScaleConnection = { enabled: false, lastSync: 0 }
   return data
 }
 export function validateBackupState(data) {

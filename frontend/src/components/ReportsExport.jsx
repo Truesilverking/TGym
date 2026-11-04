@@ -17,12 +17,13 @@ export default function ReportsExport({ S, anchor = new Date(), close, pdf = fal
   const catalog=pdf?PDF_REPORT_EXPORTS:REPORT_EXPORTS
   const now=useLocalNow(), today=isoOf(now)
   const [selected,setSelected]=useState(['streak']), [settings,setSettings]=useState({
-    streak:{period:'this-week',from:isoOf(anchor),to:today,anchor:isoOf(anchor),format:'pdf',fromYear:String(anchor.getFullYear()),toYear:String(anchor.getFullYear())},
+    streak:{theme:'light',period:'this-week',from:isoOf(anchor),to:today,anchor:isoOf(anchor),format:'pdf',fromYear:String(anchor.getFullYear()),toYear:String(anchor.getFullYear())},
     consistency:{period:'month',anchor:isoOf(anchor),format:'pdf',fromYear:String(anchor.getFullYear()),toYear:String(anchor.getFullYear())},
     progress:{period:'all',from:S.trainingStartDate || today,to:today},
     history:{period:'all',query:''},
     stats:{sections:STATS_SECTIONS.map(([id])=>id),filters:statsFilters}
   })
+  const [creationProgress,setProgress]=useState(0)
   const [busy,setBusy]=useState(false),[files,setFiles]=useState([]),[results,setResults]=useState([]),[error,setError]=useState('')
   const working=useRef(false),mounted=useRef(true),current=useRef({S,today})
   current.current={S,today}
@@ -37,11 +38,11 @@ export default function ReportsExport({ S, anchor = new Date(), close, pdf = fal
     const selection=selectedReports(ids)
     setSelected(selection)
     if(selection.some(invalid))return
-    working.current=true;setBusy(true);setError('')
+    working.current=true;setProgress(0);setBusy(true);setError('')
     try {
-      const prepared=await buildSelectedReports(S,selection,settings,{now,t,name:(exercise,context)=>exerciseNameFor(exercise,S,context),formatNumber:fmtNum,combinePDF:pdf})
+      const prepared=await buildSelectedReports(S,selection,settings,{now,t,name:(exercise,context)=>exerciseNameFor(exercise,S,context),formatNumber:fmtNum,combinePDF:pdf,onProgress:value=>{if(mounted.current&&current.current.S===S&&current.current.today===today)setProgress(Math.floor(value))}})
       if(!mounted.current || current.current.S!==S || current.current.today!==today)return
-      setFiles(prepared)
+      setFiles(prepared);setProgress(100)
       const saved=await saveSelectedReports(prepared,selection)
       if(mounted.current)setResults(saved)
     } catch { if(mounted.current)setError(t('Could not export. Try again.')) }
@@ -59,7 +60,7 @@ export default function ReportsExport({ S, anchor = new Date(), close, pdf = fal
     {catalog.map(([id,title])=><div className="report-option" data-report={id} key={id}>
       <label className="report-choice"><input type="checkbox" disabled={busy} checked={selected.includes(id)} onChange={e=>setSelected(s=>e.target.checked?[...s,id]:s.filter(v=>v!==id))}/>{t(title)}<small>{pdf?'PDF':id==='stats'?'HTML':id==='history'?'CSV':['plan','backup'].includes(id)?'JSON':'PDF'}</small></label>
       {selected.includes(id)&&<div className="report-settings">
-        {id==='streak'&&<><ReportDateRange value={settings.streak} onChange={v=>change(id,v)} periods={STREAK_PERIODS} disabled={busy} today={today}/><p className="small dim">{streak.range.start} – {streak.range.end}</p>{streak.noData&&<p className="small dim">{t('No recorded activity in this period.')}</p>}</>}
+        {id==='streak'&&<><label>{t('Background')}<select className="input" disabled={busy} value={settings.streak.theme} onChange={e=>change(id,{...settings.streak,theme:e.target.value})}><option value="light">{t('White')}</option><option value="black">{t('Black')}</option></select></label><ReportDateRange value={settings.streak} onChange={v=>change(id,v)} periods={STREAK_PERIODS} disabled={busy} today={today}/><p className="small dim">{streak.range.start} – {streak.range.end}</p>{streak.noData&&<p className="small dim">{t('No recorded activity in this period.')}</p>}</>}
         {id==='consistency'&&<><ReportDateRange value={settings[id]} onChange={v=>change(id,v)} periods={CONSISTENCY_PERIODS} disabled={busy} today={today}/>{settings[id].period!=='years'&&<label>{t('Date')}<input className="input" type="date" disabled={busy} value={settings[id].anchor} onChange={e=>change(id,{...settings[id],anchor:e.target.value})}/></label>}</>}
         {id==='progress'&&<ReportDateRange value={settings.progress} onChange={v=>change(id,v)} periods={PROGRESS_PERIODS} disabled={busy} today={today}/>}
         {id==='history'&&<><label>{t('Period')}<select className="input" disabled={busy} value={settings[id].period} onChange={e=>change(id,{...settings[id],period:e.target.value})}>{[['all','All'],['30','30 days'],['90','90 days']].map(([v,label])=><option key={v} value={v}>{t(label)}</option>)}</select></label><label>{t('Search workouts or exercises…')}<input className="input" disabled={busy} value={settings[id].query} onChange={e=>change(id,{...settings[id],query:e.target.value})}/></label></>}
@@ -69,7 +70,9 @@ export default function ReportsExport({ S, anchor = new Date(), close, pdf = fal
         {invalid(id)&&<p role="alert">{t(invalid(id))}</p>}
       </div>}
     </div>)}
-    <div className="report-actions"><Button variant="primary" icon="download" disabled={busy||!selected.length||selected.some(invalid)} onClick={()=>download(selected)}>{t(busy?'Working…':'Download Selected')}</Button><Button icon="download" disabled={busy} onClick={()=>download(catalog.map(([id])=>id))}>{t('Download All')}</Button></div>
+    <div className="report-actions"><Button variant="primary" icon="download" disabled={busy||!selected.length||selected.some(invalid)} onClick={()=>download(selected)}>{busy ? `${creationProgress}% · ${pdf || selected.every(id=>['streak','consistency','progress'].includes(id)) ? 'PDF' : t('Reports')}` : t('Download Selected')}</Button><Button icon="download" disabled={busy} onClick={()=>download(catalog.map(([id])=>id))}>{t('Download All')}</Button></div>
+    {busy&&<progress aria-label={t('Creating report')} max="100" value={creationProgress}/>}
+    {!busy&&files.length>0&&<p className="small dim" role="status">100% · {pdf?'PDF':t('Reports')}</p>}
     {error&&<p role="alert">{error}</p>}
     {files.length>0&&<ul className="report-results" aria-live="polite">{files.map(file=>{const status=results.find(r=>r.id===file.id)?.status;return <li key={file.id}><span>{file.name}<small>{status&&t(status==='saved'?'Downloaded':status==='canceled'?'Canceled':'Export failed. Please try again.')}</small></span><Button size="sm" disabled={busy} onClick={()=>retry(file.id)}>{t('Download')}</Button></li>})}</ul>}
     <Button disabled={!pdf&&busy} onClick={close}>{t(pdf?'Cancel':'Done')}</Button>

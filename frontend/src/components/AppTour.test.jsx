@@ -23,7 +23,7 @@ it('groups every flow and keeps a complete replay out of workout, reminder and p
    expect(useStore.getState().S).toEqual(before)
    if(i<TOUR_STEPS.length-1)await click('Next')
  }
- expect(new Set(TOUR_STEPS.map(step=>step[4]))).toEqual(new Set(['Training','Planning','Tracking','Exercises','Settings / Profile']))
+ expect(new Set(TOUR_STEPS.map(step=>step[4]))).toEqual(new Set(['Training','Planning','Nutrition','Tracking','Exercises','Settings / Profile']))
  expect(TOUR_STEPS.some(step=>step[1]==='stats-view')).toBe(true)
  expect(TOUR_STEPS.some(step=>step[1]==='profile')).toBe(true)
  await click('Finish');expect(useUI.getState().appTourWorkoutPreview).toBe(false)
@@ -71,6 +71,24 @@ it('explains swiping or using visible bottom buttons and opens the analytics rou
  expect(TOUR_STEPS[0][3]).toBe('Swipe between modules, or tap the bottom buttons to open one directly.')
  for(const step of TOUR_STEPS.filter(step=>['stats-view','stats-actions'].includes(step[1])))expect(step[0]).toBe('/stats?section=history')
  expect(TOUR_STEPS.find(step=>step[1]==='stats-view')[3]).toContain('open a section or change its order')
+})
+
+it('covers nutrition, saved-set access, body comparisons, permissions, editing and offline limitations',()=>{
+ const copy=TOUR_STEPS.map(step=>step[3]).join(' ')
+ for(const text of ['food and water','half a second','before and after','permission','Tap Edit','their own Save','uncached exercise media'])expect(copy).toContain(text)
+ expect(TOUR_STEPS.filter(step=>step[0]==='/nutrition')).toHaveLength(3)
+})
+
+it('resolves nutrition spotlight targets from their existing IDs',()=>{
+ for(const [key,id] of [['nutrition-calendar','nutrition-calendar'],['nutrition-food','nutrition-breakfast']]){
+   const target=document.createElement('section');target.id=id;target.getBoundingClientRect=()=>({width:200,height:100,top:10,left:10,right:210,bottom:110});host.append(target)
+   expect(visibleTourTarget(key)).toBe(target);target.hidden=true;expect(visibleTourTarget(key)).toBeNull()
+ }
+})
+
+it('gives replay requests distinct identities even within the same millisecond',()=>{
+ const now=vi.spyOn(Date,'now').mockReturnValue(1234)
+ try{replayAppTour();const first=useUI.getState().appTourRequest;replayAppTour();expect(useUI.getState().appTourRequest).toBeGreaterThan(first)}finally{now.mockRestore()}
 })
 
 it('returns to the exact Stats section and anchor after replay without changing the active workout',async()=>{

@@ -1,5 +1,6 @@
 import { jsPDF } from 'jspdf'
 import { MOBILE, shareBase64, shareReportFiles } from './mobile.js'
+import { reportProgress } from './report-presentation.js'
 
 export async function rasterizeReport({ svg, width, height }, mime = 'image/png') {
   if (![width, height].every(value => Number.isFinite(value) && value > 0)) throw new Error('Invalid report dimensions')
@@ -23,26 +24,41 @@ export async function rasterizeReport({ svg, width, height }, mime = 'image/png'
 }
 
 // Common file infrastructure only: callers supply their own report pages.
-export async function reportPagesFile(pages, name, { format = 'pdf', imageType = 'PNG', fullPage = false, title } = {}) {
+export async function reportPagesFile(pages, name, { format = 'pdf', imageType = 'PNG', fullPage = false, title, onProgress } = {}) {
   if (!pages.length) throw new Error('Empty report')
+  reportProgress(onProgress, 0)
   if (format === 'png') {
     if (pages.length !== 1) throw new Error('PNG requires one page')
-    return { name, blob: await (await fetch(await rasterizeReport(pages[0]))).blob() }
+    reportProgress(onProgress, 10)
+    const data = await rasterizeReport(pages[0])
+    reportProgress(onProgress, 90)
+    const blob = await (await fetch(data)).blob()
+    reportProgress(onProgress, 100)
+    return { name, blob }
   }
   if (format !== 'pdf') throw new Error('Invalid report format')
   if (pages.some(page => page.orientation != null && !['portrait', 'landscape'].includes(page.orientation))) throw new Error('Invalid report orientation')
   const pdf = new jsPDF({ unit: 'mm', format: 'a4', ...(pages[0].orientation ? { orientation: pages[0].orientation } : {}) })
   if (title) pdf.setProperties({ title, creator: 'TGym' })
+  reportProgress(onProgress, 5)
   for (const [i, page] of pages.entries()) {
     const orientation = page.orientation || 'portrait', previous = pages[i - 1]?.orientation || 'portrait'
     if (i) { if (orientation === 'portrait' && previous === 'portrait') pdf.addPage(); else pdf.addPage('a4', orientation) }
     const pageImageType = page.imageType ?? imageType, pageFull = page.fullPage ?? fullPage
     const data = await rasterizeReport(page, pageImageType === 'JPEG' ? 'image/jpeg' : 'image/png')
     const pageWidth = orientation === 'landscape' ? 297 : 210, pageHeight = orientation === 'landscape' ? 210 : 297
+    if (page.background) {
+      if (!/^#[a-f0-9]{6}$/i.test(page.background)) throw new Error('Invalid report background')
+      pdf.setFillColor(page.background)
+      pdf.rect(0, 0, pageWidth, pageHeight, 'F')
+    }
     const scale = Math.min((pageWidth - (pageFull ? 0 : 20)) / page.width, (pageHeight - (pageFull ? 0 : 20)) / page.height)
     pdf.addImage(data, pageImageType, (pageWidth - page.width * scale) / 2, pageFull ? 0 : 10, page.width * scale, page.height * scale, undefined, pageImageType === 'PNG' ? 'FAST' : undefined)
+    reportProgress(onProgress, 5 + 90 * (i + 1) / pages.length)
   }
-  return { name, blob: pdf.output('blob') }
+  const blob = pdf.output('blob')
+  reportProgress(onProgress, 100)
+  return { name, blob }
 }
 
 export async function saveReportFile({ blob, name, url }, { share = false } = {}) {

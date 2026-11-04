@@ -8,7 +8,7 @@ vi.mock('./progress-file.js',()=>({buildProgressFile:async report=>({name:'progr
 const S={routines:[],workouts:[],bodyweight:[{d:'2026-10-01',w:70}],unit:'kg'},now=new Date('2026-10-05T12:00:00')
 it('keeps Streak and Consistency separate even when exported together',async()=>{
  const files=await buildSelectedReports(S,['streak','consistency'],{streak:{period:'last-week'},consistency:{period:'month'}},{now})
- expect(files.map(f=>f.name)).toEqual(['TGym-Streak-2026-09-28_2026-10-04.pdf','TGym-Consistency-2026-10.pdf'])
+ expect(files.map(f=>f.name)).toEqual(['Streak Report 05-10-26.pdf','Consistency Report 05-10-26.pdf'])
  expect(await files[0].blob.text()).not.toContain('Consistency Report');expect(await files[1].blob.text()).not.toContain('Streak Report')
 })
 it('generates only selected formats, preserves Progress/History filters and complete backup scope',async()=>{
@@ -49,7 +49,7 @@ it('combines only selected dashboard pages in catalog order for every nonempty P
   expect(build.mock.calls.map(call=>call[0])).toEqual(selected)
   for(const [id,state,filters,receivedOptions] of build.mock.calls){expect(state).toBe(S);expect(filters).toBe(settings[id]);expect(receivedOptions).toBe(options)}
   expect(files).toHaveLength(1);expect(files[0].id).toBe('reports');expect(files[0].reportIds).toEqual(selected)
-  expect(files[0].name).toMatch(/^TGym-Reports-2026-10-05(?:-[a-z]+)?\.pdf$/)
+  expect(files[0].name).toBe((selected.length===1?PDF_REPORT_EXPORTS.find(([id])=>id===selected[0])[1]:'Reports')+' 05-10-26.pdf')
   expect(files[0].blob.type).toBe('application/pdf')
   const text=await files[0].blob.text()
   expect([...text.matchAll(/(streak|consistency|progress|stats)_PAGE_\d/g)].map(match=>match[0])).toEqual(selected.flatMap(id=>[`${id}_PAGE_0`,`${id}_PAGE_1`]))
@@ -72,9 +72,9 @@ it('keeps complete-year filters and readable pagination in independent and mixed
  for(const id of ['streak','consistency']){
   const pages=await buildDashboardReportPages(id,S,years,{now})
   expect(pages).toHaveLength(id==='streak'?3:9);expect(pages.every(page=>!page.orientation&&page.width<page.height)).toBe(true)
-  expect(pages.every(page=>page.imageType===(id==='streak'?'PNG':'JPEG'))).toBe(true)
+  expect(pages.every(page=>page.imageType==='PNG')).toBe(true)
   const file=await buildReportFile(id,S,years,{now})
-  expect(file.name).toBe(`TGym-${id==='streak'?'Streak':'Consistency'}-Years-2024_2026.pdf`)
+  expect(file.name).toBe(`${id==='streak'?'Streak':'Consistency'} Report 05-10-26.pdf`)
   expect(file.blob.type).toBe('application/pdf')
  }
  await buildDashboardReports(S,['streak','consistency'],{streak:years,consistency:{period:'full'}},{now})

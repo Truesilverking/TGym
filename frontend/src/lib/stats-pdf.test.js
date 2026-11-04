@@ -140,9 +140,10 @@ describe('Stats dashboard filters and shared calculations', () => {
     const S = fixture()
     const pages = statsReportPages(S, options({ sections: ['measurements'], filters: { bodySelection: { before: '1', after: '2' } } }))
     expect(texts(pages)).toContain('Before: 2026-09-21 · After: 2026-10-06')
-    expect(texts(pages)).toContain('Before: 35 cm → After: 36 cm')
-    expect(texts(pages)).toContain('+1 cm · +2.9 %')
-    expect(all(pages)).not.toContain('32 cm → After: 36 cm')
+    const row=doc(pages[0].svg).querySelector('[data-measurement="neck"]')
+    expect(row.getAttribute('data-before')).toBe('35');expect(row.getAttribute('data-after')).toBe('36');expect(row.getAttribute('data-unit')).toBe('cm')
+    expect(row.textContent).toContain('+1')
+    expect(all(pages)).not.toContain('data-before="32" data-after="36"')
   })
   it('uses BMI from the same latest weight and recorded display height as Stats', () => {
     const S = fixture(), expected = bmiFor(S.bodyweight.at(-1).w, S.unit, S.heightCm, S.measurementUnit)

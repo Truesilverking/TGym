@@ -69,6 +69,7 @@ export default function ProgressReport() {
     return()=>node?.close()
   },[exportOpen])
   const selected=PROGRESS_SECTIONS.find(s=>s[0]===section)
+  const [progress,setProgress]=useState(0)
   const [busy,setBusy]=useState(false),[file,setFile]=useState(null),[fileUrl,setFileUrl]=useState(null),exporting=useRef(false),currentReport=useRef(report),mounted=useRef(true)
   currentReport.current=report
   useLayoutEffect(()=>{mounted.current=true;return()=>{mounted.current=false}},[])
@@ -89,8 +90,8 @@ export default function ProgressReport() {
   },[file])
   const exportReport=async()=>{
     if(exporting.current)return
-    exporting.current=true;setBusy(true);setError('');setExportOpen(false)
-    try{const result=await buildProgressFile(report,{t,name:(exercise,context)=>reportExerciseNameFor(exercise,S,context),formatNumber:fmtNum,sections:exportSections,bodySelection});if(mounted.current&&currentReport.current===report){setFile(result);try{await saveProgressFile(result)}catch(e){if(e?.name!=='AbortError'&&e?.message!=='Share canceled')setError(t('Could not export. Try again.'))}}}
+    exporting.current=true;setProgress(0);setBusy(true);setError('');setExportOpen(false)
+    try{const result=await buildProgressFile(report,{t,name:(exercise,context)=>reportExerciseNameFor(exercise,S,context),formatNumber:fmtNum,sections:exportSections,bodySelection,onProgress:value=>{if(mounted.current&&currentReport.current===report)setProgress(Math.floor(value))}});if(mounted.current&&currentReport.current===report){setFile(result);try{await saveProgressFile(result)}catch(e){if(e?.name!=='AbortError'&&e?.message!=='Share canceled')setError(t('Could not export. Try again.'))}}}
     catch{setError(t('Could not export. Try again.'))}
     finally{exporting.current=false;setBusy(false)}
   }
@@ -103,8 +104,8 @@ export default function ProgressReport() {
   return <DashboardContext.Provider value={dashboard}><div className="progress-report">
     <div className="hdr"><div><h1 data-tour="report">{t('Progress Report')}</h1><p className="sub">{t('Baseline → Current → Change → Trend')}</p></div><Button size="sm" onClick={()=>nav('/stats')}>{t('Back')}</Button></div>
 <ModuleSwitch items={PROGRESS_VIEWS} current="/progress" />
-    <div className="card progress-controls"><label>{t('Period')}<select className="input" disabled={busy} value={period} onChange={e=>setPeriod(e.target.value)}>{PROGRESS_PERIODS.map(([v,l])=><option key={v} value={v}>{t(l)}</option>)}</select></label><label>{t('Section')}<select className="input" value={section} onChange={e=>setSection(e.target.value)}>{PROGRESS_SECTIONS.map(([id,title])=><option key={id} value={id}>{t(title)}</option>)}</select></label>{period==='custom'&&<><label>{t('From')}<input className="input" type="date" disabled={busy} value={from} max={to} onChange={e=>setFrom(e.target.value)}/></label><label>{t('To')}<input className="input" type="date" disabled={busy} value={to} min={from} max={today} onChange={e=>setTo(e.target.value)}/></label></>}<Button variant="primary" icon="download" disabled={busy||!!report.range.error} onClick={()=>setExportOpen(true)}>{t(busy?'Working…':'Export Progress Report')} · PDF</Button></div>
-    {file&&<section className="card progress-file" aria-label={t('Export Progress Report')}><p role="status"><b>{file.name}</b></p><div className="progress-actions"><Button variant="primary" icon="download" disabled={busy} onClick={download}>{t(MOBILE?'Share / save':'Download')}</Button>{!MOBILE&&<a className="btn" href={fileUrl||undefined} target="_blank" rel="noopener noreferrer">{t('Open')}</a>}</div></section>}
+    <div className="card progress-controls"><label>{t('Period')}<select className="input" disabled={busy} value={period} onChange={e=>setPeriod(e.target.value)}>{PROGRESS_PERIODS.map(([v,l])=><option key={v} value={v}>{t(l)}</option>)}</select></label><label>{t('Section')}<select className="input" value={section} onChange={e=>setSection(e.target.value)}>{PROGRESS_SECTIONS.map(([id,title])=><option key={id} value={id}>{t(title)}</option>)}</select></label>{period==='custom'&&<><label>{t('From')}<input className="input" type="date" disabled={busy} value={from} max={to} onChange={e=>setFrom(e.target.value)}/></label><label>{t('To')}<input className="input" type="date" disabled={busy} value={to} min={from} max={today} onChange={e=>setTo(e.target.value)}/></label></>}<Button variant="primary" icon="download" disabled={busy||!!report.range.error} onClick={()=>setExportOpen(true)}>{busy?`${progress}%`:t('Export Progress Report')} · PDF</Button></div>
+    {file&&<section className="card progress-file" aria-label={t('Export Progress Report')}><p role="status"><b>{file.name}</b><span className="small dim">100% · PDF</span></p><div className="progress-actions"><Button variant="primary" icon="download" disabled={busy} onClick={download}>{t(MOBILE?'Share / save':'Download')}</Button>{!MOBILE&&<a className="btn" href={fileUrl||undefined} target="_blank" rel="noopener noreferrer">{t('Open')}</a>}</div></section>}
     {(error||report.range.error)&&<p role="alert">{error||t(report.range.error)}</p>}
     {q&&<>
       <PathContext.Provider value={section}><section className="card progress-panel" aria-label={t(selected[1])}><h2>{t(selected[1])}</h2><p className="dim">{t(selected[2])}</p>

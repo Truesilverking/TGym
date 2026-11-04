@@ -1,3 +1,4 @@
+import { reportFileName, reportProgress } from './report-presentation.js'
 import { buildCalendarExport, buildConsistencyExport } from './calendar-file.js'
 import { buildProgressReport } from './progress-report.js'
 import { buildProgressFile, buildProgressPages } from './progress-file.js'
@@ -26,8 +27,8 @@ export async function buildDashboardReportPages(id, S, settings = {}, options = 
   const now=options.now || new Date(),today=isoOf(now)
   if(['streak','consistency'].includes(id)&&settings.period!=='years'&&!validDate(settings.anchor??today))throw Error('Choose a valid date range.')
   const anchor=new Date((settings.anchor??today)+'T12:00:00')
-  if(id==='streak')return streakReportPages(S,{...options,...settings,now,anchor,period:settings.period||'this-week',format:'pdf'}).map(page=>({...page,imageType:'PNG',fullPage:false}))
-  if(id==='consistency')return calendarReportPages(S,anchor,settings.period||'month','pdf',{...options,...settings,now}).map(page=>({...page,imageType:'JPEG',fullPage:false}))
+  if(id==='streak')return streakReportPages(S,{...options,...settings,now,anchor,period:settings.period||'this-week',format:'pdf'}).map(page=>({...page,imageType:'PNG',fullPage:true}))
+  if(id==='consistency')return calendarReportPages(S,anchor,settings.period||'month','pdf',{...options,...settings,now}).map(page=>({...page,imageType:'PNG',fullPage:true}))
   if(id==='progress')return (await buildProgressPages(buildProgressReport(S,{...settings,now}),options)).map(page=>({...page,fullPage:true}))
   if(id==='stats'){
     const bodyGeometry=!settings.sections||settings.sections.some(id=>['muscles','measurements'].includes(id))?await loadBodyGeometry():undefined
@@ -38,35 +39,43 @@ export async function buildDashboardReportPages(id, S, settings = {}, options = 
 export async function buildDashboardReports(S, ids, settings = {}, options = {}, build = buildDashboardReportPages) {
   const selection=PDF_REPORT_EXPORTS.map(([id])=>id).filter(id=>ids.includes(id))
   if(!selection.length)throw Error('Select at least one report.')
+  reportProgress(options.onProgress,0)
   const pages=[]
-  for(const id of selection)pages.push(...await build(id,S,settings[id],options))
-  const name=`TGym-Reports-${isoOf(options.now||new Date())}${selection.length===1?'-'+selection[0]:''}.pdf`
-  const file=await reportPagesFile(pages,name,{title:'TGym Reports'})
+  for(const [index,id] of selection.entries()){
+    pages.push(...await build(id,S,settings[id],options))
+    reportProgress(options.onProgress,20*(index+1)/selection.length)
+  }
+  const title=options.t?.(selection.length===1?REPORT_EXPORTS.find(([id])=>id===selection[0])[1]:'Reports') || (selection.length===1?REPORT_EXPORTS.find(([id])=>id===selection[0])[1]:'Reports')
+  const name=reportFileName(title,'pdf',options.now||new Date())
+  const file=await reportPagesFile(pages,name,{title, onProgress:value=>reportProgress(options.onProgress,20+value*.8)})
   return [{id:'reports',reportIds:selection,...file}]
 }
 export async function buildReportFile(id, S, settings = {}, options = {}) {
   options={name:(exercise,context)=>exerciseNameFor(exercise,S,context),...options}
   const now = options.now || new Date(), today = isoOf(now)
+  const filename=extension=>reportFileName(options.t?.(REPORT_EXPORTS.find(([key])=>key===id)?.[1]) || REPORT_EXPORTS.find(([key])=>key===id)?.[1],extension,now)
   if (['streak','consistency'].includes(id) && settings.period !== 'years' && !validDate(settings.anchor ?? today)) throw Error('Choose a valid date range.')
   const date = new Date((settings.anchor ?? today)+'T12:00:00')
   if(id==='streak')return buildCalendarExport(S,date,settings.period || 'this-week',settings.period === 'years' ? 'pdf' : settings.format || 'pdf',{...options,...settings,now})
   if(id==='consistency')return buildConsistencyExport(S,date,settings.period || 'month',['full','years'].includes(settings.period) ? 'pdf' : settings.format || 'pdf',{...options,...settings,now})
   if(id==='progress')return buildProgressFile(buildProgressReport(S,{...settings,now}),options)
-  if(id==='stats')return {name:`tgym-stats-${today}.html`,blob:new Blob([statsReportHTML(S)],{type:'text/html;charset=utf-8'})}
-  if(id==='history')return {name:`TGym-history-${today}.csv`,blob:new Blob([historyCsv(S,{...settings,now:now.getTime()})],{type:'text/csv;charset=utf-8'})}
-  if(id==='plan')return {name:`framegym-plan-${today}.json`,blob:new Blob([JSON.stringify(buildPlanBundle(S),null,2)],{type:'application/json'})}
-  if(id==='backup')return {name:`TGym-full-backup-${today}.json`,blob:new Blob([JSON.stringify(createBackup(S,now),null,2)],{type:'application/json'})}
+  if(id==='stats')return {name:filename('html'),blob:new Blob([statsReportHTML(S)],{type:'text/html;charset=utf-8'})}
+  if(id==='history')return {name:filename('csv'),blob:new Blob([historyCsv(S,{...settings,now:now.getTime()})],{type:'text/csv;charset=utf-8'})}
+  if(id==='plan')return {name:filename('json'),blob:new Blob([JSON.stringify(buildPlanBundle(S),null,2)],{type:'application/json'})}
+  if(id==='backup')return {name:filename('json'),blob:new Blob([JSON.stringify(createBackup(S,now),null,2)],{type:'application/json'})}
   throw Error('Unknown report')
 }
 export async function buildSelectedReports(S, ids, settings = {}, options = {}, build = buildReportFile) {
   if(options.combinePDF)return buildDashboardReports(S,ids,settings,options)
   const selection = selectedReports(ids)
   if(!selection.length)throw Error('Select at least one report.')
+  reportProgress(options.onProgress,0)
   const files=[]
-  for(const id of selection) {
-    const file=await build(id,S,settings[id],options)
+  for(const [index,id] of selection.entries()) {
+    const file=await build(id,S,settings[id],{...options,onProgress:value=>reportProgress(options.onProgress,(index+value/100)/selection.length*100)})
     if(!file.blob?.size)throw Error('Empty report')
     files.push({id,...file})
+    reportProgress(options.onProgress,(index+1)/selection.length*100)
   }
   return files
 }
