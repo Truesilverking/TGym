@@ -1,0 +1,272 @@
+{
+  "version": "1.16.0",
+  "androidVersionCode": 153,
+  "runtimeSourceCommit": "2d2c32878cd9889d851c1ec72fb7ff34e172a63a",
+  "publishedAt": "2026-11-04T19:09:08Z",
+  "features": {
+    "history": {
+      "holdDurationMs": 500,
+      "inlineWeightRepsRir": true,
+      "directExpandRetained": true,
+      "savedSetRolesRetained": true
+    },
+    "reports": {
+      "actualCreationProgressPercent": true,
+      "completedPercent": 100,
+      "portableFilenamePattern": "Report title DD-MM-YY.ext",
+      "centeredHeadings": true,
+      "productHeaderRemoved": true,
+      "streakBlackBackgroundOption": true,
+      "streakMetricsAboveEnlargedIdentity": true,
+      "compactCenteredPeriodAndCount": true,
+      "centeredMonthNamesWithoutRepeatedYear": true,
+      "trackingStartOnlyWhenItsActualDayIsVisible": true,
+      "bodyComparisonUsesCurrentAppGeometry": true,
+      "bodyComparisonMissingValuesRemainMissing": true,
+      "thirteenMeasurementFixtureFitsOnePdfPage": true
+    },
+    "profile": {
+      "readOnlyUntilEdit": true,
+      "largerPhotoAndName": true,
+      "ageAdded": true,
+      "bodyMeasurementsShortcutRemoved": true,
+      "saveExitsEditing": true,
+      "photoActionsIconOnly": true,
+      "childWeightHeightGoalEditorsSaveSeparately": true,
+      "primaryAtomicSaveAndMirrorRetryVerified": true,
+      "legacyDisplayHeightUnitPreserved": true
+    },
+    "tour": {
+      "expandedModuleCoverage": true,
+      "nutritionIncluded": true,
+      "practicePreviewDoesNotAlterActiveSession": true,
+      "replayReturnsToLaunchingRoute": true
+    },
+    "withings": {
+      "optionalServerOAuth": true,
+      "readOnlyProviderAccess": true,
+      "providerCredentialsExcludedFromTrainingProfile": true,
+      "weightBodyFatAndAvailableHeightImport": true,
+      "manualRecordsRetained": true,
+      "importRetryIdempotent": true,
+      "foregroundAutomaticSync": true,
+      "liveProviderAccountVerified": false,
+      "requiresOwnerServerConfigurationAndAuthorization": true
+    },
+    "versioning": {
+      "semanticMinorFeatureRelease": true,
+      "androidVersionCodeMonotonic": true,
+      "upstreamDevCommitsRetained": [
+        "77d55b346e60f97e602bcbb2fcd282d8ab041f83",
+        "4fdb68838c1285cf9045601a0c05a73da9744ebb",
+        "6b5351c8c54fa4378e2d52a688b9999a74628985"
+      ]
+    }
+  },
+  "verification": {
+    "frontend": {
+      "tests": 3312,
+      "files": 275,
+      "successfulExactSourceCiLogVerified": true
+    },
+    "backend": {
+      "apiTests": 37,
+      "mcpTests": 39,
+      "plainNodeImportGraph": true,
+      "freshLogs": true
+    },
+    "localAndroid": {
+      "standardDebugCompiled": true,
+      "qaDebugCompiled": true,
+      "lintErrors": 0,
+      "lintWarningsEach": 22,
+      "debugSignerSha256": "d53b550b85266358a3d803b7a9611b880488f3eb3e68ad121c63e3c04825f5cc",
+      "officialReleaseSigningClaim": false
+    },
+    "androidEmulator": {
+      "tests": 53,
+      "failures": 0,
+      "skipped": 0,
+      "artifactId": 13354942033,
+      "artifactSha256": "f657a22d49b093ad088ef88507a72dc5a2ee2b6c19e399da11669da67de1b163"
+    },
+    "compiledBrowser": {
+      "contexts": 4,
+      "checkGroups": 57,
+      "observedRuntimeErrors": 0,
+      "syntheticTrainingDataPreserved": true,
+      "workerSourceAndCacheVerified": true,
+      "historyHoldThresholdMs": 500,
+      "observedHoldOpenMs": [
+        526.6999999992549,
+        516.6999999992549,
+        524,
+        519
+      ],
+      "downloadedFiles": 16,
+      "pdfDownloads": 8,
+      "pngDownloads": 4,
+      "csvDownloads": 4,
+      "pdfPagesRendered": 8,
+      "bodyComparisonPdfPagesPerFixture": 1,
+      "bodyComparisonMeasurementsPerFixture": 13,
+      "edgeNewTabOfflineReopen": true,
+      "osInstalledPwa": false,
+      "physicalIphone": false,
+      "prior116WorkerUpgradeVerified": true
+    },
+    "compiledSpanish": {
+      "contexts": 1,
+      "checkGroups": 4,
+      "engine": "webkit",
+      "width": 320,
+      "observedRuntimeErrors": 0,
+      "synthetic": true,
+      "actualPublic": false,
+      "profileHealthAndCompleteYearLabelsVerified": true
+    },
+    "compiledWebkitLoadedShellOffline": {
+      "contexts": 1,
+      "checkGroups": 5,
+      "engine": "webkit",
+      "observedRuntimeErrors": 0,
+      "synthetic": true,
+      "actualPublic": false,
+      "alreadyLoadedShellOffline": true,
+      "historyOverlayAndExpandVerified": true,
+      "trainingDataPreserved": true,
+      "offlineColdOpenVerified": false,
+      "offlineNewTabOpenVerified": false,
+      "physicalIphoneVerified": false,
+      "osInstalledPwaVerified": false
+    },
+    "actualPublicBrowser": {
+      "contexts": 4,
+      "checkGroups": 57,
+      "observedRuntimeErrors": 0,
+      "syntheticTrainingDataPreserved": true,
+      "workerSourceAndCacheVerified": true,
+      "historyHoldThresholdMs": 500,
+      "observedHoldOpenMs": [
+        519.7000000000116,
+        520.4000000000233,
+        513,
+        513
+      ],
+      "downloadedFiles": 16,
+      "pdfDownloads": 8,
+      "pngDownloads": 4,
+      "csvDownloads": 4,
+      "pdfPagesRendered": 8,
+      "bodyComparisonPdfPagesPerFixture": 1,
+      "bodyComparisonMeasurementsPerFixture": 13,
+      "edgeNewTabOfflineReopen": true,
+      "osInstalledPwa": false,
+      "physicalIphone": false,
+      "prior116WorkerUpgradeVerified": false
+    },
+    "actualPublicSpanish": {
+      "contexts": 1,
+      "checkGroups": 4,
+      "engine": "webkit",
+      "width": 320,
+      "observedRuntimeErrors": 0,
+      "synthetic": true,
+      "actualPublic": true,
+      "profileHealthAndCompleteYearLabelsVerified": true
+    },
+    "actualPublicWebkitLoadedShellOffline": {
+      "contexts": 1,
+      "checkGroups": 5,
+      "engine": "webkit",
+      "observedRuntimeErrors": 0,
+      "synthetic": true,
+      "actualPublic": true,
+      "alreadyLoadedShellOffline": true,
+      "historyOverlayAndExpandVerified": true,
+      "trainingDataPreserved": true,
+      "offlineColdOpenVerified": false,
+      "offlineNewTabOpenVerified": false,
+      "physicalIphoneVerified": false,
+      "osInstalledPwaVerified": false
+    },
+    "physicalPixel": {
+      "freshQaTest": true,
+      "qaPackage": "app.framegym.mobile.qa",
+      "qaVersion": "1.16.0",
+      "qaVersionCode": 153,
+      "inPlaceQaUpdateVerified": true,
+      "qaSigningContinuityVerified": true,
+      "protectedTrainingDataPreserved": true,
+      "productionAppAccessed": false,
+      "checks": 9,
+      "observedAndroidOsHoldOpenMs": 533.1,
+      "coldReopenVerified": true,
+      "activeIdentityAndEntriesPreserved": true,
+      "temporaryAwakeSettingRestored": true,
+      "nativeSharingReceiptVerified": false,
+      "acceptanceInheritedFromPreviousRelease": false
+    }
+  },
+  "publication": {
+    "release": "https://github.com/Truesilverking/TGym/releases/tag/v1.16.0",
+    "workflow": "https://github.com/Truesilverking/TGym/actions/runs/41893080829",
+    "apkSha256": "23bf7d5bb1e79d0f90ddba23d495931eeb54786af95fbcb313f85582df0a3e1b",
+    "aabSha256": "0c87e8131a020979f8a6904ec64255c54103b275cffffa8671e4d8ed8539b7f8",
+    "officialSignerSha256": "8ee233c984615e2b3f6f083dc0c47d148bb8956ff7caca97be0b9a0d260e6082",
+    "releaseAndPagesApkIdentical": true,
+    "publicPwaFiles": 51,
+    "sharedRuntimeAssets": 55,
+    "privateAndRejectedArtworkExcluded": true,
+    "updateBroadcastSkipped": true,
+    "requiredCiRuns": [
+      {
+        "id": 41891941294,
+        "name": "Tests",
+        "event": "push",
+        "url": "https://github.com/Truesilverking/TGym/actions/runs/41891941294",
+        "conclusion": "success"
+      },
+      {
+        "id": 41891952859,
+        "name": "Tests",
+        "event": "pull_request",
+        "url": "https://github.com/Truesilverking/TGym/actions/runs/41891952859",
+        "conclusion": "success"
+      },
+      {
+        "id": 41891941415,
+        "name": "Validate PWA",
+        "event": "push",
+        "url": "https://github.com/Truesilverking/TGym/actions/runs/41891941415",
+        "conclusion": "success"
+      },
+      {
+        "id": 41891941457,
+        "name": "Validate Android",
+        "event": "push",
+        "url": "https://github.com/Truesilverking/TGym/actions/runs/41891941457",
+        "conclusion": "success"
+      },
+      {
+        "id": 41891940940,
+        "name": "Build signed Android candidate",
+        "event": "workflow_dispatch",
+        "url": "https://github.com/Truesilverking/TGym/actions/runs/41891940940",
+        "conclusion": "success"
+      }
+    ],
+    "protectedMainReviewRetained": true
+  },
+  "limits": {
+    "allPossibleDefectsEliminated": false,
+    "physicalIphoneVerified": false,
+    "nativeIosBuildVerified": false,
+    "osInstalledPwaVerified": false,
+    "liveWithingsAccountVerified": false,
+    "backgroundClosedPwaScaleSyncClaim": false,
+    "fullStatsReportGuaranteedSinglePage": false,
+    "publicPreviousVersionWorkerMigrationRetested": false,
+    "publicWebkitOfflineColdStartClaim": false
+  }
+}
