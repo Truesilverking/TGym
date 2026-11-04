@@ -47,7 +47,7 @@ export default function CalendarExport({ S, anchor, close, reportType = 'streak'
     finally { exporting.current = false; if (mounted.current) setBusy(false) }
   }
   return <><h3>{t(consistency ? 'Consistency Report' : 'Export Calendar')}</h3>
-    {!result ? <><ReportDateRange value={range} onChange={setRange} periods={consistency ? CONSISTENCY_PERIODS : STREAK_PERIODS} disabled={busy} today={today}/>
+    {!result ? <><ReportDateRange value={range} onChange={setRange} periods={consistency ? CONSISTENCY_PERIODS : STREAK_PERIODS} monthsPerPage={consistency ? 4 : 12} disabled={busy} today={today}/>
       {!consistency&&<label>{t('Background')}<select className="input" disabled={busy} value={theme} onChange={e=>setTheme(e.target.value)}><option value="light">{t('White')}</option><option value="black">{t('Black')}</option></select></label>}
       <label>{t('Format')}<select className="input" disabled={busy || pdfOnly} value={pdfOnly ? 'pdf' : format} onChange={e => setFormat(e.target.value)}><option value="png">PNG</option><option value="pdf">PDF</option></select></label>
       <Button disabled={busy || !!rangeError} onClick={generate}>{busy ? `${progress}% · ${pdfOnly ? 'PDF' : format.toUpperCase()}` : t('Export')}</Button></> : <><p>{result.name}</p><p className="small dim" role="status">100% · {pdfOnly ? 'PDF' : format.toUpperCase()}</p><Button disabled={busy} onClick={share}>{t('Share / save')}</Button>{!MOBILE && <a href={result.url} target="_blank" rel="noopener noreferrer">{t('Open')}</a>}<Button onClick={close}>{t('Done')}</Button></>}

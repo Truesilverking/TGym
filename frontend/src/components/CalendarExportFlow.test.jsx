@@ -50,6 +50,7 @@ it.each(['streak','consistency'])('exports complete years from %s with its reada
   expect(host.querySelector('[role="alert"]').textContent).toBe('Choose a valid year range.')
   expect(mock.build).not.toHaveBeenCalled()
   change(inputs[0],'2024')
+  expect(host.textContent).toContain(reportType==='streak'?'One year per PDF page.':'Four months per PDF page.')
   expect([...host.querySelectorAll('select')].at(-1).value).toBe('pdf');expect([...host.querySelectorAll('select')].at(-1).disabled).toBe(true)
   await act(async()=>button('Export').click())
   const [pages,name]=mock.build.mock.calls[0]

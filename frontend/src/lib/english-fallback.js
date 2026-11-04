@@ -1,5 +1,7 @@
 // Explicit source-language fallback. Entries in language packs override these values.
 export default {
+  "Workout summary": "Workout summary",
+  "One year per PDF page.": "One year per PDF page.",
   "Smart scale": "Smart scale",
   "Import weight, body fat percentage and fat mass into Body Weight and body composition. New readings sync when you open or return to TGym online. Existing manual readings are kept.": "Import weight, body fat percentage and fat mass into Body Weight and body composition. New readings sync when you open or return to TGym online. Existing manual readings are kept.",
   "Configure the Withings client ID, client secret and callback URL on your TGym server first. Credentials stay on the server.": "Configure the Withings client ID, client secret and callback URL on your TGym server first. Credentials stay on the server.",

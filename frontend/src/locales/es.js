@@ -1,6 +1,9 @@
 import english from '../lib/english-fallback.js'
 // Spanish UI strings. Keys are the English source strings (see lib/i18n.js).
 export default {
+  ...english,
+  "Workout summary": "Resumen del entrenamiento",
+  "One year per PDF page.": "Un año por página PDF.",
   "Smart scale": "Balanza inteligente",
   "Import weight, body fat percentage and fat mass into Body Weight and body composition. New readings sync when you open or return to TGym online. Existing manual readings are kept.": "Importa el peso, el porcentaje de grasa y la masa grasa en Peso corporal y composición corporal. Las lecturas nuevas se sincronizan al abrir TGym o volver a la app con conexión. Se conservan los registros manuales.",
   "Configure the Withings client ID, client secret and callback URL on your TGym server first. Credentials stay on the server.": "Configura primero el ID de cliente, el secreto de cliente y la URL de retorno de Withings en tu servidor TGym. Las credenciales permanecen en el servidor.",
@@ -43,9 +46,7 @@ export default {
   "Record or plan activities, and manage health connections here. Withings scale imports need a configured TGym server and your authorization. Imports require a compatible service, permission and its connection setup. Deload and equipment options are here too.": "Registra o planifica actividades y administra aquí las conexiones de salud. Para importar datos de una balanza Withings necesitas un servidor de TGym configurado y tu autorización. Las importaciones requieren un servicio compatible, permisos y configurar su conexión. Aquí también están las opciones de descarga y equipamiento.",
   "Export a backup, restore a reviewed copy or connect optional synchronization. A restore can replace data, so keep a backup before importing.": "Exporta una copia de seguridad, restaura una copia revisada o conecta la sincronización opcional. Una restauración puede reemplazar datos; conserva una copia de seguridad antes de importar.",
   "Be ready offline and stay up to date": "Prepárate para usar la app sin conexión y mantenla actualizada",
-  "Check offline readiness and updates here. Saved data stays on this device; cloud services and uncached exercise media need a connection. Replay this guide from Help.": "Comprueba aquí la disponibilidad sin conexión y las actualizaciones. Los datos guardados permanecen en este dispositivo; los servicios en la nube y los recursos de ejercicios que no estén en caché necesitan conexión. Puedes repetir esta guía desde Ayuda.",
-  ...english,
-  "Calendar key": "Clave del calendario",
+  "Check offline readiness and updates here. Saved data stays on this device; cloud services and uncached exercise media need a connection. Replay this guide from Help.": "Comprueba aquí la disponibilidad sin conexión y las actualizaciones. Los datos guardados permanecen en este dispositivo; los servicios en la nube y los recursos de ejercicios que no estén en caché necesitan conexión. Puedes repetir esta guía desde Ayuda.",  "Calendar key": "Clave del calendario",
   "Total training days": "Total de días entrenados",
   "Kilograms": "Kilos",
   "Pounds": "Libras",
