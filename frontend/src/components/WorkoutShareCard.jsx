@@ -8,10 +8,12 @@ import { workoutVolume } from '../lib/history.js'
 import { workoutElapsedMs } from '../lib/workout-time.js'
 import { isWarmupRow } from '../lib/workout-model.js'
 import { saveReportFile } from '../lib/report-file.js'
+import { reportFileName } from '../lib/report-presentation.js'
 
 export default function WorkoutShareCard({ workout, prs = [], unit = 'kg', close }) {
   const cardRef = useRef(null)
   const [sharing, setSharing] = useState(false)
+  const [progress, setProgress] = useState(null)
   const [error, setError] = useState(false)
   const sharingRef = useRef(false)
   const mounted = useRef(true)
@@ -27,17 +29,20 @@ export default function WorkoutShareCard({ workout, prs = [], unit = 'kg', close
     if (sharingRef.current) return
     sharingRef.current = true
     setSharing(true)
+    setProgress(0)
     setError(false)
     try {
       const { toBlob } = await import('html-to-image')
       if (!mounted.current || !cardRef.current) return
+      setProgress(20)
       const blob = await toBlob(cardRef.current, {
         pixelRatio: 2,
         backgroundColor: '#0a0a0c',
       })
       if (!mounted.current) return
       if (!blob) throw new Error('Share image was empty')
-      await saveReportFile({ blob, name: `tgym-workout-${w.d || 'session'}.png` }, { share: true })
+      setProgress(100)
+      await saveReportFile({ blob, name: reportFileName(t('Workout summary'), 'png') }, { share: true })
     } catch (e) {
       if (mounted.current && e?.name !== 'AbortError' && !/^Share cancel(?:led|ed)$/i.test(e?.message || '')) setError(true)
     } finally {
@@ -142,10 +147,11 @@ export default function WorkoutShareCard({ workout, prs = [], unit = 'kg', close
 
       <div className="row" style={{ gap: 8, width: '100%', maxWidth: 320 }}>
         <Button variant="primary" icon="upload" onClick={handleShare} disabled={sharing} style={{ flex: 1 }}>
-          {sharing ? t('Generating…') : t('Share story')}
+          {sharing ? `${progress}% · PNG` : t('Share story')}
         </Button>
         <Button onClick={close}>{t('Close')}</Button>
       </div>
+      {progress === 100 && !sharing && !error && <p className="small dim" role="status">100% · PNG</p>}
       {error && <p role="alert">{t('Could not create the share image. Please try again.')}</p>}
     </div>
   )

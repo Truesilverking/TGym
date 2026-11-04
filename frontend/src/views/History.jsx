@@ -9,11 +9,11 @@ import { useState } from 'react'
 import { SearchField, Segmented } from '../components/ui.jsx'
 import { saveReportFile } from '../lib/report-file.js'
 import { loggedWorkouts } from '../lib/daily-plan.js'
-import { todayISO } from '../lib/format.js'
+import { reportFileName } from '../lib/report-presentation.js'
 
 async function exportHistory(S, filters) {
   const blob = new Blob([historyCsv(S, filters)], { type: 'text/csv;charset=utf-8' })
-  await saveReportFile({ blob, name: `TGym-history-${todayISO()}.csv` })
+  await saveReportFile({ blob, name: reportFileName(t('Workout history'), 'csv') })
 }
 
 export default function History() {

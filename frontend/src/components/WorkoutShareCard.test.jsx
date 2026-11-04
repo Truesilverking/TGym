@@ -3,6 +3,8 @@ import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { beforeEach, afterEach, it, expect, vi } from 'vitest'
 import WorkoutShareCard from './WorkoutShareCard.jsx'
+import { reportFileName } from '../lib/report-presentation.js'
+import { t } from '../lib/i18n.js'
 
 const mock = vi.hoisted(() => ({ raster: vi.fn(), save: vi.fn() }))
 vi.mock('html-to-image', () => ({ toBlob: (...args) => mock.raster(...args) }))
@@ -16,7 +18,7 @@ beforeEach(() => {
 })
 afterEach(() => { act(() => root.unmount()); container.remove() })
 const render = workout => act(() => root.render(<WorkoutShareCard workout={workout} unit="kg" close={() => {}} />))
-const button = () => [...container.querySelectorAll('button')].find(b => /Share story|Generating/.test(b.textContent))
+const button = () => [...container.querySelectorAll('button')].find(b => /Share story|\d+%.*PNG/.test(b.textContent))
 
 it('uses the authoritative paused clock, load unit and working-set volume', () => {
   const start = Date.parse('2026-10-26T10:00:00')
@@ -44,7 +46,8 @@ it('awaits image creation and sharing and prevents duplicate clicks', async () =
   expect(button().disabled).toBe(true)
   await act(async () => resolveSave())
   expect(button().disabled).toBe(false)
-  expect(mock.save.mock.calls[0][0].name).toBe('tgym-workout-2026-10-26.png')
+  expect(mock.save.mock.calls[0][0].name).toBe(reportFileName(t('Workout summary'),'png'))
+  expect(container.querySelector('[role="status"]').textContent).toBe('100% · PNG')
 })
 
 it('shows a recoverable image error but treats share dismissal as cancellation', async () => {
