@@ -6,7 +6,7 @@ import { resolve } from 'node:path'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import StreakMilestoneCelebration from './StreakMilestoneCelebration.jsx'
 
-const styles = readFileSync(resolve('src/components/StreakMilestoneCelebration.css'), 'utf8')
+const styles = readFileSync(resolve('src/index.css'), 'utf8') + '\n' + readFileSync(resolve('src/components/StreakMilestoneCelebration.css'), 'utf8')
 
 vi.mock('../lib/i18n.js', () => ({ t: (key, ...args) => key.replace(/\{(\d+)\}/g, (_, index) => String(args[index])) }))
 let root, host, style, motionPreference
@@ -75,7 +75,8 @@ it('omits a next milestone when no later milestone is supplied', () => {
   expect(host.textContent).not.toContain('Next milestone:')
 })
 
-it.each(['default', 'html', 'body', 'os'])('keeps the celebration still with %s motion preferences', source => {
+it.each(['default', 'html', 'body', 'os'])('respects %s motion preferences for the celebration', source => {
+  window.happyDOM.settings.device.prefersReducedMotion = 'no-preference'
   if (source === 'html') document.documentElement.dataset.reduceMotion = 'true'
   if (source === 'body') document.body.dataset.reduceMotion = 'true'
   if (source === 'os') {
@@ -83,6 +84,8 @@ it.each(['default', 'html', 'body', 'os'])('keeps the celebration still with %s 
     expect(window.matchMedia('(prefers-reduced-motion: reduce)').matches).toBe(true)
   }
   act(() => root.render(<StreakMilestoneCelebration claim={{ weeks: 52, nextWeeks: 104 }} />))
-  expect(getComputedStyle(host.querySelector('.streak-flame')).animation).toBe('none')
+  const animation = getComputedStyle(host.querySelector('.streak-flame')).animation
+  if (source === 'default') expect(animation).toContain('streak-fire')
+  else expect(animation).toBe('none')
   expect(getComputedStyle(host.querySelector('.streak-flame-fill')).transition).toBe('none')
 })

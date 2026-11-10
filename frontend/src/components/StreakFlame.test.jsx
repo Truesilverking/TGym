@@ -7,7 +7,7 @@ import { afterEach, beforeEach, expect, it } from 'vitest'
 import StreakFlame from './StreakFlame.jsx'
 import { STREAK_FLAME_IMAGE } from '../lib/streak-flame-image.js'
 
-const css = readFileSync(resolve('src/index.css'), 'utf8')
+const css = readFileSync(resolve('src/index.css'), 'utf8') + '\n' + readFileSync(resolve('src/components/StreakMilestoneCelebration.css'), 'utf8')
 const packagedImage = readFileSync(resolve('../assets/streak-flame/streak-flame-1.16.1.png'))
 let host, root, styles, motionPreference
 beforeEach(() => {
@@ -101,9 +101,9 @@ it('honors OS reduced motion while keeping the first-day image visible and the h
   expect(getComputedStyle(flame.querySelector('.streak-flame-fill')).transition).toBe('none')
 })
 
-it('animates active flames in the header and calendar while motion is enabled', () => {
+it('animates active flames in the header, calendar and milestone while motion is enabled', () => {
   window.happyDOM.settings.device.prefersReducedMotion = 'no-preference'
-  act(() => root.render(<><div className="header-streak"><StreakFlame value={1} /></div><div className="streak-hero"><StreakFlame value={7} /></div></>))
+  act(() => root.render(<><div className="header-streak"><StreakFlame value={1} /></div><div className="streak-hero"><StreakFlame value={7} /></div><div className="streak-milestone-celebration"><StreakFlame value={14} /></div></>))
   for (const flame of host.querySelectorAll('.streak-flame')) {
     expect(getComputedStyle(flame).animation).toContain('streak-fire')
     expect(getComputedStyle(flame).animation).toContain('infinite')
