@@ -56,16 +56,17 @@ it.each(['dark', 'light'])('keeps a warm opaque gradient inside blue/purple/lege
   act(() => root.render(<><div className="header-streak streak-blue"><StreakFlame value={30} /></div><div className="streak-hero compact streak-purple"><StreakFlame value={50} /></div><div className="streak-legend"><StreakFlame value={100} /></div></>))
   for (const flame of host.querySelectorAll('.streak-flame')) {
     const paint = getComputedStyle(flame)
-    expect(paint.getPropertyValue('--streak-flame-yellow')).toBe('#ffd60a')
-    expect(paint.getPropertyValue('--streak-flame-orange')).toBe('#ff9f0a')
-    expect(paint.color).toBe('#ff9f0a')
+    expect(paint.getPropertyValue('--streak-flame-orange')).toBe('#ff790b')
+    expect(paint.color).toBe('#ff790b')
     expect(paint.animation).not.toContain('streak-rainbow')
     const fill = flame.querySelector('.streak-flame-fill'), gradient = flame.querySelector('linearGradient')
     expect(fill.getAttribute('fill')).toBe(`url(#${gradient.id})`)
     expect(fill.style.opacity).toBe('1')
-    expect(gradient.querySelectorAll('stop')).toHaveLength(2)
+    expect(gradient.querySelectorAll('stop')).toHaveLength(4)
+    expect(flame.querySelector('.streak-flame-inner').style.fill).toBe(`url(#${gradient.id}-inner)`)
+    expect(flame.querySelector('.streak-flame-core').style.fill).toBe('#fff4c2')
   }
-  expect(new Set([...host.querySelectorAll('linearGradient')].map(e => e.id)).size).toBe(3)
+  expect(new Set([...host.querySelectorAll('linearGradient')].map(e => e.id)).size).toBe(6)
 })
 
 it('preserves inactive-to-active transitions and app reduced motion without hiding the fill', () => {

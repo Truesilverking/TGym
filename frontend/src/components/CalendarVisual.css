@@ -156,3 +156,27 @@
 @container (max-width:210px) {
   .zoomcal .zoomcal-periods.months,.zoomcal .zoomcal-periods.years,.zoomcal.streak-calendar .zoomcal-periods.months { grid-template-columns:minmax(0,1fr); }
 }
+
+/* Keep the annual overview together: four rows of real mini months, with a
+   smaller identity header so the last row stays visible on a portrait phone. */
+.zoomcal.streak-calendar[data-level="months"] { --streak-year-cell:clamp(10px,calc((90dvh - 400px) / 24),16px); padding:12px; }
+.zoomcal.streak-calendar[data-level="months"] .streak-calendar-heading { gap:8px; margin-bottom:8px; }
+.zoomcal.streak-calendar[data-level="months"] .streak-profile-summary { justify-content:center; gap:14px; }
+.zoomcal.streak-calendar[data-level="months"] .streak-profile-avatar { width:64px; height:64px; font-size:24px; border-width:2px; }
+.zoomcal.streak-calendar[data-level="months"] .streak-profile-name { max-height:2.4em; -webkit-line-clamp:2; font-size:20px; }
+.zoomcal.streak-calendar[data-level="months"] .streak-main { flex:0 1 auto; }
+.zoomcal.streak-calendar[data-level="months"] .streak-calendar-heading .streak-main>.streak-flame { width:36px; height:40px; }
+.zoomcal.streak-calendar[data-level="months"] .streak-calendar-heading .streak-main .streak-number { font-size:32px; }
+.zoomcal.streak-calendar[data-level="months"] .zoomcal-nav { margin-bottom:8px; }
+.zoomcal.streak-calendar[data-level="months"] .zoomcal-periods.months { grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px 8px; }
+.zoomcal.streak-calendar[data-level="months"] .zoomcal-periods.months>button { gap:4px; }
+.zoomcal.streak-calendar[data-level="months"] .zoomcal-mini-month { gap:1px; grid-template-columns:repeat(7,minmax(0,var(--streak-year-cell))); grid-template-rows:repeat(6,minmax(0,1fr)); justify-content:center; }
+.zoomcal.streak-calendar[data-level="months"] .zoomcal-period-head { gap:3px; }
+.zoomcal.streak-calendar[data-level="months"] .zoomcal-period-head b { font-size:10px; white-space:nowrap; overflow-wrap:normal; }
+.zoomcal.streak-calendar[data-level="months"] .zoomcal-period-head em { font-size:11px; }
+.zoomcal.streak-calendar[data-level="months"].zoomcal .zoomcal-mini-cell { border-radius:2px; }
+.zoomcal.streak-calendar[data-level="months"].zoomcal .zoomcal-mini-cell b { display:block; font-size:8px; }
+.zoomcal.streak-calendar[data-level="months"] .zoomcal-key { margin-top:10px; }
+@container (max-width:230px) {
+  .zoomcal.streak-calendar[data-level="months"] .zoomcal-periods.months { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}

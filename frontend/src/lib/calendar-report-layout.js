@@ -1,7 +1,7 @@
-﻿import { MONTHS_LONG } from './format.js'
+import { MONTHS_LONG } from './format.js'
 import { calendarGrid, calendarSvgLegend, calendarText as text, calendarRect as rect, escapeCalendarText as escape } from './calendar-grid.js'
 import { TRACKING_START_MARKER } from './calendar-visual.js'
-import { STREAK_FLAME_PATH } from './streak-flame-path.js'
+import { STREAK_FLAME_PATH, STREAK_FLAME_INNER_PATH, STREAK_FLAME_CORE_PATH, STREAK_FLAME_COLORS as flameColors } from './streak-flame-path.js'
 
 const NAVY = '#18324f', MUTED = '#52647c', BLUE = '#115bb2'
 export const calendarTextWidth = (value, size) => [...String(value)].reduce((width, char) => width + size * (/\s/.test(char) ? .3 : /[ilIt.,:!|]/.test(char) ? .3 : /[MW@%]/.test(char) ? .85 : char.codePointAt(0) > 0x2e80 ? 1 : .57), 0)
@@ -20,7 +20,7 @@ export function calendarWrappedText(x, y, value, maxWidth, size, lineHeight, wei
 
 function flame(value, x, y) {
   const active = Number(value) > 0
-  return `<svg data-streak-flame="${active ? 'active' : 'inactive'}" x="${x}" y="${y}" width="66" height="72" viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="report-streak-fill" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#ffd60a"/><stop offset="100%" stop-color="#ff9f0a"/></linearGradient></defs><path d="${STREAK_FLAME_PATH}" fill="${active ? 'url(#report-streak-fill)' : '#e3e8ef'}" stroke="${active ? '#9b4a06' : '#718096'}" stroke-width="1" stroke-linejoin="round"/></svg>`
+  return `<svg data-streak-flame="${active ? 'active' : 'inactive'}" x="${x}" y="${y}" width="66" height="72" viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="report-streak-fill" x1="30%" y1="0%" x2="65%" y2="100%"><stop offset="0%" stop-color="${flameColors.tip}"/><stop offset="38%" stop-color="${flameColors.orange}"/><stop offset="72%" stop-color="${flameColors.red}"/><stop offset="100%" stop-color="${flameColors.base}"/></linearGradient><linearGradient id="report-streak-inner" x1="50%" y1="0%" x2="50%" y2="100%"><stop offset="0%" stop-color="${flameColors.orange}"/><stop offset="65%" stop-color="${flameColors.inner}"/><stop offset="100%" stop-color="${flameColors.core}"/></linearGradient></defs><path d="${STREAK_FLAME_PATH}" fill="${active ? 'url(#report-streak-fill)' : '#e3e8ef'}" stroke="${active ? '#ad3213' : '#718096'}" stroke-width="${active ? '.45' : '1.2'}" stroke-linejoin="round"/>${active ? `<path d="${STREAK_FLAME_INNER_PATH}" fill="url(#report-streak-inner)"/><path d="${STREAK_FLAME_CORE_PATH}" fill="${flameColors.core}"/>` : ''}</svg>`
 }
 
 function reportProfile(profile, top, palette) {

@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.16.1
+
+- Give the Streak flame a taller, layered silhouette with red-orange fire and a bright core across the app and Streak reports.
+- Fit all twelve Streak Calendar months in a compact annual overview on portrait Pixel screens, retaining month zoom, day numbers and the expandable calendar key.
+
 ## 1.15.102
 
 - Recover from primary PWA storage quota when logging body weight, preserve legacy daily readings and make repeated or cancelled check-ins safe.
