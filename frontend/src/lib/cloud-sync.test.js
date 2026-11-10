@@ -18,7 +18,8 @@ describe('weekly cloud backup schedule', () => {
 
 const native = vi.hoisted(() => ({ on: false, authorize: vi.fn(), clearToken: vi.fn() }))
 vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => native.on, getPlatform: () => native.on ? 'android' : 'web' }, registerPlugin: () => native }))
-import { connectGoogleDrive, backupToGoogleDrive, forgetGoogleDriveToken, configuredGoogleClientId } from './cloud-sync.js'
+import { connectGoogleDrive, backupToGoogleDrive, forgetGoogleDriveToken, configuredGoogleClientId, synchronizeWithGoogleDrive } from './cloud-sync.js'
+import { createBackup } from './backup.js'
 const state = () => ({ routines: [], workouts: [], cloudSync: { on: true } })
 const response = (body, status = 200) => new Response(JSON.stringify(body), { status })
 beforeEach(() => {
@@ -29,6 +30,30 @@ beforeEach(() => {
   native.clearToken.mockReset().mockResolvedValue({})
 })
 describe('Drive account and backup recovery', () => {
+  it.each([
+    { id: 'remote', modifiedTime: 'newer' },
+    { id: 'replacement', modifiedTime: 'reviewed' },
+    null,
+  ])('rejects a changed cloud snapshot while conflict choices are being reviewed: %j', async latest => {
+    native.on = true
+    const fetcher = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => response({ files: latest ? [latest] : [] }))
+    await expect(backupToGoogleDrive(state(), { allowOverwrite: true, expectedFile: { id: 'remote', modifiedTime: 'reviewed' } })).rejects.toMatchObject({ code: 'sync_required' })
+    expect(fetcher).toHaveBeenCalledOnce()
+  })
+  it('carries the reviewed cloud identity from merge to save', async () => {
+    native.on = true
+    const file = { id: 'remote', modifiedTime: 'reviewed' }
+    const fetcher = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(response({ files: [file] }))
+      .mockResolvedValueOnce(response(createBackup(state())))
+    const result = await synchronizeWithGoogleDrive(state())
+    expect(result.file).toEqual(file)
+    fetcher.mockResolvedValueOnce(response({ files: [file] }))
+      .mockResolvedValueOnce(response({ ...file, modifiedTime: 'saved' }))
+      .mockResolvedValueOnce(response({ files: [{ id: 'daily', name: `TGym-backup-${new Date().toISOString().slice(0, 10)}.json` }] }))
+    const saved = await backupToGoogleDrive(result.merged, { interactive: false, expectedFile: result.file })
+    expect(saved.modifiedTime).toBe('saved')
+    expect(fetcher.mock.calls[3][1].method).toBe('PATCH')
+  })
   it('provides the public web client only on the authorized hosted origin', () => {
     try {
       vi.stubGlobal('location', { origin: 'https://truesilverking.github.io' })
@@ -56,7 +81,7 @@ describe('Drive account and backup recovery', () => {
   })
   it('does not loop endlessly when a renewed token is rejected', async () => {
     native.on = true
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(response({}, 401))
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async()=>response({}, 401))
     await expect(connectGoogleDrive(state())).rejects.toMatchObject({ code: 'auth_required' })
     expect(native.authorize).toHaveBeenCalledTimes(2)
   })
@@ -76,4 +101,13 @@ describe('Drive account and backup recovery', () => {
     await expect(backupToGoogleDrive(state())).rejects.toMatchObject({ code: 'sync_required' })
     expect(fetcher).toHaveBeenCalledOnce()
   })
+})
+it.each([false,true])('bounds Drive stalls (body stalled: %s) without retrying a write blindly',async bodyStalls=>{
+ vi.useFakeTimers();native.on=true
+ const fetcher=vi.spyOn(globalThis,'fetch').mockImplementation(()=>bodyStalls?Promise.resolve({text:()=>new Promise(()=>{})}):new Promise(()=>{}))
+ try {
+  const failed=expect(connectGoogleDrive(state())).rejects.toMatchObject({code:'timeout'})
+  await vi.advanceTimersByTimeAsync(30000);await failed
+  expect(fetcher).toHaveBeenCalledOnce();expect(fetcher.mock.calls[0][1].signal.aborted).toBe(true)
+ } finally {vi.useRealTimers();fetcher.mockRestore()}
 })

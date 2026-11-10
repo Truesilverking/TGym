@@ -1,0 +1,43 @@
+// Keep record identity separate from its editable measurement date.
+export function upsertBodyRecord(rows, record, originalIndex = -1) {
+  const result = [...(rows || [])]
+  const index = result.findIndex(r => r.id && r.id === record.id)
+  const target = index >= 0 ? index : originalIndex
+  if (target >= 0 && target < result.length) result[target] = {...result[target], ...record}
+  else result.push(record)
+  return result.sort((a,b)=>a.d.localeCompare(b.d))
+}
+export function parseMetrics(values, fields) {
+  const parsed = {}
+  for (const [key] of fields) {
+    const raw = values[key]
+    if (raw == null || String(raw).trim() === '') { parsed[key] = null; continue }
+    const text = String(raw).trim().replace(',', '.')
+    if (!/^\d+(?:\.\d+)?$/.test(text)) return null
+    const value = Number(text)
+    if (!Number.isFinite(value) || value <= 0 || (['bodyFatPct','score'].includes(key) && value > 100)) return null
+    parsed[key] = Math.round(value * 100) / 100
+  }
+  return parsed
+}
+export function validMeasurementDate(date, today) {
+  if (!date || !Number.isFinite(new Date(date+'T12:00:00Z').getTime())) return false
+  return /^\d{4}-\d{2}-\d{2}$/.test(date) && date <= today && new Date(date+'T12:00:00Z').toISOString().slice(0,10) === date
+}
+export function removeBodyRecord(rows, record) {
+  const index=(rows || []).findIndex(row=>record.id ? row.id===record.id : JSON.stringify(row)===JSON.stringify(record))
+  return (rows || []).filter((_,i)=>i!==index)
+}
+
+// New height readings retain their predecessors. Canonical centimetres keep this
+// additive history independent of display-unit conversion and older backups.
+export function recordHeight(state, value, date, timestamp, id) {
+  state.heightHistory ||= []
+  if (!state.heightHistory.length && state.heightCm > 0 && validMeasurementDate(state.heightRecordedAt, '9999-12-31')) {
+    state.heightHistory.push({id:id+'-previous',d:state.heightRecordedAt,cm:state.heightCm*(state.measurementUnit==='in'?2.54:1)})
+  }
+  const existing=state.heightHistory.find(row=>row.d===date)
+  state.heightHistory=upsertBodyRecord(state.heightHistory,{id:existing?.id||id,d:date,t:existing?.t||timestamp,cm:value*(state.measurementUnit==='in'?2.54:1)},existing?state.heightHistory.indexOf(existing):-1)
+  const latest=state.heightHistory.at(-1)
+  state.heightCm=latest.cm/(state.measurementUnit==='in'?2.54:1);state.heightRecordedAt=latest.d
+}

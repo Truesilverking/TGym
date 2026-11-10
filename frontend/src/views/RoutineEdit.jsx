@@ -1,3 +1,5 @@
+import { removeRoutineAssignments } from '../lib/daily-plan.js'
+import { openActivityEditor } from '../components/Activities.jsx'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useEffect } from 'react'
 import { useStore } from '../store/useStore.js'
@@ -50,11 +52,11 @@ export default function RoutineEdit() {
   const profile = activeProfile(S)
   const missingCount = profile ? r.ex.filter(e => !exAvailable(S, exOr(e.id))).length : 0
 
-  return <div className="narrow">
+  return <div className="narrow routine-edit">
     <div className="hdr">
       <button className="iconbtn" onClick={() => nav('/plan')} aria-label={t('Routine')}><Icon name="chevronLeft" /></button>
-      <div style={{ flex: 1, margin: '0 12px' }}>
-        <input className="input" defaultValue={r.name} style={{ fontWeight: 600, fontSize: 20, letterSpacing: '-.021em' }}
+      <div style={{ flex: 1, minWidth: 0, margin: '0 12px' }}>
+        <input className="input" aria-label={t('Routine')} defaultValue={r.name} style={{ fontWeight: 600, fontSize: 20, letterSpacing: '-.021em' }}
           onChange={e => update(s => { s.routines.find(x => x.id === id).name = e.target.value.trim() || t('Routine') })} />
       </div>
       <button className="iconbtn" aria-label={t('Pick an icon')} onClick={() => glyphPicker(r.emoji, g => update(s => { s.routines.find(x => x.id === id).emoji = g }))}><Icon name={glyphOf(r.emoji)} /></button>
@@ -64,12 +66,6 @@ export default function RoutineEdit() {
       <SelectRow icon="chartLine" title={t('Progression')} sheetTitle={t('Progression')}
         value={r.prog || 'linear'} onChange={v => update(s => { s.routines.find(x => x.id === id).prog = v })}
         options={POLICIES_FOR.reps.map(p => ({ value: p, label: t(POLICY_NAME[p]), subtitle: t(POLICY_DESC[p]) }))} />
-    </div>
-    <div className="small dim" style={{ margin: '-10px 2px 16px' }}>
-      {t('Applies to every exercise in this routine that does not set its own rule.')}
-    </div>
-    <div className="sect-b" style={{ marginBottom: 16 }}>
-      <Button onClick={()=>routineMuscleSheet(r.id)}>{t('Muscles trained')}</Button>
       <SelectRow icon="timer" title={t('Rest between sets')} value={r.restSec ?? ''} onChange={v => update(s => { const x = s.routines.find(x => x.id === id); if (v === '') delete x.restSec; else x.restSec = v })}
         options={[{ value: '', label: t('Follow global setting') }, ...[0, 30, 45, 60, 90, 120, 150, 180, 240, 300].map(v => ({ value: v, label: v ? v + 's' : t('Off') }))]} />
       <SelectRow icon="link" title={t('Rest after a superset round')} value={r.supersetRoundRestSec ?? ''} onChange={v => update(s => { const x = s.routines.find(x => x.id === id); if (v === '') delete x.supersetRoundRestSec; else x.supersetRoundRestSec = v })}
@@ -86,11 +82,11 @@ export default function RoutineEdit() {
     {!!r.guideSlots?.length && <div className="card" style={{ marginBottom: 16 }}>
       <h2>{t('Complete your routine')}</h2>
       <div className="small dim" style={{ marginBottom: 10 }}>{t('Choose the movement you prefer for each guided space.')}</div>
-      <div className="list">{r.guideSlots.map(slot => <div className="item" key={slot.id} onClick={() => fillSlot(slot)}>
+      <div className="list">{r.guideSlots.map(slot => <button type="button" className="item" key={slot.id} onClick={() => fillSlot(slot)}>
         <span className="lrow-i"><Icon name="plus" /></span>
         <div className="grow"><div className="tt">{t(slot.label)}</div><div className="ss">{t(slot.hint)}</div><div className="ss accent">{slot.sets} × {slot.repsMin}–{slot.reps} · {slot.restSec}s</div></div>
         <Icon name="chevronRight" className="chev" />
-      </div>)}</div>
+      </button>)}</div>
     </div>}
 
     {r.ex.length ? <div className="list">{r.ex.map((e, i) => {
@@ -101,18 +97,20 @@ export default function RoutineEdit() {
       const linkedPrev = i > 0 && e.sg && r.ex[i - 1].sg === e.sg
       return <div key={i}>
         {unitFirst.has(i) && <div className="ss-label"><Icon name="link" />{t('Superset')}</div>}
-        <div className={'item' + (inSS.has(i) ? ' in-ss' : '')} onClick={() => {
+        <div className={'item' + (inSS.has(i) ? ' in-ss' : '')}>
+        <button type="button" className="routine-exercise-open" onClick={() => {
           exConfigSheet(ex, e, cfg => edit(x => { x[i] = { id: x[i].id, sg: x[i].sg, ...cfg } }), () => edit(x => { x.splice(i, 1); cleanupSg(x) }), r)
         }}>
           <Thumb ex={ex} />
-          <div className="grow"><div className="tt capitalize">{exerciseNameFor(ex)}</div>{S.exerciseAliases?.[ex.id] && <div className="ss">{t('Alias')}: {S.exerciseAliases[ex.id]}</div>}<div className="ss">{exLine(e, S.unit)}</div>
+          <div className="grow"><div className="tt capitalize">{exerciseNameFor(ex, { entry: e, routineId: r.id })}</div><div className="ss">{exLine(e, S.unit)}</div>
             {e.note && <div className="small dim" style={{ marginTop: 2 }}>{e.note}</div>}</div>
           {noEquip && <span className="tag" style={{ color: 'var(--orange)', borderColor: 'var(--orange)' }} title={t('Needs {0} — not in your active profile', t(ex.eq))}><Icon name="warning" /></span>}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 'none', alignItems: 'center' }}>
+        </button>
+          <div className="routine-exercise-controls" style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 'none', alignItems: 'center' }}>
             {i > 0 && <button className={'iconbtn' + (linkedPrev ? ' on-ss' : '')} title={t('Superset with exercise above')} style={{ width: 32, height: 28, borderRadius: 8, fontSize: 15 }} onClick={ev => { ev.stopPropagation(); toggleLink(i) }}><Icon name="link" /></button>}
             <div style={{ display: 'flex', gap: 2 }}>
-              <button className="iconbtn" aria-label="Move up" style={{ width: 28, height: 24, borderRadius: 7, fontSize: 12 }} onClick={ev => { ev.stopPropagation(); move(i, -1) }}><Icon name="chevronUp" /></button>
-              <button className="iconbtn" aria-label="Move down" style={{ width: 28, height: 24, borderRadius: 7, fontSize: 12 }} onClick={ev => { ev.stopPropagation(); move(i, 1) }}><Icon name="chevronDown" /></button>
+              <button className="iconbtn" disabled={i === 0} aria-label={t('Move up')} style={{ width: 28, height: 24, borderRadius: 7, fontSize: 12 }} onClick={ev => { ev.stopPropagation(); move(i, -1) }}><Icon name="chevronUp" /></button>
+              <button className="iconbtn" disabled={i === r.ex.length - 1} aria-label={t('Move down')} style={{ width: 28, height: 24, borderRadius: 7, fontSize: 12 }} onClick={ev => { ev.stopPropagation(); move(i, 1) }}><Icon name="chevronDown" /></button>
             </div>
           </div>
         </div>
@@ -125,7 +123,10 @@ export default function RoutineEdit() {
       const load = loadOfRoutine(r)
       const { worked } = rankOf(load)
       return <div className="card" style={{ marginTop: 12 }}>
-        <h2>{t('What this session hits')}</h2>
+        <div className="row between" style={{ marginBottom: 8 }}>
+          <h2 style={{ margin: 0 }}>{t('What this session hits')}</h2>
+          <Button size="sm" variant="tinted" icon="info" onClick={() => routineMuscleSheet(r.id)}>{t('Muscles trained')}</Button>
+        </div>
         <BodyMap load={load} body={S.body} />
         <div className="mchips">
           {worked.slice(0, 6).map(m => <span key={m} className="mchip">{t(MUSCLE_NAME[m])}</span>)}
@@ -133,16 +134,18 @@ export default function RoutineEdit() {
       </div>
     })()}
 
-    <div className="small dim row" style={{ margin: '10px 2px', gap: 5 }}><Icon name="link" style={{ fontSize: 13 }} />{t('Tap the link button on an exercise to superset it with the one above — you’ll do them back-to-back.')}</div>
-    <Button variant="primary" onClick={() => exercisePicker(ex => exConfigSheet(ex, null, cfg => edit(x => { x.push({ id: ex.id, ...cfg }) }), null, r))} icon="plus">{t('Add exercise')}</Button>
+    <div style={{ height: 12 }} />
+    <div className="row" style={{ gap: 8 }}>
+      <Button variant="primary" style={{ flex: 2 }} onClick={() => exercisePicker(ex => exConfigSheet(ex, null, cfg => edit(x => { x.push({ id: ex.id, ...cfg }) }), null, r))} icon="plus">{t('Add exercise')}</Button>
+      <Button style={{ flex: 1 }} onClick={() => openActivityEditor({ routineId: id })}>{t('Add activity')}</Button>
+    </div>
     <div style={{ height: 10 }} />
     <Button variant="danger" onClick={() => confirmSheet({
       title: t('Delete routine?'), message: t('“{0}” and its exercises will be removed.', r.name), confirmText: t('Delete'), danger: true,
       onConfirm: () => {
         update(s => {
           s.routines = s.routines.filter(x => x.id !== id)
-          Object.keys(s.week).forEach(k => { if (s.week[k] === id) delete s.week[k] })
-          Object.keys(s.dayPlan).forEach(k => { if (s.dayPlan[k] === id) delete s.dayPlan[k] })
+          removeRoutineAssignments(s,id)
         })
         nav('/plan')
       }

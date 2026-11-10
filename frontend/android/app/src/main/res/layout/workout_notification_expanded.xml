@@ -1,12 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:paddingTop="4dp" android:paddingBottom="8dp">
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="12dp" android:background="@drawable/workout_timer_panel">
-        <TextView android:id="@+id/workout_label" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginBottom="4dp" android:textAppearance="@android:style/TextAppearance.Material.Notification" />
-        <Chronometer android:id="@+id/workout_clock" android:textSize="32sp" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textAppearance="@android:style/TextAppearance.Material.Notification" />
-        <TextView android:id="@+id/workout_duration" android:textSize="32sp" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textAppearance="@android:style/TextAppearance.Material.Notification" />
+<!-- System decorations and text appearances retain Android theme/contrast.
+     Separate status, set and clock rows keep the expanded card easy to scan. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal"
+    android:gravity="center_vertical" android:paddingTop="6dp" android:paddingBottom="6dp">
+  <TextView android:id="@+id/accent_rail" android:layout_width="3dp" android:layout_height="64dp"
+      android:layout_marginEnd="12dp" android:importantForAccessibility="no" />
+  <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
+      <TextView android:id="@+id/workout_label" style="@style/TextAppearance.Compat.Notification.Title"
+          android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
+          android:includeFontPadding="false" android:textSize="13sp" android:textStyle="bold" android:maxLines="2" android:ellipsize="end" />
+      <TextView android:id="@+id/set_label" style="@style/TextAppearance.Compat.Notification"
+          android:layout_width="wrap_content" android:maxWidth="112dp" android:layout_height="wrap_content"
+          android:layout_marginStart="12dp" android:includeFontPadding="false"
+          android:textSize="12sp" android:textStyle="bold" android:maxLines="2" android:ellipsize="end" android:gravity="end" />
     </LinearLayout>
-    <LinearLayout android:id="@+id/rest_row" android:layout_marginTop="8dp" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="12dp" android:background="@drawable/workout_timer_panel">
-        <TextView android:id="@+id/rest_label" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginBottom="4dp" android:textAppearance="@android:style/TextAppearance.Material.Notification" />
-        <Chronometer android:id="@+id/rest_clock" android:textSize="28sp" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textAppearance="@android:style/TextAppearance.Material.Notification" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:orientation="horizontal" android:gravity="bottom">
+      <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical">
+        <TextView android:id="@+id/workout_duration_label" style="@style/TextAppearance.Compat.Notification"
+            android:layout_width="match_parent" android:layout_height="wrap_content" android:includeFontPadding="false"
+            android:textSize="11sp" android:maxLines="1" android:ellipsize="end" android:alpha="0.75" />
+        <Chronometer android:id="@+id/workout_clock" style="@style/TextAppearance.Compat.Notification.Title"
+            android:layout_width="wrap_content" android:layout_height="wrap_content" android:includeFontPadding="false"
+            android:fontFeatureSettings="tnum" android:textSize="30sp" android:textStyle="bold" />
+        <TextView android:id="@+id/workout_duration" style="@style/TextAppearance.Compat.Notification.Title"
+            android:layout_width="wrap_content" android:layout_height="wrap_content" android:includeFontPadding="false"
+            android:fontFeatureSettings="tnum" android:textSize="30sp" android:textStyle="bold" />
+      </LinearLayout>
+      <LinearLayout android:id="@+id/rest_row" android:layout_width="0dp" android:layout_weight="1"
+          android:layout_height="wrap_content" android:orientation="vertical" android:gravity="end" android:layout_marginStart="16dp">
+        <TextView android:id="@+id/rest_label" style="@style/TextAppearance.Compat.Notification"
+            android:layout_width="match_parent" android:layout_height="wrap_content" android:includeFontPadding="false"
+            android:textSize="11sp" android:maxLines="1" android:ellipsize="end" android:gravity="end" android:alpha="0.75" />
+        <Chronometer android:id="@+id/rest_clock" style="@style/TextAppearance.Compat.Notification.Title"
+            android:layout_width="wrap_content" android:layout_height="wrap_content" android:includeFontPadding="false"
+            android:fontFeatureSettings="tnum" android:textSize="30sp" android:textStyle="bold" />
+      </LinearLayout>
     </LinearLayout>
+  </LinearLayout>
 </LinearLayout>

@@ -1,16 +1,17 @@
 import { describe, expect, it } from 'vitest'
-import { applyTrainingPlan, calendarDeload, backoffRepOffsetFor, clampReps, defaultDeload, deloadStatus, deloadTargetFor, repBounds, repRangeEnabled, rirAdvice, streakTier, targetRirFor, targetRirRangeFor, trainingStreak } from './training-plan.js'
+import { applyTrainingPlan, backoffRepsFor, backoffWeightFor, calendarDeload, backoffRepOffsetFor, clampReps, defaultDeload, deloadStatus, deloadTargetFor, repBounds, repRangeEnabled, rirAdvice, streakTier, targetRirFor, targetRirRangeFor, trainingStreak } from './training-plan.js'
+const activity = [{id:'exercise',sets:[{done:true,r:8}]}]
 
 const base = { routines: [{ id: 'r', name: 'Push' }], week: { 1: 'r', 3: 'r', 5: 'r' }, dayPlan: {}, workouts: [] }
 describe('trainingStreak', () => {
   it('counts scheduled sessions, ignores rest days and leaves today pending', () => {
     const S = { ...base, workouts: [
-      { d: '2026-08-24', routineId: 'r' }, { d: '2026-08-26', routineId: 'r' }, { d: '2026-08-28', routineId: 'r' },
+      { d: '2026-08-24', routineId: 'r', entries:activity }, { d: '2026-08-26', routineId: 'r', entries:activity }, { d: '2026-08-28', routineId: 'r', entries:activity },
     ] }
     expect(trainingStreak(S, new Date('2026-08-31T16:00:00')).current).toBe(3)
   })
   it('breaks on a missed scheduled workout', () => {
-    const S = { ...base, workouts: [{ d: '2026-08-24', routineId: 'r' }, { d: '2026-08-28', routineId: 'r' }] }
+    const S = { ...base, workouts: [{ d: '2026-08-24', routineId: 'r', entries:activity }, { d: '2026-08-28', routineId: 'r', entries:activity }] }
     expect(trainingStreak(S, new Date('2026-08-29T12:00:00')).current).toBe(1)
   })
   it('uses progressive flame tiers that begin in yellow', () => {
@@ -18,6 +19,23 @@ describe('trainingStreak', () => {
     expect(streakTier(7)).toBe('orange')
     expect(streakTier(14)).toBe('redgold')
     expect(streakTier(100)).toBe('legend')
+  })
+  it.each([
+    [0, 14, 2], [7, 14, 2], [13, 14, 2], [14, 28, 4], [27, 28, 4],
+    [28, 56, 8], [30, 56, 8], [56, 112, 16], [224, 448, 64], [448, 896, 128],
+  ])('uses the shared week-equivalent milestone sequence after %i activity dates', (count, nextMilestone, nextMilestoneWeeks) => {
+    const date = new Date('2026-01-01T12:00:00')
+    const workouts = Array.from({ length: count }, (_, i) => {
+      const day = new Date(date)
+      day.setDate(day.getDate() + i)
+      const d = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`
+      return { id: 'synthetic-' + i, d, entries: activity }
+    })
+    date.setDate(date.getDate() + count)
+    const streak = trainingStreak({ ...base, week: {}, trainingStartDate: '2026-01-01', workouts }, date)
+    expect(streak).toMatchObject({ current: count, nextMilestone, nextMilestoneWeeks })
+    expect(streak.milestones.at(-1)).toBe(nextMilestone)
+    expect(streak.milestones.every(value => value % 14 === 0 && Number.isInteger(Math.log2(value / 14)))).toBe(true)
   })
 })
 
@@ -128,13 +146,13 @@ it('seeds new work sets from their own target without changing the prescription'
   const cfg={setScheme:'topback',topSets:1,backoffSets:2,topRepsMax:6,backoffRepsMax:8,topRirMin:1,topRirMax:2,backoffRirMin:2,backoffRirMax:3}
   const original=structuredClone(cfg)
   const sets=applyTrainingPlan([{w:20,r:8,warmup:true},{w:100,r:6,done:false}],cfg)
-  expect(sets.map(s=>s.rir)).toEqual([undefined,2,3,3])
+  expect(sets.map(s=>s.rir)).toEqual([undefined,1,2,2])
   sets[1].rir=.5; sets[1].done=true; sets[1].doneAt=30
   sets[2].rir=3; sets[2].done=true; sets[2].doneAt=20
   expect(rirAdvice(sets,cfg).kind).toBe('reduce')
   expect(cfg).toEqual(original)
 })
-it.each([[{targetRir:2},2],[{targetRirMin:1,targetRirMax:2},2],[{targetRirMin:1.5,targetRirMax:2.5},2.5]])('initializes a straight work set from the target upper bound', (cfg, expected) => {
+it.each([[{targetRir:3},3],[{targetRirMin:1,targetRirMax:3},1],[{targetRirMin:2,targetRirMax:4},2],[{targetRirMin:1.5,targetRirMax:2.5},1.5],[{targetRirMin:0,targetRirMax:2},0]])('initializes a straight work set from the target lower bound', (cfg, expected) => {
   const rows=applyTrainingPlan([{w:100,r:6,done:false}],cfg)
   expect(rows[0].rir).toBe(expected)
 })
@@ -158,4 +176,68 @@ it('respects role-specific legacy targets above the general range', () => {
 it('retains recorded deload status after cycle settings change',()=>{
  expect(calendarDeload({deload:{on:false},workouts:[{d:'2026-09-02',deload:true}]},'2026-09-02')).toBe(true)
  expect(calendarDeload({deload:{on:true,startDate:'2026-08-03'},workouts:[{d:'2026-09-02'}]},'2026-09-02')).toBe(false)
+})
+
+it('does not invent a strict target for free reps or cap AMRAP',()=>{
+ expect(clampReps({strictReps:true},{},{},17)).toBe(17)
+ expect(clampReps({strictReps:true},{reps:'AMRAP'},{},23)).toBe(23)
+ expect(clampReps({strictReps:true},{reps:5,amrap:true},{},18)).toBe(18)
+})
+
+
+describe('Back-off target invariants', () => {
+  it('uses the same defaults in editor, generation and updates, repairing legacy zero offsets', () => {
+    expect(backoffRepOffsetFor({})).toBe(2)
+    expect(backoffRepOffsetFor({topRepsMax:8,backoffRepsMax:8})).toBe(2)
+    expect(backoffRepOffsetFor({backoffRepOffset:0})).toBe(2)
+    expect(backoffRepOffsetFor({side:true,backoffRepOffset:8})).toBe(8)
+    expect(backoffRepOffsetFor({side:true})).toBe(4)
+  })
+  it('respects configured rep ranges and their upper-bound initial value', () => {
+    const cfg={setScheme:'topback',topRepsMin:4,topRepsMax:6,backoffRepOffset:2}
+    expect([0,4,5,6,20].map(v=>backoffRepsFor(v,cfg))).toEqual([6,6,7,8,8])
+    const fixed={...cfg,autoBackoffReps:false,backoffRepsMin:10,backoffRepsMax:12}
+    expect(backoffRepsFor(4,fixed)).toBe(12)
+    expect(applyTrainingPlan([{w:100,r:6}],fixed)[1]).toMatchObject({r:12,w:90})
+    expect(repBounds({reps:12,topRepsMax:6},'top')).toEqual({min:6,max:6})
+  })
+  it('rounds identically for initial and edited loads, preserving zero and cleared input', () => {
+    const cfg={setScheme:'topback',weight:100,backoffPct:50,reps:6}
+    for(const value of [0,0.5,1,2.5,100,105]) expect(applyTrainingPlan([{w:value,r:6}],cfg,2.5)[1].w).toBe(backoffWeightFor(value,cfg,2.5))
+    expect(backoffWeightFor(null,cfg)).toBeNull()
+    expect(backoffWeightFor(0,cfg)).toBe(0)
+    expect(backoffWeightFor(1.5,{backoffPct:1},2.5)).toBe(0)
+  })
+})
+
+
+describe('default Top range +2 Back-off prescription',()=>{
+ it.each([[4,6,6,8],[5,7,7,9],[6,8,8,10],[8,10,10,12],[5,5,7,7],[8,8,10,10]])('%i-%i becomes %i-%i for every Back-off', (min,max,backMin,backMax)=>{
+  const cfg={setScheme:'topback',topRepsMin:min,topRepsMax:max,reps:max,backoffSets:3,backoffPct:10,backoffRepsMin:min,backoffRepsMax:max}
+  expect(repBounds(cfg,'backoff')).toEqual({min:backMin,max:backMax})
+  const rows=applyTrainingPlan([{w:100,r:max}],cfg)
+  expect(rows.slice(1).map(s=>[s.w,s.r])).toEqual(Array(3).fill([90,backMax]))
+ })
+ it('repairs persisted automatic zero while retaining explicit positive offsets and independent ranges',()=>{
+  const cfg={setScheme:'topback',topRepsMin:4,topRepsMax:6,backoffRepOffset:0,backoffRepsMin:4,backoffRepsMax:6}
+  expect(repBounds(cfg,'backoff')).toEqual({min:6,max:8})
+  expect(repBounds({...cfg,backoffRepOffset:3},'backoff')).toEqual({min:7,max:9})
+  expect(repBounds({...cfg,autoBackoffReps:false,backoffRepsMin:10,backoffRepsMax:15},'backoff')).toEqual({min:10,max:15})
+  expect(repBounds({reps:8,repsMin:6},null)).toEqual({min:6,max:8})
+ })
+})
+
+it('materializes corrected ranges for new session/history snapshots without mutating the legacy routine',()=>{
+ const cfg={setScheme:'topback',topRepsMin:6,topRepsMax:8,backoffRepOffset:0,backoffRepsMin:6,backoffRepsMax:8}
+ const next=deloadTargetFor(cfg,{active:false})
+ expect(next).toMatchObject({backoffRepOffset:2,backoffRepsMin:8,backoffRepsMax:10})
+ expect(cfg.backoffRepOffset).toBe(0)
+ expect(JSON.parse(JSON.stringify(next))).toEqual(next)
+})
+
+it('honors fixed Top reps even when a legacy routine retains an older range minimum',()=>{
+ const cfg={setScheme:'topback',repRange:false,reps:5,topRepsMin:3,topRepsMax:5,backoffRepOffset:0}
+ expect(repBounds(cfg,'top')).toEqual({min:5,max:5})
+ expect(repBounds(cfg,'backoff')).toEqual({min:7,max:7})
+ expect(deloadTargetFor(cfg,{active:false})).toMatchObject({backoffRepsMin:7,backoffRepsMax:7})
 })

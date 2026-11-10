@@ -1,10 +1,12 @@
-import { effectiveRoutine } from './history.js'
+import { dailyPlan } from './daily-plan.js'
+import { isTrainingPaused, openTrainingPause } from './training-pause.js'
 import { isoOf } from './format.js'
 import { deloadStatus } from './training-plan.js'
+import { validReminderTime } from './measurement-reminders.js'
 
 export const DELOAD_NOTIFICATION_IDS = [3200, 3201]
 export function deloadNotificationPlan(S, now = new Date()) {
-  if (!S.deload?.on || S.deload?.notifications === false) return []
+  if (openTrainingPause(S) || isTrainingPaused(S, isoOf(now)) || !S.deload?.on || S.deload?.notifications === false) return []
   const status = deloadStatus(S, isoOf(now))
   if (!status.nextStart) return []
   const start = status.active ? status.start : status.nextStart
@@ -20,20 +22,28 @@ export function deloadNotificationPlan(S, now = new Date()) {
         const [h,m] = to.split(':').map(Number); at.setHours(h,m,0,0)
       }
     }
-    return at > now ? [{id:DELOAD_NOTIFICATION_IDS[index], at, start, end:status.end}] : []
+    return at > now && !isTrainingPaused(S, isoOf(at)) ? [{id:DELOAD_NOTIFICATION_IDS[index], at, start, end:status.end}] : []
   }).filter((notice,index,all) => all.findIndex(n => +n.at === +notice.at) === index)
 }
 
 export const WORKOUT_NOTIFICATION_IDS = [100, 101, 102, 103, 104, 105, 106]
 const timeOf = (value, fallback) => /^([01]\d|2[0-3]):[0-5]\d$/.test(value || '') ? value : fallback
+export function workoutReminderValidation(S) {
+  const settings = S.reminder || {}
+  const times = [settings.time, settings.nextTime, ...Object.values(settings.dayTimes || {}), ...(settings.quietOn ? [settings.quietStart, settings.quietEnd] : [])]
+  if (times.some(time => time != null && !validReminderTime(time))) return {valid:false, reason:'Enter a valid time'}
+  const ids = new Set((S.routines || []).map(routine => routine.id))
+  const scheduled = [...Object.values(S.week || {}), ...Object.values(S.dayPlan || {})].flat().some(id => ids.has(id))
+  if (!scheduled) return {valid:false, reason:'Add a workout to your schedule'}
+  return {valid:true, reason:null}
+}
 export function workoutNotificationPlan(state, now = new Date()) {
-  if (!state.reminder?.on) return []
+  if (!Number.isFinite(+now) || isTrainingPaused(state, isoOf(now)) || !state.reminder?.on || !workoutReminderValidation(state).valid) return []
   const S = {week:{},dayPlan:{},routines:[],workouts:[],...state}
   const today = isoOf(now), settings = S.reminder
   const pending = date => {
-    const routine = effectiveRoutine(S,date)
-    // The current calendar model treats any saved session as completing that day.
-    return routine && !S.workouts.some(w=>w.d === date) ? routine : null
+    const plan = dailyPlan(S,date), routine = plan.pending[0]?.routine
+    return routine ? {...routine,remaining:plan.pending.length} : null
   }
   const atTime = (date, time) => {
     const at = new Date(`${date}T${time}:00`)
@@ -46,14 +56,14 @@ export function workoutNotificationPlan(state, now = new Date()) {
   }
   const notices = [], routine = pending(today)
   const at = atTime(today,timeOf(settings.dayTimes?.[now.getDay()] || settings.time,'08:00'))
-  if (routine && at) notices.push({id:100,kind:'today',routineId:routine.id,name:routine.name,date:today,at})
+  if (routine && at) notices.push({id:100,kind:'today',routineId:routine.id,name:routine.name,remaining:routine.remaining,date:today,at})
   const nextAt = atTime(today,timeOf(settings.nextTime,'19:00'))
   if (nextAt) {
     const day = new Date(`${today}T12:00:00`)
     for (let offset=1;offset<=366;offset++) {
       day.setDate(day.getDate()+1)
       const date = isoOf(day), next = pending(date)
-      if (next) { notices.push({id:101,kind:offset===1?'tomorrow':'next',routineId:next.id,name:next.name,date,at:nextAt}); break }
+      if (next) { notices.push({id:101,kind:offset===1?'tomorrow':'next',routineId:next.id,name:next.name,remaining:next.remaining,date,at:nextAt}); break }
     }
   }
   return notices

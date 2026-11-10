@@ -2,8 +2,9 @@
   "appId": "app.framegym.mobile",
   "appName": "TGym",
   "webDir": "dist",
-  "backgroundColor": "#0c0e12",
+  "backgroundColor": "#000000",
   "android": {
-    "allowMixedContent": true
+    "allowMixedContent": true,
+    "adjustMarginsForEdgeToEdge": "auto"
   }
 }

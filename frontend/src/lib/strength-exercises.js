@@ -62,13 +62,13 @@ export function primaryMuscleOf(entry) {
   return best
 }
 
-function resolvedExerciseName(entry) {
+function resolvedExerciseName(entry, S) {
   // Imported history often has no name snapshot (entries are { id, sets, topW }) - the
   // catalogue (or the registered custom) is the canonical name source.
-  const ex = entry && typeof entry === 'object' ? EXIDX[entry.id] : null
-  if (ex?.n) return exerciseNameFor(ex)
-  if (entry?.muscleSnapshot?.n) return entry.muscleSnapshot.n
-  return entry && typeof entry === 'object' && entry.n ? entry.n : null
+  if (!entry || typeof entry !== 'object') return null
+  const ex = (S?.customEx || []).find(exercise => exercise.id === entry.id) || EXIDX[entry.id]
+  const original = ex || { id: entry.id, n: entry.muscleSnapshot?.n || entry.exercise?.n || entry.n || entry.id }
+  return exerciseNameFor(original, S)
 }
 
 function firstEntryWithId(S, id) {
@@ -98,7 +98,7 @@ export function strengthExerciseRows(S, now) {
     const decay = lastAt == null ? STRENGTH_FLOOR : strengthFromAge(Number(now) - lastAt)
     rows.push({
       id,
-      name: resolvedExerciseName(entry) || id,
+      name: resolvedExerciseName(entry, S) || id,
       est: best.est,
       estDate: best.d,
       primary: primaryMuscleOf(entry) ? primaryMuscleOf(entry).slug : null,
@@ -130,7 +130,7 @@ export function strengthExerciseRowsForMuscle(S, now, slug) {
       const primary = primaryMuscleOf(entry)
       seen.set(entry.id, {
         id: entry.id,
-        name: resolvedExerciseName(entry) || entry.id,
+        name: resolvedExerciseName(entry, S) || entry.id,
         weight,
         primary: primary ? primary.slug : null,
         est: best.est,

@@ -1,0 +1,16 @@
+/* Preserve Today's day widths and compact square shape in both modules. */
+.today-week-calendar .week { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:6px; }
+.today-week-calendar .week>.wday { min-width:0; min-height:44px; aspect-ratio:1; padding:4px 1px; border-radius:12px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; }
+.today-week-calendar .week>.wday .lbl { font-size:10px; line-height:1.1; }
+.today-week-calendar .week>.wday .num,.today-week-calendar .week>.wday.today .num { margin:0; font-size:21px; line-height:1; }
+.today-week-calendar .week>.wday .dot { width:5px; height:5px; margin:0 auto; flex:none; }
+.today-week-calendar .today-row { display:flex; align-items:center; gap:10px; }
+.today-week-calendar .today-row-icon { display:grid; place-items:center; line-height:1; width:44px; height:44px; border-radius:10px; padding:0; flex:none; }
+.today-week-calendar .today-row-icon.highlighted { color:var(--on-acc); }
+.today-week-calendar .today-row-icon>.icn { display:block; margin:0; width:21px; height:21px; }
+.today-week-calendar .today-row-main { display:flex; align-items:center; justify-content:space-between; gap:8px; flex:1; min-width:0; min-height:44px; padding:0; text-align:left; }
+.today-week-calendar .today-row-copy { flex:1; min-width:0; }
+.today-week-calendar .today-row-main>.tag { flex:none; }
+.today-week-calendar button:focus-visible { outline:2px solid var(--acc); outline-offset:3px; }
+.nutrition-back-today { display:block; margin:10px auto 0; padding:4px 8px; color:var(--acc); font-size:13px; }
+.today-week-calendar .nutrition-day-summary .ttl { font-size:clamp(16px,4.5vw,20px); line-height:1.15; white-space:normal; overflow:visible; text-overflow:clip; overflow-wrap:anywhere; }

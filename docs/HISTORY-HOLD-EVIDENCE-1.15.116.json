@@ -1,0 +1,125 @@
+{
+  "version": "1.15.116",
+  "androidVersionCode": 152,
+  "runtimeSourceCommit": "8aff0e3cad81a11cb72f7c2cf457d123c697916d",
+  "holdDurationMs": 1500,
+  "change": "Timer, release fallback and CSS progress share one 1500ms constant; English 1.5 / Spanish 1,5 hints match. Previous input defenses retained.",
+  "verification": {
+    "frontend": {
+      "tests": 3247,
+      "files": 266,
+      "successfulExactSourceCiLogVerified": true
+    },
+    "localBackend": {
+      "apiTests": 24,
+      "mcpTests": 38,
+      "plainNodeImportGraph": true,
+      "freshFinalSourceLogs": true
+    },
+    "androidEmulator": {
+      "tests": 53,
+      "failures": 0,
+      "skipped": 0,
+      "artifactId": 13279928601,
+      "artifactSha256": "d93c644b69536ee43a345da68ae393c5dd3ff2675c848b33fa24eb8015566d4b"
+    },
+    "compiledBrowser": {
+      "contexts": 4,
+      "checkGroups": 36,
+      "runtimeErrors": 0,
+      "dataPreserved": true,
+      "shortHold1400Closed": true,
+      "hold1500Opened": true,
+      "release1600Survives": true,
+      "expandControlWorks": true,
+      "workerSourceAndCacheVerified": true,
+      "offlineExercised": false,
+      "priorVersionMigrationExercised": false
+    },
+    "actualPublicBrowser": {
+      "contexts": 4,
+      "checkGroups": 36,
+      "runtimeErrors": 0,
+      "dataPreserved": true,
+      "shortHold1400Closed": true,
+      "hold1500Opened": true,
+      "release1600Survives": true,
+      "expandControlWorks": true,
+      "workerSourceAndCacheVerified": true,
+      "offlineExercised": false,
+      "priorVersionMigrationExercised": false
+    },
+    "localAndroid": {
+      "debugApkCompiled": true,
+      "installed": false,
+      "gradleExitCode": 0,
+      "lintErrors": 0,
+      "lintWarnings": 22
+    }
+  },
+  "physicalDevices": {
+    "freshPixelTest": false,
+    "qaApkInstalled": false,
+    "freshIphoneTest": false,
+    "physicalAcceptanceInherited": false
+  },
+  "publication": {
+    "release": "https://github.com/Truesilverking/TGym/releases/tag/v1.15.116",
+    "workflow": "https://github.com/Truesilverking/TGym/actions/runs/41740247902",
+    "publishedAt": "2026-11-03T23:38:23Z",
+    "apkSha256": "151bb28ecd3218e41011d5c2037e29c16a76aad1a4242ae1cb80ef6ee2c84dbd",
+    "aabSha256": "67690342a088171f187b89899096e4e8d951833f3652b197f289972563a883ad",
+    "officialSignerSha256": "8ee233c984615e2b3f6f083dc0c47d148bb8956ff7caca97be0b9a0d260e6082",
+    "releasePagesApkParity": true,
+    "pwaFilesChecked": 51,
+    "sharedRuntimeAssets": 55,
+    "forbiddenArtworkExcluded": true,
+    "broadcastSkipped": true,
+    "requiredCiRuns": [
+      {
+        "id": 41739232486,
+        "name": "Tests",
+        "event": "push",
+        "url": "https://github.com/Truesilverking/TGym/actions/runs/41739232486",
+        "conclusion": "success"
+      },
+      {
+        "id": 41739243374,
+        "name": "Tests",
+        "event": "pull_request",
+        "url": "https://github.com/Truesilverking/TGym/actions/runs/41739243374",
+        "conclusion": "success"
+      },
+      {
+        "id": 41739232313,
+        "name": "Validate PWA",
+        "event": "push",
+        "url": "https://github.com/Truesilverking/TGym/actions/runs/41739232313",
+        "conclusion": "success"
+      },
+      {
+        "id": 41739232315,
+        "name": "Validate Android",
+        "event": "push",
+        "url": "https://github.com/Truesilverking/TGym/actions/runs/41739232315",
+        "conclusion": "success"
+      },
+      {
+        "id": 41739233714,
+        "name": "Build signed Android candidate",
+        "event": "workflow_dispatch",
+        "url": "https://github.com/Truesilverking/TGym/actions/runs/41739233714",
+        "conclusion": "success"
+      }
+    ],
+    "protectedMainReviewRetained": true
+  },
+  "limits": {
+    "allDefectsEliminated": false,
+    "physicalDeviceTimingVerified": false,
+    "osInstalledPwaVerified": false,
+    "nativeIosBuildVerified": false,
+    "offlineOrPreviousWorkerUpgradeRetested": false,
+    "newGifOrReportClaim": false
+  }
+}

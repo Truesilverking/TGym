@@ -1,10 +1,14 @@
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
+import { MemoryRouter, useNavigate } from 'react-router-dom'
 import { Window } from 'happy-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MUSCLES, levelsOf } from '../lib/muscles.js'
 import { FATIGUE_STATES, STRENGTH_FLOOR } from '../lib/recovery.js'
 import { fatigueStateOf } from '../lib/recovery-view.js'
+import { useUI } from '../store/useUI.js'
+import ReportsExport from '../components/ReportsExport.jsx'
+import { STATS_SECTIONS } from '../lib/stats-sections.js'
 import Stats from './Stats.jsx'
 
 const DAY = 86400000
@@ -12,6 +16,7 @@ const HOUR = 3600000
 const BASE_NOW = Date.UTC(2026, 0, 22, 12)
 
 const mocks = vi.hoisted(() => ({
+  section: 'muscles',
   maps: [],
   mapMounts: 0,
   S: {
@@ -23,7 +28,6 @@ const mocks = vi.hoisted(() => ({
 vi.mock('../store/useStore.js', () => ({
   useStore: selector => selector({ S: mocks.S }),
 }))
-vi.mock('react-router-dom', () => ({ useNavigate: () => () => {} }))
 vi.mock('../sheets.jsx', () => ({
   bwSheet: () => {}, goalSheet: () => {}, measurementsSheet: () => {}, heightSheet: () => {}, sessionTimingSheet: () => {}, inBodySheet: () => {}, confirmSheet: () => {}, workoutDetailSheet: () => {},
   WorkoutRow: () => React.createElement('div'), bwDeltaColor: () => 'inherit',
@@ -53,6 +57,8 @@ vi.mock('../components/BodyMap.jsx', () => ({
 let dom
 let root
 let container
+let reportRoot
+let reportContainer
 
 function iso(timestamp) {
   return new Date(timestamp).toISOString().slice(0, 10)
@@ -106,19 +112,26 @@ function allSubfullWorkout(now = BASE_NOW) {
 }
 
 function resetFixture(workouts = lifecycleWorkouts()) {
+  mocks.section = 'muscles'
   mocks.S.unit = 'kg'
   mocks.S.bodyweight = []
   mocks.S.workouts = workouts
   mocks.maps.length = 0
   mocks.mapMounts = 0
+  // These recovery/rep tests exercise the selected cards, not hidden pre-mounts.
+  mocks.S.statsSections=['history','consistency','muscles','exercise']
+  delete mocks.S.trainingStartDate
 }
 
 function installDom() {
   dom = new Window({ url: 'http://localhost/' })
   globalThis.window = dom
   globalThis.document = dom.document
+  globalThis.getComputedStyle = dom.getComputedStyle.bind(dom)
+  globalThis.requestAnimationFrame = dom.requestAnimationFrame.bind(dom)
+  globalThis.cancelAnimationFrame = dom.cancelAnimationFrame.bind(dom)
   Object.defineProperty(globalThis, 'navigator', { configurable: true, value: dom.navigator })
-  for (const key of ['HTMLElement', 'HTMLIFrameElement', 'Node', 'Element', 'Event', 'MouseEvent']) {
+  for (const key of ['HTMLElement', 'HTMLIFrameElement', 'Node', 'Element', 'Event', 'MouseEvent', 'PointerEvent', 'ResizeObserver', 'MutationObserver', 'IntersectionObserver']) {
     globalThis[key] = dom[key]
   }
   globalThis.IS_REACT_ACT_ENVIRONMENT = true
@@ -129,11 +142,19 @@ function installDom() {
 
 async function mountStats() {
   installDom()
-  await act(async () => { root.render(React.createElement(Stats)) })
+  function RouterProbe(){mocks.navigate=useNavigate();return null}
+  await act(async () => { root.render(<MemoryRouter initialEntries={['/stats?section='+mocks.section]}><Stats/><RouterProbe/></MemoryRouter>) })
 }
+const showSection = section => act(async()=>mocks.navigate('/stats?section='+section))
 
 async function unmountStats() {
   if (!root) return
+  if (reportRoot) {
+    await act(async () => { reportRoot.unmount() })
+    reportRoot = null
+    reportContainer.remove()
+    reportContainer = null
+  }
   await act(async () => { root.unmount() })
   root = null
   container = null
@@ -171,10 +192,97 @@ async function tick(milliseconds) {
 const lastMap = () => mocks.maps.at(-1)
 const expectPressed = button => expect(button?.getAttribute('aria-pressed')).toBe('true')
 
+it('opens the existing multi-report selector from one circular download control while preserving other Stats controls',async()=>{
+ resetFixture();await mountStats()
+ expect(container.textContent).not.toContain('Export Reports')
+ expect(container.textContent).not.toContain('Consistency Report')
+ const buttons=container.querySelectorAll('.hdr button.iconbtn[aria-label="Export Reports"]')
+ expect(buttons).toHaveLength(1)
+ expect(container.querySelector('[aria-label="Export Stats report"]')).toBeNull()
+ expect(container.querySelector('[aria-label="Progress Report"]')).not.toBeNull()
+ expect(container.querySelector('[aria-label="Print / Save as PDF"]')).not.toBeNull()
+ expect(container.querySelector('[aria-label="History"]')).not.toBeNull()
+ expect(container.querySelector('[aria-label="InBody history"]')).not.toBeNull()
+ const before=JSON.stringify(mocks.S)
+ await click(buttons[0])
+ expect(useUI.getState().sheets).toHaveLength(1)
+ const dialog=useUI.getState().sheets[0].render(()=>{})
+ expect(dialog.type).toBe(ReportsExport)
+ expect(dialog.props.S).toBe(mocks.S)
+ expect(dialog.props.pdf).toBe(true)
+ expect(JSON.stringify(mocks.S)).toBe(before)
+})
+
+it('exports independently of hidden Stats sections and retains the complete profile after closing and reopening',async()=>{
+ mocks.section='bodyweight'
+ mocks.S.statsSections=['bodyweight']
+ mocks.S.trainingStartDate=iso(BASE_NOW-DAY)
+ mocks.S.bodyweight=[{d:iso(BASE_NOW-30*DAY),w:75},{d:iso(BASE_NOW),w:80}]
+ const before=JSON.stringify(mocks.S)
+ await mountStats()
+ expect(container.querySelector('[data-stats-section="history"]').hidden).toBe(true)
+ expect(container.querySelector('[data-stats-section="consistency"]').hidden).toBe(true)
+ expect(container.querySelector('[data-stats-section="bodyweight"]').hidden).toBe(false)
+ const download=container.querySelector('.hdr [aria-label="Export Reports"]')
+ const anchorClick=vi.spyOn(dom.HTMLAnchorElement.prototype,'click').mockImplementation(()=>{})
+ const open=async()=>{
+   await click(download)
+   const sheet=useUI.getState().sheets[0]
+   const dialog=sheet.render(()=>useUI.getState().closeSheet(sheet.id))
+   expect(dialog.props.S).toBe(mocks.S)
+   expect(dialog.props.pdf).toBe(true)
+   expect(dialog.props.S.workouts).toHaveLength(lifecycleWorkouts().length)
+   expect(dialog.props.S.bodyweight).toHaveLength(2)
+   reportContainer=document.createElement('div');document.body.append(reportContainer);reportRoot=createRoot(reportContainer)
+   await act(async()=>reportRoot.render(dialog))
+ }
+ await open()
+ const reportChoice=title=>[...reportContainer.querySelectorAll('.report-choice')].find(label=>label.textContent.startsWith(title)).querySelector('input')
+ expect(reportChoice('Progress Report')).toBeTruthy()
+ expect([...reportContainer.querySelectorAll('[data-report]')].map(node=>node.dataset.report)).toEqual(['streak','consistency','progress','stats'])
+ expect(reportContainer.querySelector('[data-report="history"]')).toBeNull()
+ expect(reportContainer.querySelector('[data-report="plan"]')).toBeNull()
+ expect(reportContainer.querySelector('[data-report="backup"]')).toBeNull()
+ expect(reportChoice('Stats').checked).toBe(false)
+ await click(reportChoice('Stats'))
+ expect(reportChoice('Stats').checked).toBe(true)
+ const statsOptions=reportContainer.querySelector('[data-report="stats"] .report-settings')
+ expect(statsOptions.querySelectorAll('input[type="checkbox"], [role="checkbox"]')).toHaveLength(STATS_SECTIONS.length)
+ for(const [,label] of STATS_SECTIONS)expect(statsOptions.textContent).toContain(label)
+ expect(JSON.stringify(mocks.S)).toBe(before)
+ const close=buttonWithText(reportContainer,'Cancel')
+ await click(close)
+ expect(useUI.getState().sheets).toHaveLength(0)
+ expect(anchorClick).not.toHaveBeenCalled()
+ await act(async()=>reportRoot.unmount());reportRoot=null;reportContainer.remove();reportContainer=null
+ await open()
+ expect(reportChoice('Stats').checked).toBe(false)
+ expect(mocks.S.statsSections).toEqual(['bodyweight'])
+ expect(JSON.stringify(mocks.S)).toBe(before)
+ expect(anchorClick).not.toHaveBeenCalled()
+})
+
+it('forwards the current independent Stats filters when opening the PDF chooser',async()=>{
+ mocks.section='bodyweight'
+ mocks.S.statsSections=['overview','duration','muscles','effort','bodyweight']
+ await mountStats()
+ await click(buttonWithText(container.querySelector('[data-stats-section="bodyweight"]'),'1M'))
+ await showSection('overview');await showSection('duration');await showSection('effort')
+ await showSection('muscles')
+ await click(balanceRangeButton('30d'))
+ await click(viewButton('Strength'))
+ await click(container.querySelector('.hdr [aria-label="Export Reports"]'))
+ const dialog=useUI.getState().sheets[0].render(()=>{})
+ expect(dialog.props.pdf).toBe(true)
+ expect(dialog.props.statsFilters).toMatchObject({bodyweightRange:30,musclesRange:30,musclesView:'strength',durationRange:90,overviewPeriod:'30',effortRange:90})
+ expect(dialog.props.S.statsSections).toEqual(['overview','duration','muscles','effort','bodyweight'])
+})
+
 beforeEach(() => {
   vi.useFakeTimers()
   vi.setSystemTime(BASE_NOW)
   resetFixture()
+  useUI.setState({sheets:[]})
 })
 
 afterEach(async () => {
@@ -184,6 +292,16 @@ afterEach(async () => {
 })
 
 describe('Stats muscle recovery view runtime', () => {
+  it.each([{ side: true, reps: 16 }, { side: true, repsPerSide: true, reps: 8 }])('shows unloaded per-side records as 8 reps for %j', async cfg => {
+    resetFixture([workout('side', BASE_NOW, [{ id: '0025', target: { mode: 'reps', ...cfg }, sets: [set(true, { w: 0, r: cfg.reps })] }])])
+    mocks.section='exercise'
+    await mountStats()
+    expect(container.textContent).toContain('8 reps')
+    expect(container.textContent).not.toContain('16 reps')
+    expect(container.textContent).toContain('8 / side')
+    await showSection('muscles')
+    expect(mocks.S.workouts[0].entries[0].sets[0].r).toBe(cfg.reps)
+  })
   it('dispatches real clicks through Balance, Fatigue, and Strength and preserves selection', async () => {
     await mountStats()
     expectPressed(viewButton('Muscle balance'))

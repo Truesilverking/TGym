@@ -3,6 +3,7 @@
    tool call without a restart. */
 import fs from 'node:fs'
 import path from 'node:path'
+import { registerCustom } from '../../frontend/src/lib/exercises.js'
 
 const DATA_DIR = process.env.OPENGYM_DATA || path.join(process.cwd(), 'data')
 
@@ -62,7 +63,10 @@ export function init() {
   const file = stateFile(_uid)
   if (fs.existsSync(file)) {
     _state = readJsonOrNull(file)
-    if (_state) _state = Object.assign({}, defaultsShape(), _state)
+    if (_state) {
+      _state = Object.assign({}, defaultsShape(), _state)
+      registerCustom(_state?.customEx || [])
+    }
     try { _loadedMtime = fs.statSync(file).mtimeMs } catch {}
   }
   if (_watcher) _watcher.close()
@@ -101,6 +105,7 @@ export function getState() {
       // field the app added since the snapshot was last saved shows up undefined-safe.
       _state = Object.assign({}, defaultsShape(), fresh)
       _loadedMtime = mtime
+      registerCustom(_state?.customEx || [])
     } else if (_state === undefined) {
       _state = null  // no state file at all — never signed in on a device
     }
@@ -122,6 +127,7 @@ export function _seedStateForTests(state) {
   _uid = 'test-uid'
   _db = { users: [{ id: _uid, name: 'Test', created: '2026-07-26T00:00:00.000Z' }], creds: [], subs: [], invites: [] }
   _state = state
+  registerCustom(_state?.customEx || [])
   _loadedMtime = Number.MAX_SAFE_INTEGER   // never re-read from disk in a test
   if (_watcher) { _watcher.close(); _watcher = null }
 }

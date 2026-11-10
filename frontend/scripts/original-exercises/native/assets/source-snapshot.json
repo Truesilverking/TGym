@@ -1,0 +1,76 @@
+{
+  "status": "frozen source; user-approved style and low upright EZ variant; final encoded-export acceptance pending",
+  "privateFrozenSources": {
+    "equipment-b.mjs": "26986d9d35e7aca3b9a675baa6115f686b054267f9bf89a74f0aa1b843d18d4b",
+    "motions-a.mjs": "121727c509938ee7cb312f03d71f71c93bdb78c6edfbc24db033cf8a86279fa5",
+    "motions-root.mjs": "d54d13cd12f9739cb6feaf49d1bc43de9875191b8bfe042ed294533c65579c96",
+    "head.mjs": "05c227715f0c686c39822e36c7afe80fbb587cf4999018874742f190f8fcef97",
+    "projected-surface.mjs": "0c955df4a27091e648999a3a3c057bdc52a6fba2387b9d92300fea07dde99d7b",
+    "envelope.mjs": "5a3efed03da20527a2a07aae839748bc67f5208a97555c070676fb6e1e5b1d4f"
+  },
+  "portedSourceSha256": {
+    "avatar.mjs": "278c7b7e8f0fa5ecba077f484d8d247b9a3d700ac16395a3e327e6b96971de38",
+    "body-envelope.mjs": "b02327ca2507e772c9a44419404679bc17aa5750b0de974392f856c11dfc36ab",
+    "equipment.mjs": "26986d9d35e7aca3b9a675baa6115f686b054267f9bf89a74f0aa1b843d18d4b",
+    "hands.mjs": "6ad347f38ca650be3a950d98f919d11e98cc3c6fd28c3565399a1d78f1cb971b",
+    "head.mjs": "003fecc24aedb4def02ee2aaac2d14c3544dbe353d3087227bed1c996a606571",
+    "index.html": "74a4250d8edd65d2fbacaff14819bf2588fcbf2fdc66fbdc55be20c11e4a6a92",
+    "mechanical-acceptance.json": "775e3eef4f2f32a74d04c63d4aa74b04608a04d9109543384ed0d49004093bdc",
+    "package-lock.json": "dc0e7ebd79c4ad9c62d2e523fd10e2e9b0edadacba35168458ac0946043c0774",
+    "package.json": "327becf317e83dd0ec1d6af979491fe522184e43439451c11d7c6daf9751506d",
+    "poses-main.mjs": "d54d13cd12f9739cb6feaf49d1bc43de9875191b8bfe042ed294533c65579c96",
+    "poses-upper.mjs": "121727c509938ee7cb312f03d71f71c93bdb78c6edfbc24db033cf8a86279fa5",
+    "projected-surface.mjs": "3568eb65bf2ed71d63ab4670aa81eda4eecaccc817244b1c41d7f77102a9bdf6",
+    "README.md": "6b8cbe17abe49ebc730fc764b76559125f56566644aaf8c9ebd57276ec7808d7",
+    "render.mjs": "77b6513a6c625ee658a7cff1d9504d7a50a164659959c5a2286bc04aadaa854c",
+    "rig.mjs": "d278cb85e2d1dfccea174a99e184e49609cf4ced2dc237b4f034815c0b3d1adc",
+    "scene.mjs": "03d19a67d820183a587ade8e3d1afa3803b79bee2a731517a5aa2a8b94067c59",
+    "verify-export.mjs": "6a68bcc2a505d56273cc2aa790a983d5a00664120908ca637202212c9bb1128c"
+  },
+  "modelSourceSha256": {
+    "model/body_superficial.app5m.glb": "ce9859de013c2ee9713dbe3158275208b57be1b4ff31957eca87195b991c0ab1",
+    "model/data/muscles.json": "da930e89dd70ac65b2a960df3bf20321898a5171716400a14dc620e6dedc9883",
+    "model/data/za_map.json": "3a7466ea3537854db373364060f3428c3d1d22df683d1c4065a09519ade498af",
+    "model/LICENSE-CC-BY-SA-4.0.txt": "28a9529c7d0bb4dc51f4bf5c116a3d16ef247a052f7591466768ddf563fd1cf5",
+    "model/NOTICE.md": "c315d1c2a59cfb6f7cd722526f98a60bb15ff6f3391f653f64db29d59a8a89de",
+    "model/UPSTREAM-MANIFEST.json": "0c1d96b8f9241e8ddc3848b91bd59739d4474d8501f3586efdb85a7d7d4cfb90",
+    "model/UPSTREAM-NOTICE.md": "9c01aa0fc9e302bd8bfb15f6431a0d53aa3d99f895c2cec1ef895d294ee4cb73"
+  },
+  "bakedAvatarInputs": {
+    "assets/anatomy-surface-atlas.png": "9f458b5fe36b983fecb499d45929a84a02b87420dbc615a294a1e235b9aa7e01",
+    "assets/anatomy-surface-input.png": "39ef3d9eeec0dab69f6ee89827dc0e2e60147985fbaabe71d37a383b46a03596",
+    "assets/anatomy-surface-prompt.md": "7c44c445ec946f2187ddf2ec81b65b470e78e681af16ef36e5c9ae267d9eb972",
+    "assets/body-envelope-source-proof.json": "1aa11460da483ce089a17a6adfef7518bc9b199f42c098c352a403ffa297a657",
+    "assets/body-envelope.mesh.bin": "785ca9f4b5da05beca774fde4c3de387ffbbd3b58ebaa0dd83488f8164a2c612",
+    "assets/body-envelope.mesh.json": "bec10e9d983312fa21c786eacadb102f8302656ce4fb356d8feb4c849c646885",
+    "assets/head-geometry.json": "505634911266358ba673e55aeef396c511db3d2dcaf9edc68e4fab09c5c714b1",
+    "assets/head-refinement-proof.json": "ba8f9011386c4defd3a485e40659f44a83725dd4163dda97953058f653b18019",
+    "assets/head-source.json": "cebf1b1fba61705e83918f78c9f98b0dd720e23e3a425d60fa704558b30eaacd",
+    "assets/LICENSE-MAKEHUMAN-CC0.md": "f6089cba01cb570a24712b41ab8a586ccd3cc5ef53dc266ca50b95c288956d2c",
+    "assets/NOTICE.md": "f0dce2c461756946497092cb0d58af188bd0405367e895d62abe2e6eb125b1cf",
+    "assets/opengym-walk-manifest.json": "bc40498f7f1228e5d9a6c9e7b23cc8f32f69e382d05457ea5d8bd3d1d0f42046",
+    "assets/source-provenance.json": "c5cc9f18b26a066c23577c103490e10f457bfb2a601442b297e83a4517452c7e"
+  },
+  "parity": {
+    "proof": ".tools/media-106/style-source-a/port-proof-final-v3/proof.json",
+    "poseJSONIdenticalExercises": 5,
+    "PNGByteIdenticalExercises": 4,
+    "calfRoundoff": {
+      "differentPixels": 1,
+      "maximumChannelDifference": 1,
+      "channelsScale": 255,
+      "acceptedByRoot": true
+    },
+    "productionDrawsPerPose": 1,
+    "privateDrawsPerPose": 3,
+    "pageErrors": []
+  },
+  "skinEquipmentReview": {
+    "full13x48": ".tools/media-106/style-v2/geometry-review-b-final/measurements-index.json",
+    "rearCamera2x48": ".tools/media-106/style-v2/geometry-review-b-rear-cameras/measurements-index.json",
+    "geometryAndIDsChangedBySoleusMask": false,
+    "aggregateFinalReport": "B completing independently; no source changes permitted during export"
+  },
+  "requiredIndependentExportChecks": 174,
+  "exportedExercisesDuringPort": 0
+}

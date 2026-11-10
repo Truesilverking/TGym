@@ -516,6 +516,62 @@ describe('muscle_balance', () => {
 
 /* ---------- shared: no-state fallback ---------- */
 
+/* ---------- custom exercises, aliases, warmups, cancelled workouts ---------- */
+
+describe('custom exercises, aliases, warmups, and cancelled workouts', () => {
+  test('handles custom exercises with aliases, ignores warmups in PRs, and excludes cancelled workouts', () => {
+    S.customEx = [{ id: 'custom-squat', n: 'Custom Squat', bp: 'upper legs' }]
+    S.exerciseAliases = { 'custom-squat': 'My Belt Squat' }
+    S.workouts = [
+      {
+        id: 'w-cancelled',
+        d: '2026-07-26',
+        status: 'cancelled',
+        entries: [{ id: 'custom-squat', sets: [{ w: 300, r: 10, done: true }] }]
+      },
+      {
+        id: 'w-active',
+        d: '2026-07-27',
+        entries: [
+          {
+            id: 'custom-squat',
+            sets: [
+              { w: 200, r: 5, done: true, warmup: true },
+              { w: 100, r: 5, done: true }
+            ]
+          }
+        ]
+      }
+    ]
+    _seedStateForTests(S)
+
+    // 1. list_workouts excludes cancelled workout
+    const workouts = call('list_workouts').workouts
+    expect(workouts.length).toBe(1)
+    expect(workouts[0].id).toBe('w-active')
+
+    // 2. estimate_1rm with PR table uses alias, custom exercise bp, ignores warmups and cancelled workouts
+    const prs = call('estimate_1rm').pr_table
+    const customPr = prs.find(p => p.exId === 'custom-squat')
+    expect(customPr).toBeDefined()
+    expect(customPr.exName).toBe('My Belt Squat')
+    expect(customPr.bp).toBe('upper legs')
+    expect(customPr.w).toBe(100)
+    expect(customPr.r).toBe(5)
+    expect(customPr.est).toBe(116.7)
+
+    // 3. estimate_1rm for specific exercise uses alias
+    const single = call('estimate_1rm', { exercise_id: 'custom-squat' })
+    expect(single.exercise.name).toBe('My Belt Squat')
+    expect(single.exercise.body_part).toBe('upper legs')
+    expect(single.best).toEqual({ est: 116.7, w: 100, r: 5, date: '2026-07-27' })
+
+    // 4. get_workout uses alias for entry name
+    const workoutDetail = call('get_workout', { workout_id: 'w-active' })
+    expect(workoutDetail.entries[0].name).toBe('My Belt Squat')
+  })
+})
+
 describe('shared: no-state fallback', () => {
   test('every tool answers gracefully when state is null (fresh account, never signed in)', () => {
     _seedStateForTests(null)

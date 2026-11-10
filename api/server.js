@@ -1,3 +1,4 @@
+import { nextRoutineId } from './workout-plan.js';
 /* opengym-api — passkey (WebAuthn) auth + per-user state storage for openGym
    No framework, JSON-file storage, signed session cookies.               */
 import http from 'node:http';
@@ -11,8 +12,10 @@ import {
   generateAuthenticationOptions, verifyAuthenticationResponse
 } from '@simplewebauthn/server';
 import webpush from 'web-push';
-import { dayReminderPush, restTimerPush, testPush } from './push-messages.js';
+import { dayReminderPush, testPush } from './push-messages.js';
+import { createPushTimers, timerSeconds, timerDeadline } from './push-timers.js';
 import { verifyError } from './verify-error.js';
+import { createWithings } from './withings.js';
 
 const PORT = +(process.env.PORT || 3000);
 const DATA = process.env.DATA_DIR || '/data';
@@ -43,6 +46,7 @@ fs.mkdirSync(DATA, { recursive: true });
 const secretFile = path.join(DATA, 'secret');
 if (!fs.existsSync(secretFile)) fs.writeFileSync(secretFile, crypto.randomBytes(32).toString('hex'), { mode: 0o600 });
 const SECRET = fs.readFileSync(secretFile, 'utf8').trim();
+const withings = createWithings({ directory: DATA, secret: SECRET, clientId: process.env.WITHINGS_CLIENT_ID, clientSecret: process.env.WITHINGS_CLIENT_SECRET, redirectUri: process.env.WITHINGS_REDIRECT_URI });
 
 const dbFile = path.join(DATA, 'db.json');
 let db = { users: [], creds: [], subs: [], invites: [] };
@@ -50,15 +54,28 @@ try { db = JSON.parse(fs.readFileSync(dbFile, 'utf8')); } catch {}
 db.subs = db.subs || [];
 db.invites = db.invites || [];
 const isAdmin = user => !!user && (user.admin === true || ADMIN_UIDS.includes(user.id));
+let tmpSeq = 0;
 function saveDb() { atomicWrite(dbFile, JSON.stringify(db, null, 2)); }
 function atomicWrite(file, content) {
-  const tmp = file + '.tmp';
+  const tmp = `${file}.${process.pid}.${++tmpSeq}.tmp`;
   fs.writeFileSync(tmp, content);
   fs.renameSync(tmp, file);
 }
 const stateFile = uid => path.join(DATA, 'state-' + uid.replace(/[^a-zA-Z0-9_-]/g, '') + '.json');
+const stateCache = new Map();
 function readState(uid) {
-  try { return JSON.parse(fs.readFileSync(stateFile(uid), 'utf8')); } catch { return null; }
+  const file = stateFile(uid);
+  try {
+    const stat = fs.statSync(file);
+    const cached = stateCache.get(uid);
+    if (cached && cached.mtimeMs === stat.mtimeMs) return cached.state;
+    const state = JSON.parse(fs.readFileSync(file, 'utf8'));
+    stateCache.set(uid, { mtimeMs: stat.mtimeMs, state });
+    return state;
+  } catch {
+    stateCache.delete(uid);
+    return null;
+  }
 }
 
 /* ---------- push notifications (Web Push / VAPID) ---------- */
@@ -146,14 +163,12 @@ async function sendPush(userId, payload) {
   const worker = async () => {
     while (next < subs.length) {
       const sub = subs[next++];
-      // urgency 'high' is the one lever we have over delivery speed — iOS/Android throttle
-      // low-urgency background push more aggressively under battery-saving modes. TTL is left
-      // at the library default (long) so a briefly-offline device still gets it once reconnected,
-      // rather than risking it being dropped for the sake of shaving off latency that TTL doesn't
-      // actually control anyway.
+      // Timer cues are useful for two minutes, not days after an offline device
+      // reconnects. Other reminders retain the existing delivery lifetime.
       try {
         await webpush.sendNotification({ endpoint: sub.endpoint, keys: sub.keys }, body,
-          { urgency: 'high', timeout: PUSH_TIMEOUT_MS, agent: PUSH_AGENT });
+          { urgency: 'high', timeout: PUSH_TIMEOUT_MS, agent: PUSH_AGENT,
+            ...(['rest-timer','work-timer'].includes(payload.tag)?{TTL:120}:{}) });
       } catch (e) {
         console.error('push send failed', userId, e.statusCode, e.body || e.message);
         if (e.statusCode === 404 || e.statusCode === 410) {
@@ -166,31 +181,11 @@ async function sendPush(userId, payload) {
   if (dirty) saveDb();
 }
 
-// Rest-timer alerts: client schedules on start/extend, cancels on skip or on-screen completion —
-// this only fires when the tab was backgrounded/suspended and never got to cancel it itself.
-const restTimers = new Map(); // userId -> Timeout
-function scheduleRestTimer(userId, sec, lang) {
-  const t = restTimers.get(userId);
-  if (t) clearTimeout(t);
-  restTimers.set(userId, setTimeout(() => {
-    restTimers.delete(userId);
-    sendPush(userId, restTimerPush(lang));
-  }, sec * 1000));
-}
-function cancelRestTimer(userId) {
-  const t = restTimers.get(userId);
-  if (t) { clearTimeout(t); restTimers.delete(userId); }
-}
+// Optional timer alerts keep the client deadline. These never mutate workout data;
+// the service worker deduplicates the push with an on-page timer completion.
+const pushTimers = createPushTimers(sendPush);
 
 // "Workout planned today" reminder — one per user per day, at their chosen time.
-// Duplicated (not imported) from frontend/src/lib/history.js effectiveRoutineId — tiny pure helper, not worth sharing across the two runtimes.
-function effectiveRoutineId(S, iso) {
-  const ov = S.dayPlan?.[iso];
-  if (ov === 'rest') return null;
-  if (ov && S.routines?.some(r => r.id === ov)) return ov;
-  const wd = new Date(iso + 'T12:00:00').getDay();
-  return S.week?.[wd] || null;
-}
 // Computes "now" in an arbitrary IANA zone (e.g. "Europe/Lisbon") instead of the server's own —
 // each user's reminder fires by their own clock, wherever they and their phone actually are.
 function userNow(tz) {
@@ -209,10 +204,9 @@ setInterval(() => {
     const S = readState(user.id);
     if (!S?.reminder?.on) continue;
     const now = userNow(S.reminder.tz || 'UTC');
-    if (!now || S.reminder.time !== now.hhmm) continue;
+    if (!now || (S.reminder.dayTimes?.[new Date(now.date+'T12:00:00').getDay()] || S.reminder.time) !== now.hhmm) continue;
     if (user.lastReminder === now.date) continue;
-    if ((S.workouts || []).some(w => w.d === now.date)) continue;
-    const rid = effectiveRoutineId(S, now.date);
+    const rid = nextRoutineId(S, now.date);
     if (!rid) continue; // rest day — nothing planned
     const routine = (S.routines || []).find(r => r.id === rid);
     console.log('reminder firing', user.id, rid);
@@ -523,6 +517,33 @@ if (AUDIT_ON) {
 
 /* ---------- routes ---------- */
 const routes = {
+  'GET /api/withings/status': async (req, res) => {
+    const user = readSession(req); if (!user) return json(res, 401, { error: 'not signed in' });
+    res.setHeader('Cache-Control', 'no-store'); json(res, 200, withings.status(user.id));
+  },
+  'POST /api/withings/connect': async (req, res) => {
+    const user = readSession(req); if (!user) return json(res, 401, { error: 'not signed in' });
+    try { res.setHeader('Cache-Control', 'no-store'); json(res, 200, withings.start(user.id)); }
+    catch (error) { json(res, error.status || 502, { error: error.code || 'withings-unavailable' }); }
+  },
+  'GET /api/withings/callback': async (req, res) => {
+    let ok = false;
+    try { await withings.callback(new URL(req.url, 'https://callback.invalid').searchParams); ok = true; } catch {}
+    res.writeHead(ok ? 200 : 400, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'none'", 'Referrer-Policy': 'no-referrer', 'X-Content-Type-Options': 'nosniff' });
+    res.end('<!doctype html><html lang="en"><meta name="viewport" content="width=device-width"><title>Withings</title><body style="font:20px system-ui;background:#111;color:#fff;padding:32px"><h1>Withings</h1><p>' + (ok ? 'Connected. Return to TGym and select Sync now.' : 'Connection was not completed. Return to TGym and try again.') + '</p></body></html>');
+  },
+  'POST /api/withings/sync': async (req, res) => {
+    const user = readSession(req); if (!user) return json(res, 401, { error: 'not signed in' });
+    const body = await readBody(req);
+    if (!body || typeof body !== 'object' || Array.isArray(body) || body.since != null && (typeof body.since !== 'number' || !Number.isFinite(body.since) || body.since < 0 || body.since > Date.now() + 60000)) return json(res, 400, { error: 'invalid sync cursor' });
+    try { res.setHeader('Cache-Control', 'no-store'); json(res, 200, await withings.measures(user.id, body.since)); }
+    catch (error) { json(res, error.status || 502, { error: error.code || 'withings-unavailable' }); }
+  },
+  'POST /api/withings/disconnect': async (req, res) => {
+    const user = readSession(req); if (!user) return json(res, 401, { error: 'not signed in' });
+    try { await withings.disconnect(user.id); json(res, 200, { ok: true }); }
+    catch { json(res, 500, { error: 'withings-disconnect-failed' }); }
+  },
   'GET /api/health': async (req, res) => json(res, 200, { ok: true, users: db.users.length }),
 
   // Public config the login screen needs before anyone is signed in.
@@ -674,7 +695,7 @@ const routes = {
   // A logout with no valid cookie is a no-op and isn't worth an entry.
   'POST /api/logout': async (req, res) => {
     const user = readSession(req);
-    if (user) audit(req, 'auth.logout', { user });
+    if (user) { pushTimers.cancelAll(user.id); audit(req, 'auth.logout', { user }); }
     json(res, 200, { ok: true }, { 'Set-Cookie': clearCookie });
   },
 
@@ -686,6 +707,7 @@ const routes = {
     const user = readSession(req);
     if (!user) return json(res, 401, { error: 'not signed in' });
     user.sv = sessionVersion(user) + 1;
+    pushTimers.cancelAll(user.id);
     saveDb();
     audit(req, 'auth.logout.all', { user });
     json(res, 200, { ok: true }, { 'Set-Cookie': clearCookie });
@@ -735,9 +757,10 @@ const routes = {
     const user = readSession(req);
     if (!user) return json(res, 401, { error: 'not signed in' });
     const body = await readBody(req);
-    if (!body.state || typeof body.state !== 'object') return json(res, 400, { error: 'state required' });
+    if (!body.state || typeof body.state !== 'object' || Array.isArray(body.state)) return json(res, 400, { error: 'state required' });
     delete body.state.active;              // in-progress workouts stay device-local
     atomicWrite(stateFile(user.id), JSON.stringify(body.state));
+    stateCache.delete(user.id);
     json(res, 200, { ok: true, ts: body.state._ts || null });
   },
 
@@ -788,16 +811,36 @@ const routes = {
     const user = readSession(req);
     if (!user) return json(res, 401, { error: 'not signed in' });
     const body = await readBody(req);
-    const sec = Math.max(1, Math.min(3600, Math.round(+body.seconds || 0)));
-    if (!sec) return json(res, 400, { error: 'seconds required' });
-    scheduleRestTimer(user.id, sec, readState(user.id)?.lang);
+    const sec = timerSeconds(body?.seconds);
+    if (sec === null) return json(res, 400, { error: 'seconds must be between 1 and 3600' });
+    const deadline = timerDeadline(body.endsAt, sec);
+    if (deadline === null) return json(res, 400, { error: 'invalid timer deadline' });
+    if (!pushTimers.schedule('rest', user.id, sec, readState(user.id)?.lang, deadline)) return json(res, 400, { error: 'timer already expired' });
     json(res, 200, { ok: true });
   },
 
   'POST /api/push/rest-timer/cancel': async (req, res) => {
     const user = readSession(req);
     if (!user) return json(res, 401, { error: 'not signed in' });
-    cancelRestTimer(user.id);
+    pushTimers.cancel('rest',user.id);
+    json(res, 200, { ok: true });
+  },
+
+  'POST /api/push/work-timer': async (req, res) => {
+    const user = readSession(req);
+    if (!user) return json(res, 401, { error: 'not signed in' });
+    const body = await readBody(req), sec = timerSeconds(body?.seconds);
+    if (sec === null) return json(res, 400, { error: 'seconds must be between 1 and 3600' });
+    const deadline = timerDeadline(body.endsAt,sec);
+    if (deadline === null) return json(res,400,{error:'invalid timer deadline'});
+    if (!pushTimers.schedule('work',user.id,sec,readState(user.id)?.lang,deadline)) return json(res,400,{error:'timer already expired'});
+    json(res, 200, { ok: true });
+  },
+
+  'POST /api/push/work-timer/cancel': async (req, res) => {
+    const user = readSession(req);
+    if (!user) return json(res, 401, { error: 'not signed in' });
+    pushTimers.cancel('work',user.id);
     json(res, 200, { ok: true });
   },
 
@@ -814,6 +857,7 @@ const routes = {
         startedAt: +body.startedAt || Date.now(),
         pausedDurationMs: Number.isFinite(body.pausedDurationMs) ? Math.max(0, body.pausedDurationMs) : 0,
         timerPausedAt: Number.isFinite(body.timerPausedAt) ? body.timerPausedAt : null,
+        lastUserInteractionAt: Number.isFinite(body.lastUserInteractionAt) && body.lastUserInteractionAt >= (+body.startedAt || 0) && body.lastUserInteractionAt <= Date.now() ? body.lastUserInteractionAt : null,
         updatedAt: Date.now()
       });
     } else presence.delete(user.id);
@@ -865,7 +909,7 @@ const routes = {
     if (!u) return json(res, 404, { error: 'no such user' });
     if (isAdmin(u)) return json(res, 400, { error: 'cannot disable an admin' });
     u.disabled = !!body.disabled;
-    if (u.disabled) presence.delete(u.id);   // drop them off "training now" at once
+    if (u.disabled) { presence.delete(u.id); pushTimers.cancelAll(u.id); }   // drop them off "training now" at once
     saveDb();
     audit(req, u.disabled ? 'admin.user.disable' : 'admin.user.enable', { user: admin, target: u });
     json(res, 200, { ok: true, id: u.id, disabled: u.disabled });

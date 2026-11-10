@@ -1,0 +1,723 @@
+{
+  "version": "1.15.113",
+  "versionCode": 149,
+  "sourceCommit": "b491f31d648e7c813038c6adb06b454c38f475c0",
+  "clientDate": "2026-11-03",
+  "recordedAt": "2026-11-03T20:11:23.637Z",
+  "features": {
+    "compactHistoricalExerciseList": true,
+    "longPressMilliseconds": 2000,
+    "keyboardAndAssistiveActivation": true,
+    "centeredExistingExerciseMedia": true,
+    "savedSetRolesAndOrderPreserved": true,
+    "readOnlySetDetails": true,
+    "compactHistoryCalendarOnly": true,
+    "unchangedTodayNutritionAndStreakControls": true
+  },
+  "fixes": {
+    "nativeImageDragCancelsPendingHold": true,
+    "historyDraftConflictGuard": true,
+    "latestRecordSeedsEdit": true,
+    "primaryQuotaRetainsDraftAndRecords": true,
+    "successWaitsForDurableMirror": true,
+    "failedMirrorRetryIsIdempotent": true,
+    "historicalUnitsRemainAuthoritative": true,
+    "alreadyMatchingUnitsPreservePrecision": true,
+    "mixedUnitVolumeProjection": true,
+    "unitAwareHistoryCsvAndStrengthSeries": true,
+    "fullPrecisionStatsMassProjection": true,
+    "unitAwareStatsHtmlAndPdfSourceModels": true
+  },
+  "frontend": {
+    "tests": 3154,
+    "files": 265,
+    "run": 41707717093,
+    "job": 126167338222,
+    "downloadedLogSha256": "289d7947e7b32246146af48dd3e489c2b012658d0fc4f65f2c8045db13de3438"
+  },
+  "api": {
+    "tests": 24,
+    "failures": 0,
+    "skipped": 0,
+    "unchangedSource": true,
+    "logSha256": "77fce6ae428923b46794fed273bd79c2e56a97cadd3e6d54c204e357362cfa1b"
+  },
+  "mcp": {
+    "tests": 38,
+    "files": 2,
+    "plainNodeImportGraph": true,
+    "testedSourceMatchesTaggedAfterLineEndingNormalization": true,
+    "sourceFiles": [
+      {
+        "path": "frontend/src/lib/history.js",
+        "committedSha256": "8af291c090f58b3bc5f46a5749024fdde89f2ed9170f6a300fd8ae9b5beaeecc",
+        "testedWorkingSha256": "8a42ba413ec9d7238e6ef3faec694f83f992a471d77d6de78e92f25685a1e9a7",
+        "testedSourceMatchesTaggedAfterLineEndingNormalization": true
+      },
+      {
+        "path": "frontend/src/lib/unit-conversion.js",
+        "committedSha256": "af71bca9768d8b4c162c28fafa263e97e67981ea9ec96c71b3ab2b946368cafe",
+        "testedWorkingSha256": "7917c8452d41d97b4d3db4f921ddec7fa7f832c701f80db88f739522bf107a11",
+        "testedSourceMatchesTaggedAfterLineEndingNormalization": true
+      },
+      {
+        "path": "frontend/src/lib/weight-units.js",
+        "committedSha256": "c062b3d12a2b913e634996f2dd4284ca6ed63b50f665d3ce5c3629f8fe826995",
+        "testedWorkingSha256": "c062b3d12a2b913e634996f2dd4284ca6ed63b50f665d3ce5c3629f8fe826995",
+        "testedSourceMatchesTaggedAfterLineEndingNormalization": true
+      },
+      {
+        "path": "frontend/src/lib/progress-report.js",
+        "committedSha256": "f0f0c8e0210af91514f54f8fa1ed1bbab3d5621800be6273c193938a381d6e69",
+        "testedWorkingSha256": "a2adfe9bee5376892ae4121b97f6c6e39f828511817ed4a3e55d30ea9ec561f8",
+        "testedSourceMatchesTaggedAfterLineEndingNormalization": true
+      },
+      {
+        "path": "frontend/src/lib/history-export.js",
+        "committedSha256": "d0e27116c1e419854f873f247f3f277de6af6202685c6936527de8a0e8621ad9",
+        "testedWorkingSha256": "689fdccce04a33a6eb87fca35fcea903a174f4eb21a7f3b8797eacffe70a96f1",
+        "testedSourceMatchesTaggedAfterLineEndingNormalization": true
+      },
+      {
+        "path": "frontend/src/lib/stats-weight-view.js",
+        "committedSha256": "9203ffe81577ba0240811cd3b47c9a1181f589a476947350613ee29921fd35b3",
+        "testedWorkingSha256": "9203ffe81577ba0240811cd3b47c9a1181f589a476947350613ee29921fd35b3",
+        "testedSourceMatchesTaggedAfterLineEndingNormalization": true
+      },
+      {
+        "path": "frontend/src/lib/stats-report.js",
+        "committedSha256": "8c8aa7019515eaeac4ac8940a4338b91f9f555fdb2b0632c736b153a5a1bddea",
+        "testedWorkingSha256": "3026fb2b6f6df25189632344f4236155ac94c7865c241fb0027000c029183d18",
+        "testedSourceMatchesTaggedAfterLineEndingNormalization": true
+      },
+      {
+        "path": "frontend/src/lib/stats-pdf.js",
+        "committedSha256": "d984e172d10501000f5fb501103a987d4c35bf7ad884700b93a20a8c6628fc52",
+        "testedWorkingSha256": "305c599e888aa05518bc48da61edecd63e97e041b55961e9f4a0c70a4d3fda1a",
+        "testedSourceMatchesTaggedAfterLineEndingNormalization": true
+      }
+    ],
+    "additionalUiSnapshot": {
+      "importedByNodeGraph": false,
+      "sourceFiles": [
+        {
+          "path": "frontend/src/views/Stats.jsx",
+          "committedSha256": "9878cee2f40732f4bd05b5386c8e7b7ddc888adcd9359edf4a79a5cf55b2ef60",
+          "testedWorkingSha256": "8a3f95bf8828f28a94d43d137ac4aa51938cc172b0ae597ee39cf8d519f8338d",
+          "testedSourceMatchesTaggedAfterLineEndingNormalization": true
+        }
+      ]
+    }
+  },
+  "localBuilds": {
+    "web": true,
+    "mobileSync": true,
+    "androidDebug": true,
+    "androidTestApkCompiled": true,
+    "androidLint": true,
+    "actualProcessExits": {
+      "web": 0,
+      "mobile": 0,
+      "native": 0
+    },
+    "lint": {
+      "errors": 0,
+      "warnings": 22,
+      "unchangedFrom112": true,
+      "xmlSha256": "00261d5ec604d420e99e150e6841da1db77b16fe60e07d8e253f7807468a69ea"
+    }
+  },
+  "native": {
+    "run": 41707717129,
+    "artifact": 13267226813,
+    "artifactSha256": "e41a6a6e164cd0f6f6e987b3b48773256ff53ae5a7952896b629d72c0fe87b28",
+    "artifactDigestMatched": true,
+    "crcValid": true,
+    "tests": 53,
+    "failures": 0,
+    "skipped": 0,
+    "duration": "59.465s",
+    "emulatorOnly": true
+  },
+  "compiledBrowser": {
+    "sourceCommit": "b491f31d648e7c813038c6adb06b454c38f475c0",
+    "actualPublic": false,
+    "cases": 6,
+    "additionalIsolatedContexts": 2,
+    "checkGroups": 96,
+    "runtimeErrors": 0,
+    "syntheticRecordsPreserved": true,
+    "exportsExecuted": 2,
+    "statsPdfExportsExecuted": 2,
+    "calendarExportsExecuted": 0,
+    "streakExportsExecuted": 0,
+    "statsPdf": {
+      "sourceCommit": "b491f31d648e7c813038c6adb06b454c38f475c0",
+      "actualPublic": false,
+      "actualUiPdfDownloads": 2,
+      "pdfPages": 4,
+      "browserProofSha256": "e1b62fc386653bb517704b4ca0476038eca2d6e5e5c2bfbaa6d6f22878b48db5",
+      "renderSummarySha256": "dc2b8c8a9be20108067ac493744412a1320d77f47ff4f15ff38a53b8257ab613",
+      "visualInspectionSha256": "dab54c23e0a9088ed45e277a1cc97187586c469addcf46bda752bdb4e9382e6a",
+      "allRenderedPagesVisuallyInspected": true,
+      "noObservedClippingOrOverlap": true,
+      "projectedValuesVerified": true,
+      "pdfFilesEdited": false,
+      "results": [
+        {
+          "context": "edge-390",
+          "actualUiDownload": true,
+          "pdfSha256": "accd09287e938cf03dcb809a7b1e69a0ac354abbfbd1af7e2fbe4e717870b089",
+          "pdfBytes": 289895,
+          "pdfPages": 2,
+          "generatedBlobEqualsDownload": true,
+          "projectedMassAndBmiLabelsVerified": true,
+          "rawHistoryAndMassRowsPreserved": true,
+          "svgSourceSha256": [
+            "64bac30640d5f6d1594fadf2900d580910c183c2c583cc151465fe6354f82e44",
+            "ce2d33cc17d331c32cc02f3fbcf7b1246b0b822ba4ea3a415fd848ee69a941cf"
+          ],
+          "pageImages": [
+            {
+              "page": 1,
+              "width": 893,
+              "height": 1263,
+              "sha256": "97c8376532fdac7ce1adb82fd3d567f54d22be32e4f0d5bbafceff206b83bd80"
+            },
+            {
+              "page": 2,
+              "width": 893,
+              "height": 1263,
+              "sha256": "1758abf94a622b3c648467a27a3df07bc9d918d63742c51b805f2f2fdd824fc3"
+            }
+          ]
+        },
+        {
+          "context": "webkit-390",
+          "actualUiDownload": true,
+          "pdfSha256": "0226c069124bef415f2c52a2a1bd93ff41d103e71764fd7aefb576e5a67cf259",
+          "pdfBytes": 207147,
+          "pdfPages": 2,
+          "generatedBlobEqualsDownload": true,
+          "projectedMassAndBmiLabelsVerified": true,
+          "rawHistoryAndMassRowsPreserved": true,
+          "svgSourceSha256": [
+            "cad8e3a3e5b8c83fb0184970dfab764b52b0df94fb619d76760c5fc9d1412491",
+            "0abcd04025dbd4b8641a5327a3fe517407a6e1f1510e2719b21c53b823396728"
+          ],
+          "pageImages": [
+            {
+              "page": 1,
+              "width": 893,
+              "height": 1263,
+              "sha256": "afbcb826d0359c41135825996f01e2442f701a863708d062323d5ee6134e3cba"
+            },
+            {
+              "page": 2,
+              "width": 893,
+              "height": 1263,
+              "sha256": "605e51e26c91ba465d616d29156444a383c078610737907f4b433b14c4a5e395"
+            }
+          ]
+        }
+      ]
+    },
+    "results": [
+      {
+        "context": "edge-320",
+        "engine": "edge",
+        "viewport": {
+          "width": 320,
+          "height": 740
+        },
+        "language": "en",
+        "theme": "light",
+        "pass": true,
+        "checkGroups": 16,
+        "trustedChromiumTouch": true,
+        "views": [
+          {
+            "level": "week",
+            "activeDates": 1,
+            "dateCells": 7,
+            "noHorizontalOverflow": true
+          },
+          {
+            "level": "month",
+            "activeDates": 2,
+            "dateCells": 30,
+            "noHorizontalOverflow": true
+          },
+          {
+            "level": "months",
+            "activeDates": 3,
+            "dateCells": 365,
+            "noHorizontalOverflow": true
+          }
+        ],
+        "protectedRecordsPreserved": true,
+        "isolatedUnitConversion": false
+      },
+      {
+        "context": "webkit-320",
+        "engine": "webkit",
+        "viewport": {
+          "width": 320,
+          "height": 740
+        },
+        "language": "es",
+        "theme": "dark",
+        "pass": true,
+        "checkGroups": 15,
+        "trustedChromiumTouch": false,
+        "views": [
+          {
+            "level": "week",
+            "activeDates": 1,
+            "dateCells": 7,
+            "noHorizontalOverflow": true
+          },
+          {
+            "level": "month",
+            "activeDates": 2,
+            "dateCells": 30,
+            "noHorizontalOverflow": true
+          },
+          {
+            "level": "months",
+            "activeDates": 3,
+            "dateCells": 365,
+            "noHorizontalOverflow": true
+          }
+        ],
+        "protectedRecordsPreserved": true,
+        "isolatedUnitConversion": false
+      },
+      {
+        "context": "edge-390",
+        "engine": "edge",
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "language": "es",
+        "theme": "dark",
+        "pass": true,
+        "checkGroups": 18,
+        "trustedChromiumTouch": true,
+        "views": [
+          {
+            "level": "week",
+            "activeDates": 1,
+            "dateCells": 7,
+            "noHorizontalOverflow": true
+          },
+          {
+            "level": "month",
+            "activeDates": 2,
+            "dateCells": 30,
+            "noHorizontalOverflow": true
+          },
+          {
+            "level": "months",
+            "activeDates": 3,
+            "dateCells": 365,
+            "noHorizontalOverflow": true
+          }
+        ],
+        "protectedRecordsPreserved": true,
+        "isolatedUnitConversion": true
+      },
+      {
+        "context": "webkit-390",
+        "engine": "webkit",
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "language": "en",
+        "theme": "light",
+        "pass": true,
+        "checkGroups": 17,
+        "trustedChromiumTouch": false,
+        "views": [
+          {
+            "level": "week",
+            "activeDates": 1,
+            "dateCells": 7,
+            "noHorizontalOverflow": true
+          },
+          {
+            "level": "month",
+            "activeDates": 2,
+            "dateCells": 30,
+            "noHorizontalOverflow": true
+          },
+          {
+            "level": "months",
+            "activeDates": 3,
+            "dateCells": 365,
+            "noHorizontalOverflow": true
+          }
+        ],
+        "protectedRecordsPreserved": true,
+        "isolatedUnitConversion": true
+      },
+      {
+        "context": "edge-desktop",
+        "engine": "edge",
+        "viewport": {
+          "width": 1440,
+          "height": 1000
+        },
+        "language": "en",
+        "theme": "dark",
+        "pass": true,
+        "checkGroups": 15,
+        "trustedChromiumTouch": false,
+        "views": [
+          {
+            "level": "week",
+            "activeDates": 1,
+            "dateCells": 7,
+            "noHorizontalOverflow": true
+          },
+          {
+            "level": "month",
+            "activeDates": 2,
+            "dateCells": 30,
+            "noHorizontalOverflow": true
+          },
+          {
+            "level": "months",
+            "activeDates": 3,
+            "dateCells": 365,
+            "noHorizontalOverflow": true
+          }
+        ],
+        "protectedRecordsPreserved": true,
+        "isolatedUnitConversion": false
+      },
+      {
+        "context": "webkit-desktop",
+        "engine": "webkit",
+        "viewport": {
+          "width": 1440,
+          "height": 1000
+        },
+        "language": "es",
+        "theme": "light",
+        "pass": true,
+        "checkGroups": 15,
+        "trustedChromiumTouch": false,
+        "views": [
+          {
+            "level": "week",
+            "activeDates": 1,
+            "dateCells": 7,
+            "noHorizontalOverflow": true
+          },
+          {
+            "level": "month",
+            "activeDates": 2,
+            "dateCells": 30,
+            "noHorizontalOverflow": true
+          },
+          {
+            "level": "months",
+            "activeDates": 3,
+            "dateCells": 365,
+            "noHorizontalOverflow": true
+          }
+        ],
+        "protectedRecordsPreserved": true,
+        "isolatedUnitConversion": false
+      }
+    ]
+  },
+  "publicBrowser": {
+    "sourceCommit": "b491f31d648e7c813038c6adb06b454c38f475c0",
+    "actualPublic": true,
+    "cases": 2,
+    "additionalIsolatedContexts": 1,
+    "checkGroups": 33,
+    "runtimeErrors": 0,
+    "syntheticRecordsPreserved": true,
+    "exportsExecuted": 1,
+    "statsPdfExportsExecuted": 1,
+    "calendarExportsExecuted": 0,
+    "streakExportsExecuted": 0,
+    "statsPdf": {
+      "sourceCommit": "b491f31d648e7c813038c6adb06b454c38f475c0",
+      "actualPublic": true,
+      "actualUiPdfDownloads": 1,
+      "pdfPages": 2,
+      "browserProofSha256": "ac5fa2a243698386092938817f2dc8d3d5e8e83b282e474d925a7b9bee0cadb2",
+      "renderSummarySha256": "6c0d66f37e9364cac95ce41da87e709a56cb267cb63941ee9878ff643182aa9d",
+      "visualInspectionSha256": "cdec883efb6380ca8e686bc02c6cc3be93ec881f18238e9901a0e5a52e8cd63e",
+      "allRenderedPagesVisuallyInspected": true,
+      "noObservedClippingOrOverlap": true,
+      "projectedValuesVerified": true,
+      "pdfFilesEdited": false,
+      "results": [
+        {
+          "context": "edge-390",
+          "actualUiDownload": true,
+          "pdfSha256": "843f391801ebad89605e4d8ddbbec093f11032bb209132fa5ab988e775765aba",
+          "pdfBytes": 289895,
+          "pdfPages": 2,
+          "generatedBlobEqualsDownload": true,
+          "projectedMassAndBmiLabelsVerified": true,
+          "rawHistoryAndMassRowsPreserved": true,
+          "svgSourceSha256": [
+            "64bac30640d5f6d1594fadf2900d580910c183c2c583cc151465fe6354f82e44",
+            "ce2d33cc17d331c32cc02f3fbcf7b1246b0b822ba4ea3a415fd848ee69a941cf"
+          ],
+          "pageImages": [
+            {
+              "page": 1,
+              "width": 893,
+              "height": 1263,
+              "sha256": "97c8376532fdac7ce1adb82fd3d567f54d22be32e4f0d5bbafceff206b83bd80"
+            },
+            {
+              "page": 2,
+              "width": 893,
+              "height": 1263,
+              "sha256": "1758abf94a622b3c648467a27a3df07bc9d918d63742c51b805f2f2fdd824fc3"
+            }
+          ]
+        }
+      ]
+    },
+    "results": [
+      {
+        "context": "webkit-320",
+        "engine": "webkit",
+        "viewport": {
+          "width": 320,
+          "height": 740
+        },
+        "language": "es",
+        "theme": "dark",
+        "pass": true,
+        "checkGroups": 15,
+        "trustedChromiumTouch": false,
+        "views": [
+          {
+            "level": "week",
+            "activeDates": 1,
+            "dateCells": 7,
+            "noHorizontalOverflow": true
+          },
+          {
+            "level": "month",
+            "activeDates": 2,
+            "dateCells": 30,
+            "noHorizontalOverflow": true
+          },
+          {
+            "level": "months",
+            "activeDates": 3,
+            "dateCells": 365,
+            "noHorizontalOverflow": true
+          }
+        ],
+        "protectedRecordsPreserved": true,
+        "isolatedUnitConversion": false
+      },
+      {
+        "context": "edge-390",
+        "engine": "edge",
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "language": "es",
+        "theme": "dark",
+        "pass": true,
+        "checkGroups": 18,
+        "trustedChromiumTouch": true,
+        "views": [
+          {
+            "level": "week",
+            "activeDates": 1,
+            "dateCells": 7,
+            "noHorizontalOverflow": true
+          },
+          {
+            "level": "month",
+            "activeDates": 2,
+            "dateCells": 30,
+            "noHorizontalOverflow": true
+          },
+          {
+            "level": "months",
+            "activeDates": 3,
+            "dateCells": 365,
+            "noHorizontalOverflow": true
+          }
+        ],
+        "protectedRecordsPreserved": true,
+        "isolatedUnitConversion": true
+      }
+    ]
+  },
+  "publicRegression": {
+    "cases": 4,
+    "checks": 23,
+    "runtimeErrors": 0,
+    "results": [
+      {
+        "engine": "edge",
+        "scenario": "start",
+        "pass": true,
+        "checks": 5,
+        "offlineColdOpen": true,
+        "updaterNoSelfReoffer": false
+      },
+      {
+        "engine": "edge",
+        "scenario": "resume",
+        "pass": true,
+        "checks": 7,
+        "offlineColdOpen": false,
+        "updaterNoSelfReoffer": true
+      },
+      {
+        "engine": "webkit",
+        "scenario": "start",
+        "pass": true,
+        "checks": 4,
+        "offlineColdOpen": false,
+        "updaterNoSelfReoffer": false
+      },
+      {
+        "engine": "webkit",
+        "scenario": "resume",
+        "pass": true,
+        "checks": 7,
+        "offlineColdOpen": false,
+        "updaterNoSelfReoffer": true
+      }
+    ]
+  },
+  "ciRuns": [
+    {
+      "id": 41707717093,
+      "name": "Tests",
+      "event": "push",
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/41707717093",
+      "conclusion": "success"
+    },
+    {
+      "id": 41707729901,
+      "name": "Tests",
+      "event": "pull_request",
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/41707729901",
+      "conclusion": "success"
+    },
+    {
+      "id": 41707717032,
+      "name": "Validate PWA",
+      "event": "push",
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/41707717032",
+      "conclusion": "success"
+    },
+    {
+      "id": 41707717129,
+      "name": "Validate Android",
+      "event": "push",
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/41707717129",
+      "conclusion": "success"
+    },
+    {
+      "id": 41707776712,
+      "name": "Build signed Android candidate",
+      "event": "workflow_dispatch",
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/41707776712",
+      "conclusion": "success"
+    }
+  ],
+  "release": {
+    "id": 433164193,
+    "url": "https://github.com/Truesilverking/TGym/releases/tag/v1.15.113",
+    "run": 41708889118,
+    "tagObject": "2d4109379398f0087fdb41e2faa0a9854f31bb13",
+    "apkSha256": "c0fa27f6c4146310158b094ca10f845ef1077e4fe1162bb06775168560990b4f",
+    "aabSha256": "67c2891ca3e64b34a8a7e03f1a1c7608fb8fcf7d7958743430e05f8b5750ae19",
+    "certificateSha256": "8ee233c984615e2b3f6f083dc0c47d148bb8956ff7caca97be0b9a0d260e6082",
+    "officialSigningContinuity": true,
+    "releaseAndPagesApkIdentical": true,
+    "pwaFilesChecked": 51,
+    "sharedRuntimeAssetsExact": 55,
+    "allReleasePagesFilesExact": true,
+    "publicManifestAndBuildExact": true,
+    "updateBroadcastSuppressed": true
+  },
+  "privacy": [
+    {
+      "kind": "candidate",
+      "knownForbiddenImageHashes": 92,
+      "scans": [
+        {
+          "kind": "apk",
+          "entries": 1108,
+          "forbiddenImageMatches": 0,
+          "gifFiles": 0
+        },
+        {
+          "kind": "aab",
+          "entries": 1112,
+          "forbiddenImageMatches": 0,
+          "gifFiles": 0
+        }
+      ]
+    },
+    {
+      "kind": "public",
+      "knownForbiddenImageHashes": 92,
+      "scans": [
+        {
+          "kind": "apk",
+          "entries": 1108,
+          "forbiddenImageMatches": 0,
+          "gifFiles": 0
+        },
+        {
+          "kind": "aab",
+          "entries": 1112,
+          "forbiddenImageMatches": 0,
+          "gifFiles": 0
+        },
+        {
+          "kind": "pwa",
+          "entries": 52,
+          "forbiddenImageMatches": 0,
+          "gifFiles": 0
+        }
+      ]
+    }
+  ],
+  "physicalEvidence": {
+    "pixel": false,
+    "iphone": false,
+    "phoneInstallation": false,
+    "nativeIos": false,
+    "originalAppAccessed": false,
+    "physicalDeviceAccessed": false,
+    "physicalFrameRate": false
+  },
+  "limits": {
+    "browserEngineTestingIsNotPhysicalIphone": true,
+    "trustedTouchUsesChromiumCdp": true,
+    "historyFailureCasesAreSyntheticTests": true,
+    "newStatsPdfDownloads": 3,
+    "newCalendarExports": 0,
+    "newStreakExports": 0,
+    "newPngDownloads": 0,
+    "webkitOfflineColdOpenClaimed": false,
+    "privateExerciseMediaApprovalUnchanged": true
+  },
+  "protectedMainRetainsIndependentReview": true
+}
