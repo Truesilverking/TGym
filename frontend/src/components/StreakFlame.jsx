@@ -1,17 +1,17 @@
-﻿import { streakVisual } from '../lib/streak-visual.js'
-import { STREAK_FLAME_PATH as PATH } from '../lib/streak-flame-path.js'
-import { STREAK_FLAME_IMAGE } from '../lib/streak-flame-image.js'
+import { useId } from 'react'
+import { streakVisual } from '../lib/streak-visual.js'
+import { STREAK_FLAME_PATH as PATH, STREAK_FLAME_VIEWBOX } from '../lib/streak-flame-path.js'
 
 export default function StreakFlame({ value = 0, className = '' }) {
+  const id = 'streak-fill-' + useId().replaceAll(':', '')
   const visual = streakVisual(value)
+  const fill = visual.active ? `url(#${id})` : 'none'
+  const opacity = visual.active ? 1 : 0
   return <span className={`streak-flame streak-${visual.tier} ${visual.active ? 'active' : 'inactive'} ${className}`} style={{ '--streak-intensity': visual.intensity }} aria-hidden="true">
-    <svg viewBox="0 0 24 24" focusable="false" draggable="false">
-      {visual.active
-        ? <image className="streak-flame-fill" href={STREAK_FLAME_IMAGE} x="0" y="0" width="24" height="24" preserveAspectRatio="xMidYMid meet" draggable="false" opacity="1" style={{ opacity: 1 }} />
-        : <>
-          <path className="streak-flame-fill" d={PATH} fill="none" opacity="0" style={{ fill: 'none', opacity: 0 }} />
-          <path className="streak-flame-outline" d={PATH} />
-        </>}
+    <svg viewBox={STREAK_FLAME_VIEWBOX} focusable="false" draggable="false">
+      <defs><linearGradient id={id} x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stopColor="var(--streak-flame-yellow, #ffd60a)" /><stop offset="100%" stopColor="var(--streak-flame-orange, #ff9f0a)" /></linearGradient></defs>
+      <path className="streak-flame-fill" d={PATH} fill={fill} opacity={opacity} style={{ fill, opacity }} />
+      <path className="streak-flame-outline" d={PATH} />
     </svg>
   </span>
 }

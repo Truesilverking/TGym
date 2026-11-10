@@ -1,8 +1,7 @@
 import { MONTHS_LONG } from './format.js'
 import { calendarGrid, calendarSvgLegend, calendarText as text, calendarRect as rect, escapeCalendarText as escape } from './calendar-grid.js'
 import { TRACKING_START_MARKER } from './calendar-visual.js'
-import { STREAK_FLAME_PATH } from './streak-flame-path.js'
-import { STREAK_FLAME_IMAGE } from './streak-flame-image.js'
+import { STREAK_FLAME_PATH, STREAK_FLAME_VIEWBOX } from './streak-flame-path.js'
 
 const NAVY = '#18324f', MUTED = '#52647c', BLUE = '#115bb2'
 export const calendarTextWidth = (value, size) => [...String(value)].reduce((width, char) => width + size * (/\s/.test(char) ? .3 : /[ilIt.,:!|]/.test(char) ? .3 : /[MW@%]/.test(char) ? .85 : char.codePointAt(0) > 0x2e80 ? 1 : .57), 0)
@@ -21,10 +20,7 @@ export function calendarWrappedText(x, y, value, maxWidth, size, lineHeight, wei
 
 function flame(value, x, y) {
   const active = Number(value) > 0
-  const artwork = active
-    ? `<image href="${STREAK_FLAME_IMAGE}" x="0" y="0" width="24" height="24" preserveAspectRatio="xMidYMid meet"/>`
-    : `<path d="${STREAK_FLAME_PATH}" fill="#e3e8ef" stroke="#718096" stroke-width="1.2" stroke-linejoin="round"/>`
-  return `<svg data-streak-flame="${active ? 'active' : 'inactive'}" x="${x}" y="${y}" width="66" height="72" viewBox="0 0 24 24" aria-hidden="true">${artwork}</svg>`
+  return `<svg data-streak-flame="${active ? 'active' : 'inactive'}" x="${x}" y="${y}" width="66" height="72" viewBox="${STREAK_FLAME_VIEWBOX}" aria-hidden="true"><defs><linearGradient id="report-streak-fill" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#ffd60a"/><stop offset="100%" stop-color="#ff9f0a"/></linearGradient></defs><path d="${STREAK_FLAME_PATH}" fill="${active ? 'url(#report-streak-fill)' : '#e3e8ef'}" stroke="${active ? '#9b4a06' : '#718096'}" stroke-width="1" stroke-linejoin="round"/></svg>`
 }
 
 function reportProfile(profile, top, palette) {

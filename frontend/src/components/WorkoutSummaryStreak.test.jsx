@@ -18,7 +18,7 @@ it.each([1, 4, 7, 14, 100])('shows a full highlighted flame for an active streak
   expect(host.querySelector('.workout-summary-streak-value').textContent).toBe(String(value))
   expect(host.querySelector('.workout-summary-streak.active')).not.toBeNull()
   expect(host.querySelector('.streak-flame.active')).not.toBeNull()
-  expect(host.querySelector('.streak-flame-fill').tagName.toLowerCase()).toBe('image')
+  expect(host.querySelector('.streak-flame-fill').tagName.toLowerCase()).toBe('path')
   expect(host.querySelector('.streak-flame-fill').getAttribute('opacity')).toBe('1')
   expect(host.textContent).toContain('Your consistency is paying off. Keep the flame alive!')
 })
@@ -35,8 +35,7 @@ it('fills the first valid day without a special filled option', () => {
   act(() => root.render(<StreakFlame value={1} />))
   const fill = host.querySelector('.streak-flame-fill')
   expect(fill.getAttribute('opacity')).toBe('1')
-  expect(fill.getAttribute('href')).toMatch(/^data:image\/png;base64,/)
-  expect(host.querySelector('.streak-flame-outline')).toBeNull()
+  expect(fill.getAttribute('d')).toBe(host.querySelector('.streak-flame-outline').getAttribute('d'))
 })
 
 it.each([

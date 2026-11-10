@@ -1,5 +1,7 @@
 # TGym streak flame
 
+Historical asset for version 1.16.1. Version 1.16.2 restores the original SVG flame; this PNG remains here as release provenance and is no longer included in the runtime.
+
 `streak-flame-1.16.1.png` is original artwork generated with the built-in ImageGen tool and refined with the owner's visual feedback. The direction is a compact orange-to-gold streak flame, a slightly elongated rounded body, asymmetric tips and a golden teardrop core.
 
 The optimized transparent PNG is 162 by 256 pixels. Packaging trims nearly invisible outer margins, adds a five-percent margin and resizes proportionally; it does not redraw or recolor the chosen design. Its SHA-256 is `6881ec10dac07a7b0972cf3c12ff5fc34ca5e7027759934475714feb2168daa9`.

@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.16.2
+
+- Restore the original yellow-orange Streak flame and make it larger throughout the app and Streak reports.
+- Retain active flame movement, motion preferences and the compact twelve-month annual calendar.
+
 ## 1.16.1
 
 - Give the Streak flame original orange-gold artwork and gentler motion across the app and Streak reports.

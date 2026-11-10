@@ -16,8 +16,8 @@
 .streak-calendar-heading { display:flex; flex-direction:column; gap:24px; margin-bottom:16px; }
 .streak-profile-summary { display:flex; align-items:center; gap:16px; min-width:0; }
 .streak-calendar-heading .streak-main { display:flex; align-items:center; justify-content:center; gap:7px; white-space:normal; flex:1; min-width:0; margin:0; }
-.zoomcal.streak-calendar .streak-calendar-heading .streak-main>.streak-flame { width:46px; height:52px; flex:none; }
-.zoomcal.streak-calendar .streak-calendar-heading .streak-main>.streak-flame>svg { transform:scale(1.25); transform-origin:center; }
+.zoomcal.streak-calendar .streak-calendar-heading .streak-main>.streak-flame { width:56px; height:62px; flex:none; }
+.zoomcal.streak-calendar .streak-calendar-heading .streak-main>.streak-flame>svg { transform:scale(1.1); transform-origin:center; }
 .zoomcal.streak-calendar .streak-calendar-heading .streak-main .streak-number { font-size:40px; line-height:1; }
 .streak-profile-identity { display:flex; justify-content:center; align-items:center; min-width:0; }
 .streak-profile { display:flex; align-items:center; justify-content:center; flex:none; padding:0; margin:0; border:0; border-radius:50%; background:transparent; }
@@ -165,7 +165,7 @@
 .zoomcal.streak-calendar[data-level="months"] .streak-profile-avatar { width:64px; height:64px; font-size:24px; border-width:2px; }
 .zoomcal.streak-calendar[data-level="months"] .streak-profile-name { max-height:2.4em; -webkit-line-clamp:2; font-size:20px; }
 .zoomcal.streak-calendar[data-level="months"] .streak-main { flex:0 1 auto; }
-.zoomcal.streak-calendar[data-level="months"] .streak-calendar-heading .streak-main>.streak-flame { width:36px; height:40px; }
+.zoomcal.streak-calendar[data-level="months"] .streak-calendar-heading .streak-main>.streak-flame { width:44px; height:52px; }
 .zoomcal.streak-calendar[data-level="months"] .streak-calendar-heading .streak-main .streak-number { font-size:32px; }
 .zoomcal.streak-calendar[data-level="months"] .zoomcal-nav { margin-bottom:8px; }
 .zoomcal.streak-calendar[data-level="months"] .zoomcal-periods.months { grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px 8px; }
@@ -180,3 +180,5 @@
 @container (max-width:230px) {
   .zoomcal.streak-calendar[data-level="months"] .zoomcal-periods.months { grid-template-columns:repeat(2,minmax(0,1fr)); }
 }
+
+.zoomcal.streak-calendar[data-level="months"] .streak-calendar-heading .streak-main>.streak-flame>svg { transform:scale(1.15); }
