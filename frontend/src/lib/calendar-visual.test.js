@@ -4,6 +4,7 @@ import { CALENDAR_STATES, CALENDAR_STATUS_IDS, TRACKING_START_MARKER, calendarLe
 import { calendarReportPages } from './calendar-report.js'
 import { buildStreakReport, streakReportPages } from './streak-report.js'
 import { calendarDay, calendarPeriod } from './calendar-data.js'
+import { STREAK_FLAME_IMAGE } from './streak-flame-image.js'
 
 const now = new Date('2027-01-06T12:00:00')
 const workout = (id, d) => ({ id, d, routineId: 'r', entries: [{ id: 'exercise', sets: [{ done: true, r: 8 }] }] })
@@ -208,7 +209,13 @@ describe('shared calendar state presentation', () => {
       for (const page of streakReportPages(state, { period: 'full', anchor: now, now, format })) {
         const doc = parse(page.svg), flame = doc.querySelector(`[data-streak-flame="${value}"]`)
         expect(flame).not.toBeNull()
-        expect(flame.querySelector('path').getAttribute('fill')).toBe(value === 'active' ? 'url(#report-streak-fill)' : '#e3e8ef')
+        if (value === 'active') {
+          expect(flame.querySelector('image').getAttribute('href')).toBe(STREAK_FLAME_IMAGE)
+          expect(flame.querySelector('path')).toBeNull()
+        } else {
+          expect(flame.querySelector('image')).toBeNull()
+          expect(flame.querySelector('path').getAttribute('fill')).toBe('#e3e8ef')
+        }
         expect(flame.querySelector('clipPath, mask, [opacity]')).toBeNull()
       }
     }
