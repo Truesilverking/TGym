@@ -10,22 +10,24 @@ import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { exOr, isCardio } from '../lib/exercises.js'
 import { ACTIVITY_TYPES } from '../lib/activities.js'
-import { lastEntryFor, bestWeightFor, buildSets, freestyleConfig, defaultConfig, setsDoneActive, supersetUnits, unitOf, setLabel, modeOf, isBw, isPerSide, sideReps, displayReps, storedReps, repStep, fmtSec, EFFORT, effortOf, stepEffort, cascadeWeight, cascadeTopBackWeight, cascadeTopBackReps, insertWarmupRow, removeRowAt, pairAdjacent, unpairSuperset, cleanupSg, applyIntensifierPlan, pinnedNoteFor, exNoteFor, rerampWarmups } from '../lib/history.js'
+import { lastEntryFor, bestWeightFor, freestyleConfig, defaultConfig, setsDoneActive, supersetUnits, unitOf, setLabel, modeOf, isBw, isPerSide, sideReps, displayReps, storedReps, repStep, fmtSec, EFFORT, effortOf, stepEffort, cascadeWeight, cascadeTopBackWeight, cascadeTopBackReps, insertWarmupRow, removeRowAt, pairAdjacent, unpairSuperset, cleanupSg, pinnedNoteFor, exNoteFor, rerampWarmups } from '../lib/history.js'
 import { fmtNum, fmtWeight, fmtDate, todayISO, exCount, DAYN } from '../lib/format.js'
 import { playAppSound, vibrate } from '../lib/sound.js'
 import { t, exerciseNameFor, dateLocale } from '../lib/i18n.js'
 import { api } from '../lib/api.js'
 import { setProgressHighWater, supersetFlowStep, restAfterSet, restOnRecheck } from '../lib/supersetFlow.js'
 import Media from '../components/Media.jsx'
+import LoadProgressionChoice from '../components/LoadProgressionChoice.jsx'
+import { buildSessionExercise, resolveLoadProgression } from '../lib/session-prescription.js'
 import { startFlow, exercisePicker, exConfigSheet, exerciseDetailSheet, topWeightSheet, finishWorkout, workoutCompleteSheet, confirmSheet, exerciseNoteSheet, sessionNoteSheet, plateCalculatorSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
 import { Button, Check, NumberField } from '../components/ui.jsx'
 import WeightField from '../components/WeightField.jsx'
-import { nextPrescription, applyPrescription, defaultIncrement, loadingStepFor } from '../lib/progression.js'
+import { defaultIncrement, loadingStepFor } from '../lib/progression.js'
 import { glyphOf } from '../lib/glyphs.js'
 import { setSideState, toggleSetSide, isWarmupRow, isDropSet, isRestPauseSet, dropsOf, clustersOf, addDrop, addCluster, removeDropAt, removeClusterAt, setDropAt, setClusterAt, nextDropWeight, nextBurstReps } from '../lib/workout-model.js'
 import { restSeconds } from '../lib/rest-policy.js'
-import { withBackoffRepsMode, seedPlannedRir, applyTrainingPlan, clampReps, deloadStatus, deloadTargetFor, repBounds, rirAdvice, targetRirFor, targetRirRangeFor } from '../lib/training-plan.js'
+import { seedPlannedRir, clampReps, repBounds, rirAdvice, targetRirFor, targetRirRangeFor } from '../lib/training-plan.js'
 import { pauseWorkoutClock, resumeWorkoutClock, workoutElapsedMs, lastWorkoutInteraction } from '../lib/workout-time.js'
 import { effectiveWorkoutComplete } from '../lib/workout-lifecycle.js'
 import { effortValue, rirRangeLabel } from '../lib/history.js'
@@ -222,10 +224,9 @@ function ExerciseBlock({ preview, entryIdx, compact, onToggle, onField, onAddSet
   )
   return <>
     <Media ex={ex} key={entry.id} compact={compact} minimizable />
-    <div className="row between exercise-heading" style={{ marginBottom: 6 }}>
-      <div className="grow"><div className={'exercise-title' + (compact ? ' compact' : '')}>{exerciseNameFor(ex, { entry, routineId: S.active.routineId })}</div></div>
-      <div className="row" style={{ gap: 2, flex: 'none' }}>
-        {!compact && PLATE_LOADED.has(ex.eq) && <button className="iconbtn" aria-label={t('Plate calculator')} title={t('Plate calculator')} onClick={() => plateCalculatorSheet((entry.sets[currentSet] ?? entry.sets[entry.sets.length - 1])?.w)}><Icon name="plate" /></button>}
+    <div className="exercise-heading">
+      <div className={'exercise-title' + (compact ? ' compact' : '')}>{exerciseNameFor(ex, { entry, routineId: S.active.routineId })}</div>
+      <div className="exercise-heading-actions">
         {!compact && <button className="iconbtn" aria-label={t('Substitute for this workout')} title={t('Substitute for this workout')} onClick={onSubstitute}><Icon name="shuffle" /></button>}
         <button className="iconbtn" aria-label={t('Note')} title={t('Note')}
           style={entry.note ? { color: 'var(--acc)' } : undefined}
@@ -237,13 +238,14 @@ function ExerciseBlock({ preview, entryIdx, compact, onToggle, onField, onAddSet
       {onPairPrev && <Button size="xs" variant="tinted" aria-label={t('Make superset with previous')} title={t('Make superset with previous')} onClick={onPairPrev}><span aria-hidden="true">←</span> {t('Superset')}</Button>}
       {onPairNext && <Button size="xs" variant="tinted" aria-label={t('Make superset with next')} title={t('Make superset with next')} onClick={onPairNext}>{t('Superset')} <span aria-hidden="true">→</span></Button>}
     </div>}
-    <div className="row" style={{ gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+    <div className="row exercise-metadata" style={{ gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
       {cardio && <span className="tag acc"><Icon name="figureRun" />{t('Cardio')}</span>}
       {/* Display the per-side prescription using its saved legacy/new semantics. */}
       {!cardio && isPerSide(cfg) && <span className="tag acc nocap"><Icon name="shuffle" />{timed ? `${fmtSec(entry.sets.find(s => !s.done)?.sec ?? entry.sets[0]?.sec)} ${t('/ side')}` : t('{0} per side', fmtNum(sideReps(entry.sets.find(s => !s.done)?.r ?? entry.sets[0]?.r, cfg)))}</span>}
       {(ex.tg || ex.bp) && <span className="tag">{t(ex.tg || ex.bp)}</span>}
       {ex.eq && <span className="tag">{t(ex.eq)}</span>}
       {best > 0 && <span className="tag nocap">{t('Best:')} {fmtWeight(best)} {S.unit}</span>}
+      {!compact && PLATE_LOADED.has(ex.eq) && <button className="iconbtn" aria-label={t('Plate calculator')} title={t('Plate calculator')} onClick={() => plateCalculatorSheet((entry.sets[currentSet] ?? entry.sets[entry.sets.length - 1])?.w)}><Icon name="plate" /></button>}
     </div>
     {(cfg.note || standingNote || pinnedNote || entry.note) && <details className="workout-notes">
       <summary>{t('Exercise notes')}<Icon name="chevronDown" /></summary>
@@ -255,16 +257,21 @@ function ExerciseBlock({ preview, entryIdx, compact, onToggle, onField, onAddSet
       </div>
     </details>}
     <div className="exercise-history-context">
-      {last ? <div className="small muted"><b>{t('Last time')}</b> ({fmtDate(last.d)}): {last.sets.map(s => setLabel(entry.id, s, last.target)).join(', ')}</div>
+      {last ? <div className="exercise-last-session"><div className="exercise-last-session-heading"><b>{t('Last time')}</b><span>{fmtDate(last.d)}</span></div><div className="exercise-last-session-sets">{last.sets.map((s, i) => <span key={i}>{setLabel(entry.id, s, last.target)}</span>)}</div></div>
         : <div className="small muted first-history"><Icon name="history" /> {t('Nothing logged yet — this session sets the baseline.')}</div>}
-      {plan?.why && !['off','first'].includes(plan.kind) && <div className={'progline' + (plan.kind === 'deload' ? ' warn' : '')}><Icon name={plan.kind === 'up' ? 'arrowUp' : plan.kind === 'deload' ? 'arrowDown' : 'lightbulb'} /><span>{t(...plan.why.map((value,index,args) => index > 0 && ['kg','lb'].includes(args[index+1]) ? fmtWeight(value) : value))}</span></div>}
-    </div>
-    {!cardio && !timed && (() => {
+      {plan?.why && entry.loadProgression?.status !== 'pending' && !['off','first'].includes(plan.kind) && <div className={'progline' + (plan.kind === 'deload' ? ' warn' : '')}><Icon name={plan.kind === 'up' ? 'arrowUp' : plan.kind === 'deload' ? 'arrowDown' : 'lightbulb'} /><span>{t(...plan.why.map((value,index,args) => index > 0 && ['kg','lb'].includes(args[index+1]) ? fmtWeight(value) : value))}</span></div>}
+      {!preview && <LoadProgressionChoice progression={entry.loadProgression} unit={S.unit} topBack={cfg.setScheme === 'topback'} disabled={!!working} onChoose={accept => update(s => {
+        if (s.active?.id !== S.active.id || s.active.entries[entryIdx]?.id !== entry.id) return
+        const current = s.active.entries[entryIdx]
+        s.active.entries[entryIdx] = resolveLoadProgression(current, accept, loadingStepFor({ ...current.target, id: current.id }, s.unit))
+      }, true)} />}
+      {!cardio && !timed && (() => {
       const targetRir = targetRirRangeFor(cfg, null)
-      return <div className="row" style={{ gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+      return targetRir && cfg.setScheme !== 'topback' ? <div className="exercise-target-rir">
         {targetRir && cfg.setScheme !== 'topback' && <span className="tag nocap">{t('Target RIR')}: {rirRangeLabel(targetRir)}</span>}
-      </div>
+      </div> : null
     })()}
+    </div>
     {S.exerciseGoals?.[entry.id] && <div className="small row" style={{ color: 'var(--yellow)', gap: 5, marginBottom: 8 }}><Icon name="target" />{t('Goal')}: {S.exerciseGoals[entry.id].weight > 0 ? fmtWeight(S.exerciseGoals[entry.id].weight) + ' ' + S.unit : ''}{S.exerciseGoals[entry.id].weight > 0 && S.exerciseGoals[entry.id].reps > 0 ? ' × ' : ''}{S.exerciseGoals[entry.id].reps > 0 ? S.exerciseGoals[entry.id].reps + ' ' + t('reps') : ''}</div>}
     {bw && !added && <Button size="sm" variant="tinted" icon="plus" onClick={() => update(s => { s.active.entries[entryIdx].logAddedWeight = true })}>{t('Log added weight')}</Button>}
     <div className="card sets-card" style={{ marginTop: 10, marginBottom: 0 }}>
@@ -531,13 +538,10 @@ function ActiveWorkout() {
     const original = exOr(originalEntry.id)
     const choose = () => exercisePicker(ex => exConfigSheet(ex, null, cfg => {
       timedGeneration.current++; useUI.getState().stopWork()
-      const target = { id: ex.id, ...cfg }
-      const plan = nextPrescription(S, target, null)
-      const step = loadingStepFor(target, S.unit)
-      const sets = applyIntensifierPlan(applyTrainingPlan(applyPrescription(buildSets(S, target, { step }), plan, step), target, step, deloadStatus(S)), target)
       update(s => {
+        if (s.active?.id !== A.id || !s.active.entries[idx]) return
         const old = s.active.entries[idx]
-        s.active.entries[idx] = { id: ex.id, sg: old.sg, target, plan, sets, substitutedFor: old.substitutedFor || old.id }
+        s.active.entries[idx] = { ...buildSessionExercise(s, { ...cfg, id: ex.id }), sg: old.sg, substitutedFor: old.substitutedFor || old.id }
       }, true)
       useUI.getState().toast(t('Substituted only for this workout'))
     }, null, null), {
@@ -671,9 +675,12 @@ function ActiveWorkout() {
 
   return <div className="narrow">
     <div className="hdr workout-header">
+      <div className="workout-identity"><div className="workout-name">{A.name}</div>{A.dailyPlanTotal>1 && A.dailyPlanIndex>=0 && <div className="workout-day-position">{t('Workout {0} of {1}',A.dailyPlanIndex+1,A.dailyPlanTotal)}</div>}</div>
+      <div className="workout-clock-control"><span className="sub"><Elapsed workout={A} /> · {t('{0} sets', done + '/' + total)}</span><button type="button" className="iconbtn" disabled={!!work} aria-label={t(A.timerPausedAt == null ? 'Pause workout timer' : 'Resume workout timer')} title={t(A.timerPausedAt == null ? 'Pause workout timer' : 'Resume workout timer')} aria-pressed={A.timerPausedAt != null} onClick={() => { if(A.timerPausedAt == null)stopRest(); update(s => { if(s.active)s.active = s.active.timerPausedAt == null ? {...pauseWorkoutClock(s.active),pauseReason:'manual'} : resumeWorkoutClock(s.active) }) }}><Icon name={A.timerPausedAt == null ? 'pause' : 'play'} /></button><button type="button" className="iconbtn workout-music-btn" aria-label={t('Spotifree Music')} title={t('Spotifree Music')} onClick={() => launchSpotifree()}><Icon name="music" /></button></div>
+      <div className="workout-session-actions">
       <button className="iconbtn" aria-label={t('Discard')} onClick={() => confirmSheet({ title: t('Discard workout?'), message: t('The sets you logged in this session will be lost.'), confirmText: t('Discard'), danger: true, onConfirm: () => { if (useStore.getState().S.active?.id !== A.id) return; update(s => { s.active = null }); timedGeneration.current++; useUI.getState().stopWork(); stopRest(); nav('/home') } })}><Icon name="xmark" /></button>
-      <div style={{ textAlign: 'center' }}><div className="workout-name">{A.name}</div>{A.dailyPlanTotal>1 && A.dailyPlanIndex>=0 && <div className="workout-day-position">{t('Workout {0} of {1}',A.dailyPlanIndex+1,A.dailyPlanTotal)}</div>}<div className="workout-clock-control"><span className="sub"><Elapsed workout={A} /> · {t('{0} sets', done + '/' + total)}</span><button type="button" className="iconbtn" disabled={!!work} aria-label={t(A.timerPausedAt == null ? 'Pause workout timer' : 'Resume workout timer')} title={t(A.timerPausedAt == null ? 'Pause workout timer' : 'Resume workout timer')} aria-pressed={A.timerPausedAt != null} onClick={() => { if(A.timerPausedAt == null)stopRest(); update(s => { if(s.active)s.active = s.active.timerPausedAt == null ? {...pauseWorkoutClock(s.active),pauseReason:'manual'} : resumeWorkoutClock(s.active) }) }}><Icon name={A.timerPausedAt == null ? 'pause' : 'play'} /></button><button type="button" className="iconbtn workout-music-btn" aria-label={t('Spotifree Music')} title={t('Spotifree Music')} onClick={() => launchSpotifree()}><Icon name="music" /></button></div></div>
       <button className="iconbtn" style={{ color: 'var(--acc)' }} aria-label={t('Finish')} onClick={finishWorkout}><Icon name="check" /></button>
+      </div>
     </div>
     <div className="wprog"><i style={{ width: (total ? done / total * 100 : 0) + '%' }} /></div>
 
@@ -710,14 +717,7 @@ function ActiveWorkout() {
       const seed = freestyle ? freestyleConfig(S, { id: ex.id, ...defaultConfig(ex.id) }) : null
       exConfigSheet(ex, null, cfg => update(s => {
         const full = { ...cfg, id: ex.id }
-        const plan = freestyle ? null : nextPrescription(s, full, s.routines.find(r => r.id === s.active.routineId))
-        const step = loadingStepFor(full, s.unit)
-        const sets = buildSets(s, full, { step, ...(freestyle ? { preferLast: true } : {}) })
-        const progressed = freestyle ? sets : applyPrescription(sets, plan, step)
-        const deload = deloadStatus(s)
-        const target = deloadTargetFor(withBackoffRepsMode(full, s), deload)
-        const shownPlan = deload.active ? { kind: 'deload', why: ['Deload session — load, working sets and effort are reduced for recovery.'] } : plan
-        s.active.entries.push({ id: ex.id, target, plan: shownPlan, sets: applyIntensifierPlan(applyTrainingPlan(progressed, target, step, deload), target) })
+        s.active.entries.push(buildSessionExercise(s, full, s.routines.find(r => r.id === s.active.routineId), { freestyle }))
         s.active.cur = s.active.entries.length - 1
       }), null, routine, seed)
     })} icon="plus">{t('Add exercise')}</Button>

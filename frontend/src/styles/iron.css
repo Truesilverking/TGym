@@ -336,7 +336,12 @@
 .workout-clock-control .iconbtn{width:36px;height:36px;min-height:36px;padding:0;display:inline-flex;align-items:center;justify-content:center}
 
 .set-sides button,.sets-card .subrow,.workout-notes{border-radius:var(--r-md)}
-.exercise-history-context{border-left:3px solid var(--acc-line);border-radius:2px}
+.exercise-history-context{background:var(--surface);border:1px solid var(--panel-edge);border-radius:var(--r-lg)}
+.exercise-last-session-heading b{font-weight:650;color:var(--label-2)}
+.exercise-last-session-sets>span{background:var(--surface-2);color:var(--label)}
+.exercise-history-context .progline{padding-top:9px;border-top:1px solid var(--sep);font-size:13px;line-height:1.45}
+.exercise-target-rir .tag{background:var(--surface-2)}
+@media(max-width:380px){.exercise-heading>.exercise-title{font-size:20px;line-height:1.2}.exercise-heading>.exercise-title.compact{font-size:18px}}
 @media(max-width:480px){
   .sets-card .set-console,.sets-card .set-console.eff3{gap:8px;padding:10px}
   .set-console.eff3 .set-metric.eff{grid-column:1/-1}

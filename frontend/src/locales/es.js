@@ -2,6 +2,18 @@ import english from '../lib/english-fallback.js'
 // Spanish UI strings. Keys are the English source strings (see lib/i18n.js).
 export default {
   ...english,
+  "Your logged and manually entered weights were kept.": "Se conservaron los pesos registrados e introducidos manualmente.",
+  "Completed sets and manual entries stay as logged.": "Se conservan las series completadas y los valores introducidos manualmente.",
+  "Keep your previous load until you confirm the increase.": "Se mantiene tu peso anterior hasta que confirmes el aumento.",
+  "Kept the previous weight for this workout.": "Se mantuvo el peso anterior para este entrenamiento.",
+  "Weight increase": "Aumento de peso",
+  "Ready to increase the weight?": "¿Te sientes preparado para aumentar el peso?",
+  "Current weight": "Peso actual",
+  "Proposed weight": "Peso propuesto",
+  "Your choice sets the Top load and its automatic Back-off loads. Your current weight stays until you choose.": "Tu elección determina el peso de las series Top y de sus Back-off automáticas. Se mantiene tu peso actual hasta que elijas.",
+  "Your current weight stays until you choose. Increase only if you feel ready for the next load.": "Se mantiene tu peso actual hasta que elijas. Aumenta solo si te sientes preparado para el siguiente peso.",
+  "Keep current weight": "Mantener el peso actual",
+  "Yes, increase": "Sí, aumentar",
   "Workout summary": "Resumen del entrenamiento",
   "One year per PDF page.": "Un año por página PDF.",
   "Smart scale": "Balanza inteligente",

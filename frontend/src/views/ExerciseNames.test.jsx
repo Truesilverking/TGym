@@ -25,7 +25,7 @@ let root, host
 const state = () => useStore.getState().S
 const update = fn => act(() => useStore.getState().update(fn))
 const entry = (id, n) => ({ id, n, sg: 'pair', target: { mode: 'reps', reps: 8, weight: 40 }, sets: [{ w: 40, r: 8, done: false }] })
-const headers = () => [...host.querySelectorAll('.exercise-heading > .grow')].map(e => e.textContent)
+const headers = () => [...host.querySelectorAll('.exercise-heading > .exercise-title')].map(e => e.textContent)
 const titles = () => [...host.querySelectorAll('.library-list .tt')].map(e => e.textContent)
 const setInput = (el, value) => act(() => {
   Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(el, value)

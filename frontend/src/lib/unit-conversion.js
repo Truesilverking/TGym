@@ -18,10 +18,24 @@ function convertSet(set, previous, unit) {
   const source = weightUnit(set?.unit, previous), factor = conversionFactor(source, unit)
   change(set, 'w', factor)
   if (Array.isArray(set?.drops)) set.drops.forEach(drop => {
-    change(drop, 'w', conversionFactor(weightUnit(drop?.unit, source), unit))
+    const dropFactor = conversionFactor(weightUnit(drop?.unit, source), unit)
+    change(drop, 'w', dropFactor)
+    change(drop, 'progressionWeight', dropFactor)
     stampUnit(drop, unit)
   })
   stampUnit(set, unit)
+}
+
+function convertPlan(plan, factor, unit) {
+  change(plan, 'weight', factor)
+  // Progression explanations carry their load as a numeric argument immediately
+  // before its unit. Keep the explanation aligned with the converted proposal.
+  if (factor !== 1 && Array.isArray(plan?.why)) plan.why.forEach((argument, index) => {
+    if ((argument === 'kg' || argument === 'lb') && index > 0) {
+      if (finite(plan.why[index - 1])) plan.why[index - 1] = rounded(plan.why[index - 1], factor)
+      plan.why[index] = unit
+    }
+  })
 }
 
 function convertEntry(entry, previous, unit) {
@@ -30,6 +44,12 @@ function convertEntry(entry, previous, unit) {
   change(entry, 'topW', factor)
   change(entry, 'topWeight', factor)
   change(entry, 'weight', factor)
+  convertPlan(entry?.plan, factor, unit)
+  if (entry?.loadProgression) {
+    change(entry.loadProgression, 'previousWeight', factor)
+    change(entry.loadProgression, 'nextWeight', factor)
+    if (entry.loadProgression.prescription !== entry.plan) convertPlan(entry.loadProgression.prescription, factor, unit)
+  }
   if ((entry?.mode || entry?.target?.mode) !== 'time') change(entry, 'inc', factor)
   change(entry?.target, 'weight', targetFactor)
   if ((entry?.target?.mode || entry?.mode) !== 'time') change(entry?.target, 'inc', targetFactor)

@@ -16,7 +16,7 @@ import { useUI } from './store/useUI.js'
 import { EXDB, EXIDX, BODYPARTS, isCardio, isBodyweightEq, allExercises, equipmentOf, smOf, exerciseSearchScore, exOr } from './lib/exercises.js'
 import { activeProfile, exAvailable, ALL_EQUIPMENT, newProfile } from './lib/equipment.js'
 import { fmtDate, fmtNum, fmtWeight, fmtVol, fmtDur, durPart, todayISO, isoOf, localTZ, uid, exCount, DAYN, MONTHS, MONTHS_LONG, ACCENTS } from './lib/format.js'
-import { lastEntryFor, bestWeightFor, buildSets, effectiveRoutineId, workoutVolume, setsDone, setsDoneActive, lastBW, supersetUnits, unitOf, setLabel, defaultConfig, cleanupSg, modeOf, effortOf, isBw, isPerSide, displayReps, storedReps, displayRepConfig, workSetsDone, applyIntensifierPlan, MAX_PLANNED_WARMUPS, NOTE_MAX } from './lib/history.js'
+import { lastEntryFor, bestWeightFor, effectiveRoutineId, workoutVolume, setsDone, setsDoneActive, lastBW, supersetUnits, unitOf, setLabel, defaultConfig, cleanupSg, modeOf, effortOf, isBw, isPerSide, displayReps, storedReps, displayRepConfig, workSetsDone, MAX_PLANNED_WARMUPS, NOTE_MAX } from './lib/history.js'
 import { playAppSound, vibrate } from './lib/sound.js'
 import { t, instrFor, exerciseNameFor, originalExerciseNameFor, getLang, INSTR_LANGS, dateLocale } from './lib/i18n.js'
 import { nav } from './lib/nav.js'
@@ -49,7 +49,8 @@ import { parseImport, mergeImport } from './lib/import-csv.js'
 import { buildPlanBundle, parsePlan, mergePlan, printPlan } from './lib/plan-share.js'
 import RoutineExchange from './components/RoutineExchange.jsx'
 import { estimate1RM, best1RM, is1RMRecord, REP_CAP } from './lib/onerm.js'
-import { nextPrescription, applyPrescription, policyFor, defaultIncrement, loadingStepFor, POLICIES_FOR, POLICY_NAME, POLICY_DESC, MAX_BW_SETS } from './lib/progression.js'
+import { policyFor, defaultIncrement, POLICIES_FOR, POLICY_NAME, POLICY_DESC, MAX_BW_SETS } from './lib/progression.js'
+import { buildSessionExercise } from './lib/session-prescription.js'
 import { MOBILE, shareExport } from './lib/mobile.js'
 import { buildCompletedWorkout } from './lib/finish-workout.js'
 import { isWarmupRow, modeForSet } from './lib/workout-model.js'
@@ -57,7 +58,7 @@ import { GUIDED_PLANS, createGuidedPlan } from './lib/guided-plans.js'
 import { saveImportUndo } from './lib/import-undo.js'
 import { MEASURE_FIELDS, measurementValue } from './lib/stats-insights.js'
 import { sessionTimingSummary } from './lib/stats-insights.js'
-import { withBackoffRepsMode, backoffRepOffsetFor, applyTrainingPlan, calendarDeload, deloadStatus, deloadTargetFor, repRangeEnabled, streakTier, trainingStreak, targetRirRangeFor } from './lib/training-plan.js'
+import { withBackoffRepsMode, backoffRepOffsetFor, calendarDeload, deloadStatus, repRangeEnabled, streakTier, trainingStreak, targetRirRangeFor } from './lib/training-plan.js'
 import { weightStepFor, LB_PER_KG } from './lib/unit-conversion.js'
 import Heatmap from './components/Heatmap.jsx'
 import LineChart from './components/LineChart.jsx'
@@ -1757,19 +1758,10 @@ export function beginWorkout(routineId, bw) {
   if (st.active) {nav('/workout');return}
   if(isTrainingPaused(st,todayISO())) return ui().openSheet(close=><TrainingPauseCard onSaved={close} />)
   const r = routineId ? st.routines.find(x => x.id === routineId) : null
-  // The prescription is applied as the session is built, so you walk up to the bar with the
-  // right weight already on the screen instead of being told about it afterwards. `plan` is
-  // kept on the entry purely so the workout can explain the number it chose.
+  // Suggested load increases remain pending at the previous weight until the athlete
+  // explicitly accepts them inside the exercise. Each decision travels with the session.
   const deload = deloadStatus(st)
-  const entries = (r ? r.ex : []).map(cfg => {
-    const plan = nextPrescription(st, cfg, r)
-    const step = loadingStepFor(cfg, st.unit)
-    const prescribed = applyPrescription(buildSets(st, cfg, { step }), plan, step)
-    const target = deloadTargetFor(withBackoffRepsMode(cfg, st), deload)
-    const sets = applyIntensifierPlan(applyTrainingPlan(prescribed, target, step, deload), target)
-    const shownPlan = deload.active ? { kind: 'deload', why: ['Deload session — load, working sets and effort are reduced for recovery.'] } : plan
-    return { id: cfg.id, sg: cfg.sg, target, plan: shownPlan, sets }
-  })
+  const entries = (r ? r.ex : []).map(cfg => buildSessionExercise(st, cfg, r, { deload }))
   const daily = dailyPlan(st,todayISO()), dailyIndex = daily.items.findIndex(item=>item.id===routineId)
   update(s => {
     if (s.daySkipped?.[todayISO()]) s.daySkipped[todayISO()] = routineIds(s.daySkipped[todayISO()]).filter(id=>id!==routineId)

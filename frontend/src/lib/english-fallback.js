@@ -1,5 +1,17 @@
 // Explicit source-language fallback. Entries in language packs override these values.
 export default {
+  "Your logged and manually entered weights were kept.": "Your logged and manually entered weights were kept.",
+  "Completed sets and manual entries stay as logged.": "Completed sets and manual entries stay as logged.",
+  "Keep your previous load until you confirm the increase.": "Keep your previous load until you confirm the increase.",
+  "Kept the previous weight for this workout.": "Kept the previous weight for this workout.",
+  "Weight increase": "Weight increase",
+  "Ready to increase the weight?": "Ready to increase the weight?",
+  "Current weight": "Current weight",
+  "Proposed weight": "Proposed weight",
+  "Your choice sets the Top load and its automatic Back-off loads. Your current weight stays until you choose.": "Your choice sets the Top load and its automatic Back-off loads. Your current weight stays until you choose.",
+  "Your current weight stays until you choose. Increase only if you feel ready for the next load.": "Your current weight stays until you choose. Increase only if you feel ready for the next load.",
+  "Keep current weight": "Keep current weight",
+  "Yes, increase": "Yes, increase",
   "Workout summary": "Workout summary",
   "One year per PDF page.": "One year per PDF page.",
   "Smart scale": "Smart scale",
