@@ -1,0 +1,300 @@
+{
+  "version": "1.15.102",
+  "versionCode": 138,
+  "runtimeCommit": "a6145c753ce56f8c8a5847b150bdef2937f345a1",
+  "checkpointDate": "2026-10-27",
+  "scope": "Dev follow-up corrections, official APK/PWA publication and isolated browser verification",
+  "publicationAuthorized": true,
+  "publicationStatus": "complete; physical installation remains unverified",
+  "priorCorrections": "BUGFIX-AUDIT-1.15.101.md",
+  "githubActions": {
+    "tests": {
+      "runId": 40546405369,
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/40546405369",
+      "conclusion": "success"
+    },
+    "pwaValidation": {
+      "runId": 40546405442,
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/40546405442",
+      "conclusion": "success"
+    },
+    "androidValidation": {
+      "runId": 40546405621,
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/40546405621",
+      "conclusion": "success",
+      "instrumentedTests": 43
+    },
+    "signedCandidate": {
+      "runId": 40546445656,
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/40546445656",
+      "conclusion": "success"
+    },
+    "prTests": {
+      "runId": 40546415384,
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/40546415384",
+      "conclusion": "success"
+    },
+    "release": {
+      "runId": 40548010107,
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/40548010107",
+      "conclusion": "success",
+      "runtimeCommit": "a6145c753ce56f8c8a5847b150bdef2937f345a1"
+    }
+  },
+  "tests": {
+    "frontendPassed": 2699,
+    "frontendFiles": 241,
+    "apiPassed": 16,
+    "mcpPassed": 38,
+    "mcpRealStdioProtocol": "pass",
+    "nodeImportGraph": "pass",
+    "catalogPassed": 6,
+    "fatigueMonotonicComparisons": 108000,
+    "fatigueHistoryDeletionComparisons": 14076,
+    "strictSourceStrings": 1367,
+    "spanishLocaleKeys": 2159
+  },
+  "builds": {
+    "web": "pass",
+    "standalonePwa": "pass",
+    "mobileAssets": "pass"
+  },
+  "dependencyAudit": {
+    "date": "2026-10-27",
+    "knownFrontendVulnerabilitiesIncludingDevelopment": 0,
+    "knownApiVulnerabilities": 0,
+    "knownMcpVulnerabilities": 0,
+    "scope": "Known package-advisory snapshot only"
+  },
+  "signedCandidate": {
+    "status": "verified",
+    "package": "app.framegym.mobile",
+    "apkSha256": "4a73c1bba041776143e85722127c53ebf14258211bcb166c411a5cb71679e084",
+    "aabSha256": "27f552f69985e0944a442c480452b800802b4ecbf6200a94e988c65e3bafd9d5",
+    "certificateSha256": "8ee233c984615e2b3f6f083dc0c47d148bb8956ff7caca97be0b9a0d260e6082",
+    "officialSigningContinuity": true,
+    "debuggable": false,
+    "buildMetadataExact": true,
+    "apkBuildExact": true,
+    "aabBuildExact": true,
+    "aabSignatureVerified": true,
+    "remoteDevServer": false,
+    "assetCount": 55,
+    "published": false
+  },
+  "publicArtifacts": {
+    "status": "verified",
+    "release": "https://github.com/Truesilverking/TGym/releases/tag/v1.15.102",
+    "package": "app.framegym.mobile",
+    "apkSha256": "df7e137d76cf52318fec981f2396a51132b89986e2dec051bdc8672959806b4c",
+    "releaseAndPagesApkIdentical": true,
+    "aabSha256": "27f552f69985e0944a442c480452b800802b4ecbf6200a94e988c65e3bafd9d5",
+    "aabEqualsCandidate": true,
+    "certificateSha256": "8ee233c984615e2b3f6f083dc0c47d148bb8956ff7caca97be0b9a0d260e6082",
+    "officialSigningContinuity": true,
+    "debuggable": false,
+    "candidateSharedRuntimeAssetsExact": 53,
+    "publicManifestAndBuildExact": true,
+    "pwaFilesChecked": 49,
+    "allReleasePagesFilesExact": true,
+    "releaseChecksumsExact": true
+  },
+  "pwaBuildProvenance": {
+    "windowsLocalFilesCompared": 48,
+    "exactLocalToReleaseByteComparisonPass": false,
+    "exactComparisonFailureRetained": true,
+    "localToReleaseByteIdenticalFiles": 43,
+    "differingFiles": [
+      "about.html",
+      "index.html",
+      "manifest.json",
+      "privacy.html",
+      "sw.js"
+    ],
+    "differenceClassification": "CRLF/LF; index.html also one blank line; sw.js also correctly derived raw-shell cache digest",
+    "classificationChangesExactByteResult": false,
+    "compiledJsCssFontAssetsByteIdentical": 39,
+    "buildJsonByteIdentical": true,
+    "finalPublicByteComparisonSource": "Actual Linux release Pages artifact",
+    "releaseWorkerCacheDigest": "e078440ca5ca"
+  },
+  "compiledBrowser": {
+    "syntheticProfilesOnly": true,
+    "physicalIPhone": false,
+    "weightMatrix": {
+      "status": "pass",
+      "artifactProvenance": "Actual Linux release Pages bytes",
+      "configurations": 4,
+      "engines": [
+        "Edge",
+        "WebKit"
+      ],
+      "languages": [
+        "en",
+        "es"
+      ],
+      "weightUnits": [
+        "kg",
+        "lb"
+      ],
+      "checks": 28,
+      "pageErrors": 0,
+      "normalSingleStartActivation": "pass",
+      "primaryAndResourceFailureRetry": "pass",
+      "verifiedMediaCompaction": "pass",
+      "protectedDataAndReloadPreservation": "pass",
+      "trustedDoubleStartPointer": "Separate inspected sequence: the second trusted click dismisses the new backdrop without a second start flow or lost saved reading; not counted as a matrix pass"
+    },
+    "settingsAndTour": {
+      "status": "pass",
+      "artifactProvenance": "Actual Linux release Pages bytes",
+      "configurations": 4,
+      "checks": 104,
+      "widths": [
+        320,
+        390,
+        1440
+      ],
+      "languages": [
+        "en",
+        "es"
+      ],
+      "themes": [
+        "dark",
+        "light"
+      ],
+      "reducedMotionConfiguration": true,
+      "tourStepsPerConfiguration": 19,
+      "pageErrors": 0,
+      "horizontalOverflow": false,
+      "shortViewportProfileDraft": "pass",
+      "pinFailureRetryUnlockRemove": "pass",
+      "unrelatedProfilePreserved": true,
+      "syntheticLocalLockRemoved": true
+    },
+    "onboardingKeyboard": {
+      "status": "pass",
+      "developmentComponentHarness": true,
+      "compiledProduct": false,
+      "cases": 4,
+      "engines": [
+        "Edge",
+        "WebKit"
+      ],
+      "keys": [
+        "Enter",
+        "Space"
+      ]
+    }
+  },
+  "offlineServerOutage": {
+    "status": "pass",
+    "artifactProvenance": "Actual Linux release Pages bytes",
+    "method": "Origin server stopped; no browser context.setOffline emulation",
+    "engines": [
+      "Edge",
+      "WebKit"
+    ],
+    "routesPerEngine": [
+      "home",
+      "nutrition",
+      "plan"
+    ],
+    "expectedShellCacheEntries": 46,
+    "missingShellCacheEntries": 0,
+    "responsesFromServiceWorker": true,
+    "profileByteIdentical": true,
+    "directNetworkNegativeControlFailed": true,
+    "noWorkerNavigationNegativeControlFailed": true,
+    "physicalIPhone": false
+  },
+  "pwaUpgrade": {
+    "status": "pass",
+    "artifactProvenance": "Actual Linux release Pages bytes",
+    "method": "Normal UI Check for updates then Update, followed by same-store cold reopen during origin-server outage",
+    "baselineVersion": "1.15.100",
+    "baselineCommit": "cc4d7893f402db575008e4206176921c222bd597",
+    "targetVersion": "1.15.102",
+    "targetCommit": "a6145c753ce56f8c8a5847b150bdef2937f345a1",
+    "engines": [
+      "Edge",
+      "WebKit"
+    ],
+    "embeddedSyntheticResourceCharacters": 1600126,
+    "preUpdateBackupCrc32Valid": true,
+    "profileFieldsRetained": true,
+    "noSelfUpdateReoffer": true,
+    "offlineColdReopenProfileByteIdentical": true,
+    "offlineColdReopenServedByWorker": true,
+    "ownerInstalledDesktopPwaTested": false,
+    "physicalIPhone": false
+  },
+  "delivery": {
+    "tagCreated": true,
+    "tag": "v1.15.102",
+    "tagType": "annotated",
+    "tagRuntimeCommit": "a6145c753ce56f8c8a5847b150bdef2937f345a1",
+    "remoteAnnotatedTagVerified": true,
+    "releaseTargetCommitish": "Dev",
+    "officialReleaseWorkflow": "success",
+    "productionReleasePublished": true,
+    "productionPublicationVerified": true,
+    "publicApkPagesHashComparison": "pass",
+    "deployedUpdateManifest": "pass",
+    "productionPwaVerified": "pass: 49 deployed files equal the actual release Pages artifact",
+    "notificationServiceAcceptance": "accepted once per topic",
+    "notificationTopics": [
+      "tgym_updates",
+      "tgym_updates_v2"
+    ],
+    "acceptedNotificationSends": 2,
+    "manualResendPerformed": false,
+    "phoneNotificationReceipt": "unverified",
+    "physicalAndroid102Installed": false,
+    "physicalPixelQa102Installed": false
+  },
+  "preparedPixelQa": {
+    "status": "prepared and APK-verified; not installed",
+    "package": "app.framegym.mobile.qa",
+    "version": "1.15.102",
+    "versionCode": 138,
+    "runtimeCommit": "a6145c753ce56f8c8a5847b150bdef2937f345a1",
+    "apkSha256": "984cb07e65d6edd43a4fad255ec4c8b6540d65f10414814a7451a0f056ba63b9",
+    "certificateSha256": "d53b550b85266358a3d803b7a9611b880488f3eb3e68ad121c63e3c04825f5cc",
+    "previousQaCertificateMatches": true,
+    "exactMobileAssetCount": 53,
+    "applicationLabel": "TGym QA",
+    "launcherLabel": "TGym QA",
+    "installed": false,
+    "phoneInspected": false,
+    "reason": "No Pixel available over ADB"
+  },
+  "limits": [
+    "The inspected double-Start dismissal sequence is separate from the passing single-activation matrix.",
+    "Readiness, plateau, volume targets, weekly summary, progress photos, hands-free and share-card modules lack production-screen wiring.",
+    "Component/photo/share adapter tests do not establish real native integration acceptance.",
+    "Spotifree sharing reaches compatible same-origin/partition receivers; cross-origin and separate native-app synchronization are unsupported.",
+    "A music-player launch request does not verify playback.",
+    "Real cloud consent/synchronization and physical iPhone acceptance were not tested.",
+    "Synthetic browser results do not establish a new physical Android installation or an owner's installed desktop-PWA update."
+  ],
+  "privateProfilesBackupsAndScreenshotsExcludedFromGit": true,
+  "localEvidenceFiles": [
+    ".tools/audit-20261027-frontend-release.log",
+    ".tools/audit-20261027-api.log",
+    ".tools/audit-20261027-mcp.log",
+    ".tools/audit-20261027-loadable.log",
+    ".tools/audit-20261027-catalog.log",
+    ".tools/audit-20261027/weight/proof.json",
+    ".tools/audit-20261027/settings-browser/proof.json",
+    ".tools/audit-20261027/onboarding-keyboard-proof.json",
+    ".tools/audit-20261027/offline-outage-release102.json",
+    ".tools/audit-20261027/pwa-upgrade-100-to-102.json",
+    ".tools/publish-1.15.102/candidate-verified.json",
+    ".tools/publish-1.15.102/public-verified.json",
+    ".tools/publish-1.15.102/local-pwa-pages-verified.json",
+    ".tools/publish-1.15.102/pwa-platform-differences.json",
+    ".tools/qa-bugfix-102-final/apk-validated.json",
+    ".tools/publish-1.15.102/release-browser-verified.json"
+  ]
+}

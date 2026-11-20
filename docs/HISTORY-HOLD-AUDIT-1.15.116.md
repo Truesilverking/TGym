@@ -1,0 +1,13 @@
+# TGym 1.15.116 History hold timing audit
+
+Runtime source: `8aff0e3cad81a11cb72f7c2cf457d123c697916d`. Android versionCode: **152**. Published: 2026-11-03T23:38:23Z.
+
+Saved exercise details now open after **1.5 seconds**. The timer, release fallback and visual progress use the same 1500ms constant; English and Spanish hints show 1.5 and 1,5 seconds. The direct expand tap and previous input defenses are retained. This timing-only change does not rewrite saved data.
+
+Final-source frontend CI passes **3247 tests / 266 files**. Fresh local API **24**, MCP **38** and plain-Node checks pass. Local debug APK compilation passes with lint **0 errors / 22 warnings**; it was not installed. The verified CI emulator artifact records **53 tests / 0 failures / 0 skipped**. Compiled browser coverage passes **4 contexts / 36 groups**; actual-public coverage passes **4 / 36**, each with zero observed runtime errors and byte-identical synthetic records. Chromium/Edge and WebKit at 320/390px verify a 1400ms release stays closed, holds open near 1500ms, a 1600ms release preserves the detail, image/text and clipped-row holds, direct expansion, scrolling cancellation and fresh backdrop dismissal. The animation is 1.5s and worker/cache source identity matches 116.
+
+All five required exact-source CI gates pass. [Release workflow](https://github.com/Truesilverking/TGym/actions/runs/41740247902) and [published release](https://github.com/Truesilverking/TGym/releases/tag/v1.15.116) pass, with official signing, matching Release/Pages APK bytes, **51** public PWA files and **55** shared runtime assets verified. APK SHA-256: `151bb28ecd3218e41011d5c2037e29c16a76aad1a4242ae1cb80ef6ee2c84dbd`; AAB: `67690342a088171f187b89899096e4e8d951833f3652b197f289972563a883ad`. Forbidden artwork is excluded; the update broadcast step was skipped. Protected main retains independent review.
+
+No fresh physical Pixel or iPhone test, QA installation or native iOS build was performed for 116; 115 phone evidence is not inherited. Chromium CDP touch and WebKit mouse checks do not establish Android OS or physical iPhone timing. Standalone display mode is browser-emulated, with no OS PWA installation claim. Offline cold-open and previous-version worker migration were not repeated in this focused timing audit. Existing timer/event-order defenses are retained without a new general timing-race fix claim. No GIF correctness or report-export verification is claimed, and this bounded audit does not establish that every possible defect has been eliminated.
+
+[Machine-readable evidence](HISTORY-HOLD-EVIDENCE-1.15.116.json).

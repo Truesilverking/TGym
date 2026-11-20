@@ -1,0 +1,530 @@
+{
+  "purpose": "Independent mechanical acceptance for native 3D exercise replacements; numerical checks remain separate from visual and physical-device evidence.",
+  "definitions": {
+    "angles": "Flexion degrees use 0 = straight elbow/knee. Numeric ranges below are conservative authoring targets, not source-claimed measured clinical standards or individual exercise prescriptions.",
+    "contact": "For each frame measure actual world-space hand/foot surfaces against equipment/support. Validate both numeric motion and visible loop; names, one pose, skeleton-only tests and passed builds do not establish correct exercise.",
+    "holds": "Plate pinch, Spanish squat, Nordic hold and dead hang are ISOMETRIC. No repeated lifting/squatting/lowering/pull-ups. A loop may keep the pose and vary a subtle breathing or target-muscle shading cue."
+  },
+  "commonAcceptance": [
+    "Same body/equipment/camera/lighting remain consistent frame-to-frame, no pose interpolation from unrelated stills.",
+    "Named target muscle IDs highlighted red; resting muscles gray; no posterior triceps labelled as anterior biceps.",
+    "No flipped joints, bone-length change, object teleportation, hand losing grip or cable cutting through head/forearm.",
+    "Head/limbs/equipment remain inside 512px canvas at all frames; target and relevant contact point visible at app thumbnail size.",
+    "Any footprint moves relative to treadmill/stepmill only as equipment physically requires. Ground-camera tracking may move environmental markers but stance foot must share ground velocity.",
+    "Release/last-first seam does not jump stance, props or body; review rendered frames at start,quarter,half,threequarter plus actual encoded loop."
+  ],
+  "exercises": [
+    {
+      "key": "overhead-cable-triceps-ez-bar",
+      "identity": "User-confirmed standing LOW-rear-pulley overhead triceps extension with upright torso and short curved EZ cable attachment.",
+      "primarySources": [
+        {
+          "url": "https://www.muscleandstrength.com/exercises/standing-low-pulley-overhead-tricep-extension.html",
+          "scope": "Primary low-pulley/upright/forearm-only mechanics guide. Its example uses a straight bar; attachment shape is NOT copied. User explicitly confirmed the short curved EZ attachment and standing upright low-pulley variant."
+        }
+      ],
+      "fixed": [
+        "Feet in planted split stance; knees softly bent.",
+        "Torso erect; measured shoulder-center to hip-center direction within 5 degrees of vertical for the whole repetition.",
+        "Actual humerus vectors point vertically up beside the ears and remain fixed; shoulders and elbows do not swing.",
+        "Actual equipment pulley anchor stays low and behind at Y=0.14 metres; its source metadata must agree with the exported equipment anchor.",
+        "Wrists retain the two angled grip sections of one short cable EZ bar; actual grip-center separation drifts no more than 0.5 mm through all 49 poses."
+      ],
+      "moves": [
+        "Only forearms move at the elbows: short EZ bar moves from behind the head to overhead.",
+        "Authored controlled elbow flexion follows 105 degrees at start to 12 degrees at full extension, then returns to 105 degrees. These are illustrative animation targets, not source-claimed clinical prescriptions.",
+        "Cable stays taut from centered EZ-bar carabiner to the LOW pulley behind the athlete.",
+        "Only weight-stack vertical travel follows cable length."
+      ],
+      "authoringRange": {
+        "trunkForwardLeanFromVerticalDeg": [
+          0,
+          5
+        ],
+        "elbowFlexionStartDeg": [
+          104.9,
+          105.1
+        ],
+        "elbowFlexionEndDeg": [
+          11.9,
+          12.1
+        ],
+        "upperArmFromVerticalMaxDeg": 5,
+        "upperArmDirectionDriftMaxDeg": 0.1,
+        "softKneeFlexionDegExclusive": [1, 45],
+        "lowRearPulleyYMetres": 0.14,
+        "pulleyYToleranceMetres": 0.002,
+        "barGripSeparationDriftMaxMetres": 0.0005
+      },
+      "reject": [
+        "High pulley or high/hinged forward-extension mechanics substituted for the user-confirmed low-pulley upright variant.",
+        "Forward torso hinge or lumbar arch replacing controlled elbow extension.",
+        "Rope/straight/V-pushdown attachment instead of short curved EZ bar.",
+        "Upper arms down beside torso like pushdown, or sweeping shoulders like an overhead press.",
+        "Cable passes through head/upper arm, detaches from bar, or metadata labels a different source/anchor variant."
+      ]
+    },
+    {
+      "key": "machine-hip-thrust",
+      "identity": "Dedicated hip-thrust/glute-drive machine, not Smith or barbell.",
+      "primarySources": [
+        {
+          "url": "https://cdn-live.powerhouse-fitness.co.uk/files/taurus/single_station/SESS7009/PH_Manual_Taurus_SESS7009_ENG-2.pdf",
+          "scope": "Manufacturer page18: feet fixed pedalplate; upperback supported; extend until torso and thighs form line."
+        },
+        {
+          "url": "https://www.lifefitness.com/en-eu/catalog/strength-training/plate-loaded/hammer-strength-plate-loaded-glute-drive",
+          "scope": "Purpose-built machine, waist restraint, back pads and non-slip foot platform."
+        }
+      ],
+      "fixed": [
+        "Both feet flat on platform, no stance slide.",
+        "Fixed machine frame and lever pivot.",
+        "Upperback/shoulder region stays in contact with back pad; torso may rotate around this supported region.",
+        "Hands stay on fixed side handles if shown."
+      ],
+      "moves": [
+        "Pelvis extends upward/back along consistent arc from hip-flexed bottom to near-neutral hip at top.",
+        "Hip restraint/pad stays across hip crease and follows pelvis, not hovering.",
+        "Moving lever and its plates rotate about one fixed machine pivot, do not translate off-frame.",
+        "Knees naturally follow fixed-foot geometry; spine remains neutral."
+      ],
+      "authoringRange": {
+        "hipFlexionAtBottomDeg": [
+          65,
+          95
+        ],
+        "hipFlexionAtTopDeg": [
+          0,
+          15
+        ],
+        "kneeFlexionAtTopDeg": [
+          80,
+          100
+        ]
+      },
+      "reject": [
+        "barbell/Smith stand-in",
+        "free-floating pad/plates",
+        "feet rise or slide",
+        "lumbar hyperextension at top",
+        "stationary pelvis with torso crunching only"
+      ]
+    },
+    {
+      "key": "standing-bent-knee-calf-raise",
+      "identity": "Standing heel raise with knee held flexed. Existing routine has per-side context; preserve unilateral rendering unless user confirms bilateral.",
+      "primarySources": [
+        {
+          "url": "https://vimeo.com/1144186355",
+          "scope": "Original clinician demo: slightly unlocked knees, lift heels, support optional."
+        },
+        {
+          "url": "https://ie.physitrack.com/home-exercise-video/whole-body-vibration-platform---bent-knee-calf-raise-unsupported",
+          "scope": "Publisher explains bent-knee rise onto toes and controlled return; source platform is not to be copied."
+        }
+      ],
+      "fixed": [
+        "Working forefoot/toe contact planted on level ground.",
+        "Working knee remains visibly bent throughout, not straightening to rise.",
+        "Support hand fixed if a rail shown.",
+        "In unilateral version free foot remains clear throughout."
+      ],
+      "moves": [
+        "Ankle plantarflexes, heel rises, then heel lowers; knee/hip translate in the amount required by the toe pivot.",
+        "No knee-extension squat action."
+      ],
+      "authoringRange": {
+        "kneeFlexionDeg": [
+          30,
+          45
+        ],
+        "kneeFlexionDriftMaxDeg": 4,
+        "anklePlantarflexionExcursionDeg": [
+          15,
+          30
+        ]
+      },
+      "reject": [
+        "seated raise",
+        "straight-knee calf raise",
+        "toe lift/dorsiflexion instead of heel lift",
+        "whole foot floating above floor",
+        "free leg intermittently touching down"
+      ]
+    },
+    {
+      "key": "walking-flat-ground",
+      "identity": "Unloaded level-ground alternating walking, not treadmill, incline, marching or lunges.",
+      "primarySources": [
+        {
+          "url": "https://www.ouh.nhs.uk/gait-lab/",
+          "scope": "Primary gait service context; numeric animation targets here are author choices, not quotations from this overview."
+        },
+        {
+          "url": "https://github.com/AssiamahS/opengym3d/blob/ea3a60130fdcfb3c4771e44d09f84ebab4ee9bae/assets/ASSET_LIBRARY.json",
+          "scope": "Potential CC0 Mesh2Motion Walk motion source; still must review resulting rendered gait and license at upstream."
+        }
+      ],
+      "fixed": [
+        "Level continuous ground plane.",
+        "Head/torso upright with modest natural bob; no loaded object.",
+        "During stance, planted foot shares ground world velocity; track-camera environmental motion allowed."
+      ],
+      "moves": [
+        "Alternating heel contact, loading/midstance, push-off, swing clearance and return.",
+        "Opposite arm/leg swing, continuous left-right gait, no both-feet flight phase."
+      ],
+      "authoringRange": {
+        "hipFlexionSwingPeakDeg": [
+          20,
+          35
+        ],
+        "kneeFlexionSwingPeakDeg": [
+          45,
+          65
+        ],
+        "kneeFlexionStanceDeg": [
+          0,
+          20
+        ]
+      },
+      "reject": [
+        "flat foot sliding skating",
+        "same-side arms and legs swing in phase",
+        "visible treadmill frame/belt",
+        "exaggerated marching knees or stair-step trajectory",
+        "one leg remains planted all cycle"
+      ]
+    },
+    {
+      "key": "stepmill-continuous-walk",
+      "identity": "Continuous alternating walking on revolving stairs; generic original gray machine.",
+      "primarySources": [
+        {
+          "url": "https://shop.corehandf.com/cdn/shop/files/4G_StairMaster_Product_Sheet_e02b79f8-24f1-47f7-a87a-df45a61722df.pdf?v=6189525978583149410",
+          "scope": "Manufacturer StepMill shows moving tread mechanism,6inch stepheight and footprint."
+        },
+        {
+          "url": "https://www.corehandf.com/blogs/shop-hs/stairmaster-vs-elliptical-what-every-operator-should-know-before-building-a-cardio-floor",
+          "scope": "Manufacturer revolving-step climbing mechanism."
+        }
+      ],
+      "fixed": [
+        "Machine frame, console, handrails stationary.",
+        "Hands if shown stay lightly on rail grips, not carrying all bodyweight.",
+        "Torso/head remain upright in approximately one world location over the machine."
+      ],
+      "moves": [
+        "Treads descend backward/down at constant speed, circulate hidden under casing.",
+        "Stance sole stays attached to same descending tread without visible slip.",
+        "Swing foot clears riser and lands on next higher tread; opposite foot then switches.",
+        "Foot motions alternate every step; knees/hips extend to raise body relative tread while body position stays centered."
+      ],
+      "authoringRange": {
+        "treadRiseMeters": [
+          0.14,
+          0.19
+        ],
+        "kneeFlexionSwingPeakDeg": [
+          70,
+          100
+        ]
+      },
+      "reject": [
+        "two fixed pedals moving reciprocally",
+        "stationary stairs with stepping-in-place feet",
+        "feet penetrating step edges",
+        "same tread resets visibly under loaded foot",
+        "treadmill belt or highbox step-up substitute"
+      ]
+    },
+    {
+      "key": "bayesian-cable-curl",
+      "identity": "Single-arm supinated low-cable curl facing away from rear pulley.",
+      "primarySources": [
+        {
+          "url": "https://mennohenselmans.com/bayesian-curls/",
+          "scope": "Exercise originator; elbow near side, mild forward bow at curl contraction and controlled lean back on lowering; avoid forearm-cable contact."
+        }
+      ],
+      "fixed": [
+        "Feet/split stance fixed.",
+        "Pulley fixed low behind athlete.",
+        "Upper arm/elbow stays near side; slight natural shoulder extension, not dragged far backward."
+      ],
+      "moves": [
+        "Elbow curls single D-handle toward shoulder under supinated grip.",
+        "Mild controlled forward torso inclination may accompany curl (original method), not a swinging cheat.",
+        "Cable remains taut and clear of forearm."
+      ],
+      "authoringRange": {
+        "elbowFlexionStartDeg": [
+          5,
+          20
+        ],
+        "elbowFlexionEndDeg": [
+          110,
+          135
+        ],
+        "upperArmShoulderExtensionDeg": [
+          5,
+          25
+        ]
+      },
+      "reject": [
+        "ordinary facing-tower cable curl",
+        "triceps colored instead of anterior biceps",
+        "humerus swings forward into front raise",
+        "cable aligned with forearm at top or through forearm"
+      ]
+    },
+    {
+      "key": "cross-body-lat-pull-around",
+      "identity": "Half kneeling side-on, working arm FAR from tower crosses body toward high pulley.",
+      "primarySources": [
+        {
+          "url": "https://www.youtube.com/watch?v=4xHF_pMbEsk",
+          "scope": "Live Lean TV original trainer demonstration and instructions."
+        }
+      ],
+      "fixed": [
+        "Near knee grounded on pad; far foot forward.",
+        "Pelvis and torso square once set side-on; avoid twisting through repetition.",
+        "Free hand rests naturally; pulley fixed just above head when kneeling."
+      ],
+      "moves": [
+        "Far arm reaches UP and ACROSS body toward opposite-side pulley.",
+        "Sweep upper arm down and around with elbow bending, hand toward working-side hip.",
+        "Controlled return to same crossbody stretched reach."
+      ],
+      "authoringRange": {
+        "elbowFlexionAtReachDeg": [
+          5,
+          25
+        ],
+        "elbowFlexionAtFinishDeg": [
+          70,
+          110
+        ]
+      },
+      "reject": [
+        "NEAR arm does ordinary ipsilateral pulldown",
+        "straight-arm pulldown with fixed elbow",
+        "both knees on floor when original variation halfkneeling",
+        "large torso twist finishing pull"
+      ]
+    },
+    {
+      "key": "captains-chair-knee-raise",
+      "identity": "Supported captain chair bent-knee raise, not hanging from overhead bar.",
+      "primarySources": [
+        {
+          "url": "https://www.acefitness.org/getfit/studies/bestworstabexercises.pdf",
+          "scope": "Primary ACE exercise instruction: hold handles, back against pad, legs dangling, knees toward chest and controlled return."
+        },
+        {
+          "url": "https://www.precor.com/en-GB/products/DBR0702",
+          "scope": "Manufacturer elbow/forearm pads, grips and back pad."
+        }
+      ],
+      "fixed": [
+        "Forearms on elbow pads, hands gripping forward handles.",
+        "Back supported against back pad; upper torso nearly fixed.",
+        "Machine frame fixed; both feet clear floor/frame."
+      ],
+      "moves": [
+        "Both hips flex together; knees bend together toward chest; mild posterior pelvic curl at top.",
+        "Controlled lowering to dangling legs; no swinging."
+      ],
+      "authoringRange": {
+        "hipFlexionTopDeg": [
+          90,
+          110
+        ],
+        "kneeFlexionTopDeg": [
+          80,
+          110
+        ]
+      },
+      "reject": [
+        "overhead hang",
+        "dip with forearms unsupported",
+        "straight-leg raise",
+        "feet resting on frame",
+        "one knee rises while other remains down"
+      ]
+    },
+    {
+      "key": "dead-hang",
+      "identity": "Two-hand isometric bar hang, arms long and feet free.",
+      "primarySources": [
+        {
+          "url": "https://vimeo.com/699467769",
+          "scope": "APC Physio original demonstration: comfortable grip,armsstraight,feetfree,hold."
+        },
+        {
+          "url": "https://www.acefitness.org/continuing-education/certified/june-2025/8887/the-truth-behind-the-trends/",
+          "scope": "Professional exercise org on grip and shoulder control; no invented repetitions."
+        }
+      ],
+      "fixed": [
+        "Both hands grip same fixed overhead bar throughout.",
+        "Arms extended without repeated elbow flexion.",
+        "Feet clear floor; body long and stable.",
+        "Shoulders stay in selected controlled hanging posture."
+      ],
+      "moves": [
+        "Isometric hold only; optional tiny breathing/visual target cue."
+      ],
+      "authoringRange": {
+        "elbowFlexionDeg": [
+          0,
+          8
+        ]
+      },
+      "reject": [
+        "pullups",
+        "repeated scapular pull repetitions",
+        "feet on floor",
+        "large swinging body",
+        "hands move off bar"
+      ]
+    },
+    {
+      "key": "plate-pinch-hold",
+      "identity": "Static pinch grip of smooth plate faces, not center-hole or handle grip.",
+      "primarySources": [
+        {
+          "url": "https://www.davidhorne-gripmaster.com/gripfeats.html",
+          "scope": "Primary grip-sport documentation shows smooth plates facing out and thumb/fingers opposition."
+        }
+      ],
+      "fixed": [
+        "Torso upright, feet planted.",
+        "One hand at side pinches two adjacent plate faces near top edge; thumb opposed to fingers.",
+        "Plates hang clear ground and thigh; hand/plates stationary throughout.",
+        "No curling elbow or shrugging."
+      ],
+      "moves": [
+        "Isometric hold only."
+      ],
+      "reject": [
+        "fingers threaded center hole",
+        "plate handle held like dumbbell",
+        "two-hand front plate squeeze",
+        "repeated plate lift/curl",
+        "plate floats away from fingers"
+      ]
+    },
+    {
+      "key": "spanish-squat-hold",
+      "identity": "Static Spanish squat with taut support band behind knees anchored in FRONT.",
+      "primarySources": [
+        {
+          "url": "https://www.catalystathletics.com/exercise/747/Spanish-Squat/",
+          "scope": "Coach demonstration: front rackanchor, bandbackknees, nearverticalshins/trunk,about90degree knee,isometricoption."
+        }
+      ],
+      "fixed": [
+        "Feet flat fixed at shoulderwidth.",
+        "Both knees flexed about right angle, shins nearvertical.",
+        "Torso nearvertical; hips sit back.",
+        "Band runs from front fixed anchor around BACKS of both knees; remains taut.",
+        "Arms at chest/forward stable."
+      ],
+      "moves": [
+        "Isometric hold only; no repeated squat up/down."
+      ],
+      "authoringRange": {
+        "kneeFlexionDeg": [
+          80,
+          100
+        ],
+        "trunkFromVerticalDeg": [
+          0,
+          15
+        ]
+      },
+      "reject": [
+        "wall sit",
+        "band anchored behind body",
+        "band across front knees",
+        "heels lift",
+        "dynamic squats substituted for hold"
+      ]
+    },
+    {
+      "key": "nordic-hold",
+      "identity": "Static forward-lean Nordic hold, ankles secured and knee-hip-shoulder line straight.",
+      "primarySources": [
+        {
+          "url": "https://www.nordbelt.com/en-gb/blogs/blog-posts/nordic-curl-isometric",
+          "scope": "Manufacturer clinician author distinguishes isometric from dynamic Nordic; angle chosen within control, no universal correct angle."
+        }
+      ],
+      "fixed": [
+        "Both knees rest paddedfloor; ankles held securely by fixed padded support.",
+        "Knees,hips,shoulders form nearstraight line.",
+        "Forward lean held at chosen angle; hips do NOT fold.",
+        "Hands ready for support but not pressing floor in the held pose."
+      ],
+      "moves": [
+        "Isometric hold only; stable kneeangle, no progressive lowering."
+      ],
+      "authoringRange": {
+        "illustrativeForwardLeanFromVerticalDeg": [
+          25,
+          40
+        ],
+        "hipFlexionDeg": [
+          0,
+          10
+        ]
+      },
+      "reject": [
+        "reverse Nordic backwardlean",
+        "dynamic eccentriccurl",
+        "hips pike backward",
+        "floating/unsecured ankles",
+        "torso rests on bench"
+      ]
+    },
+    {
+      "key": "suitcase-carry",
+      "identity": "Level walking with ONE dumbbell at one side, tall torso resisting lateral bend.",
+      "primarySources": [
+        {
+          "url": "https://www.acefitness.org/resources/everyone/exercise-library/358/suitcase-carry/",
+          "scope": "ACE original instruction:one dumbbell beside hip,backstraight,walk,then switcharms."
+        }
+      ],
+      "fixed": [
+        "Loaded hand stays gripping dumbbell at side, elbow long.",
+        "Dumbbell follows hand, no independent drift.",
+        "Torso upright with shoulderline nearlevel."
+      ],
+      "moves": [
+        "Alternating levelgait with stance-ground coupling like Walking.",
+        "Free arm may swing; loaded arm has small natural sway only."
+      ],
+      "authoringRange": {
+        "loadedElbowFlexionDeg": [
+          0,
+          15
+        ],
+        "trunkLateralLeanDeg": [
+          0,
+          5
+        ]
+      },
+      "reject": [
+        "two-dumbbell farmercarry",
+        "barbell suitcasesubstitute",
+        "stationary hold only",
+        "oblique sidebends",
+        "dumbbell swinging into leg or floor"
+      ]
+    }
+  ]
+}

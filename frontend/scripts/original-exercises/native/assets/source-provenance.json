@@ -1,0 +1,103 @@
+{
+  "status": "User-confirmed anatomical style and standing upright low-pulley short EZ variant; frozen authoring source for final encoded-export verification",
+  "applicationCodeLicense": "AGPL-3.0-or-later",
+  "combinedArtworkLicense": "CC-BY-SA-4.0; see ../model/NOTICE.md and assets/NOTICE.md",
+  "anatomicalModel": {
+    "repository": "https://github.com/heatsy-app/heatsy-body-model",
+    "commit": "6cf6a0ae7c63bcffca1137ddcec14a31b7254a6d",
+    "sourcePath": "model/body_superficial.app5m.glb",
+    "sha256": "ce9859de013c2ee9713dbe3158275208b57be1b4ff31957eca87195b991c0ab1",
+    "license": "CC-BY-SA-4.0",
+    "role": "unchanged 56-bone rig, anatomical identity/semantic labels, native hands/feet and source four-view reference"
+  },
+  "continuousBodySurface": {
+    "repository": "https://github.com/AssiamahS/opengym3d",
+    "repositoryAuditedCommit": "ea3a60130fdcfb3c4771e44d09f84ebab4ee9bae",
+    "repositoryCodeSnapshot": "https://github.com/AssiamahS/opengym3d/tree/ea3a60130fdcfb3c4771e44d09f84ebab4ee9bae",
+    "publishedAsset": "https://assiamahs.github.io/opengym3d/assets/walk.glb",
+    "publishedManifest": "https://assiamahs.github.io/opengym3d/exercises.json",
+    "publishedAssetCommit": "not asserted; exact downloaded bytes pinned by SHA-256",
+    "sourceSha256": "789867cd7f3ab8362f29632d1b424eb0f31193fca3a05318ac830a03b2115eb1",
+    "sourceLicense": "CC0-1.0 per primary publisher walk manifest",
+    "underlyingCore": "MakeHuman core exported body surface",
+    "use": "bind-rest surface only, remapped to existing 56-bone rig; source walking animation/paint/preview not used",
+    "changes": [
+      "remove source head/hands/feet",
+      "segment-fit to target rest bone landmarks",
+      "weld duplicate UV/color boundary vertices",
+      "smooth target-derived muscular volume and anterior chest profile",
+      "remap source skin weights by segment to target bones",
+      "transfer anatomical part identity/fiber/tendon from target rest surface"
+    ],
+    "derivedGeometryLicense": "CC-BY-SA-4.0 with target-derived anatomy"
+  },
+  "head": {
+    "repository": "https://github.com/makehumancommunity/makehuman",
+    "commit": "a8bc2d54ff0ac92e78ff71431b1023eda42bf482",
+    "assetLicense": "CC0-1.0",
+    "licenseExplanation": "https://static.makehumancommunity.org/about/license.html",
+    "files": [
+      {
+        "file": "makehuman-base.obj",
+        "url": "https://raw.githubusercontent.com/makehumancommunity/makehuman/a8bc2d54ff0ac92e78ff71431b1023eda42bf482/makehuman/data/3dobjs/base.obj",
+        "bytes": 1749303,
+        "sha256": "8e761e6624b8f54536409135d1636da63b32486a90d4897f84e121d144f6fb4c"
+      },
+      {
+        "file": "MAKEHUMAN-ASSETS-LICENSE.md",
+        "url": "https://raw.githubusercontent.com/makehumancommunity/makehuman/a8bc2d54ff0ac92e78ff71431b1023eda42bf482/LICENSE.ASSETS.md",
+        "bytes": 6962,
+        "sha256": "f6089cba01cb570a24712b41ab8a586ccd3cc5ef53dc266ca50b95c288956d2c"
+      }
+    ]
+  },
+  "staticSurfaceAtlas": {
+    "tool": "OpenAI built-in imagegen",
+    "source": "original neutral four-view texture refinement from own render of the licensed Heatsy rest model",
+    "animationFramesGenerated": false,
+    "referenceInput": "assets/anatomy-surface-input.png",
+    "referenceInputSha256": "39ef3d9eeec0dab69f6ee89827dc0e2e60147985fbaabe71d37a383b46a03596",
+    "texture": "assets/anatomy-surface-atlas.png",
+    "textureSha256": "9f458b5fe36b983fecb499d45929a84a02b87420dbc615a294a1e235b9aa7e01",
+    "prompt": "assets/anatomy-surface-prompt.md",
+    "license": "CC-BY-SA-4.0 as anatomical-model derivative",
+    "projection": "fixed four-view bind-rest triplanar, unchanged across animation; no GymVisual image input"
+  },
+  "authoringChanges": "TGym authored poses, equipment, camera/light choices, native hand articulation, surface adaptation/painting/shaders and renders. No watermark removal.",
+  "rawSourceMeshesVendored": false,
+  "bakedGeometryIsRendererInput": true,
+  "userConfirmedStyle": true,
+  "userConfirmedOverheadVariant": {
+    "pulley": "low rear cable",
+    "torso": "upright",
+    "attachment": "short curved EZ cable bar",
+    "source": "https://www.muscleandstrength.com/exercises/standing-low-pulley-overhead-tricep-extension.html",
+    "illustrativeElbowFlexionDegrees": [
+      105,
+      12
+    ]
+  },
+  "illustrationMasks": {
+    "leftSoleus": {
+      "sourceVertices": 244,
+      "sourceBoundsMetres": {
+        "min": [
+          0.0443,
+          0.1335,
+          -0.0784
+        ],
+        "max": [
+          0.1279,
+          0.4096,
+          -0.0251
+        ]
+      },
+      "method": "real deep anatomical source projected only onto distal posterior and lateral active-left calf borders; original part IDs and geometry preserved",
+      "projectionFalloffMetres": [
+        0.03,
+        0.055
+      ],
+      "cache": "one per exercise key"
+    }
+  }
+}

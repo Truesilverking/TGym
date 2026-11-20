@@ -20,7 +20,6 @@ mcp/       optional MCP server — read-only stdio bridge exposing a user's work
            balance to LLM clients (Claude Desktop, Cursor…). Not part of the Docker build; only
            runs when an LLM client spawns it.
 media/     exercise img/gif, gitignored, fetched at runtime by the `media` compose service.
-website/   static marketing site (plain HTML/CSS/JS), deployed separately by .gitlab-ci.yml.
 docs/      SELF_HOSTING.md, MOBILE.md.
 ```
 
@@ -51,11 +50,11 @@ cd frontend && npm run build:mobile   # + cap sync, points media at the CDN data
 There is no linter/formatter configured (no ESLint/Prettier config in the repo) and no
 TypeScript — match the existing style by hand.
 
-The CI gate is `.gitlab-ci.yml` on GitLab, the canonical remote (see README): it runs the
-`frontend/` tests on Node 22 — the same version as `web/Dockerfile` / `api/Dockerfile`
-(`node:22-alpine`) — and additionally builds and publishes the Docker images, packages the
-signed Android APK, and deploys the demo/docs site. The Gitea and GitHub workflow copies
-(`.gitea/workflows/`, `.github/workflows/`) are dormant mirrors; neither host runs them.
+The CI gate is GitHub Actions on the canonical remote (github.com/Truesilverking/TGym):
+`.github/workflows/test.yml` runs the `frontend/` tests on Node 22, `check-locales`,
+`check-source-strings`, the fatigue probe and the API/MCP suites; `pages.yml` validates the
+PWA build, `android.yml` / `release.yml` package and publish releases. TGym ships Spanish and
+English only (English is the source language; `src/locales/es.js` is the one locale pack).
 
 ## Architecture
 

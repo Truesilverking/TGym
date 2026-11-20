@@ -567,3 +567,9 @@ describe('drop-sets and rest-pause sets in progression', () => {
     expect(out[1]).toEqual({ type: 'dropset', w: 0, r: 10, done: false })
   })
 })
+
+it('judges chronological unique completed history, not import order or canceled sessions',()=>{
+ const entry={id:'audit',target:{reps:6,sets:1},sets:[{w:100,r:6,done:true}]}
+ const S={workouts:[{id:'new',d:'2026-09-28',entries:[entry]},{id:'old',d:'2026-09-01',entries:[entry]},{id:'new',d:'2026-09-28',entries:[entry]},{id:'cancel',cancelled:true,d:'2026-09-29',entries:[entry]},null]}
+ expect(sessionsFor(S,'audit').map(s=>s.d)).toEqual(['2026-09-01','2026-09-28'])
+})

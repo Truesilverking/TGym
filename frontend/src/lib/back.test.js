@@ -1,11 +1,16 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest'
-import { decideBack, makeBackHandler, EXIT_WINDOW } from './back.js'
+import { decideBack, makeBackHandler, EXIT_WINDOW, registerNavigationBack } from './back.js'
 
 // Back on Android has to serve three layers with one event: the sheet stack on top, the
 // page history under it, and — because a registered listener stops the plugin from ever
 // finishing the activity itself — a deliberate way out of the app at the bottom.
 describe('decideBack', () => {
+  it('closes navigation before history while retaining sheet and lock priority',()=>{
+    expect(decideBack({navigationOpen:true,canGoBack:true,exitArmed:true})).toBe('navigation')
+    expect(decideBack({navigationOpen:true,top:{id:'sheet'},canGoBack:true})).toBe('sheet')
+    expect(decideBack({navigationOpen:true,top:{id:'lock',locked:true},canGoBack:true})).toBe('ignore')
+  })
   it('dismisses the top sheet before touching history', () => {
     expect(decideBack({ top: { id: 's1' }, canGoBack: true, exitArmed: false })).toBe('sheet')
   })
@@ -22,6 +27,13 @@ describe('decideBack', () => {
     expect(decideBack({ top: undefined, canGoBack: false, exitArmed: false })).toBe('arm-exit')
     expect(decideBack({ top: undefined, canGoBack: false, exitArmed: true })).toBe('exit')
   })
+})
+
+it('dismisses a registered navigation surface once before walking native history',()=>{
+ const events=[],handler=makeBackHandler({getSheets:()=>[],closeSheet:()=>{},toast:()=>{},goBack:()=>events.push('history'),exit:()=>events.push('exit')})
+ const unregister=registerNavigationBack(()=>{events.push('navigation');unregister()})
+ try {expect(handler({canGoBack:true})).toBe('navigation');expect(handler({canGoBack:true})).toBe('history');expect(events).toEqual(['navigation','history'])}
+ finally{unregister()}
 })
 
 function harness() {

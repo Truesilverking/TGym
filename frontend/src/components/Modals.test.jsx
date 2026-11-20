@@ -42,6 +42,7 @@ let root
 let container
 let historyMock
 let locationMock
+let historyStack, historyIndex, queuedTraversal
 
 function sheet(id, { locked = false, render = () => React.createElement('div') } = {}) {
   return { id, locked, kind: 'sheet', render }
@@ -58,7 +59,13 @@ function installDom() {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true
 
   locationMock = { href: 'https://opengym.test/#/workout' }
-  historyMock = { pushState: vi.fn(), go: vi.fn() }
+  historyStack = [{state:{idx:0,key:'original'},url:locationMock.href}];historyIndex=0;queuedTraversal=null
+  historyMock = {
+    get state(){return historyStack[historyIndex].state},
+    pushState:vi.fn((state,title,url)=>{const entry={state:structuredClone(state),url:url?new URL(url,locationMock.href).href:locationMock.href};historyStack.splice(++historyIndex,Infinity,entry);locationMock.href=entry.url}),
+    replaceState:vi.fn((state,title,url)=>{const entry={state:structuredClone(state),url:url?new URL(url,locationMock.href).href:locationMock.href};historyStack[historyIndex]=entry;locationMock.href=entry.url}),
+    go:vi.fn(delta=>{queuedTraversal=historyIndex+delta}),
+  }
   Object.defineProperty(globalThis, 'location', { configurable: true, value: locationMock })
   Object.defineProperty(globalThis, 'history', { configurable: true, value: historyMock })
 
@@ -71,7 +78,11 @@ async function setSheets(sheets) {
 }
 
 async function popstate() {
-  await act(async () => { window.dispatchEvent(new dom.Event('popstate')) })
+  await act(async () => {
+    historyIndex=Math.max(0,queuedTraversal??historyIndex-1);queuedTraversal=null
+    locationMock.href=historyStack[historyIndex].url
+    window.dispatchEvent(new dom.Event('popstate'))
+  })
 }
 
 function mouse(target, type, clientY) {
@@ -98,6 +109,80 @@ afterEach(async () => {
 })
 
 describe('Modals sheet history accounting', () => {
+  it('preserves the real previous page and an immediate navigation while a close traversal is pending',async()=>{
+    const push=historyMock.pushState,replace=historyMock.replaceState
+    await setSheets([sheet('times')])
+    expect(historyMock.state.idx).toBe(0);expect(historyMock.state.key).toBe('original')
+    await setSheets([])
+    history.pushState({idx:1,key:'stats'},'','#/stats')
+    expect(location.href).toBe('https://opengym.test/#/stats')
+    await popstate()
+    expect(location.href).toBe('https://opengym.test/#/stats')
+    expect(historyMock.state).toEqual({idx:1,key:'stats'})
+    expect(historyMock.pushState).toBe(push);expect(historyMock.replaceState).toBe(replace)
+    expect(historyStack).toHaveLength(2)
+    await popstate();expect(location.href).toBe('https://opengym.test/#/workout')
+    expect(mocks.state.sheets).toHaveLength(0)
+  })
+
+  it('replays intervening route replacement as replacement instead of adding a page',async()=>{
+    await setSheets([sheet('times')]);await setSheets([])
+    history.replaceState({idx:0,key:'library'},'','#/library')
+    await popstate()
+    expect(location.href).toBe('https://opengym.test/#/library');expect(historyStack).toHaveLength(2)
+    expect(historyMock.state).toEqual({idx:0,key:'library'})
+  })
+
+  it('restores a newly opened sheet across a pending close without duplicating its active history count',async()=>{
+    await setSheets([sheet('first')]);await setSheets([]);await setSheets([sheet('second')])
+    await popstate()
+    expect(mocks.state.sheets.map(item=>item.id)).toEqual(['second'])
+    expect(historyMock.state.openGymSheet).toBe(true)
+    await popstate();expect(mocks.state.sheets).toHaveLength(0)
+    expect(historyMock.go).toHaveBeenCalledTimes(1)
+  })
+
+  it('coalesces consecutive closes and does not resurrect a sheet opened and closed during the rewind',async()=>{
+    await setSheets([sheet('lower'),sheet('upper')]);await setSheets([sheet('lower')]);await setSheets([])
+    await setSheets([sheet('transient')]);await setSheets([])
+    expect(historyMock.go).toHaveBeenCalledTimes(1)
+    await popstate();expect(historyMock.go).toHaveBeenLastCalledWith(-1)
+    await popstate()
+    expect(mocks.state.sheets).toHaveLength(0);expect(historyMock.state.openGymSheet).toBeUndefined()
+    expect(historyMock.pushState).toBeTypeOf('function')
+  })
+
+  it('restores temporary history methods after a failed traversal and on unmount',async()=>{
+    const push=historyMock.pushState,replace=historyMock.replaceState
+    await setSheets([sheet('first')]);historyMock.go.mockImplementationOnce(()=>{throw new Error('blocked traversal')})
+    await setSheets([])
+    expect(historyMock.pushState).toBe(push);expect(historyMock.replaceState).toBe(replace)
+    await setSheets([sheet('second')]);await setSheets([])
+    expect(historyMock.pushState).not.toBe(push)
+    await act(async()=>root.unmount());root=null
+    expect(historyMock.pushState).toBe(push);expect(historyMock.replaceState).toBe(replace)
+  })
+
+  it('does not replay a failed navigation write during a pending close',async()=>{
+    const push=historyMock.pushState
+    await setSheets([sheet('times')]);await setSheets([])
+    push.mockImplementationOnce(()=>{throw new Error('uncloneable state')})
+    expect(()=>history.pushState({idx:1,key:'failed'},'','#/stats')).toThrow('uncloneable state')
+    await popstate()
+    expect(location.href).toBe('https://opengym.test/#/workout')
+    expect(historyMock.state).toEqual({idx:0,key:'original'});expect(historyMock.pushState).toBe(push)
+  })
+
+  it('keeps an unspent leak counted if a later traversal in a consecutive close fails',async()=>{
+    const push=historyMock.pushState
+    await setSheets([sheet('lower'),sheet('upper')]);await setSheets([sheet('lower')]);await setSheets([])
+    historyMock.go.mockImplementationOnce(()=>{throw new Error('blocked second traversal')})
+    await popstate();expect(historyMock.pushState).toBe(push)
+    await popstate() // Spend the remaining leak before opening a fresh sheet.
+    const locked=sheet('locked',{locked:true});await setSheets([locked]);await popstate();await setSheets([])
+    expect(historyMock.go).toHaveBeenCalledTimes(2)
+  })
+
   it('does not rewind a real page after back spends a locked FinishSummary entry', async () => {
     const confirm = sheet('confirm')
     const summary = sheet('summary', { locked: true })
@@ -162,6 +247,25 @@ describe('Modals sheet history accounting', () => {
 })
 
 describe('Modals mouse dragging', () => {
+  it('lets the visible grab handle drag the sheet while the close button stays clickable',async()=>{
+    await setSheets([sheet('grab')])
+    const panel=container.querySelector('.sheet');panel.scrollTop=0
+    await act(async()=>{mouse(panel.querySelector('.grab'),'mousedown',10);mouse(panel,'mousemove',60)})
+    expect(panel.style.transform).toBe('translateY(50px)')
+    await act(async()=>window.dispatchEvent(new dom.Event('mouseup')))
+    expect(panel.style.transform).toBe('')
+    await act(async()=>panel.querySelector('.sheet-close').click())
+    expect(mocks.state.sheets).toHaveLength(0)
+  })
+  it('does not move a sheet for natural tap jitter or gestures beginning on a button',async()=>{
+    await setSheets([sheet('tap',{render:()=>React.createElement('button',null,'Choose')})])
+    const panel=container.querySelector('.sheet');panel.scrollTop=0
+    await act(async()=>{mouse(panel,'mousedown',10);mouse(panel,'mousemove',15)})
+    expect(panel.style.transform).toBe('')
+    await act(async()=>window.dispatchEvent(new dom.Event('mouseup')))
+    await act(async()=>{mouse(panel.querySelector('button:not(.sheet-close)'),'mousedown',10);mouse(panel,'mousemove',150);window.dispatchEvent(new dom.Event('mouseup'))})
+    expect(panel.style.transform).toBe('');expect(mocks.state.sheets).toHaveLength(1)
+  })
   it('leaves range sliders opted out of sheet dragging', async () => {
     await setSheets([sheet('slider', {
       render: () => React.createElement('input', { type: 'range' }),
@@ -197,5 +301,34 @@ describe('Modals mouse dragging', () => {
     await act(async () => { mouse(sheetEl, 'mousemove', 120) })
     expect(sheetEl.style.transform).toBe('')
     expect(mocks.state.sheets).toHaveLength(1)
+  })
+})
+
+
+describe('Modals accessible presentation', () => {
+  it('labels the dialog and offers a close control without spending unrelated history', async () => {
+    await setSheets([sheet('detail', { render: () => React.createElement('h3', null, 'Details') })])
+    const dialog = container.querySelector('[role="dialog"]')
+    expect(dialog.getAttribute('aria-modal')).toBe('true')
+    expect(dialog.getAttribute('aria-labelledby')).toBe(dialog.querySelector('h3').id)
+    await act(async () => { dialog.querySelector('.sheet-close').click() })
+    expect(mocks.state.sheets).toHaveLength(0)
+    expect(historyMock.go).toHaveBeenCalledWith(-1)
+  })
+  it('keeps locked dialogs locked and makes covered sheets inert', async () => {
+    await setSheets([sheet('lower'), sheet('locked', { locked: true })])
+    const dialogs = container.querySelectorAll('[role="dialog"]')
+    expect(dialogs[0].parentElement.hasAttribute('inert')).toBe(true)
+    expect(dialogs[1].parentElement.hasAttribute('inert')).toBe(false)
+    expect(dialogs[1].querySelector('.sheet-close')).toBe(null)
+    expect(dialogs[1].getAttribute('aria-modal')).toBe('true')
+  })
+  it('restores the page availability after closing the last dialog', async () => {
+    const page = document.createElement('main'); page.id = 'app'; document.body.appendChild(page)
+    await setSheets([sheet('detail')])
+    expect(page.hasAttribute('inert')).toBe(true)
+    await setSheets([])
+    expect(page.hasAttribute('inert')).toBe(false)
+    page.remove()
   })
 })

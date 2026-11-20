@@ -13,7 +13,7 @@ Read `docs/ARCHITECTURE.md` before changing an unfamiliar subsystem. The source 
 
 ## Invariants
 
-- Preserve existing user changes. Inspect status/diff before editing; use a feature branch for substantive work. Never force-push or publish a release as a side effect of setup.
+- Preserve existing user changes. Inspect status/diff before editing; use `Dev` for substantive work and keep `main` stable. Maintain only these two branches unless the user requests otherwise. Never force-push or publish a release as a side effect of setup.
 - Use `useStore.update` for normal persisted state edits. Keep localStorage, the mobile file mirror and optional server synchronization consistent.
 - Keep backward compatibility with existing workout rows, legacy measurement fields and portable backups. Do not rename storage keys or native package identifiers casually.
 - Workout duration comes from `lib/workout-time.js`; do not introduce a second elapsed-time calculation. Warmup rows do not determine required work completion or progression.

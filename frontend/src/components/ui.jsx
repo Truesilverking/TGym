@@ -13,8 +13,9 @@
 //   · :active gives a scale/tint response so touch feels acknowledged
 //   · focus-visible draws a ring; pointer interaction never does
 
-import { useRef, useState, useEffect, useCallback, forwardRef } from 'react'
+import { useRef, useState, useEffect, useCallback, forwardRef, useId, Children, cloneElement } from 'react'
 import Icon from './Icon.jsx'
+import { t } from '../lib/i18n.js'
 
 /* ============================ text ============================ */
 
@@ -23,12 +24,21 @@ import Icon from './Icon.jsx'
 // 0). Keeps a local string draft while focused so partial input like "33," survives.
 // `nullable` is for fields where "nothing entered" and 0 mean different things (RIR: a
 // logged 0 is a set taken to failure). Those clear back to null instead of snapping to 0.
-export function NumberField({ value, onChange, decimal = true, nullable = false, className = '', ...rest }) {
+export function NumberField({ value, onChange, decimal = true, nullable = false, displayValue, validation, retainInvalid = false, className = '', ...rest }) {
   const [draft, setDraft] = useState(null)
+  const [invalid, setInvalid] = useState(false)
   const committed = useRef(null)
   // null and undefined are the same "empty" here — a nullable field's key is dropped once cleared.
-  if (draft !== null && (committed.current ?? null) !== (value ?? null)) { setDraft(null); committed.current = null }
+  if (draft !== null && (committed.current ?? null) !== (value ?? null)) { setDraft(null); setInvalid(false); committed.current = null }
   const commit = raw => {
+    if (validation) {
+      const text = raw.replace(/,/g, '.')
+      const number = text === '' || text === '.' ? (nullable ? null : 0) : Number(text)
+      const syntax = decimal ? /^\d*(?:\.\d*)?$/.test(text) : /^\d*$/.test(text)
+      const valid = syntax && (number == null || (Number.isFinite(number) && number >= (validation.min ?? 0) && number <= (validation.max ?? Number.MAX_SAFE_INTEGER) && (!validation.step || Math.abs(number / validation.step - Math.round(number / validation.step)) < 1e-8)))
+      if (!valid) { committed.current = value; setDraft(raw); setInvalid(true); return }
+    }
+    setInvalid(false)
     let s = raw.replace(/,/g, '.').replace(/[^0-9.]/g, '')
     const i = s.indexOf('.')
     if (i !== -1) s = decimal ? s.slice(0, i + 1) + s.slice(i + 1).replace(/\./g, '') : s.slice(0, i)
@@ -42,10 +52,24 @@ export function NumberField({ value, onChange, decimal = true, nullable = false,
       type="text"
       inputMode={decimal ? 'decimal' : 'numeric'}
       className={'num ' + className}
-      value={draft ?? (value ?? '')}
-      onFocus={e => e.target.select()}
+      value={draft ?? displayValue ?? (value ?? '')}
+      onFocus={e => {
+        if (displayValue != null) {
+          committed.current = value
+          const numeric = String(value ?? '')
+          setDraft(numeric)
+          e.target.value = numeric
+        }
+        e.target.select()
+      }}
       onChange={e => commit(e.target.value)}
-      onBlur={() => { setDraft(null); committed.current = null }}
+      data-edit-state={invalid ? 'invalid' : draft !== null ? 'saved' : 'default'}
+      enterKeyHint="done"
+      autoComplete="off"
+      aria-invalid={invalid || undefined}
+      title={invalid ? t('Enter a valid number') : undefined}
+      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur() } }}
+      onBlur={() => { if (retainInvalid && invalid) return; setDraft(null); setInvalid(false); committed.current = null }}
       {...rest}
     />
   )
@@ -66,7 +90,7 @@ export function SearchField({ value, onChange, onClear, ...rest }) {
       <Icon name="magnifier" className="lead" />
       <input className="field" value={value} onChange={onChange} {...rest} />
       {!!value && (
-        <button className="clear" onClick={onClear} aria-label="Clear">
+        <button className="clear" onClick={onClear} type="button" aria-label={t('Clear')}>
           <Icon name="xmark" />
         </button>
       )}
@@ -76,9 +100,10 @@ export function SearchField({ value, onChange, onClear, ...rest }) {
 
 /* ============================ switch ============================ */
 
-export function Switch({ checked, onChange, disabled }) {
+export function Switch({ checked, onChange, disabled, ...rest }) {
   return (
     <button
+      {...rest}
       role="switch"
       aria-checked={!!checked}
       disabled={disabled}
@@ -115,16 +140,16 @@ export function Segmented({ options, value, onChange, className = '' }) {
 
 /* ============================ stepper ============================ */
 
-export function Stepper({ value, step = 1, onChange, decimal = true, className = '', label, unit }) {
+export function Stepper({ value, step = 1, onChange, decimal = true, displayValue, className = '', label, unit }) {
   const set = v => onChange(Math.max(0, Math.round((v || 0) * 100) / 100))
   const inner = (
     <div className={'stp ' + className}>
-      <button onClick={() => set((+value || 0) - step)} aria-label="Decrease"><Icon name="minus" /></button>
+      <button onClick={() => set((+value || 0) - step)} aria-label={t('Decrease')}><Icon name="minus" /></button>
       <span className="val">
-        <NumberField value={value} decimal={decimal} onChange={onChange} />
+        <NumberField value={value} displayValue={displayValue} decimal={decimal} onChange={onChange} aria-label={label} />
         {unit && <i>{unit}</i>}
       </span>
-      <button onClick={() => set((+value || 0) + step)} aria-label="Increase"><Icon name="plus" /></button>
+      <button onClick={() => set((+value || 0) + step)} aria-label={t('Increase')}><Icon name="plus" /></button>
     </div>
   )
   if (!label) return inner
@@ -136,7 +161,7 @@ export function Stepper({ value, step = 1, onChange, decimal = true, className =
 // Pointer-driven so the fill, track and thumb are all ours — no ::-webkit-*
 // pseudo-elements, which is the only way the control looks identical on every
 // platform and can pick up the accent colour.
-export function Slider({ value, min = 0, max = 100, step = 1, onChange, className = '' }) {
+export function Slider({ value, min = 0, max = 100, step = 1, onChange, className = '', ...rest }) {
   const ref = useRef(null)
   const [drag, setDrag] = useState(false)
   const pct = Math.min(100, Math.max(0, ((value - min) / (max - min)) * 100))
@@ -170,6 +195,7 @@ export function Slider({ value, min = 0, max = 100, step = 1, onChange, classNam
   }, [drag, onChange, posToValue])
 
   const key = e => {
+    if (e.key === 'Home' || e.key === 'End') { e.preventDefault(); onChange(e.key === 'Home' ? min : max); return }
     const d = e.key === 'ArrowRight' || e.key === 'ArrowUp' ? step
       : e.key === 'ArrowLeft' || e.key === 'ArrowDown' ? -step : 0
     if (!d) return
@@ -184,6 +210,7 @@ export function Slider({ value, min = 0, max = 100, step = 1, onChange, classNam
       role="slider"
       tabIndex={0}
       aria-valuenow={value} aria-valuemin={min} aria-valuemax={max}
+      {...rest}
       data-nodrag                                  /* keeps the sheet from swipe-dismissing */
       onKeyDown={key}
       onPointerDown={e => { e.currentTarget.setPointerCapture?.(e.pointerId); setDrag(true); onChange(posToValue(e.clientX)) }}
@@ -196,9 +223,11 @@ export function Slider({ value, min = 0, max = 100, step = 1, onChange, classNam
 
 /* ============================ checkbox ============================ */
 
-export function Check({ checked, onChange, className = '', size }) {
+export function Check({ checked, onChange, className = '', size, ...rest }) {
   return (
     <button
+      {...rest}
+      type="button"
       role="checkbox"
       aria-checked={!!checked}
       className={'chk' + (checked ? ' on' : '') + ' ' + className}
@@ -215,9 +244,9 @@ export function Check({ checked, onChange, className = '', size }) {
 // The inset-grouped list is the app's main structural primitive: a titled
 // section holding rows separated by hairlines that stop short of the leading
 // edge, so the icon column reads as a continuous rail.
-export function Section({ title, footer, children, className = '' }) {
+export function Section({ title, footer, children, className = '', ...rest }) {
   return (
-    <section className={'sect ' + className}>
+    <section className={'sect ' + className} {...rest}>
       {title && <h2 className="sect-t">{title}</h2>}
       <div className="sect-b">{children}</div>
       {footer && <p className="sect-f">{footer}</p>}
@@ -226,15 +255,16 @@ export function Section({ title, footer, children, className = '' }) {
 }
 
 export function Row({ icon, iconTint, title, subtitle, value, accessory = 'none', onClick, danger, children, className = '' }) {
+  const titleId = useId()
   const Tag = onClick ? 'button' : 'div'
   return (
     <Tag className={'lrow' + (onClick ? ' tap' : '') + (danger ? ' danger' : '') + ' ' + className} onClick={onClick}>
       {icon && <span className="lrow-i" style={iconTint ? { '--tint': iconTint } : null}><Icon name={icon} /></span>}
       <span className="lrow-m">
-        <span className="lrow-t">{title}</span>
+        <span className="lrow-t" id={titleId}>{title}</span>
         {subtitle && <span className="lrow-s">{subtitle}</span>}
       </span>
-      {children}
+      {Children.map(children, child => child?.type === Switch && !child.props['aria-label'] && !child.props['aria-labelledby'] ? cloneElement(child, { 'aria-labelledby': titleId }) : child)}
       {value != null && <span className="lrow-v">{value}</span>}
       {accessory === 'chevron' && <Icon name="chevronRight" className="lrow-c" />}
       {accessory === 'check' && <Icon name="check" className="lrow-k" />}
@@ -271,7 +301,7 @@ export function SelectRow({ icon, iconTint, title, value, options, onChange, she
   }
   return (
     <Row icon={icon} iconTint={iconTint} title={title} value={cur ? cur.label : value} accessory="chevron" onClick={open}
-      className={stackedValue ? 'lrow-stack-value' : ''} />
+      className={'lrow-select' + (stackedValue ? ' lrow-stack-value' : '')} />
   )
 }
 

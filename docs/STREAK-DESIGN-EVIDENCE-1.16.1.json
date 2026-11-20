@@ -1,0 +1,116 @@
+{
+  "version": "1.16.1",
+  "androidVersionCode": 154,
+  "runtimeSource": "1d7570ea5d9c2fbfa08be7dd25a4a6fd0c30aa8a",
+  "date": "2026-11-10",
+  "releaseUrl": "https://github.com/Truesilverking/TGym/releases/tag/v1.16.1",
+  "releaseRun": 42851776330,
+  "ciRuns": [
+    {
+      "id": 42850571970,
+      "name": "Tests",
+      "event": "push",
+      "conclusion": "success"
+    },
+    {
+      "id": 42850903482,
+      "name": "Tests",
+      "event": "pull_request",
+      "conclusion": "success"
+    },
+    {
+      "id": 42850571304,
+      "name": "Validate PWA",
+      "event": "push",
+      "conclusion": "success"
+    },
+    {
+      "id": 42850571824,
+      "name": "Validate Android",
+      "event": "push",
+      "conclusion": "success"
+    },
+    {
+      "id": 42850601598,
+      "name": "Build signed Android candidate",
+      "event": "workflow_dispatch",
+      "conclusion": "success"
+    }
+  ],
+  "frontend": {
+    "tests": 3313,
+    "files": 275
+  },
+  "apiTests": 37,
+  "mcpTests": 39,
+  "catalogueTests": 6,
+  "nodeLoadability": true,
+  "builds": {
+    "web": true,
+    "pwa": true,
+    "mobileSync": true,
+    "androidDebug": true,
+    "lintErrors": 0,
+    "lintWarnings": 22
+  },
+  "androidEmulator": {
+    "tests": 53,
+    "failures": 0,
+    "skipped": 0,
+    "duration": "1m3.53s"
+  },
+  "artifacts": {
+    "package": "app.framegym.mobile",
+    "apkSha256": "ecde789c12c7a8080956efdf95587825484e8d7cb8fc913f4b830af7644cc5d7",
+    "aabSha256": "ce7a996bb59511f765ff49c2a7a0fb01e4683f49555a9f85712a18359d92fd27",
+    "certificateSha256": "8ee233c984615e2b3f6f083dc0c47d148bb8956ff7caca97be0b9a0d260e6082",
+    "officialSigningContinuity": true,
+    "releaseAndPagesApkIdentical": true,
+    "pwaFilesChecked": 51,
+    "allReleasePagesFilesExact": true,
+    "selectedArtworkSha256": "6881ec10dac07a7b0972cf3c12ff5fc34ca5e7027759934475714feb2168daa9"
+  },
+  "browsers": {
+    "local": {
+      "contexts": 6,
+      "groups": 55,
+      "runtimeErrors": 0
+    },
+    "public": {
+      "contexts": 6,
+      "groups": 55,
+      "runtimeErrors": 0
+    },
+    "pixelSizedViewports": true,
+    "allTwelveMonthsVisible": true,
+    "settingsAndOsReducedMotionVerified": true,
+    "activeFlameTransformsObserved": true,
+    "syntheticStatePreserved": true,
+    "actualDownloadsPerRun": [
+      {
+        "format": "png",
+        "bytes": 975586,
+        "sha256": "3aa8a764264970d4cd89c7042cc6112a33bfa893afe8e5e8d12fb4d313e8be9d"
+      },
+      {
+        "format": "pdf",
+        "bytes": 709348,
+        "sha256": "971382e7dd75a9bda58799428487cbbea17e2cdc034dc2fb8ac8c21fde138f45"
+      }
+    ],
+    "pdfPagesRenderedPerRun": 1,
+    "pdfVisualReview": true
+  },
+  "notification": {
+    "serviceAccepted": true,
+    "phoneReceiptVerified": false
+  },
+  "boundaries": {
+    "physicalPixelVerified": false,
+    "phoneInstalled": false,
+    "physicalIphoneVerified": false,
+    "osInstalledPwaVerified": false,
+    "nativeIosCompiled": false,
+    "originalProfilesAccessed": false
+  }
+}

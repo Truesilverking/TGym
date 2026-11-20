@@ -1,0 +1,554 @@
+{
+  "date": "2026-10-19",
+  "verifiedAt": "2026-10-19T21:40:41.239Z",
+  "version": "1.15.75",
+  "androidVersionCode": 111,
+  "sourceCommit": "339d543766c1c534e59000d18937fc83c394ac5b",
+  "branch": "fix/partial-routine-logic-1.15.75",
+  "tag": "v1.15.75",
+  "tagObject": "02202018483e1c485d7e2e8707e594da8f4f8324",
+  "palette": {
+    "partial": {
+      "fill": "#0087c2",
+      "ink": "#000000",
+      "border": "#00547a",
+      "contrast": 5.244597557880779
+    },
+    "completed": {
+      "fill": "#115bb2",
+      "ink": "#ffffff",
+      "border": "#073977"
+    },
+    "missed": {
+      "fill": "#ed1c24",
+      "ink": "#000000",
+      "border": "#8f1015"
+    },
+    "pending": {
+      "fill": "#696969",
+      "ink": "#ffffff",
+      "border": "#424242"
+    },
+    "rest": {
+      "fill": "#ffffff",
+      "ink": "#263345",
+      "border": "#7b8796"
+    },
+    "paused": {
+      "fill": "#791f34",
+      "ink": "#ffffff",
+      "border": "#4b1020"
+    },
+    "trackingStartMarker": {
+      "fill": "#0f766e",
+      "border": "#064e3b",
+      "outsideGrid": true
+    }
+  },
+  "productionFix": {
+    "cause": "Finish footer and confirmation included optional warmup rows while lifecycle completion excluded them",
+    "change": "Use existing non-warmup work predicate and effectiveWorkoutComplete for labels and pending required work",
+    "newRegressionCases": 5,
+    "dailyPartialRuleUnchanged": "Some but not all scheduled routine slots match valid saved sessions",
+    "historicalReclassification": false,
+    "storageSchemaChanged": false,
+    "clockCalculationChanged": false,
+    "activityAndProgressionRulesChanged": false
+  },
+  "tests": {
+    "frontend": {
+      "files": 191,
+      "passed": 2098,
+      "failed": 0,
+      "exitCode": 0,
+      "durationSeconds": 32.52,
+      "command": "pnpm.cmd test",
+      "log": ".tools/colors75/frontend-tests-final.log"
+    },
+    "api": {
+      "log": ".tools/colors75/api-tests-retry.log",
+      "durationMs": 1286.7091,
+      "failed": 0,
+      "passed": 16
+    },
+    "mcp": {
+      "nodeLoadable": true,
+      "log": ".tools/colors75/mcp-tests.log",
+      "nodeLog": ".tools/colors75/mcp-node-loadable.log",
+      "failed": 0,
+      "passed": 37
+    },
+    "catalog": {
+      "log": ".tools/colors75/catalog-tests.log",
+      "failed": 0,
+      "passed": 6
+    },
+    "locales": {
+      "packs": 12,
+      "keys": 1920,
+      "sourceStrings": 1216,
+      "passed": true
+    },
+    "fatigue": {
+      "passed": true,
+      "comparisons": 108000,
+      "deletionComparisons": 14076
+    },
+    "frontendLintTypecheck": "No scripts exist",
+    "initialFailuresPreserved": {
+      "frontend": {
+        "passed": 2091,
+        "files": 191,
+        "failed": 2,
+        "cause": "Test harness waited fixed 25 ms while production paint yield may take up to 100 ms; unfinished retry could continue into the following mocked test",
+        "failedFile": "src/components/RoutineImport.test.jsx",
+        "log": ".tools/colors75/frontend-tests-first-attempt.log"
+      },
+      "api": {
+        "log": ".tools/colors75/api-tests.log",
+        "cause": "Shared HTTP before hook exceeded 10-second server startup wait under concurrent full-suite load",
+        "failed": 5,
+        "passed": 11,
+        "startupLoadCauseInference": true
+      }
+    },
+    "harnessFix": {
+      "passed": 32,
+      "scope": "Only replace fixed save/retry sleeps with act plus vi.waitFor of absent [data-step=saving]",
+      "failed": 0,
+      "log": ".tools/colors75/routine-import-stability.log",
+      "timeoutIncreased": false,
+      "dataAssertionsWeakened": false,
+      "file": "frontend/src/components/RoutineImport.test.jsx"
+    }
+  },
+  "builds": {
+    "pass": true,
+    "sourceCommit": "339d543766c1c534e59000d18937fc83c394ac5b",
+    "version": "1.15.75",
+    "androidVersionCode": 111,
+    "frozenInstall": {
+      "passed": true,
+      "lockfileChanged": false
+    },
+    "webBuild": {
+      "passed": true,
+      "log": ".tools/colors75/web-build.log",
+      "source": "final product working tree, before source commit"
+    },
+    "pwaBuild": {
+      "passed": true,
+      "log": ".tools/colors75/pwa-build.log",
+      "frozenRoot": ".tools/colors75/compiled-pwa",
+      "buildJsonMatchesSource": true
+    },
+    "mobileAssetsAndCapacitorSync": {
+      "passed": true,
+      "log": ".tools/colors75/mobile-build.log",
+      "githubShaSetToSource": true,
+      "iosNativeCompile": false
+    },
+    "androidLocal": {
+      "passed": true,
+      "tasks": [
+        "assembleDebug",
+        ":app:lintDebug"
+      ],
+      "actionableTasks": 386,
+      "executed": 50,
+      "upToDate": 336,
+      "duration": "1m",
+      "log": ".tools/colors75/android-build-lint.log",
+      "jdk": "Temurin 21.0.12.1",
+      "sdk": 35
+    },
+    "versionCheck": {
+      "passed": true,
+      "previousVersionCode": 110
+    },
+    "availableFrontendLintTypecheckScripts": false,
+    "adbDevices": [],
+    "physicalAndroidVerified": false,
+    "physicalIphoneVerified": false,
+    "iosBuildLimit": "Windows has neither CocoaPods nor Xcode; mobile assets/sync do not compile iOS."
+  },
+  "pretag": {
+    "pass": true,
+    "verifiedAt": "2026-10-19T21:32:18.664Z",
+    "sourceCommit": "339d543766c1c534e59000d18937fc83c394ac5b",
+    "version": "1.15.75",
+    "versionCode": 111,
+    "runs": [
+      {
+        "id": 39327290399,
+        "url": "https://github.com/Truesilverking/TGym/actions/runs/39327290399",
+        "conclusion": "success"
+      },
+      {
+        "id": 39327293381,
+        "url": "https://github.com/Truesilverking/TGym/actions/runs/39327293381",
+        "conclusion": "success"
+      },
+      {
+        "id": 39327296724,
+        "url": "https://github.com/Truesilverking/TGym/actions/runs/39327296724",
+        "conclusion": "success"
+      },
+      {
+        "id": 39327299498,
+        "url": "https://github.com/Truesilverking/TGym/actions/runs/39327299498",
+        "conclusion": "success"
+      }
+    ],
+    "proofs": [
+      "local-validation-proof.json",
+      "root-build-proof.json",
+      "candidate-artifacts-verified.json",
+      "pwa-ci-artifact-verified.json",
+      "pwa-ci-production-env-comparison.json",
+      "exact-pwa-acceptance.json",
+      "built-acceptance/proof.json",
+      "built-acceptance/file-review-proof.json",
+      "built-acceptance/finish-warmup-ui-proof.json"
+    ],
+    "androidInstrumentation": {
+      "sourceCommit": "339d543766c1c534e59000d18937fc83c394ac5b",
+      "run": 39327296724,
+      "artifact": 12222856845,
+      "tests": 11,
+      "failures": 0,
+      "skipped": 0,
+      "successRate": "100%",
+      "classes": {
+        "HealthActivitiesTest": 2,
+        "SafeAreaTest": 2,
+        "SoundPreferencesTest": 5,
+        "WorkoutNotificationTest": 1,
+        "ExampleInstrumentedTest": 1
+      },
+      "emulatorOnly": true,
+      "physicalDevice": false,
+      "index": ".tools/colors75/android-ci-results/connected/debug/index.html"
+    },
+    "tagged": false,
+    "published": false,
+    "notificationSent": false
+  },
+  "sourceQa": {
+    "screenCases": 256,
+    "generatedFiles": 30,
+    "uiDownloadedFiles": 6,
+    "pdfPagesOpenedWithPoppler": 100,
+    "allOtherPaletteStatesUnchanged": true,
+    "metrics": {
+      "baseline": "Exact source v1.15.74",
+      "streakResults": 144,
+      "calendarResults": 72,
+      "consistencyStatistics": 18,
+      "deepEquality": true,
+      "inputUnchanged": true
+    }
+  },
+  "exactSourceQa": {
+    "savedFiles": 10,
+    "pdfPages": 8,
+    "finishFlows": 6,
+    "originRowsAndDurationRetained": true,
+    "updateProfiles": 4,
+    "offlineFiles": 16,
+    "offlinePdfPages": 52,
+    "offlinePngFiles": 4,
+    "pausedMinutes": 9,
+    "pausedDoneRows": 1,
+    "pausedPendingRows": 1,
+    "addedPausedHistoryRows": 0
+  },
+  "ciPwaVariant": {
+    "allCompiledAssetsByteIdentical": false,
+    "compiledAssetsByteIdentical": 31,
+    "compiledAssetCount": 50,
+    "allCompiledAssetsNormalizedEquivalent": true,
+    "difference": "Production build includes three public env values declared in release.yml; pages.yml validation omits them. Chunk references derive from that delta. Static CRLF/HTML/worker differences are recorded separately."
+  },
+  "candidate": {
+    "verifiedAt": "2026-10-19T21:30:16.360Z",
+    "pass": true,
+    "stage": "signed-candidate",
+    "version": "1.15.75",
+    "versionCode": 111,
+    "package": "app.framegym.mobile",
+    "sourceCommit": "339d543766c1c534e59000d18937fc83c394ac5b",
+    "ciRun": 39327299498,
+    "ciUrl": "https://github.com/Truesilverking/TGym/actions/runs/39327299498",
+    "ciArtifact": 12222214605,
+    "java21BuildConfiguredAtExactSourceAndCiSuccessful": true,
+    "localVerificationJava": "21",
+    "priorPublishedVersion": "1.15.74",
+    "priorPublishedVersionCode": 110,
+    "certificateSha256": "8ee233c984615e2b3f6f083dc0c47d148bb8956ff7caca97be0b9a0d260e6082",
+    "hashes": {
+      "TGym-Android-v1.15.75.apk": "9a23467529de79236e8d43d4a2cb32fa3c6209b3849dbaf3171514be96189c66",
+      "TGym-Android-v1.15.75.aab": "2bfe2fd1b1d4d70e11a62dca6c5c897609e5082be6151a9d279823baf40c990a"
+    },
+    "checksumsMatch": true,
+    "apkSignatureValid": true,
+    "apkNotDebuggable": true,
+    "aabJarSignatureValid": true,
+    "signingContinuity": true,
+    "nativeIdentityAndSdkMatch": {
+      "min": 23,
+      "target": 35,
+      "compile": 35
+    },
+    "archiveCrcValid": true,
+    "apkAndAabBuildMetadata": {
+      "version": "1.15.75",
+      "commit": "339d543766c1c534e59000d18937fc83c394ac5b"
+    },
+    "identicalWebAssetCount": 61,
+    "published": false,
+    "phoneTouched": false,
+    "physicalDeviceValidation": false
+  },
+  "publication": {
+    "verifiedAt": "2026-10-19T21:37:51.435Z",
+    "pass": true,
+    "stage": "published-artifacts",
+    "version": "1.15.75",
+    "versionCode": 111,
+    "sourceCommit": "339d543766c1c534e59000d18937fc83c394ac5b",
+    "release": "https://github.com/Truesilverking/TGym/releases/tag/v1.15.75",
+    "ciRun": 39328305167,
+    "ciUrl": "https://github.com/Truesilverking/TGym/actions/runs/39328305167",
+    "tagType": "tag",
+    "priorPublishedVersion": "1.15.74",
+    "certificateSha256": "8ee233c984615e2b3f6f083dc0c47d148bb8956ff7caca97be0b9a0d260e6082",
+    "githubPagesApkIdentical": true,
+    "assets": {
+      "TGym-Android-v1.15.75.apk": {
+        "bytes": 9031428,
+        "sha256": "d38ea4e8f728fe53dccef1777196d3faec7f103a014e03debc35199f5afce4d9"
+      },
+      "TGym-Android-v1.15.75.aab": {
+        "bytes": 8080164,
+        "sha256": "2bfe2fd1b1d4d70e11a62dca6c5c897609e5082be6151a9d279823baf40c990a"
+      },
+      "checksums.txt": {
+        "bytes": 184,
+        "sha256": "50a521d912a2ac8f008bf91ee319cab06ad1f1ca5b1472432f50db6308bbb306"
+      },
+      "latest.json": {
+        "bytes": 701,
+        "sha256": "3512c1f398ff040425e65e48a34446251d7259dd9e1c18765e08afa89d68ec56"
+      }
+    },
+    "checksumsMatch": true,
+    "apkSignatureValid": true,
+    "aabJarSignatureValid": true,
+    "signingContinuity": true,
+    "apkNotDebuggable": true,
+    "nativePackage": "app.framegym.mobile",
+    "nativeSdk": {
+      "min": 23,
+      "target": 35,
+      "compile": 35
+    },
+    "identicalApkAabWebAssets": 61,
+    "nativeBuild": {
+      "version": "1.15.75",
+      "commit": "339d543766c1c534e59000d18937fc83c394ac5b"
+    },
+    "livePwaBuild": {
+      "version": "1.15.75",
+      "commit": "339d543766c1c534e59000d18937fc83c394ac5b"
+    },
+    "livePwaCache": "tgym-app-1.15.75-339d543766c1c534e59000d18937fc83c394ac5b-34e85f53bc74",
+    "livePwaShellCount": 57,
+    "livePwaShellContentDigestMatchesExactSourceTemplate": true,
+    "phoneTouched": false,
+    "physicalDeviceValidation": false,
+    "browserUpdateOrRetainedDataValidation": false
+  },
+  "updater": {
+    "checkedAt": "2026-10-19T21:37:43.226Z",
+    "success": true,
+    "sourceCommit": "339d543766c1c534e59000d18937fc83c394ac5b",
+    "version": "1.15.75",
+    "checks": [
+      {
+        "distribution": "github",
+        "currentVersion": "1.15.74",
+        "offeredVersion": "1.15.75",
+        "offeredVersionCode": 111,
+        "passed": true
+      },
+      {
+        "distribution": "github",
+        "currentVersion": "1.15.75",
+        "offeredVersion": null,
+        "offeredVersionCode": null,
+        "passed": true
+      },
+      {
+        "distribution": "pwa",
+        "currentVersion": "1.15.74",
+        "offeredVersion": "1.15.75",
+        "offeredVersionCode": 0,
+        "passed": true
+      },
+      {
+        "distribution": "pwa",
+        "currentVersion": "1.15.75",
+        "offeredVersion": null,
+        "offeredVersionCode": null,
+        "passed": true
+      }
+    ],
+    "separateStorageKeys": true,
+    "physicalDeviceValidation": false,
+    "persistentUserStorageTouched": false
+  },
+  "notification": {
+    "pass": true,
+    "sourceCommit": "339d543766c1c534e59000d18937fc83c394ac5b",
+    "version": "1.15.75",
+    "run": 39328305167,
+    "policySend": true,
+    "acceptedTopics": [
+      "tgym_updates",
+      "tgym_updates_v2"
+    ],
+    "physicalReceiptVerified": false,
+    "safeLogLines": [
+      "2026-10-19T21:32:44.3005817Z Release update notifications enabled: true",
+      "2026-10-19T21:36:57.8930766Z FCM accepted tgym_updates update notification: [FCM message ID omitted]",
+      "2026-10-19T21:36:58.1842161Z FCM accepted tgym_updates_v2 update notification: [FCM message ID omitted]"
+    ],
+    "originalRemoteAnnotatedTagChecked": true,
+    "notificationRerunPerformed": false
+  },
+  "packages": {
+    "version": "1.15.75",
+    "sourceCommit": "339d543766c1c534e59000d18937fc83c394ac5b",
+    "pass": true,
+    "compared": [
+      {
+        "format": "apk",
+        "candidateSha256": "9a23467529de79236e8d43d4a2cb32fa3c6209b3849dbaf3171514be96189c66",
+        "publicSha256": "d38ea4e8f728fe53dccef1777196d3faec7f103a014e03debc35199f5afce4d9",
+        "fullArchiveByteIdentical": false,
+        "runtimeFiles": 61,
+        "runtimeDifferences": [],
+        "allRuntimeFilesIdentical": true,
+        "buildMetadata": {
+          "version": "1.15.75",
+          "commit": "339d543766c1c534e59000d18937fc83c394ac5b"
+        }
+      },
+      {
+        "format": "aab",
+        "candidateSha256": "2bfe2fd1b1d4d70e11a62dca6c5c897609e5082be6151a9d279823baf40c990a",
+        "publicSha256": "2bfe2fd1b1d4d70e11a62dca6c5c897609e5082be6151a9d279823baf40c990a",
+        "fullArchiveByteIdentical": true,
+        "runtimeFiles": 61,
+        "runtimeDifferences": [],
+        "allRuntimeFilesIdentical": true,
+        "buildMetadata": {
+          "version": "1.15.75",
+          "commit": "339d543766c1c534e59000d18937fc83c394ac5b"
+        }
+      }
+    ],
+    "note": "Full archive hash equality is recorded separately from equality of every bundled web runtime asset. Package/signatures/SDKs are independently validated by verify-public.mjs."
+  },
+  "apk": {
+    "sourceCommit": "339d543766c1c534e59000d18937fc83c394ac5b",
+    "version": "1.15.75",
+    "entries": 1116,
+    "uncompressedContentDifferences": [],
+    "zipEntryMetadataDifferences": [],
+    "allEntryContentIdentical": true,
+    "note": "Archive-level SHA differences are kept distinct from entry content equality. Native dex/resources and signed-package checks remain independently verified.",
+    "byteDifferencesConfinedToApkSigningBlock": true,
+    "signingBlockSizes": {
+      "candidate": 12288,
+      "public": 12288
+    }
+  },
+  "publicQa": {
+    "source": "339d543766c1c534e59000d18937fc83c394ac5b",
+    "savedFiles": 10,
+    "pdfPages": 8,
+    "compiledAssetsByteIdenticalToProductionBuild": 50,
+    "staticDifferences": [
+      {
+        "file": "about.html",
+        "difference": "CRLF versus LF only",
+        "normalizedEquivalent": true
+      },
+      {
+        "file": "build.json",
+        "difference": "JSON formatting only; exact version and source metadata equal",
+        "normalizedEquivalent": true
+      },
+      {
+        "file": "index.html",
+        "difference": "one additional local blank line plus line endings",
+        "normalizedEquivalent": true
+      },
+      {
+        "file": "manifest.json",
+        "difference": "CRLF versus LF only",
+        "normalizedEquivalent": true
+      },
+      {
+        "file": "privacy.html",
+        "difference": "CRLF versus LF only",
+        "normalizedEquivalent": true
+      },
+      {
+        "file": "sw.js",
+        "difference": "derived content cache ID and line endings only",
+        "normalizedEquivalent": true
+      }
+    ],
+    "updateProfiles": 4,
+    "offline": {
+      "filesOpened": 16,
+      "decodedImagesPixelIdenticalToExactBuiltQA": 56,
+      "pdfRepresentativePagesPopplerRendered": 8,
+      "visualReview": {
+        "pass": true,
+        "openedContactSheet": ".tools\\colors75\\pwa-public339d543-file-review\\contact-1.png",
+        "openedActualPngFiles": [
+          ".tools\\colors75\\pwa-public339d543-edge\\offline-streak-this-week.png",
+          ".tools\\colors75\\pwa-public339d543-edge\\offline-consistency-week.png",
+          ".tools\\colors75\\pwa-public339d543-webkit\\offline-streak-this-week.png",
+          ".tools\\colors75\\pwa-public339d543-webkit\\offline-consistency-week.png"
+        ],
+        "openedLargerPopplerSamples": [
+          ".tools\\colors75\\pwa-public339d543-file-review\\edge-offline-consistency-month-1.png",
+          ".tools\\colors75\\pwa-public339d543-file-review\\webkit-offline-streak-this-month-1.png"
+        ],
+        "observed": "No visible clipping, stretched day cells, missing dates, legend mismatch or glyph corruption. Partial #0087c2 uses legible black dates, Rest is white with visible border, missed is #ed1c24, pending #696969, paused dark red. Tracking-start circle and date stay outside grid/legend. Active Streak flame is filled. Public exports match all 52 decoded PDF pages and four PNGs of the exact-source acceptance."
+      },
+      "evidence": ".tools/colors75/pwa-public339d543-file-review/proof.json"
+    },
+    "physicalDevice": false
+  },
+  "matrix": "RELEASE-AUDIT-1.15.75.md",
+  "routineRules": "PARTIAL-ROUTINE-AUDIT-1.15.75.md",
+  "fullAppInventoryAndPreviousMatrix": "APP-AUDIT-2026-10-19.md",
+  "pending": [
+    "Physical Android notification receipt/tap/installation",
+    "Physical iPhone Safari and installed PWA",
+    "Native iOS compilation with Xcode",
+    "Native sharing with real receivers",
+    "Prior integral-audit device/provider boundaries remain documented"
+  ],
+  "evidenceRoot": ".tools/colors75",
+  "syntheticTestDataOnly": true,
+  "notificationResent": false,
+  "phoneTouched": false,
+  "absoluteCoverageClaimed": false
+}

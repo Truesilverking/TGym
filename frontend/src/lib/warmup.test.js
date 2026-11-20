@@ -28,3 +28,8 @@ describe('automatic warm-up prescription', () => {
     expect(out[0]).toEqual(rows[0]); expect(out[1]).toMatchObject({ w: 75, r: 3 }); expect(out[2].w).toBe(110)
   })
 })
+
+it('keeps manually logged warmup fields when later work targets change',()=>{
+ const rows=[{w:17.5,r:7,phase:'warmup',manualFields:{w:true,r:true}},{w:100,r:10}];
+ expect(recalculatePendingWarmups(rows,{step:5})[0]).toMatchObject({w:17.5,r:7})
+})

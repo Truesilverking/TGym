@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { buildPlanBundle, parsePlan } from './plan-share.js'
+import { buildPlanBundle, parsePlan, mergePlan, planPrintHTML } from './plan-share.js'
+import { planActivity, createActivityWorkout } from './activities.js'
+import { dailyPlan } from './daily-plan.js'
+import { isoOf } from './format.js'
 
 // There was no test file for plan sharing at all, which is how a whole prescription field
 // went missing without anyone noticing.
@@ -48,4 +51,33 @@ describe('what survives a shared plan', () => {
     const bundle = { opengym_plan: 1, name: 'x', routines: [{ id: 'r', name: 'R', ex: [{ id: '0025', sets: 3, reps: 5, intensifier: { type: 'dropset' } }] }], week: {}, customEx: [] }
     expect(parsePlan(bundle).routines[0].ex[0].intensifier).toEqual({ type: 'dropset', count: 1, pct: 20 })
   })
+})
+
+it('preserves per-side targets without doubling prescribed repetitions',()=>{expect(roundTrip({side:true,repsPerSide:true,reps:10})).toMatchObject({side:true,repsPerSide:true,reps:10})})
+
+it('shared activity routines still complete their daily assignment after ID remapping', () => {
+  const now = new Date(isoOf(new Date()) + 'T12:00:00'), start = +now - 60000, date = isoOf(now)
+  const source = { routines: [], customEx: [], workouts: [], week: {}, dayPlan: {} }
+  planActivity(source, { type: 'running', minutes: 1, weekdays: [now.getDay()] }, now)
+  const target = { routines: [], customEx: [], workouts: [], week: {}, dayPlan: {}, unit: 'kg' }
+  mergePlan(target, parsePlan(JSON.stringify(buildPlanBundle(source))), { schedule: true })
+  expect(target.routines[0].ex[0]).toMatchObject({ activityType: 'running', mode: 'cardio' })
+  target.workouts.push(createActivityWorkout(target, { type: 'running', start, minutes: 1 }, +now))
+  expect(dailyPlan(target, date)).toMatchObject({ completed: 1, extra: 0 })
+})
+
+it('prints old and new per-side plans as 8 while keeping portable JSON semantics',()=>{
+ for(const cfg of [{side:true,reps:16},{side:true,repsPerSide:true,reps:8}]){
+  const S={...stateWith(cfg),unit:'kg'};const html=planPrintHTML(S,'Test')
+  expect(html).toContain('3 × 8 / side');expect(html).not.toContain('3 × 16')
+  expect(roundTrip(cfg).reps).toBe(cfg.reps)
+ }
+})
+
+it('enables effort logging for imported role-specific RIR ranges, including zero',()=>{
+ const bundle=buildPlanBundle(stateWith({setScheme:'topback',topRirMin:0,topRirMax:1,backoffRirMin:2,backoffRirMax:3}),'RIR')
+ const S={routines:[],week:{},customEx:[],effort:'none'}
+ mergePlan(S,parsePlan(JSON.stringify(bundle)))
+ expect(S.effort).toBe('rir')
+ expect(S.routines[0].ex[0]).toMatchObject({topRirMin:0,backoffRirMax:3})
 })

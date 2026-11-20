@@ -1,0 +1,19 @@
+{
+  "name": "tgym-native-exercise-media",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "license": "AGPL-3.0-or-later",
+  "description": "Offline authoring and independent verification of TGym anatomical exercise artwork",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "render": "node render.mjs",
+    "verify": "node verify-export.mjs"
+  },
+  "dependencies": {
+    "playwright": "1.63.0",
+    "three": "0.183.2"
+  }
+}

@@ -1,0 +1,163 @@
+{
+  "version": "1.15.114",
+  "androidVersionCode": 150,
+  "runtimeSourceCommit": "f660fe2ebc8dfb4999933ed3df7272446294e6f6",
+  "changes": {
+    "gestureOwnership": "Click-only controls, text and unused space allow navigation; true horizontal controls retain ownership.",
+    "touchHoldMs": 2000,
+    "touchHoldSlopCssPx": 14,
+    "mousePenHoldSlopCssPx": 8,
+    "historySecondaryYearRemovedFrom": [
+      "month",
+      "week"
+    ],
+    "historyFullAccessibleDatesRetained": true,
+    "serviceWorker": "Canonical exact-precache keys handle Vary: Origin. Query variants retain distinct identity; live endpoints bypass shell caching."
+  },
+  "verification": {
+    "frontend": {
+      "tests": 3209,
+      "files": 265,
+      "successfulExactSourceCiLogVerified": true
+    },
+    "api": {
+      "tests": 24,
+      "successfulExactSourceCiLogVerified": true,
+      "unchangedInputTreesVerified": true
+    },
+    "mcp": {
+      "tests": 38,
+      "plainNodeImportGraphPassed": true,
+      "successfulExactSourceCiLogVerified": true,
+      "unchangedInputTreesVerified": true
+    },
+    "catalog": {
+      "tests": 6,
+      "successfulExactSourceCiLogVerified": true
+    },
+    "androidEmulator": {
+      "tests": 53,
+      "failures": 0,
+      "skipped": 0,
+      "completedCiArtifactVerified": true,
+      "artifactId": 13273950410,
+      "artifactSha256": "73c7e8ad6add714c7c79232811711c7de2478a1ba15fef6878d64ad7d7de2ef5"
+    },
+    "lint": {
+      "errors": 0,
+      "warnings": 22,
+      "identicalToVersion": "1.15.113",
+      "newIssues": 0,
+      "resolvedIssues": 0
+    },
+    "compiledBrowser": {
+      "principalContexts": 6,
+      "checkGroups": 170,
+      "pwaContexts": 2,
+      "pwaCheckGroups": 13,
+      "upgradeContexts": 2,
+      "upgradeCheckGroups": 7,
+      "nativeCdpCases": 4,
+      "runtimeErrors": 0,
+      "syntheticDataPreserved": true,
+      "standaloneDisplayModeEmulated": true,
+      "osPwaInstalled": false,
+      "edgeOfflineHistoryVerified": true,
+      "windowsWebkitOfflineVerified": false,
+      "minimalWebkitControlReproducesEngineLimit": true
+    },
+    "actualPublicBrowser": {
+      "principalContexts": 2,
+      "checkGroups": 57,
+      "pwaContexts": 2,
+      "runtimeErrors": 0,
+      "syntheticDataPreserved": true
+    },
+    "tooling": {
+      "webkitLauncherExitedWithCodeZero": true,
+      "ownedOrphanCleanupRecovered": true,
+      "unmodifiedAssertionsAndAggregationRetained": true,
+      "applicationFailure": false
+    }
+  },
+  "physicalPixel": {
+    "package": "app.framegym.mobile.qa",
+    "sourceCommit": "f660fe2ebc8dfb4999933ed3df7272446294e6f6",
+    "qaApkSha256": "86f57558fe74dbfd4599439109029015fca4aa38a3ca2fe6df71bb3fbe97c5b2",
+    "qaSignerSha256": "d53b550b85266358a3d803b7a9611b880488f3eb3e68ad121c63e3c04825f5cc",
+    "uiChecks": 13,
+    "coldReopenChecks": 6,
+    "realCdpTouchOnQaWebview": true,
+    "statsHeaderStationaryAndDepthObserved": true,
+    "protectedProfileHistoryRoutinesAndActiveEntriesPreserved": true,
+    "nativeFatalMarkers": 0,
+    "nativeAnrMarkers": 0,
+    "nativeLogScope": "Reopened QA process only; system logs were not read.",
+    "originalAppAccessed": false,
+    "temporaryAwakeSettingRestored": true,
+    "profileResetPerformed": false,
+    "observedJavascriptErrors": 0
+  },
+  "publication": {
+    "release": "https://github.com/Truesilverking/TGym/releases/tag/v1.15.114",
+    "workflow": "https://github.com/Truesilverking/TGym/actions/runs/41725214799",
+    "publishedAt": "2026-11-03T21:56:33Z",
+    "annotatedTag": "v1.15.114",
+    "officialSignerSha256": "8ee233c984615e2b3f6f083dc0c47d148bb8956ff7caca97be0b9a0d260e6082",
+    "apkSha256": "bf0c6de09f8715c5cfd2821c9c828fcd690d829dc4be6b4c1352b3bdb1a9f179",
+    "aabSha256": "05165975aed55ba4e52c7f0eb4e9acc825a47ee2303c8cbc40e60540bf5c84a6",
+    "releaseAndPagesApkIdentical": true,
+    "pwaFilesChecked": 51,
+    "sharedRuntimeAssetsChecked": 55,
+    "privateAndRejectedArtworkExcluded": true,
+    "updateTopicBroadcastSkipped": true,
+    "requiredCiRuns": [
+      {
+        "id": 41724019093,
+        "name": "Tests",
+        "event": "push",
+        "url": "https://github.com/Truesilverking/TGym/actions/runs/41724019093",
+        "conclusion": "success"
+      },
+      {
+        "id": 41724030151,
+        "name": "Tests",
+        "event": "pull_request",
+        "url": "https://github.com/Truesilverking/TGym/actions/runs/41724030151",
+        "conclusion": "success"
+      },
+      {
+        "id": 41724019095,
+        "name": "Validate PWA",
+        "event": "push",
+        "url": "https://github.com/Truesilverking/TGym/actions/runs/41724019095",
+        "conclusion": "success"
+      },
+      {
+        "id": 41724019123,
+        "name": "Validate Android",
+        "event": "push",
+        "url": "https://github.com/Truesilverking/TGym/actions/runs/41724019123",
+        "conclusion": "success"
+      },
+      {
+        "id": 41724075467,
+        "name": "Build signed Android candidate",
+        "event": "workflow_dispatch",
+        "url": "https://github.com/Truesilverking/TGym/actions/runs/41724075467",
+        "conclusion": "success"
+      }
+    ],
+    "protectedMainRetainsIndependentReview": true
+  },
+  "limits": {
+    "physicalIphoneVerified": false,
+    "nativeIosCompiled": false,
+    "windowsWebkitOfflineVerified": false,
+    "osInstalledPwaVerified": false,
+    "humanFingerAndExhaustiveFrameRateAcceptance": false,
+    "allPossibleDefectsEliminated": false,
+    "reportImplementationsUnchanged": true,
+    "newReportExportsExecuted": 0
+  }
+}

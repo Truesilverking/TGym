@@ -6,14 +6,14 @@
 //   node scripts/build-instructions.mjs [path-to-exercises.json]
 //
 // Without an argument the dataset is downloaded from the upstream repo.
-// Brazilian Portuguese is curated separately; see instruction-sources/README.md.
+// TGym ships Spanish only besides the inline English.
 
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const UPSTREAM = 'https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/data/exercises.json'
-const LANGS = ['es', 'fr', 'it', 'tr', 'ru', 'zh', 'hi', 'pl', 'ko']
+const LANGS = ['es']
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const outDir = join(root, 'frontend', 'src', 'instr')

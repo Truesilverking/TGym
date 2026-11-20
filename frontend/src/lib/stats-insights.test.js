@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { bmiBand, bmiFor, measurementValue, routineConsistency, routineDurationSummary, sessionTimingSummary, validTimedSessions } from './stats-insights.js'
+const activity = [{id:'exercise',sets:[{done:true,r:8}]}]
 
 describe('body and session insights', () => {
   it('keeps legacy one-side measurements readable as left and right', () => {
@@ -28,7 +29,7 @@ describe('body and session insights', () => {
   it('counts completed, missed and extra routine days', () => {
     const S = {
       routines: [{ id: 'r', name: 'Upper' }], week: { 1: 'r' }, dayPlan: {},
-      workouts: [{ d: '2026-08-24', routineId: 'r', name: 'Upper' }, { d: '2026-08-25', routineId: null, name: 'Extra' }],
+      workouts: [{ d: '2026-08-31', routineId: 'r', entries:activity, name: 'Upper' }, { d: '2026-08-25', routineId: null, name: 'Extra', entries:activity }],
     }
     const result = routineConsistency(S, 7, new Date(2026, 7, 31, 12))
     expect(result).toMatchObject({ planned: 1, completed: 1, missed: 0, extra: 1, rate: 1 })
