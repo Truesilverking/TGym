@@ -1,0 +1,150 @@
+{
+  "pass": true,
+  "updater": {
+    "pass": true,
+    "sourceCommit": "9b36a0e4dd571766dc9f67f9afa28cf1f086d328",
+    "version": "1.17.0",
+    "previous": "1.16.2",
+    "androidOlderOffered": true,
+    "androidCurrentNotRepeated": true,
+    "pwaOlderOffered": true,
+    "pwaCurrentNotRepeated": true,
+    "liveMetadata": true,
+    "realProfileAccessed": false,
+    "physicalPhoneAccessed": false
+  },
+  "version": "1.17.0",
+  "versionCode": 156,
+  "sourceCommit": "9b36a0e4dd571766dc9f67f9afa28cf1f086d328",
+  "verifiedAt": "2026-11-20T01:06:47.113Z",
+  "releaseUrl": "https://github.com/Truesilverking/TGym/releases/tag/v1.17.0",
+  "package": "app.framegym.mobile",
+  "apkSha256": "69f0dbbb509884b4ba121ef05e189eb59349f0ef6db7fa4a6e14dd8909e64cb8",
+  "aabSha256": "51fc916b0649725b62146fae12b605251c5059d8563ca043abbb7313917f7958",
+  "certificateSha256": "8ee233c984615e2b3f6f083dc0c47d148bb8956ff7caca97be0b9a0d260e6082",
+  "officialSigningContinuity": true,
+  "releaseAndPagesApkIdentical": true,
+  "publicPwaFiles": 51,
+  "frontend": {
+    "tests": 3339,
+    "files": 277
+  },
+  "ciRuns": [
+    {
+      "id": 44543336172,
+      "name": "Tests",
+      "event": "push",
+      "path": ".github/workflows/test.yml",
+      "sourceCommit": "9b36a0e4dd571766dc9f67f9afa28cf1f086d328",
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/44543336172",
+      "status": "completed",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "id": 135627206797,
+          "name": "mcp",
+          "conclusion": "success"
+        },
+        {
+          "id": 135627208960,
+          "name": "catalog",
+          "conclusion": "success"
+        },
+        {
+          "id": 135627210175,
+          "name": "api",
+          "conclusion": "success"
+        },
+        {
+          "id": 135627210843,
+          "name": "test",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 44543335967,
+      "name": "Validate PWA",
+      "event": "push",
+      "path": ".github/workflows/pages.yml",
+      "sourceCommit": "9b36a0e4dd571766dc9f67f9afa28cf1f086d328",
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/44543335967",
+      "status": "completed",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "id": 135627205228,
+          "name": "build",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 44543336489,
+      "name": "Validate Android",
+      "event": "push",
+      "path": ".github/workflows/android.yml",
+      "sourceCommit": "9b36a0e4dd571766dc9f67f9afa28cf1f086d328",
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/44543336489",
+      "status": "completed",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "id": 135627206119,
+          "name": "android",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 44543354905,
+      "name": "Build signed Android candidate",
+      "event": "workflow_dispatch",
+      "path": ".github/workflows/android-candidate.yml",
+      "sourceCommit": "9b36a0e4dd571766dc9f67f9afa28cf1f086d328",
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/44543354905",
+      "status": "completed",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "id": 135627297279,
+          "name": "candidate",
+          "conclusion": "success"
+        }
+      ]
+    }
+  ],
+  "native": {
+    "tests": 53,
+    "failures": 0,
+    "skipped": 0
+  },
+  "localAndroid": {
+    "lintErrors": 0,
+    "lintWarnings": 22,
+    "compiled": true,
+    "installed": false
+  },
+  "browser": {
+    "local": {
+      "cases": 8,
+      "groups": 104,
+      "runtimeErrors": 0
+    },
+    "public": {
+      "cases": 8,
+      "groups": 104,
+      "runtimeErrors": 0
+    },
+    "protectedSyntheticDataPreserved": true,
+    "screenshotsVisuallyReviewed": true
+  },
+  "privateAndRejectedMediaExcluded": true,
+  "updateBroadcastSuppressed": true,
+  "physicalDeviceAccessed": false,
+  "physicalPhoneReceiptVerified": false,
+  "nativeIosVerified": false,
+  "osInstalledPwaVerified": false,
+  "offlineColdOpenVerified": false,
+  "priorServiceWorkerUpgradeVerified": false
+}
