@@ -1,3 +1,19 @@
 allowBuilds:
   core-js: false
   sharp: false
+
+# Patch the asset generator's pinned tooling without changing Capacitor runtime APIs.
+overrides:
+  '@capacitor/cli>tar': 7.5.21
+  '@capacitor/assets>sharp': 0.35.5
+  'xcode>uuid': 11.1.1
+
+  brace-expansion@2: 2.1.7
+  brace-expansion@5: 5.0.12
+  dompurify: 3.4.17
+  'exceljs>uuid': 11.1.1
+  source-map-js: 1.2.2
+
+# Preserve Unicode and verify archive CRCs in the Node and bundled browser loaders.
+patchedDependencies:
+  exceljs@4.4.0: patches/exceljs@4.4.0.patch

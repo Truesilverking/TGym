@@ -1,0 +1,186 @@
+{
+  "pass": true,
+  "version": "1.18.0",
+  "versionCode": 157,
+  "sourceCommit": "3710141cc5ec50fab03297166605cab87f211607",
+  "verifiedAt": "2026-11-25T15:39:31.940Z",
+  "releaseUrl": "https://github.com/Truesilverking/TGym/releases/tag/v1.18.0",
+  "apkSha256": "dbd69e62ff69c5e2ec7856301bd6279ac2b37907df839f4c6512cbfa1e004186",
+  "aabSha256": "8cea746342242d767517cc994a46c0ca55d98e4b0ae97380534051cc3410da27",
+  "certificateSha256": "8ee233c984615e2b3f6f083dc0c47d148bb8956ff7caca97be0b9a0d260e6082",
+  "officialSigningContinuity": true,
+  "releaseAndPagesApkIdentical": true,
+  "publicPwaFiles": 51,
+  "frontend": {
+    "tests": 3446,
+    "files": 284
+  },
+  "ciRuns": [
+    {
+      "id": 45644453778,
+      "name": "Tests",
+      "event": "push",
+      "path": ".github/workflows/test.yml",
+      "sourceCommit": "3710141cc5ec50fab03297166605cab87f211607",
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/45644453778",
+      "status": "completed",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "id": 139311537277,
+          "name": "test",
+          "conclusion": "success"
+        },
+        {
+          "id": 139311537880,
+          "name": "catalog",
+          "conclusion": "success"
+        },
+        {
+          "id": 139311537986,
+          "name": "api",
+          "conclusion": "success"
+        },
+        {
+          "id": 139311538061,
+          "name": "mcp",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 45644453695,
+      "name": "Validate PWA",
+      "event": "push",
+      "path": ".github/workflows/pages.yml",
+      "sourceCommit": "3710141cc5ec50fab03297166605cab87f211607",
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/45644453695",
+      "status": "completed",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "id": 139311538558,
+          "name": "build",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 45644453728,
+      "name": "Validate Android",
+      "event": "push",
+      "path": ".github/workflows/android.yml",
+      "sourceCommit": "3710141cc5ec50fab03297166605cab87f211607",
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/45644453728",
+      "status": "completed",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "id": 139311537736,
+          "name": "android",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 45644481855,
+      "name": "Build signed Android candidate",
+      "event": "workflow_dispatch",
+      "path": ".github/workflows/android-candidate.yml",
+      "sourceCommit": "3710141cc5ec50fab03297166605cab87f211607",
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/45644481855",
+      "status": "completed",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "id": 139311648264,
+          "name": "candidate",
+          "conclusion": "success"
+        }
+      ]
+    }
+  ],
+  "native": {
+    "tests": 62,
+    "failures": 0,
+    "skipped": 0,
+    "syntheticWeightRegressionsVerified": true
+  },
+  "localAndroid": {
+    "compiled": true,
+    "lintErrors": 0,
+    "lintWarnings": 22,
+    "installed": false
+  },
+  "healthPermissions": [
+    "android.permission.health.READ_EXERCISE",
+    "android.permission.health.READ_WEIGHT"
+  ],
+  "nativeWeightPluginIncluded": true,
+  "browser": {
+    "local": {
+      "cases": 8,
+      "groups": 120,
+      "runtimeErrors": 0
+    },
+    "public": {
+      "cases": 8,
+      "groups": 120,
+      "runtimeErrors": 0
+    },
+    "scope": "Synthetic daily weight reuse and workout regression; not a real Health Connect import",
+    "healthConnectSynthetic": {
+      "cases": 6,
+      "groups": 37,
+      "runtimeErrors": 0,
+      "syntheticBridge": true,
+      "nativeWeightDatastoreRead": false,
+      "physicalDeviceAccessed": false,
+      "scope": "Compiled interface and persistence with controlled Android bridge responses; no real permission grant or Withings data"
+    }
+  },
+  "updater": {
+    "pass": true,
+    "sourceCommit": "3710141cc5ec50fab03297166605cab87f211607",
+    "version": "1.18.0",
+    "previous": "1.17.0",
+    "androidOlderOffered": true,
+    "androidCurrentNotRepeated": true,
+    "pwaOlderOffered": true,
+    "pwaCurrentNotRepeated": true,
+    "liveMetadata": true,
+    "realProfileAccessed": false,
+    "physicalPhoneAccessed": false
+  },
+  "privateAndRejectedMediaExcluded": true,
+  "updateBroadcastSuppressed": true,
+  "physicalDeviceAccessed": false,
+  "physicalPhoneReceiptVerified": false,
+  "liveWithingsWeightDeliveryVerified": false,
+  "realHealthConnectPermissionGrantVerified": false,
+  "nativeIosVerified": false,
+  "osInstalledPwaVerified": false,
+  "offlineColdOpenVerified": false,
+  "priorServiceWorkerUpgradeVerified": false,
+  "package": "app.framegym.mobile",
+  "publicManifestAndBuildExact": true,
+  "allReleasePagesFilesExact": true,
+  "publicMetadata": {
+    "version": "1.18.0",
+    "versionCode": 157,
+    "sourceCommit": "3710141cc5ec50fab03297166605cab87f211607",
+    "pwa": {
+      "version": "1.18.0",
+      "sourceCommit": "3710141cc5ec50fab03297166605cab87f211607"
+    },
+    "apkUrl": "https://github.com/Truesilverking/TGym/releases/download/v1.18.0/TGym-Android-v1.18.0.apk",
+    "apkSha256": "dbd69e62ff69c5e2ec7856301bd6279ac2b37907df839f4c6512cbfa1e004186",
+    "certificateSha256": "8ee233c984615e2b3f6f083dc0c47d148bb8956ff7caca97be0b9a0d260e6082"
+  },
+  "visualReview": {
+    "localWorkout": true,
+    "publicWorkout": true,
+    "syntheticHealthConnect": true,
+    "physicalDeviceAccessed": false
+  }
+}

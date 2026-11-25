@@ -1,3 +1,4 @@
+import { loggedWorkouts } from './daily-plan.js'
 // Automatic progression (issue #17).
 //
 // Everything here is a pure function of the workout history. Nothing writes back into a
@@ -55,11 +56,16 @@ const HEAVY_BP = ['upper legs', 'lower legs', 'back', 'hips', 'glutes']
 
 // Default load step. Lower-body lifts take the bigger jump — that is the "lift-specific
 // increment" a linear program lives on; an exercise can override it with cfg.inc.
-export function defaultIncrement(exId, unit) {
-  const ex = EXIDX[exId]
+export function defaultIncrement(exId, unit, definition) {
+  const ex = definition || EXIDX[exId]
   const heavy = ex && HEAVY_BP.includes(ex.bp)
   if (unit === 'lb') return heavy ? 10 : 5
   return heavy ? 5 : 2.5
+}
+// Portable plans retain the source loading grid separately from progression increments.
+// Older plans continue using their catalogue default without a storage migration.
+export function loadingStepFor(cfg, unit, definition) {
+  return Number.isFinite(cfg?.loadingStep) && cfg.loadingStep > 0 ? cfg.loadingStep : defaultIncrement(cfg?.id, unit, definition)
 }
 export const DEFAULT_SEC_INCREMENT = 5
 // Where adding another set of push-ups stops being progress and starts being a way to spend
@@ -143,12 +149,12 @@ export function readSession(entry, fallback) {
 /** Every past session for one exercise, oldest first. `fallback` — see readSession. */
 export function sessionsFor(S, exId, fallback) {
   const out = []
-  ;(S.workouts || []).forEach(w => {
+  ;loggedWorkouts(S).slice().sort((a,b) => String(a.d || '').localeCompare(String(b.d || '')) || (Number(a.start) || 0) - (Number(b.start) || 0)).forEach(w => {
     // A planned deload is recovery work, not a failed attempt at the normal prescription.
     // Excluding it prevents the reduced load/volume from triggering a stall or another deload.
     if (w.deload) return
-    const entry = w.entries.find(e => e.id === exId)
-    if (entry && entry.sets.some(s => s.done && !isWarmupRow(s))) out.push({ d: w.d, ...readSession(entry, fallback) })
+    const entry = (w.entries || []).find(e => e.id === exId)
+    if (entry && (entry.sets || []).some(s => s.done && !isWarmupRow(s))) out.push({ d: w.d, ...readSession(entry, fallback) })
   })
   return out
 }

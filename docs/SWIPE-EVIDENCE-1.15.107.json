@@ -1,0 +1,93 @@
+{
+  "version": "1.15.107",
+  "versionCode": 143,
+  "sourceCommit": "ac612bf6869eae6fbf1ea13d27492213c9b9b201",
+  "releaseUrl": "https://github.com/Truesilverking/TGym/releases/tag/v1.15.107",
+  "recordedAt": "2026-11-01T18:06:31.042Z",
+  "frontend": {
+    "tests": 3059,
+    "files": 257
+  },
+  "apiTests": 24,
+  "mcpTests": 38,
+  "nodeImportsPass": true,
+  "native": {
+    "run": 41333616667,
+    "tests": 52,
+    "failures": 0,
+    "skipped": 0,
+    "duration": "44.096s",
+    "emulatorOnly": true
+  },
+  "compiledBrowser": {
+    "cases": 10,
+    "checks": 292,
+    "runtimeErrors": 0,
+    "syntheticProfilesPreserved": true
+  },
+  "publicBrowser": {
+    "regressionCases": 4,
+    "swipeCases": 2,
+    "swipeChecks": 71,
+    "runtimeErrors": 0,
+    "noSelfReoffer": true,
+    "edgeOfflineColdOpen": true
+  },
+  "artifact": {
+    "apkSha256": "bee41b0b6edd5798297602b6d7d92cef8afe834e86e7a1f86c0de48ad58a6f51",
+    "aabSha256": "2ba10e1dec773b2f4010cf482ddb81e1ce7edcbefa2e4564320d0aee384f53d5",
+    "certificateSha256": "8ee233c984615e2b3f6f083dc0c47d148bb8956ff7caca97be0b9a0d260e6082",
+    "officialSigningContinuity": true,
+    "releaseAndPagesApkIdentical": true,
+    "pwaFilesChecked": 51,
+    "candidateSharedRuntimeAssetsExact": 55
+  },
+  "privateOrRejectedArtworkPublished": false,
+  "updateBroadcastSuppressed": true,
+  "sourceRuns": [
+    {
+      "id": 41333616664,
+      "name": "Tests",
+      "event": "push",
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/41333616664",
+      "conclusion": "success"
+    },
+    {
+      "id": 41333622722,
+      "name": "Tests",
+      "event": "pull_request",
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/41333622722",
+      "conclusion": "success"
+    },
+    {
+      "id": 41333616688,
+      "name": "Validate PWA",
+      "event": "push",
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/41333616688",
+      "conclusion": "success"
+    },
+    {
+      "id": 41333616667,
+      "name": "Validate Android",
+      "event": "push",
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/41333616667",
+      "conclusion": "success"
+    },
+    {
+      "id": 41333622566,
+      "name": "Build signed Android candidate",
+      "event": "workflow_dispatch",
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/41333622566",
+      "conclusion": "success"
+    }
+  ],
+  "limits": {
+    "physicalPixel": false,
+    "physicalIphone": false,
+    "nativeIosBuild": false,
+    "physicalFrameRate": false,
+    "webkitOfflineColdOpen": false,
+    "phoneInstall": false
+  },
+  "protectedMainRetainsIndependentReview": true
+}

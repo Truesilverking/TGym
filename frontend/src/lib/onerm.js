@@ -1,4 +1,5 @@
-import { isWarmupRow } from './workout-model.js'
+import { isWarmupRow, modeForSet } from './workout-model.js'
+import { loggedWorkouts } from './daily-plan.js'
 // Estimated one-rep max (issue #18).
 //
 // Deliberately knows nothing about the exercise database: an estimate needs a weight AND a
@@ -44,10 +45,13 @@ export function estimate1RM(w, r, formula = DEFAULT_FORMULA) {
 // exercise, with no rep count attached, so it cannot produce an estimate.
 export function bestSetOf(entry, formula = DEFAULT_FORMULA) {
   let best = null
+  const cfg = entry?.target || entry
+  const halve = Boolean(cfg?.side && !cfg?.repsPerSide)
   ;(entry?.sets || []).forEach(s => {
-    if (!s.done || isWarmupRow(s)) return
-    const est = estimate1RM(s.w, s.r, formula)
-    if (est !== null && (!best || est > best.est)) best = { est, w: Number(s.w), r: Math.round(Number(s.r)) }
+    if (!s.done || isWarmupRow(s) || modeForSet(s, cfg) !== 'reps') return
+    const r = halve ? Math.max(1, Math.round(Number(s.r) / 2)) : Math.round(Number(s.r))
+    const est = estimate1RM(s.w, r, formula)
+    if (est !== null && (!best || est > best.est)) best = { est, w: Number(s.w), r }
   })
   return best
 }
@@ -55,14 +59,25 @@ export function bestSetOf(entry, formula = DEFAULT_FORMULA) {
 // One point per workout in which the exercise produced an estimate — feeds the trend chart.
 // Chronological, matching the order workouts are appended in.
 export function e1rmSeries(S, exId, formula = DEFAULT_FORMULA) {
-  const pts = []
+  const sessions = new Map()
   ;(S.workouts || []).forEach(w => {
-    const entry = w.entries.find(e => e.id === exId)
-    if (!entry) return
-    const best = bestSetOf(entry, formula)
-    if (best) pts.push({ t: w.start, d: w.d, y: best.est, w: best.w, r: best.r })
+    // Legacy imports can reuse a date-derived ID across rows containing different
+    // exercises. Filter eligibility per row; deduplicate estimates only after
+    // reading its entries so a collision never hides another exercise's history.
+    if (!loggedWorkouts({ active: S.active, workouts: [w] }).length) return
+    let best = null
+    for (const entry of w.entries || []) {
+      if (entry.id !== exId) continue
+      const candidate = bestSetOf(entry, formula)
+      if (candidate && (!best || candidate.est > best.est)) best = candidate
+    }
+    if (best) {
+      const key = w.id == null ? Symbol() : JSON.stringify([typeof w.id,w.id,w.d ?? null,w.start ?? null])
+      const previous = sessions.get(key)
+      if (!previous || best.est > previous.y) sessions.set(key, { t: w.start, d: w.d, y: best.est, w: best.w, r: best.r })
+    }
   })
-  return pts
+  return [...sessions.values()].sort((a,b)=>String(a.d || '').localeCompare(String(b.d || '')) || (Number(a.t)||0)-(Number(b.t)||0))
 }
 
 // All-time best estimate for an exercise, with the set and date it came from — the source

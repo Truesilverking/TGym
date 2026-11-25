@@ -1,0 +1,345 @@
+{
+  "version": "1.15.115",
+  "androidVersionCode": 151,
+  "runtimeSourceCommit": "24232e34d8ea20e51768fa38033bd5e1e776189d",
+  "draft": false,
+  "publicationVerified": true,
+  "changes": {
+    "historyExerciseThumbnail": {
+      "nativeImageDragPreventedByScopedCss": true,
+      "selector": ".history-exercise-row > .thumb",
+      "pointerEvents": "none",
+      "webkitUserDrag": "none"
+    },
+    "expansion": {
+      "tapExpandControl": true,
+      "targetCssPx": 44,
+      "nestedSvgTap": true,
+      "holdMs": 2000,
+      "keyboardActivationRetained": true,
+      "ordinaryTextTapDoesNotOpen": true
+    },
+    "holdReleaseTiming": {
+      "overdueValidHoldRecoveredWhenReleaseHandlerDecides": true,
+      "queuedShortReleaseUsesInputTimestampsWhenReleaseHandlerDecides": true,
+      "generalQueuedShortTapPreventionVerified": false,
+      "busyMainThreadTimerBeforeQueuedUpLimit": "An experimental 1.88-second CDP touch on a busy main thread can still open if the timer executes before queued pointerup. This is not established with Android OS input and is not claimed fixed.",
+      "scrollPointerCancelMultitouchAndMovementCancellationRetained": true
+    },
+    "backdrop": {
+      "requiresGestureStartedAndReleasedOnSameBackdrop": true,
+      "compatibilityMouseClickCannotArmBackdrop": true,
+      "freshBackdropTapStillCloses": true
+    },
+    "malformedNestedHistory": {
+      "dropAndBurstNullPrimitiveAndArrayRowsFilteredInPresentationOnly": true,
+      "validRowsRetained": true,
+      "emptyListOmitted": true,
+      "rawSavedRecordUnmodified": true,
+      "confirmedAsUserCause": false
+    }
+  },
+  "reproducedFailures": {
+    "nativeImageHold114": {
+      "version": "1.15.114",
+      "sourceCommit": "f660fe2ebc8dfb4999933ed3df7272446294e6f6",
+      "androidOsInput": true,
+      "dragStartAfterMs": 609,
+      "holdCancelledBefore2000Ms": true,
+      "sameFlowPassedCdp": true,
+      "observationProvenance": "Verified by the root agent from Android InputManager tracing; private raw traces are excluded."
+    },
+    "clippedRowRelease": {
+      "holdOpensDetailBeforeContactEnds": true,
+      "compatibilityClickCouldHitNewBackdropAndCloseDetail": true,
+      "syntheticBrowserReproduction": true
+    },
+    "malformedNestedRows": {
+      "syntheticRenderCrashReproduced": true,
+      "userProfileCausationEstablished": false
+    }
+  },
+  "verification": {
+    "frontend": {
+      "tests": 3247,
+      "files": 266,
+      "localPassed": true,
+      "successfulExactSourceCiLogVerified": true
+    },
+    "api": {
+      "localTests": 24,
+      "inheritedFromSource": "f89e06bb1fd095cc6fcffd64498d392a3e255541",
+      "inputBlobsIdenticalToFinal": true,
+      "exactSourceCiSuiteGatePassed": true,
+      "ciTestCountSeparatelyParsed": false
+    },
+    "mcp": {
+      "localTests": 38,
+      "plainNodeImportGraphPassed": true,
+      "inheritedFromSource": "f89e06bb1fd095cc6fcffd64498d392a3e255541",
+      "inputBlobsIdenticalToFinal": true,
+      "exactSourceCiSuiteGatePassed": true,
+      "ciTestCountSeparatelyParsed": false
+    },
+    "androidLint": {
+      "errors": 0,
+      "warnings": 22,
+      "qaBuildOnly": true
+    },
+    "compiledPwa": {
+      "contexts": 4,
+      "checkGroups": 40,
+      "viewportWidthsCssPx": [
+        320,
+        390
+      ],
+      "engines": [
+        "Chromium/Edge",
+        "WebKit"
+      ],
+      "runtimeErrors": 0,
+      "exactBuildMetadataVerified": true,
+      "decodedSyntheticImageAndPlaceholderVerified": true,
+      "fullPersistedStateByteIdentical": true,
+      "clippedTopAndBottomRowReleaseVerified": true,
+      "standaloneDisplayModeEmulated": true,
+      "osPwaInstalled": false
+    },
+    "pwaUpgrade": {
+      "from": {
+        "version": "1.15.114",
+        "commit": "f660fe2ebc8dfb4999933ed3df7272446294e6f6"
+      },
+      "to": {
+        "version": "1.15.115",
+        "commit": "24232e34d8ea20e51768fa38033bd5e1e776189d"
+      },
+      "contexts": 2,
+      "checkGroups": 9,
+      "runtimeErrors": 0,
+      "actualAppUpdateUi": true,
+      "realWorkerMigration": true,
+      "portablePreUpdateBackupsValidated": true,
+      "syntheticProfileHistoryAndPausedSessionPreserved": true,
+      "ignoredActivityTimestampKeys": [
+        "_ts",
+        "active.lastUserInteractionAt",
+        "active.lastActivityAt"
+      ],
+      "edgeOfflineColdOpenAndOverlayPassed": true,
+      "webkitLoadedShellOfflineOverlayPassed": true,
+      "webkitOfflineColdOpenVerified": false,
+      "webkitOfflineColdOpenLimit": "Windows WebKit navigation raises an engine internal error; a separate minimal cache-only control reproduces it with and without routing."
+    },
+    "androidEmulator": {
+      "tests": 53,
+      "failures": 0,
+      "skipped": 0,
+      "completedCiArtifactVerified": true,
+      "artifactId": 13278562643,
+      "artifactSha256": "e55a5b88798386dcb62d5484e610e16c342926fff6cb9c601549156ed90379db"
+    },
+    "actualPublicBrowser": {
+      "contexts": 4,
+      "checkGroups": 45,
+      "runtimeErrors": 0,
+      "syntheticDataPreserved": true,
+      "standaloneDisplayModeEmulated": true,
+      "osPwaInstalled": false,
+      "priorVersionMigrationPerformedOnPublicOrigin": false,
+      "results": [
+        {
+          "engine": "chromium",
+          "widthCssPx": 320,
+          "checkGroups": 10,
+          "pass": true,
+          "offlineLoadedShellOverlay": null,
+          "offlineColdOpen": null,
+          "offlineReload": null,
+          "offlineColdOverlay": null,
+          "currentWorkerRevalidated": null
+        },
+        {
+          "engine": "chromium",
+          "widthCssPx": 390,
+          "checkGroups": 13,
+          "pass": true,
+          "offlineLoadedShellOverlay": true,
+          "offlineColdOpen": true,
+          "offlineReload": true,
+          "offlineColdOverlay": true,
+          "currentWorkerRevalidated": true
+        },
+        {
+          "engine": "webkit",
+          "widthCssPx": 320,
+          "checkGroups": 10,
+          "pass": true,
+          "offlineLoadedShellOverlay": null,
+          "offlineColdOpen": null,
+          "offlineReload": null,
+          "offlineColdOverlay": null,
+          "currentWorkerRevalidated": null
+        },
+        {
+          "engine": "webkit",
+          "widthCssPx": 390,
+          "checkGroups": 12,
+          "pass": true,
+          "offlineLoadedShellOverlay": true,
+          "offlineColdOpen": false,
+          "offlineReload": false,
+          "offlineColdOverlay": false,
+          "currentWorkerRevalidated": true
+        }
+      ]
+    }
+  },
+  "physicalPixel": {
+    "package": "app.framegym.mobile.qa",
+    "version": "1.15.115",
+    "androidVersionCode": 151,
+    "sourceCommit": "24232e34d8ea20e51768fa38033bd5e1e776189d",
+    "qaApkSha256": "614d56cfd649961cb5e0c78c6b1f05f2df5087747fdf4c47f2a622e5d0ffbfc9",
+    "qaSignerSha256": "d53b550b85266358a3d803b7a9611b880488f3eb3e68ad121c63e3c04825f5cc",
+    "installedApkBytesVerified": true,
+    "backupVerified": true,
+    "androidOsInputChecks": {
+      "total": 4,
+      "textHolds": 1,
+      "imageHolds": 2,
+      "expandIconTaps": 1,
+      "imageDragStarts": 0
+    },
+    "attachedWebviewCdpChecks": 2,
+    "cdpIsNotAndroidOsInput": true,
+    "physicalCountsProvenance": "Root-verified final Pixel QA acceptance: four OS input cases and two separate attached-WebView CDP cases.",
+    "successfulColdReopens": 1,
+    "coldHistoryLoaded": true,
+    "allNonTimestampDurableAndWebProfileFieldsPreserved": true,
+    "excludedSaveMetadataKeys": [
+      "_ts"
+    ],
+    "backupBeforeUpdateMatched": true,
+    "javascriptPageErrors": 0,
+    "currentQaProcessFatalErrors": 0,
+    "temporaryUsbAwakeSettingRestored": true,
+    "previousUsbAwakeSetting": "0",
+    "productionAppAccessed": false,
+    "persistedTrainingEdits": false,
+    "profileReset": false
+  },
+  "tooling": {
+    "coldReopenAttempts": [
+      {
+        "status": "STOPPED_BEFORE_RESTART",
+        "reason": "Overly broad profile assertion included normal save timestamp; no cold restart was attempted",
+        "changedTopLevelKeys": [
+          "_ts"
+        ],
+        "appCrashObserved": false
+      },
+      {
+        "status": "TRANSIENT_LAUNCH_READINESS_CHECK",
+        "initialHarnessMessage": "Phone requires direct authentication",
+        "reason": "The harness checked immediately after am start and observed transient keyguard metadata. Fresh metadata 0.5 seconds later showed unlocked QA; a bounded readiness poll enabled the final successful cold check without requesting new authentication.",
+        "newUserAuthenticationRequired": false,
+        "appCrashObserved": false
+      },
+      {
+        "status": "PASS"
+      }
+    ],
+    "pwaHarnessAttempts": [
+      {
+        "status": "HARNESS_ASSERTION_CORRECTED",
+        "reason": "The original point helper required an image hit while the intended fix correctly made the row own its point; final rerun uses geometry and verifies row ownership.",
+        "appDefect": false
+      },
+      {
+        "status": "HARNESS_ASSERTION_CORRECTED",
+        "reason": "Offline overlay interaction updates three active-session timestamps; all other persisted fields are compared exactly.",
+        "appDefect": false
+      }
+    ],
+    "earlierF89EvidenceSuperseded": true,
+    "failedHarnessEvidenceRetained": true
+  },
+  "publication": {
+    "status": "VERIFIED",
+    "release": "https://github.com/Truesilverking/TGym/releases/tag/v1.15.115",
+    "workflow": "https://github.com/Truesilverking/TGym/actions/runs/41736021345",
+    "publishedAt": "2026-11-03T23:08:49Z",
+    "annotatedTag": "v1.15.115",
+    "officialSignerSha256": "8ee233c984615e2b3f6f083dc0c47d148bb8956ff7caca97be0b9a0d260e6082",
+    "apkSha256": "0a3a2146753d7e771121ee207afcca225d0488d30ba5553890dfbfedb31577eb",
+    "aabSha256": "b4e57255bdbf72c665bac761b03ae8e65ebf12d52f84eacdbb94f56a8d239de9",
+    "releaseAndPagesApkIdentical": true,
+    "pwaFilesChecked": 51,
+    "sharedRuntimeAssetsChecked": 55,
+    "knownForbiddenArtworkHashes": 92,
+    "forbiddenArtworkMatches": 0,
+    "updateTopicBroadcastSkipped": true,
+    "requiredCiRuns": [
+      {
+        "id": 41735150710,
+        "name": "Tests",
+        "event": "push",
+        "url": "https://github.com/Truesilverking/TGym/actions/runs/41735150710",
+        "conclusion": "success"
+      },
+      {
+        "id": 41735158433,
+        "name": "Tests",
+        "event": "pull_request",
+        "url": "https://github.com/Truesilverking/TGym/actions/runs/41735158433",
+        "conclusion": "success"
+      },
+      {
+        "id": 41735150522,
+        "name": "Validate PWA",
+        "event": "push",
+        "url": "https://github.com/Truesilverking/TGym/actions/runs/41735150522",
+        "conclusion": "success"
+      },
+      {
+        "id": 41735150482,
+        "name": "Validate Android",
+        "event": "push",
+        "url": "https://github.com/Truesilverking/TGym/actions/runs/41735150482",
+        "conclusion": "success"
+      },
+      {
+        "id": 41735171147,
+        "name": "Build signed Android candidate",
+        "event": "workflow_dispatch",
+        "url": "https://github.com/Truesilverking/TGym/actions/runs/41735171147",
+        "conclusion": "success"
+      }
+    ],
+    "protectedMainRetainsIndependentReview": true
+  },
+  "limits": {
+    "generalZeroDefectClaim": false,
+    "physicalIphoneVerified": false,
+    "nativeIosBuildVerified": false,
+    "osInstalledPwaVerified": false,
+    "gifExerciseAccuracyVerified": false,
+    "productionAndroidAppUpdated": false,
+    "reportExportsReverified": false,
+    "privateProfilesScreenshotsAndRawTracesIncluded": false,
+    "windowsWebkitLocalBuildOfflineColdOpenVerified": false,
+    "windowsWebkitPublicOriginOfflineColdOpenVerified": false,
+    "windowsWebkitPublicOriginOfflineReloadVerified": false,
+    "publicColdResultEstablishesLocalEngineFix": false
+  },
+  "evidenceDigests": {
+    "publicArtifacts": "12058f424755c6dfdd6b6f41dce85c7926e3a3dfee521b3ddc44dd9de0f5ee27",
+    "releaseRun": "47e2c1e8e2d9bf36e9d31f15780e7811dac8038a0ee99ccdd5553ca450f02f5a",
+    "actualPublicBrowser": "acfce1c96984d80eda5f35b2d6b1ce5ec8ee555c897891d7191d1d274e802e02",
+    "compiledPwa": "932671317c8a65284cf69306e25d54e1d2ec0e68db5cfb63739c3e04e68b2585",
+    "localPwaUpgrade": "4aa6cea214f2666c8e7c0ff521ae5691eac5c286fe440997949f31e02d0b56d1",
+    "nativeArtifact": "e55a5b88798386dcb62d5484e610e16c342926fff6cb9c601549156ed90379db",
+    "frontendCiLog": "052099f0f34f260801ac6e76383d4f128560c720f57540e4312793426f5379ca"
+  }
+}

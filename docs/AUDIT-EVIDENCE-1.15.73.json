@@ -1,0 +1,359 @@
+{
+  "date": "2026-10-19",
+  "version": "1.15.73",
+  "androidVersionCode": 109,
+  "sourceCommit": "38751265d383c55d2094ac53fe2a4e0954d4f247",
+  "branch": "fix/calendar-tracking-marker-1.15.73",
+  "tag": "v1.15.73",
+  "palette": {
+    "rest": {
+      "label": "Rest day",
+      "fill": "#ffffff",
+      "ink": "#263345",
+      "border": "#7b8796"
+    },
+    "paused": {
+      "label": "Training paused",
+      "fill": "#791f34",
+      "ink": "#ffffff",
+      "border": "#4b1020"
+    },
+    "missed": {
+      "label": "Not Trained",
+      "fill": "#f8d4d7",
+      "ink": "#78222d",
+      "border": "#b56b73"
+    },
+    "pending": {
+      "label": "Pending",
+      "fill": "#696969",
+      "ink": "#ffffff",
+      "border": "#424242"
+    }
+  },
+  "scope": [
+    "interactive calendar cells and legends",
+    "Streak PNG/PDF",
+    "Consistency PNG/PDF",
+    "combined report sections"
+  ],
+  "preserved": {
+    "calculationsAndData": true,
+    "persistedStatusIds": true,
+    "trackingStartAndUntrackedSemantics": true,
+    "untrackedScreen": {
+      "label": "Rest day",
+      "fill": "#ffffff",
+      "ink": "#263345",
+      "border": "#7b8796",
+      "semantic": "rest",
+      "status": "untracked"
+    },
+    "trackingStartMarker": {
+      "fill": "#0f766e",
+      "border": "#064e3b"
+    },
+    "visibleUntrackedCategoryRemoved": true,
+    "effectiveTrackingStartOutsideGrid": true,
+    "untrackedExport": "Rest grouping, white; no separate legend entry; internally remains untracked",
+    "partialScreen": {
+      "label": "Partially completed",
+      "fill": "#e49b32",
+      "ink": "#202733",
+      "border": "#835000"
+    },
+    "partialExport": {
+      "label": "Partial",
+      "fill": "#f4cc83",
+      "ink": "#533600",
+      "border": "#9c6b14"
+    },
+    "fullAppMatrix": "APP-AUDIT-2026-10-19.md"
+  },
+  "tests": {
+    "frontendFiles": 191,
+    "frontendPassed": 2093,
+    "apiPassed": 16,
+    "mcpPassed": 37,
+    "catalogPassed": 6,
+    "mcpNodeLoadable": true,
+    "locales": {
+      "packs": 12,
+      "keys": 1920,
+      "sourceStrings": 1216
+    },
+    "fatigueComparisons": 108000,
+    "historyDeletionComparisons": 14076,
+    "frontendLintAndTypecheck": "No scripts available",
+    "androidInstrumentation": {
+      "sourceCommit": "38751265d383c55d2094ac53fe2a4e0954d4f247",
+      "run": 39321411243,
+      "artifact": 12221405398,
+      "tests": 11,
+      "failures": 0,
+      "skipped": 0,
+      "successRate": "100%",
+      "classes": {
+        "HealthActivitiesTest": 2,
+        "SafeAreaTest": 2,
+        "SoundPreferencesTest": 5,
+        "WorkoutNotificationTest": 1,
+        "ExampleInstrumentedTest": 1
+      },
+      "emulatorOnly": true,
+      "physicalDevice": false,
+      "index": ".tools/colors73/android-ci-results/connected/debug/index.html"
+    }
+  },
+  "builds": {
+    "web": true,
+    "pwa": true,
+    "mobileAssetsAndCapacitorSync": true,
+    "localAndroidDebugAndLint": true,
+    "iosNativeCompile": false
+  },
+  "metrics": {
+    "baseline": "v1.15.72 exact source archive",
+    "cases": 18,
+    "streak": 144,
+    "calendars": 72,
+    "statistics": 18,
+    "statusesMetricsAndInputsUnchanged": true
+  },
+  "browserAndFiles": {
+    "syntheticProfilesOnly": true,
+    "screenCases": 256,
+    "engines": [
+      "Edge",
+      "WebKit mobile emulation"
+    ],
+    "widths": [
+      320,
+      390
+    ],
+    "themes": [
+      "light",
+      "dark"
+    ],
+    "accents": 8,
+    "sourceQa": {
+      "generatedFiles": 30,
+      "uiDownloadedFiles": 6,
+      "pdfPagesRendered": 100,
+      "cellFillSamples": 9036,
+      "whiteCellsWithExplicitBorder": 7612
+    },
+    "freshLivePublicQa": {
+      "downloadedFiles": 10,
+      "pdfPagesRendered": 8,
+      "colorsTextBordersAndLegends": true,
+      "externalTrackingMarker": true,
+      "visibleUntrackedCategoryRemoved": true,
+      "previewDownloadIdentity": true,
+      "syntheticProfilePreserved": true,
+      "pngsIdenticalToExactBuild": 4
+    },
+    "publicFrozenUpdateOffline": {
+      "profiles": 4,
+      "servedFrozenPublicShellLocally": true,
+      "normalAndPausedBothEngines": true,
+      "pausedSessionMinutes": 9,
+      "namedImmutableProfileAndActiveFieldsPreserved": true,
+      "interactionTimestampsMayAdvance": true,
+      "checksumValidPreUpdateBackups": true,
+      "precacheHashesExact": true,
+      "completeBrowserRestart": true,
+      "downloadedFilesOpened": 16,
+      "decodedImagesIdenticalToExactBuild": 56,
+      "pdfPagesCompared": 52,
+      "pngFilesCompared": 4,
+      "representativePdfPagesPopplerRendered": 8,
+      "edgeOffline": "navigator.onLine=false",
+      "webkitOffline": "Local origin stopped; navigator.onLine remains true; mobile emulation only"
+    }
+  },
+  "ci": [
+    {
+      "id": 39321414983,
+      "name": "Build signed Android candidate",
+      "sourceCommit": "38751265d383c55d2094ac53fe2a4e0954d4f247",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/39321414983"
+    },
+    {
+      "id": 39321411243,
+      "name": "Validate Android",
+      "sourceCommit": "38751265d383c55d2094ac53fe2a4e0954d4f247",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/39321411243"
+    },
+    {
+      "id": 39321407930,
+      "name": "Validate PWA",
+      "sourceCommit": "38751265d383c55d2094ac53fe2a4e0954d4f247",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/39321407930"
+    },
+    {
+      "id": 39321404377,
+      "name": "Tests",
+      "sourceCommit": "38751265d383c55d2094ac53fe2a4e0954d4f247",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/Truesilverking/TGym/actions/runs/39321404377"
+    }
+  ],
+  "signedCandidate": {
+    "ciRun": 39321414983,
+    "artifact": 12219569841,
+    "hashes": {
+      "TGym-Android-v1.15.73.apk": "9190ff206aae3bf6696aa4a128b46b161594daa28c46c477f095764bd475cb20",
+      "TGym-Android-v1.15.73.aab": "16037b59b65f80ddedf395f40fecd903019dd3c5b4bee0203748090f5a606a5f"
+    },
+    "certificateSha256": "8ee233c984615e2b3f6f083dc0c47d148bb8956ff7caca97be0b9a0d260e6082",
+    "signingContinuity": true,
+    "notDebuggable": true,
+    "nativeSdk": {
+      "min": 23,
+      "target": 35,
+      "compile": 35
+    }
+  },
+  "publication": {
+    "release": "https://github.com/Truesilverking/TGym/releases/tag/v1.15.73",
+    "ciRun": 39322393344,
+    "ciUrl": "https://github.com/Truesilverking/TGym/actions/runs/39322393344",
+    "assets": {
+      "TGym-Android-v1.15.73.apk": {
+        "bytes": 9031464,
+        "sha256": "0a868bdffcf39e2bd9ae7d26089fd8d1dfa2fabdf5e818c8e561e29f5f042cc2"
+      },
+      "TGym-Android-v1.15.73.aab": {
+        "bytes": 8080194,
+        "sha256": "16037b59b65f80ddedf395f40fecd903019dd3c5b4bee0203748090f5a606a5f"
+      },
+      "checksums.txt": {
+        "bytes": 184,
+        "sha256": "93c1a77c88d9ebd1095fc16e92ba72a51a77de9b1fdfb8de8ecb0c155d8f97cd"
+      },
+      "latest.json": {
+        "bytes": 701,
+        "sha256": "9d64f6b0ba0ef0e2557e7b03eb8e89b9af5d1ca0dfb024a52a89fa2b5b047e91"
+      }
+    },
+    "githubPagesApkIdentical": true,
+    "certificateSha256": "8ee233c984615e2b3f6f083dc0c47d148bb8956ff7caca97be0b9a0d260e6082",
+    "nativePackage": "app.framegym.mobile",
+    "nativeSdk": {
+      "min": 23,
+      "target": 35,
+      "compile": 35
+    },
+    "apkSignatureValid": true,
+    "aabJarSignatureValid": true,
+    "signingContinuity": true,
+    "apkNotDebuggable": true,
+    "apkEntriesIdenticalToCandidate": 1116,
+    "apkDifferencesOnlySigningBlock": true,
+    "aabByteIdenticalToCandidate": true,
+    "pwaBuild": {
+      "version": "1.15.73",
+      "commit": "38751265d383c55d2094ac53fe2a4e0954d4f247"
+    },
+    "pwaCache": "tgym-app-1.15.73-38751265d383c55d2094ac53fe2a4e0954d4f247-7c1e19c0efc6",
+    "pwaShellCount": 57,
+    "pwaDigestMatchesExactSourceTemplate": true,
+    "ciPwaCompiledAssetCountEqualLocal": 50,
+    "ciLocalStaticDifferences": [
+      {
+        "file": "about.html",
+        "difference": "CRLF versus LF only",
+        "normalizedEquivalent": true
+      },
+      {
+        "file": "index.html",
+        "difference": "one additional local blank line plus line endings",
+        "normalizedEquivalent": true
+      },
+      {
+        "file": "manifest.json",
+        "difference": "CRLF versus LF only",
+        "normalizedEquivalent": true
+      },
+      {
+        "file": "privacy.html",
+        "difference": "CRLF versus LF only",
+        "normalizedEquivalent": true
+      },
+      {
+        "file": "sw.js",
+        "difference": "content cache ID and line endings only",
+        "normalizedEquivalent": true
+      }
+    ]
+  },
+  "updaters": [
+    {
+      "distribution": "github",
+      "currentVersion": "1.15.72",
+      "offeredVersion": "1.15.73",
+      "offeredVersionCode": 109,
+      "passed": true
+    },
+    {
+      "distribution": "github",
+      "currentVersion": "1.15.73",
+      "offeredVersion": null,
+      "offeredVersionCode": null,
+      "passed": true
+    },
+    {
+      "distribution": "pwa",
+      "currentVersion": "1.15.72",
+      "offeredVersion": "1.15.73",
+      "offeredVersionCode": 0,
+      "passed": true
+    },
+    {
+      "distribution": "pwa",
+      "currentVersion": "1.15.73",
+      "offeredVersion": null,
+      "offeredVersionCode": null,
+      "passed": true
+    }
+  ],
+  "notification": {
+    "pass": true,
+    "sourceCommit": "38751265d383c55d2094ac53fe2a4e0954d4f247",
+    "version": "1.15.73",
+    "run": 39322393344,
+    "policySend": true,
+    "acceptedTopics": [
+      "tgym_updates",
+      "tgym_updates_v2"
+    ],
+    "physicalReceiptVerified": false,
+    "safeLogLines": [
+      "2026-10-19T20:48:38.5019227Z Release update notifications enabled: true",
+      "2026-10-19T20:52:31.2520337Z FCM accepted tgym_updates update notification: [FCM message ID omitted]",
+      "2026-10-19T20:52:31.6716600Z FCM accepted tgym_updates_v2 update notification: [FCM message ID omitted]"
+    ],
+    "originalRemoteAnnotatedTagChecked": true,
+    "notificationRerunPerformed": false
+  },
+  "pending": [
+    "Physical Android receipt/tap/installation",
+    "Physical iPhone Safari/installed PWA",
+    "Xcode build",
+    "Native sharing to real recipients",
+    "Physical screen reader",
+    "Physical storage pressure",
+    "Authorized Drive second-device OAuth/restore",
+    "Health Connect provider acceptance"
+  ],
+  "noUserProfileTouched": true,
+  "noThirdPartyRecipientsUsed": true
+}

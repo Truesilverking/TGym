@@ -12,6 +12,7 @@ WORKDIR /app
 COPY frontend/package.json frontend/package-lock.json* ./
 RUN npm ci 2>/dev/null || npm install
 COPY frontend/ ./
+COPY api/session-activity.js /api/session-activity.js
 RUN npm run build
 
 FROM nginx:alpine

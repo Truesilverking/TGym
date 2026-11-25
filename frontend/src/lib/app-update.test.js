@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { compareVersions, parseUpdateManifest, checkForAppUpdate } from './app-update.js'
+import { activatePwaUpdate, compareVersions, parseUpdateManifest, checkForAppUpdate } from './app-update.js'
 import { signingCertificate } from '../../scripts/signing-certificate.mjs'
 
 it('reads verified signer fingerprints across Android build-tools versions', () => {
@@ -14,6 +14,22 @@ describe('app updates', () => {
   const values = new Map()
   globalThis.localStorage = { getItem: key => values.get(key) ?? null, setItem: (key, value) => values.set(key, String(value)), clear: () => values.clear() }
   beforeEach(() => { localStorage.clear() })
+  it.each(['request','body'])('times out a stalled %s without throttling the retry', async phase => {
+    vi.useFakeTimers()
+    const fetcher = vi.fn(() => phase === 'request' ? new Promise(()=>{}) : Promise.resolve({ok:true,json:()=>new Promise(()=>{})}))
+    try {
+      const pending=checkForAppUpdate({currentVersion:'1.15.19',force:true,fetcher})
+      const rejected=expect(pending).rejects.toThrow('update_check_timeout')
+      await vi.advanceTimersByTimeAsync(15000)
+      await rejected
+      expect(fetcher.mock.calls[0][1].signal.aborted).toBe(true)
+      expect(localStorage.getItem('tgym_update_checked_at')).toBeNull()
+    } finally {vi.useRealTimers()}
+  })
+  it.each([false,true])('rejects failed HTTP or malformed metadata (%s)',async malformed=>{
+    await expect(checkForAppUpdate({currentVersion:'1.15.19',force:true,fetcher:async()=>({ok:malformed,json:async()=>({})})})).rejects.toThrow()
+    expect(localStorage.getItem('tgym_update_checked_at')).toBeNull()
+  })
   it.each([['1.13.0','1.14.0',-1],['1.14.0','1.14.0',0],['2.0.0','1.99.99',1],['1.10.0','1.9.9',1]])('compares %s and %s', (a,b,want) => expect(compareVersions(a,b)).toBe(want))
   it('rejects absent versions and foreign or insecure downloads', () => {
     expect(() => parseUpdateManifest({ versionCode: 1 })).toThrow()
@@ -46,6 +62,36 @@ describe('app updates', () => {
       expect(localStorage.getItem('tgym_pwa_update_checked_at')).toBe('20000000')
     } finally {vi.unstubAllGlobals()}
   })
+})
+
+it('waits for a PWA worker to install and take control before reloading',async()=>{
+  const worker=new EventTarget(), serviceWorker=new EventTarget(), reload=vi.fn()
+  worker.state='installing';worker.postMessage=vi.fn()
+  const reg={update:async()=>{},installing:worker,waiting:null}
+  const pending=activatePwaUpdate(reg,serviceWorker,reload)
+  await Promise.resolve()
+  expect(reload).not.toHaveBeenCalled()
+  worker.state='installed'; reg.waiting=worker;worker.dispatchEvent(new Event('statechange'))
+  await Promise.resolve()
+  expect(worker.postMessage).toHaveBeenCalledWith({type:'SKIP_WAITING'})
+  expect(reload).not.toHaveBeenCalled()
+  serviceWorker.dispatchEvent(new Event('controllerchange'))
+  await pending
+  expect(reload).toHaveBeenCalledOnce()
+})
+it('does not reload or attach late listeners after a PWA update times out',async()=>{
+  vi.useFakeTimers()
+  let resolve
+  const serviceWorker=new EventTarget(), reload=vi.fn(), worker={postMessage:vi.fn()}
+  const reg={update:()=>new Promise(r=>{resolve=r}),waiting:worker}
+  try {
+    const pending=activatePwaUpdate(reg,serviceWorker,reload)
+    const rejected=expect(pending).rejects.toThrow('update_activation_timeout')
+    await vi.advanceTimersByTimeAsync(30000);await rejected
+    resolve();await Promise.resolve()
+    expect(worker.postMessage).not.toHaveBeenCalled()
+    expect(reload).not.toHaveBeenCalled()
+  } finally {vi.useRealTimers()}
 })
 
 it('accepts the official mixed-case owner and detects the next version', async () => {
