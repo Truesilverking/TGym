@@ -27,6 +27,7 @@ export function portableState(state) {
   // Connections belong to one device/server account; restored training data
   // must never silently resume an external account or inherit its cursor.
   if (data.smartScaleConnection) data.smartScaleConnection = { enabled: false, lastSync: 0 }
+  if (data.healthConnectWeight) data.healthConnectWeight = { enabled: false, autoSync: false, lastSyncAt: 0 }
   return data
 }
 export function validateBackupState(data) {

@@ -1,5 +1,17 @@
 # Smart scale / Withings
 
+## Android through Health Connect
+
+TGym 1.18.0 can import Withings weight on Android 14 or newer through the phone's Health Connect service, without a TGym server or Withings developer credentials. Withings must first be allowed to share Weight with Health Connect. In TGym, open Health & wearables, then Daily weight, and select Allow weight access. This requests only `READ_WEIGHT`, independently of exercise-session access. A granted permission confirms access, not that a scale reading exists; an empty read shows a specific message.
+
+Manual Sync now and optional foreground sync import complete, bounded snapshots from the last 30 days. Only the official Withings Android origin is imported. Provider identity, original measurement time and modification time are retained; daily aggregates follow the existing averaging convention and display units. Reimports and revisions preserve manual samples and avoid double-counting a matched measurement when switching between Health Connect and the API. Only one weight source is active at a time. Disconnect retains existing measurements; portable backups retain measurements but disable device-specific sync and access preferences.
+
+Starting a workout reuses a valid weight already recorded today without creating another sample. If today's weight is missing and automatic Health Connect sync is enabled, a cancellable check waits up to five seconds before falling back to the manual check-in. A cancelled or abandoned check cannot start a workout later. Existing active workout and completed-session weight snapshots are not changed. Withings must have delivered the reading to Health Connect before TGym can import it; no closed-app/background import is promised.
+
+The implementation has synthetic JS/native regression coverage. Actual permission grant and live Withings-to-Health-Connect-to-TGym delivery require a separate device check; a linked Withings account alone does not prove that Weight is being exported.
+
+## Withings API connection
+
 TGym can read Withings weight, body fat percentage, fat mass and available height records through an optional TGym API server. The Android app and standalone PWA keep their existing local profile; the scale connection does not upload or replace the training profile. The provider connection requests only `user.metrics` and does not write data to Withings.
 
 ## Server setup

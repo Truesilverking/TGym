@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
+import { Capacitor } from '@capacitor/core'
 import { useStore } from '../store/useStore.js'
 import { t } from '../lib/i18n.js'
-import { beginScaleAuthorization, createScalePairingCode, disconnectScale, forgetScaleServer, pairScaleServer, scaleConnection, scaleRequest, syncScale } from '../lib/health/scale-connection.js'
+import { beginScaleAuthorization, createScalePairingCode, disconnectScale, forgetScaleServer, pairScaleServer, scaleConnection, scaleRequest, syncScale, useWithingsApiWeightSource } from '../lib/health/scale-connection.js'
+import HealthConnectWeight, { HealthConnectWeightAutoSync } from './HealthConnectWeight.jsx'
 import { MOBILE } from '../lib/mobile.js'
 import { Button } from './ui.jsx'
 import './SmartScale.css'
@@ -9,7 +11,7 @@ import './SmartScale.css'
 // Foreground-only polling is shared by Android and PWA. Background execution is
 // neither needed nor promised; records sync after opening/resuming TGym online.
 export function SmartScaleAutoSync() {
-  const enabled = useStore(s => s.S.smartScaleConnection?.enabled)
+  const enabled = useStore(s => s.S.scaleWeightSource !== 'health-connect' && s.S.smartScaleConnection?.enabled)
   useEffect(() => {
     if (!enabled) return
     const sync = () => { if (!document.hidden && navigator.onLine !== false) syncScale({ automatic: true }).catch(() => {}) }
@@ -18,11 +20,17 @@ export function SmartScaleAutoSync() {
     const timer = setInterval(sync, 15 * 60000)
     return () => { clearInterval(timer); document.removeEventListener('visibilitychange', sync); window.removeEventListener('online', sync) }
   }, [enabled])
-  return null
+  return <HealthConnectWeightAutoSync />
 }
 
 export default function SmartScale() {
+  if (Capacitor.getPlatform() !== 'android') return <WithingsApiScale />
+  return <><HealthConnectWeight /><details className="smart-scale-api-option"><summary>{t('Withings API connection')}</summary><WithingsApiScale /></details></>
+}
+
+function WithingsApiScale() {
   const settings = useStore(s => s.S.smartScaleConnection)
+  const selected = useStore(s => s.S.scaleWeightSource !== 'health-connect')
   const user = useStore(s => s.user)
   const [pairingCode,setPairingCode] = useState('')
   const [status, setStatus] = useState(null), [paired, setPaired] = useState(false), [configure, setConfigure] = useState(false)
@@ -60,7 +68,7 @@ export default function SmartScale() {
     {status?.available === false && <p className="dim small">{t('Connect a TGym server to use the Withings API in the PWA or Android app. This connection only imports scale readings; it does not replace or synchronize your full profile.')}</p>}
     <div className="smart-scale-actions">
       {status?.configured && status.available !== false && !status.connected && <Button disabled={busy} onClick={() => run(beginScaleAuthorization)}>{t('Connect Withings')}</Button>}
-      {status?.connected && <><Button disabled={busy} onClick={sync}>{t('Sync now')}</Button><Button disabled={busy} onClick={() => run(disconnectScale)}>{t('Disconnect')}</Button></>}
+      {status?.connected && <>{selected ? <Button disabled={busy} onClick={sync}>{t('Sync now')}</Button> : <Button disabled={busy} onClick={() => run(async () => { await useWithingsApiWeightSource(); await syncScale() })}>{t('Use Withings API for weight')}</Button>}<Button disabled={busy} onClick={() => run(disconnectScale)}>{t('Disconnect')}</Button></>}
       <Button disabled={busy} onClick={() => setConfigure(v => !v)}>{t(configure ? 'Cancel' : 'API connection')}</Button>
     </div>
     {user && !MOBILE && <div className="smart-scale-pairing"><Button disabled={busy} onClick={()=>run(async()=>{const value=await createScalePairingCode();if(mounted.current)setPairingCode(value)})}>{t('Create pairing code')}</Button>{pairingCode && <p role="status"><b>{pairingCode}</b><br/>{t('Use this code within 5 minutes to connect another device to this server.')}</p>}</div>}
@@ -71,7 +79,7 @@ export default function SmartScale() {
       <Button type="submit" variant="primary" disabled={busy}>{t('Connect server')}</Button>
       {paired && <Button type="button" disabled={busy} onClick={() => run(async () => { await useStore.getState().updateAtomic(s => { s.smartScaleConnection = { ...s.smartScaleConnection, enabled: false } }); await forgetScaleServer(); setCode(''); setConfigure(false) })}>{t('Forget server')}</Button>}
     </form>}
-    {status?.connected && <label className="smart-scale-auto"><input type="checkbox" checked={Boolean(settings?.enabled)} disabled={busy} onChange={e => run(async () => { const enabled = e.target.checked; await useStore.getState().updateAtomic(s => { s.smartScaleConnection = { ...s.smartScaleConnection, enabled } }); await useStore.getState().flushPersistence() })} />{t('Sync automatically on app open')}</label>}
+    {status?.connected && selected && <label className="smart-scale-auto"><input type="checkbox" checked={Boolean(settings?.enabled)} disabled={busy} onChange={e => run(async () => { const enabled = e.target.checked; await useStore.getState().updateAtomic(s => { s.smartScaleConnection = { ...s.smartScaleConnection, enabled } }); await useStore.getState().flushPersistence() })} />{t('Sync automatically on app open')}</label>}
     {settings?.lastSync > 0 && <p className="small dim">{t('Last sync')}: {new Date(settings.lastSync).toLocaleString()}</p>}
     {error && <p role="alert">{error}</p>}{message && <p role="status">{message}</p>}
   </section>

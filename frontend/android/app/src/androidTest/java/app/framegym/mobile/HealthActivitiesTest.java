@@ -5,6 +5,7 @@ import android.health.connect.datatypes.ExerciseSessionType;
 import android.os.Build;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
+import com.getcapacitor.annotation.CapacitorPlugin;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import java.util.Arrays;
@@ -18,6 +19,10 @@ public class HealthActivitiesTest {
         assertTrue(permissions.contains("android.permission.health.READ_EXERCISE"));
         assertFalse(permissions.stream().anyMatch(p->p.startsWith("android.permission.health.WRITE_")));
         assertFalse(permissions.contains("android.permission.ACCESS_FINE_LOCATION"));
+        CapacitorPlugin annotation=HealthActivitiesPlugin.class.getAnnotation(CapacitorPlugin.class);
+        assertEquals(1,annotation.permissions().length);
+        assertEquals("exercise",annotation.permissions()[0].alias());
+        assertArrayEquals(new String[]{"android.permission.health.READ_EXERCISE"},annotation.permissions()[0].strings());
     }
     @Test public void providerSessionsKeepTheirActivityMeaning() {
         assumeTrue(Build.VERSION.SDK_INT>=34);

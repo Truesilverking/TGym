@@ -7,6 +7,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(HealthActivitiesPlugin.class);
+        registerPlugin(HealthWeightsPlugin.class);
         registerPlugin(GoogleDriveAuthPlugin.class);
         registerPlugin(UpdatePushPlugin.class);
         registerPlugin(AppInstallerPlugin.class);

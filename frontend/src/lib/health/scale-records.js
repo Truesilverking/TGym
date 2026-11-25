@@ -1,6 +1,7 @@
 import { isoOf } from '../format.js'
 import { recordHeight } from '../body-records.js'
 import { weightConversionFactor, weightUnit } from '../weight-units.js'
+import { isSameWithingsWeightSample } from './health-connect-weight-records.js'
 
 const LB_PER_KG = 2.2046226218487757
 const number = value => typeof value === 'number' && Number.isFinite(value) ? value : null
@@ -51,16 +52,24 @@ export function mergeScaleRecords(state, records, now = Date.now()) {
     let changed = false, existed = false
     if (record.weight != null) {
       const w = record.weight * (unit === 'lb' ? LB_PER_KG : 1)
-      const sample = { id: record.id, source: 'withings', w, t: record.t, unit }
       let day = state.bodyweight.find(row => row.d === record.d)
-      const previous = state.bodyweight.find(row => row.samples?.some(s => s.id === record.id))
+      const matchesId = sample => sample.id === record.id || sample.withingsId === record.id
+      let previous = state.bodyweight.find(row => row.samples?.some(matchesId))
+      let linked = false
+      if (!previous) {
+        previous = state.bodyweight.find(row => row.d === record.d && row.samples?.some(sample => isSameWithingsWeightSample(sample, row, { t: record.t, weightKg: record.weight }, unit)))
+        linked = Boolean(previous)
+      }
       if (day) normalizeDay(day, unit)
       if (previous && previous !== day) normalizeDay(previous, unit)
-      const old = previous?.samples.find(s => s.id === record.id)
+      const old = previous?.samples.find(matchesId) || (linked ? previous?.samples.find(sample => isSameWithingsWeightSample(sample, previous, { t: record.t, weightKg: record.weight }, unit)) : null)
+      const sample = old?.source === 'health-connect'
+        ? { ...old, withingsId: record.id, w, t: record.t, unit }
+        : { ...old, id: record.id, source: 'withings', w, t: record.t, unit }
       existed ||= Boolean(old)
-      if (!old || old.w !== w || old.t !== record.t || previous.d !== record.d) {
+      if (!old || linked || old.w !== w || old.t !== record.t || previous.d !== record.d) {
         if (previous) {
-          previous.samples = previous.samples.filter(s => s.id !== record.id)
+          previous.samples = previous.samples.filter(s => s !== old)
           if (!previous.samples.length) { state.bodyweight = state.bodyweight.filter(row => row !== previous); if (day === previous) day = null }
           else average(previous)
         }

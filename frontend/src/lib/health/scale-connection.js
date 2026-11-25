@@ -50,6 +50,18 @@ async function requestWith(config, path, { method = 'GET', body } = {}) {
   return data
 }
 export async function scaleRequest(path, options) { return requestWith(await scaleConnection(), path, options) }
+function selectWithingsSource(s) {
+  s.scaleWeightSource = 'withings'
+  s.healthConnectWeight = { ...s.healthConnectWeight, enabled: false, autoSync: false, generation: generation() }
+}
+export async function useWithingsApiWeightSource() {
+  epoch++
+  await useStore.getState().updateAtomic(s => {
+    selectWithingsSource(s)
+    s.smartScaleConnection = { ...s.smartScaleConnection, enabled: true, generation: generation() }
+  })
+  await useStore.getState().flushPersistence()
+}
 export async function createScalePairingCode() {
   const result = await api('/api/pair/create', { method: 'POST', body: '{}' })
   if (!/^[A-Za-z0-9-]{4,80}$/.test(String(result.code || ''))) throw Error('Invalid pairing code')
@@ -63,7 +75,7 @@ export async function pairScaleServer(raw, code) {
   const config = { base, token: result.token }
   const status = await requestWith(config, 'status')
   if (typeof status.configured !== 'boolean' || typeof status.connected !== 'boolean') throw Error('Invalid scale server')
-  await useStore.getState().updateAtomic(s => { s.smartScaleConnection = { enabled: false, lastSync: 0, generation: generation() } })
+  await useStore.getState().updateAtomic(s => { selectWithingsSource(s); s.smartScaleConnection = { enabled: false, lastSync: 0, generation: generation() } })
   await writePrivate(config)
   return status
 }
@@ -83,7 +95,7 @@ export async function beginScaleAuthorization() {
     const url = new URL(result.url)
     if (url.origin !== 'https://account.withings.com' || url.pathname !== '/oauth2_user/authorize2' || !url.searchParams.get('state')) throw Error('Invalid authorization URL')
     epoch++
-    await useStore.getState().updateAtomic(s => { s.smartScaleConnection = { enabled: false, lastSync: 0, generation: generation() } })
+    await useStore.getState().updateAtomic(s => { selectWithingsSource(s); s.smartScaleConnection = { enabled: false, lastSync: 0, generation: generation() } })
     if (MOBILE) { const { Browser } = await import('@capacitor/browser'); await Browser.open({ url: url.href }) }
     else popup.location.href = url.href
   } catch (error) { popup?.close(); throw error }
@@ -91,6 +103,10 @@ export async function beginScaleAuthorization() {
 export async function syncScale({ automatic = false } = {}) {
   if (syncing) return syncing
   const operation = async () => {
+    if (useStore.getState().S.scaleWeightSource === 'health-connect') {
+      if (automatic) return null
+      throw Error('Select the Withings API weight source before importing')
+    }
     let settings = useStore.getState().S.smartScaleConnection
     if (automatic && (!settings?.enabled || Date.now() - (settings.lastSync || 0) < 15 * 60000)) return null
     if (!settings?.generation) {
@@ -99,7 +115,7 @@ export async function syncScale({ automatic = false } = {}) {
     }
     const requestEpoch = epoch
     const data = await scaleRequest('sync', { method: 'POST', body: { since: settings?.lastSync || 0 } })
-    const unchanged = current => requestEpoch === epoch && current?.generation === settings?.generation && current?.lastSync === settings?.lastSync && current?.enabled === settings?.enabled
+    const unchanged = current => useStore.getState().S.scaleWeightSource !== 'health-connect' && requestEpoch === epoch && current?.generation === settings?.generation && current?.lastSync === settings?.lastSync && current?.enabled === settings?.enabled
     if (!unchanged(useStore.getState().S.smartScaleConnection)) throw Error('Scale connection changed')
     if (!Number.isFinite(data.fetchedAt) || data.fetchedAt < 0 || data.fetchedAt > Date.now() + 60000 || !Array.isArray(data.records)) throw Error('Invalid scale response')
     let result

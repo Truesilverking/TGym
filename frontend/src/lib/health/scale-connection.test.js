@@ -69,3 +69,23 @@ it('opens authorization during the click, validates the provider and closes reje
   const pending=connection.beginScaleAuthorization();expect(open).toHaveBeenCalledOnce();await pending;expect(popup.opener).toBeNull();expect(popup.location.href).toContain('https://account.withings.com/')
   mocks.api.mockResolvedValueOnce({url:'https://evil.invalid/oauth2_user/authorize2?state=x'});await expect(connection.beginScaleAuthorization()).rejects.toThrow('Invalid authorization URL');expect(popup.close).toHaveBeenCalledOnce()
 })
+it('does not import through the API while Health Connect is the selected weight source',async()=>{
+  store.getState().update(s=>{s.scaleWeightSource='health-connect';s.healthConnectWeight={enabled:true,autoSync:true,generation:'hc-1'}})
+  const before=structuredClone(store.getState().S)
+  expect(await connection.syncScale({automatic:true})).toBeNull()
+  await expect(connection.syncScale()).rejects.toThrow('Select the Withings API weight source')
+  expect(mocks.api).not.toHaveBeenCalled();expect(store.getState().S).toEqual(before)
+})
+it('explicitly switches back to the API and disables Health Connect without deleting weights',async()=>{
+  store.getState().update(s=>{s.scaleWeightSource='health-connect';s.healthConnectWeight={enabled:true,autoSync:true,generation:'hc-1'};s.bodyweight=[{d:'2026-11-03',w:80}]})
+  await connection.useWithingsApiWeightSource()
+  expect(store.getState().S).toMatchObject({scaleWeightSource:'withings',healthConnectWeight:{enabled:false,autoSync:false},smartScaleConnection:{enabled:true},bodyweight:[{d:'2026-11-03',w:80}]})
+  expect(store.getState().S.healthConnectWeight.generation).not.toBe('hc-1')
+})
+it('rejects an older API response when the selected source changes mid-request',async()=>{
+  let finish;mocks.api.mockImplementation(()=>new Promise(resolve=>{finish=resolve}))
+  const pending=connection.syncScale();for(let i=0;i<20&&!finish;i++)await Promise.resolve()
+  store.getState().update(s=>{s.scaleWeightSource='health-connect'})
+  finish({records:[record],fetchedAt:now});await expect(pending).rejects.toThrow('Scale connection changed')
+  expect(store.getState().S.bodyweight).toEqual([])
+})

@@ -51,6 +51,8 @@ import RoutineExchange from './components/RoutineExchange.jsx'
 import { estimate1RM, best1RM, is1RMRecord, REP_CAP } from './lib/onerm.js'
 import { policyFor, defaultIncrement, POLICIES_FOR, POLICY_NAME, POLICY_DESC, MAX_BW_SETS } from './lib/progression.js'
 import { buildSessionExercise } from './lib/session-prescription.js'
+import { dailyWeightForWorkout } from './lib/bodyweight-workout.js'
+import { syncHealthConnectWeight } from './lib/health/health-connect-weight-connection.js'
 import { MOBILE, shareExport } from './lib/mobile.js'
 import { buildCompletedWorkout } from './lib/finish-workout.js'
 import { isWarmupRow, modeForSet } from './lib/workout-model.js'
@@ -191,7 +193,7 @@ function BwSheet({ required, onDone, close, initialDate }) {
   const delEntry = d => update(s => { s.bodyweight = s.bodyweight.filter(b => b.d !== d) })
   return <>
     <h3>{required ? t('Quick check-in') : t('Log body weight')}</h3><Button size="sm" onClick={() => measurementRemindersSheet('weight')}>{t('Measurement reminder')}</Button>
-    {required && <div className="muted small">{t('Slide or tap to set your weight — tracked before every workout so your curve stays honest.')}</div>}
+    {required && <div className="muted small">{t('Log your weight once today. TGym reuses it for your workouts that day.')}</div>}
     {!required && <label className="field-label">{t('Date')}<input className="field" aria-label={t('Date')} type="date" max={todayISO()} value={date} onChange={e=>setDate(e.target.value)}/></label>}
     {recordedDate && <p className="small muted">{t('This reading will be added to the daily average.')}</p>}
     <BodyWeightPicker ref={pickerDraft} value={v} onChange={setV} unit={entryUnit.current} disabled={saving} onValidityChange={setWeightValid} />
@@ -1743,13 +1745,39 @@ export function WorkoutRow({ w, onClick }) {
 
 /* ============================ workout lifecycle ============================ */
 let startingWorkoutDecision = null
-export function startFlow(routineId) {
+export function startFlow(routineId, { skipWeightSync = false } = {}) {
   useStore.getState().reconcileActiveClock()
   if (S().active) {nav('/workout');return}
   if (routineId === undefined) routineId = nextDailyRoutine(S(),todayISO())?.id || null
   if(isTrainingPaused(S(),todayISO())) return ui().openSheet(close=><TrainingPauseCard onSaved={close} />)
   if (startingWorkoutDecision && ui().sheets.some(sheet=>sheet.id===startingWorkoutDecision.id)) return startingWorkoutDecision
-  startingWorkoutDecision = bwSheet({ required: true, onDone: bw => beginWorkout(routineId, bw), onClose:()=>{ startingWorkoutDecision=null } })
+  const todayWeight = dailyWeightForWorkout(S())
+  if (todayWeight != null) {
+    try { beginWorkout(routineId, todayWeight) }
+    catch { toast(t('Could not save. Check available storage and try again.')) }
+    return
+  }
+  if (!skipWeightSync && S().scaleWeightSource === 'health-connect' && S().healthConnectWeight?.enabled && S().healthConnectWeight?.autoSync) {
+    let cancelled = false, timer
+    const hash = window.location.hash
+    const check = ui().openSheet(close => <div className="workout-weight-check"><h3>{t('Checking today’s weight…')}</h3><p className="muted small">{t('If no reading is available, TGym will ask you to log your weight.')}</p><Button onClick={close}>{t('Cancel')}</Button></div>, {
+      onClose: () => { cancelled = true; clearTimeout(timer); startingWorkoutDecision = null }
+    })
+    startingWorkoutDecision = check
+    // Waiting is bounded for the start flow; a connected foreground import may
+    // still finish later, but it can never start a workout after cancellation.
+    Promise.race([syncHealthConnectWeight(), new Promise(resolve => { timer = setTimeout(resolve, 5000) })])
+      .catch(() => {})
+      .then(() => {
+        clearTimeout(timer)
+        if (cancelled || !ui().sheets.some(sheet => sheet.id === check.id)) return
+        if (window.location.hash !== hash) { check.close(); return }
+        check.close()
+        startFlow(routineId, { skipWeightSync: true })
+      })
+    return check
+  }
+  startingWorkoutDecision = bwSheet({ required: true, onDone: bw => beginWorkout(routineId, bw == null ? null : dailyWeightForWorkout(S()) ?? bw), onClose:()=>{ startingWorkoutDecision=null } })
   return startingWorkoutDecision
 }
 export function beginWorkout(routineId, bw) {

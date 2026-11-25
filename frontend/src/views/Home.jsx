@@ -153,7 +153,7 @@ export default function Home() {
           <Icon name={delta > 0 ? 'arrowUp' : 'arrowDown'} />
           <span>{t('Since previous: {0}', fmtWeight(Math.abs(delta)) + ' ' + S.unit)}</span>
         </span>}
-      {!bw && <p className="muted small home-bodyweight-empty">{t("No entries yet — log your weight to start the curve. It's also asked before every workout.")}</p>}
+      {!bw && <p className="muted small home-bodyweight-empty">{t("No entries yet — log your weight to start the curve. TGym asks once per day when a reading is missing.")}</p>}
       {bw && <footer className="home-bodyweight-footer"><time className="home-bodyweight-last" dateTime={bw.d}>{fmtDate(bw.d, false)}</time></footer>}
     </section>
 
